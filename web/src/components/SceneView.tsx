@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useChatStore } from '../stores/chatStore'
+import { RefinementPanel } from './RefinementPanel'
 
 interface SceneObject {
   name: string
@@ -16,7 +17,7 @@ const TYPE_ICON: Record<string, string> = {
 }
 
 export function SceneView() {
-  const [tab, setTab] = useState<'preview' | 'objects' | 'log'>('preview')
+  const [tab, setTab] = useState<'preview' | 'objects' | 'log' | 'refine'>('preview')
   const [objects, setObjects] = useState<SceneObject[]>([])
   const [loading, setLoading] = useState(false)
   const [previewLoading, setPreviewLoading] = useState(false)
@@ -76,7 +77,7 @@ export function SceneView() {
     <div className="w-96 flex flex-col border-l border-slate-700 bg-slate-900">
       {/* Tab bar */}
       <div className="flex border-b border-slate-700 shrink-0">
-        {(['preview', 'objects', 'log'] as const).map((t) => (
+        {(['preview', 'objects', 'log', 'refine'] as const).map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
@@ -90,7 +91,9 @@ export function SceneView() {
               ? `🖼 預覽${isLive ? ' 🔴' : ''}`
               : t === 'objects'
               ? `◼ 物件 (${objects.length})`
-              : '📋 記錄'}
+              : t === 'log'
+              ? '📋 記錄'
+              : '🔁 精煉'}
           </button>
         ))}
         <button
@@ -167,6 +170,13 @@ export function SceneView() {
               {log.output}
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Refinement tab */}
+      {tab === 'refine' && (
+        <div className="flex-1 overflow-hidden">
+          <RefinementPanel />
         </div>
       )}
     </div>

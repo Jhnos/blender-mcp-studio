@@ -1,0 +1,174 @@
+# Blender MCP Studio — Modeling Pipelines
+# Data-driven: add stages or pipelines without code changes.
+# Placeholder syntax: {{ variable_name }} resolved from runtime context.
+
+pipelines:
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # Standard 3D Print Pipeline: geometry → clean → UV → material → export
+  # ─────────────────────────────────────────────────────────────────────────
+  3d_print:
+    description: Full pipeline for 3D-printable models
+    stages:
+      - name: create_base_geometry
+        description: Create initial object geometry
+        tool: create_object
+        arguments:
+          type: "{{ object_type }}"
+          name: "{{ object_name }}"
+          location: [0, 0, 0]
+
+      - name: apply_solidify
+        description: Add thickness for printability
+        tool: execute_code
+        optional: true
+        arguments:
+          code: |
+            import bpy
+            obj = bpy.context.active_object
+            if obj:
+                mod = obj.modifiers.new("Solidify", "SOLIDIFY")
+                mod.thickness = 0.002
+
+      - name: apply_material
+        description: Apply a base material for preview
+        tool: apply_material
+        optional: true
+        arguments:
+          object_name: "{{ object_name }}"
+          material_name: "{{ material_name }}"
+          color: "{{ color }}"
+
+      - name: get_final_scene
+        description: Verify the final scene state
+        tool: get_scene_info
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # Character Pipeline: body → features → material → rig-ready cleanup
+  # ─────────────────────────────────────────────────────────────────────────
+  character:
+    description: Stylised character modeling pipeline
+    stages:
+      - name: create_body
+        description: Create character body mesh
+        tool: create_object
+        arguments:
+          type: MESH
+          name: "{{ character_name }}_body"
+
+      - name: apply_body_material
+        description: Apply skin/body material
+        tool: apply_material
+        optional: true
+        arguments:
+          object_name: "{{ character_name }}_body"
+          material_name: "{{ character_name }}_mat"
+          color: "{{ body_color }}"
+          roughness: 0.8
+
+      - name: create_eyes
+        description: Create eye objects
+        tool: execute_code
+        optional: true
+        arguments:
+          code: |
+            import bpy, math
+            for side, x in [("L", -0.3), ("R", 0.3)]:
+                bpy.ops.mesh.primitive_uv_sphere_add(radius=0.08, location=(x, 0.45, 0.15))
+                bpy.context.active_object.name = f"{{ character_name }}_eye_{side}"
+
+      - name: finalize_scene
+        description: Get final scene info to verify
+        tool: get_scene_info
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # Black Cat Phone Stand — the original project demo pipeline
+  # ─────────────────────────────────────────────────────────────────────────
+  black_cat_phone_stand:
+    description: Cute black cat phone stand for 3D printing
+    stages:
+      - name: create_cat_body
+        description: Create the main cat body (rounded box)
+        tool: execute_code
+        arguments:
+          code: |
+            import bpy, math
+            bpy.ops.object.select_all(action='SELECT')
+            bpy.ops.object.delete()
+            bpy.ops.mesh.primitive_cube_add(size=1, location=(0, 0, 0.5))
+            body = bpy.context.active_object
+            body.name = "CatBody"
+            body.scale = (0.8, 0.5, 0.9)
+            mod = body.modifiers.new("Subdiv", "SUBSURF")
+            mod.levels = 2
+
+      - name: create_cat_head
+        description: Create rounded cat head
+        tool: execute_code
+        arguments:
+          code: |
+            import bpy
+            bpy.ops.mesh.primitive_uv_sphere_add(radius=0.45, location=(0, 0, 1.35))
+            head = bpy.context.active_object
+            head.name = "CatHead"
+
+      - name: create_ears
+        description: Create pointed cat ears
+        tool: execute_code
+        arguments:
+          code: |
+            import bpy
+            for side, x in [("L", -0.22), ("R", 0.22)]:
+                bpy.ops.mesh.primitive_cone_add(radius1=0.12, depth=0.25, location=(x, 0, 1.7))
+                ear = bpy.context.active_object
+                ear.name = f"CatEar_{side}"
+
+      - name: create_tail
+        description: Add a curled tail
+        tool: execute_code
+        optional: true
+        arguments:
+          code: |
+            import bpy
+            bpy.ops.curve.primitive_bezier_curve_add()
+            tail = bpy.context.active_object
+            tail.name = "CatTail"
+            tail.data.bevel_depth = 0.05
+
+      - name: create_phone_slot
+        description: Create the phone holder slot
+        tool: execute_code
+        arguments:
+          code: |
+            import bpy
+            bpy.ops.mesh.primitive_cube_add(size=1, location=(0, -0.2, 0.5))
+            slot = bpy.context.active_object
+            slot.name = "PhoneSlot"
+            slot.scale = (0.4, 0.05, 0.65)
+            # Boolean subtract from body (manual step for 3D print)
+
+      - name: apply_black_material
+        description: Apply glossy black cat material
+        tool: execute_code
+        arguments:
+          code: |
+            import bpy
+            mat = bpy.data.materials.new("CatBlack")
+            mat.use_nodes = True
+            bsdf = None
+            for node in mat.node_tree.nodes:
+                if node.type == 'BSDF_PRINCIPLED':
+                    bsdf = node
+                    break
+            if bsdf:
+                bsdf.inputs["Base Color"].default_value = (0.01, 0.01, 0.01, 1)
+                bsdf.inputs["Roughness"].default_value = 0.3
+            for obj_name in ["CatBody", "CatHead", "CatEar_L", "CatEar_R"]:
+                obj = bpy.data.objects.get(obj_name)
+                if obj:
+                    obj.data.materials.clear()
+                    obj.data.materials.append(mat)
+
+      - name: verify_scene
+        description: Verify all objects are in scene
+        tool: get_scene_info
