@@ -24,6 +24,7 @@ async def _lifespan(app: FastAPI):
     from src.adapters.events.in_memory_event_bus import InMemoryEventBus
     from src.adapters.factory.concrete_adapter_factory import ConcreteAdapterFactory
     from src.adapters.mcp.factory import build_blender_adapter
+    from src.adapters.polyhaven.polyhaven_adapter import PolyHavenAdapter
     from src.adapters.prompt.blender_context_prompt_builder import BlenderContextPromptBuilder
     from src.adapters.security.blender_code_sandbox import BlenderCodeSandbox
     from src.adapters.security.prompt_injection_sanitizer import PromptInjectionSanitizer
@@ -46,6 +47,7 @@ async def _lifespan(app: FastAPI):
     prompt_builder = BlenderContextPromptBuilder()
     session_store = SQLiteSessionStore()
     snapshot_store = SQLiteSnapshotStore()
+    polyhaven = PolyHavenAdapter()
 
     app.state.blender = blender
     app.state.event_bus = event_bus
@@ -56,6 +58,7 @@ async def _lifespan(app: FastAPI):
     app.state.prompt_builder = prompt_builder
     app.state.session_store = session_store
     app.state.snapshot_store = snapshot_store
+    app.state.polyhaven = polyhaven
     yield
     await blender.disconnect()
 

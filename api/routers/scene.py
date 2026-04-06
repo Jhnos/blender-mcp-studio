@@ -448,3 +448,147 @@ async def delete_snapshot(snapshot_id: str, request: Request) -> dict:
 
     await snapshot_store.delete(snapshot_id)
     return {"deleted": True, "snapshot_id": snapshot_id}
+
+
+# ---------------------------------------------------------------------------
+# V3: Poly Haven — HDRI / texture search & apply
+# ---------------------------------------------------------------------------
+
+_APPLY_HDRI_CODE = '''\
+import bpy, urllib.request, os, tempfile
+
+# Download HDRI to a temp file
+url = "{url}"
+ext = url.rsplit(".", 1)[-1]
+tmp = tempfile.mktemp(suffix="." + ext)
+urllib.request.urlretrieve(url, tmp)
+
+# Apply as World HDRI
+world = bpy.context.scene.world
+if world is None:
+    world = bpy.data.worlds.new("World")
+    bpy.context.scene.world = world
+world.use_nodes = True
+nt = world.node_tree
+nt.nodes.clear()
+bg   = nt.nodes.new("ShaderNodeBackground")
+env  = nt.nodes.new("ShaderNodeTexEnvironment")
+out  = nt.nodes.new("ShaderNodeOutputWorld")
+env.image = bpy.data.images.load(tmp)
+nt.links.new(env.outputs[0], bg.inputs[0])
+nt.links.new(bg.outputs[0], out.inputs[0])
+print(f"hdri_applied:{tmp}")
+'''
+
+_APPLY_TEXTURE_CODE = '''\
+import bpy, urllib.request, tempfile
+
+url = "{url}"
+ext = url.rsplit(".", 1)[-1]
+tmp = tempfile.mktemp(suffix="." + ext)
+urllib.request.urlretrieve(url, tmp)
+
+obj = bpy.context.active_object
+if obj is None or obj.type != "MESH":
+    print("no_active_mesh")
+else:
+    mat = obj.active_material
+    if mat is None:
+        mat = bpy.data.materials.new(name="PolyHaven_Mat")
+        obj.data.materials.append(mat)
+    mat.use_nodes = True
+    nt = mat.node_tree
+    bsdf = nt.nodes.get("Principled BSDF")
+    if bsdf is None:
+        bsdf = nt.nodes.new("ShaderNodeBsdfPrincipled")
+    tex  = nt.nodes.new("ShaderNodeTexImage")
+    tex.image = bpy.data.images.load(tmp)
+    nt.links.new(tex.outputs["Color"], bsdf.inputs["Base Color"])
+    print(f"texture_applied:{tmp}")
+'''
+
+
+class MaterialApplyRequest(BaseModel):
+    asset_id: str
+    resolution: str = "1k"
+    file_format: str = "hdr"
+    apply_as: str = "hdri"  # "hdri" | "texture"
+
+
+@router.get("/materials/search")
+async def search_materials(
+    q: str = "",
+    asset_type: str = "hdri",
+    limit: int = 20,
+    request: Request = None,  # type: ignore[assignment]
+) -> dict:
+    """Search Poly Haven assets by keyword, type and limit."""
+    ph = getattr(request.app.state, "polyhaven", None)
+    if ph is None:
+        raise HTTPException(status_code=503, detail="Poly Haven adapter not configured")
+
+    assets = await ph.search(query=q, asset_type=asset_type, limit=limit)
+    return {
+        "query": q,
+        "asset_type": asset_type,
+        "results": [
+            {
+                "id": a.id,
+                "name": a.name,
+                "categories": list(a.categories),
+                "tags": list(a.tags),
+                "thumbnail_url": a.thumbnail_url,
+                "download_count": a.download_count,
+            }
+            for a in assets
+        ],
+    }
+
+
+@router.post("/materials/apply")
+async def apply_material(body: MaterialApplyRequest, request: Request) -> dict:
+    """Download a Poly Haven asset and apply it in Blender.
+
+    apply_as='hdri'    → sets scene World environment lighting
+    apply_as='texture' → applies to active object's material Base Color
+    """
+    ph = getattr(request.app.state, "polyhaven", None)
+    if ph is None:
+        raise HTTPException(status_code=503, detail="Poly Haven adapter not configured")
+
+    ph_file = await ph.get_download_url(
+        body.asset_id,
+        resolution=body.resolution,
+        file_format=body.file_format,
+    )
+    if ph_file is None:
+        raise HTTPException(
+            status_code=404,
+            detail=f"No download URL for {body.asset_id!r} @ {body.resolution}/{body.file_format}",
+        )
+
+    if body.apply_as == "hdri":
+        code = _APPLY_HDRI_CODE.format(url=ph_file.url)
+    elif body.apply_as == "texture":
+        code = _APPLY_TEXTURE_CODE.format(url=ph_file.url)
+    else:
+        raise HTTPException(status_code=400, detail=f"Unknown apply_as: {body.apply_as!r}")
+
+    blender = request.app.state.blender
+    cmd = Command(tool_name="execute_code", arguments={"code": code})
+    try:
+        result = await blender.execute(cmd)
+    except Exception as e:
+        raise HTTPException(status_code=503, detail=f"Blender unreachable: {e}") from e
+
+    if not result.success:
+        raise HTTPException(status_code=500, detail=f"Apply failed: {result.error}")
+
+    return {
+        "applied": True,
+        "asset_id": body.asset_id,
+        "resolution": ph_file.resolution,
+        "file_format": ph_file.file_format,
+        "url": ph_file.url,
+        "blender_output": result.output,
+    }
