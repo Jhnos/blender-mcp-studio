@@ -14,16 +14,18 @@ set -euo pipefail
 WEB_PORT=19147
 TAILSCALE_HOST="bearmacminimac-mini.tail56c751.ts.net"
 MOUNT_PATH="/blender"
-TARGET="http://127.0.0.1:${WEB_PORT}"
+# Target 必須含 /blender，讓 Tailscale 剝除前綴後路徑仍正確
+# 行為: /blender/api/health → 剝除 /blender → /api/health → 加 target → /blender/api/health
+TARGET="http://127.0.0.1:${WEB_PORT}${MOUNT_PATH}"
 
 echo "── Blender MCP Studio × Tailscale Serve ──"
 
-# 已有路由就跳過
-if tailscale serve status 2>/dev/null | grep -q "^|-- ${MOUNT_PATH}"; then
-  echo "✓  路由已存在：${MOUNT_PATH} → ${TARGET}"
+# 已有正確路由就跳過（含 /blender 前綴的 target）
+if tailscale serve status 2>/dev/null | grep -q "${MOUNT_PATH}.*${TARGET}"; then
+  echo "✓  路由已存在且正確：${MOUNT_PATH} → ${TARGET}"
 else
   tailscale serve --bg --set-path "${MOUNT_PATH}" "${TARGET}"
-  echo "✓  已新增路由：${MOUNT_PATH} → ${TARGET}"
+  echo "✓  已設定路由：${MOUNT_PATH} → ${TARGET}"
 fi
 
 echo ""
