@@ -11,16 +11,22 @@ from __future__ import annotations
 import os
 
 from src.core.ports.blender_port import BlenderPort
+from src.core.ports.code_sandbox_port import CodeSandboxPort
 
 
-def build_blender_adapter(host: str | None = None, port: int | None = None) -> BlenderPort:
+def build_blender_adapter(
+    host: str | None = None,
+    port: int | None = None,
+    sandbox: CodeSandboxPort | None = None,
+) -> BlenderPort:
     """Instantiate a BlenderPort from environment config.
 
     Args:
         host: Override BLENDER_HOST env var.
         port: Override BLENDER_PORT env var.
+        sandbox: Optional CodeSandboxPort to validate execute_code calls.
     """
     from src.adapters.mcp.blender_mcp_adapter import BlenderMCPAdapter
     _host = host or os.environ.get("BLENDER_HOST", "localhost")
     _port = port or int(os.environ.get("BLENDER_PORT", "9876"))
-    return BlenderMCPAdapter(host=_host, port=_port)
+    return BlenderMCPAdapter(host=_host, port=_port, sandbox=sandbox)

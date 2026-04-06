@@ -4,13 +4,18 @@ from __future__ import annotations
 
 import asyncio
 import json
+import logging
 from typing import Any
 
 from src.core.domain.command import Command
 from src.core.domain.exceptions import BlenderConnectionError
 from src.core.ports.blender_port import BlenderPort
+from src.core.ports.code_sandbox_port import CodeSandboxPort
 from src.core.ports.mcp_port import MCPPort, ToolDefinition, ToolResult
-from src.infrastructure.env_loader import get
+
+logger = logging.getLogger(__name__)
+
+_EXECUTE_CODE_TOOL = "execute_code"
 
 
 class BlenderSocketClient:
@@ -131,11 +136,21 @@ class BlenderMCPAdapter(BlenderPort):
 
     Single responsibility: translate BlenderPort calls to MCP tool calls.
     Does NOT inherit MCPPort — uses composition instead.
+
+    Security: If a CodeSandboxPort is provided, execute_code calls are
+    validated before being sent to Blender. Blocked calls return a failure
+    ToolResult without touching the Blender socket.
     """
 
-    def __init__(self, host: str, port: int) -> None:
+    def __init__(
+        self,
+        host: str,
+        port: int,
+        sandbox: CodeSandboxPort | None = None,
+    ) -> None:
         self._socket = BlenderSocketClient(host, port)
         self._mcp = BlenderMCPClient(self._socket)
+        self._sandbox = sandbox
 
     async def connect(self) -> None:
         await self._socket.connect()
@@ -144,12 +159,37 @@ class BlenderMCPAdapter(BlenderPort):
         await self._socket.disconnect()
 
     async def execute(self, command: Command) -> ToolResult:
+        if command.tool_name == _EXECUTE_CODE_TOOL and self._sandbox is not None:
+            code = str(command.arguments.get("code", ""))
+            result = self._sandbox.validate(code)
+            if not result.allowed:
+                logger.warning(
+                    "Blocked execute_code: %s", "; ".join(result.violations)
+                )
+                return ToolResult(
+                    success=False,
+                    output=None,
+                    error=f"Security: blocked code ({'; '.join(result.violations)})",
+                )
         return await self._mcp.call_tool(command.tool_name, dict(command.arguments))
 
     async def call_tool(
         self, tool_name: str, arguments: dict[str, object]
     ) -> ToolResult:
         """Expose MCP tool calls for routers that need direct access."""
+        if tool_name == _EXECUTE_CODE_TOOL and self._sandbox is not None:
+            code = str(arguments.get("code", ""))
+            result = self._sandbox.validate(code)
+            if not result.allowed:
+                logger.warning(
+                    "Blocked execute_code via call_tool: %s",
+                    "; ".join(result.violations),
+                )
+                return ToolResult(
+                    success=False,
+                    output=None,
+                    error=f"Security: blocked code ({'; '.join(result.violations)})",
+                )
         return await self._mcp.call_tool(tool_name, arguments)
 
     async def get_scene_info(self) -> dict[str, object]:

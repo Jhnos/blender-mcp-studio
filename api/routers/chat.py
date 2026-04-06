@@ -4,17 +4,20 @@ Depends on:
   app.state.blender          — shared BlenderPort singleton (set by lifespan)
   app.state.adapter_factory  — AdapterFactoryPort (DIP: no concrete imports here)
   app.state.event_bus        — EventBusPort for domain event publishing
+  app.state.sanitizer        — InputSanitizerPort (prompt injection protection)
 """
 
 from __future__ import annotations
 
 import json
+import logging
 
 from fastapi import APIRouter, Request, WebSocket, WebSocketDisconnect
 
 from src.core.domain.session import Session
 from src.core.use_cases.conversational_modeling import ConversationalModelingUseCase
 
+logger = logging.getLogger(__name__)
 router = APIRouter()
 
 _sessions: dict[str, Session] = {}
@@ -35,6 +38,7 @@ async def chat_websocket(websocket: WebSocket, request: Request) -> None:
     blender = request.app.state.blender
     factory = request.app.state.adapter_factory
     event_bus = request.app.state.event_bus
+    sanitizer = getattr(request.app.state, "sanitizer", None)
     llm = factory.build_llm_adapter()
     use_case = ConversationalModelingUseCase(llm=llm, blender=blender, event_bus=event_bus)
 
@@ -44,6 +48,17 @@ async def chat_websocket(websocket: WebSocket, request: Request) -> None:
             data = json.loads(raw)
             session_id: str | None = data.get("session_id")
             content: str = data.get("content", "")
+
+            # Sanitize user input before it reaches the LLM
+            if sanitizer is not None:
+                result = sanitizer.sanitize(content)
+                if not result.clean:
+                    logger.warning(
+                        "Prompt injection detected in session %s: %s",
+                        session_id,
+                        result.detections,
+                    )
+                content = result.sanitized_text
 
             session = _get_or_create(session_id)
             session = session.add_message("user", content)

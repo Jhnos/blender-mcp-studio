@@ -24,11 +24,14 @@ async def _lifespan(app: FastAPI):
     from src.adapters.mcp.factory import build_blender_adapter
     from src.adapters.factory.concrete_adapter_factory import ConcreteAdapterFactory
     from src.adapters.events.in_memory_event_bus import InMemoryEventBus
+    from src.adapters.security.blender_code_sandbox import BlenderCodeSandbox
+    from src.adapters.security.prompt_injection_sanitizer import PromptInjectionSanitizer
 
     env_file = app.state.env_file if hasattr(app.state, "env_file") else None
     load_env(env_file)
 
-    blender = build_blender_adapter()
+    sandbox = BlenderCodeSandbox()
+    blender = build_blender_adapter(sandbox=sandbox)
     try:
         await blender.connect()
     except Exception:
@@ -40,6 +43,8 @@ async def _lifespan(app: FastAPI):
     app.state.blender = blender
     app.state.event_bus = event_bus
     app.state.adapter_factory = adapter_factory
+    app.state.sandbox = sandbox
+    app.state.sanitizer = PromptInjectionSanitizer()
     yield
     await blender.disconnect()
 

@@ -13,17 +13,27 @@ Recommended models for Blender bpy code generation:
 
 from __future__ import annotations
 
-import json
+import re
 
 import httpx
 
 from src.core.domain.session import Message
-from src.core.ports.llm_port import LLMPort, LLMResponse
-from src.infrastructure.env_loader import load_env
+from src.core.ports.llm_port import (
+    LLMPort,
+    LLMResponse,
+    LLMToolResponse,
+    ToolCall,
+    ToolDefinition,
+)
 
 
 class OllamaAdapter(LLMPort):
-    """Local Ollama LLM adapter — zero API cost."""
+    """Local Ollama LLM adapter — zero API cost.
+
+    Implements LLMToolChatPort via OpenAI-compatible /api/chat tools parameter.
+    Models that support function calling (qwen3-coder, llama3.1+) will return
+    structured tool_calls; others fall back to text mode gracefully.
+    """
 
     DEFAULT_MODEL = "qwen3-coder:30b"
     DEFAULT_BASE_URL = "http://localhost:11434"
@@ -59,8 +69,6 @@ class OllamaAdapter(LLMPort):
             data = resp.json()
 
         content: str = data["message"]["content"]
-
-        # qwen3 models emit <think>...</think> blocks — strip them for clean output
         content = self._strip_thinking(content)
 
         return LLMResponse(
@@ -68,6 +76,59 @@ class OllamaAdapter(LLMPort):
             provider=self.provider_name,
             model=self.model_name,
             finish_reason=data.get("done_reason", "stop"),
+        )
+
+    async def chat_with_tools(
+        self,
+        messages: list[Message],
+        tools: list[ToolDefinition],
+        system_prompt: str | None = None,
+    ) -> LLMToolResponse:
+        """Use OpenAI-compatible tools format for structured output."""
+        openai_tools = [self._to_openai_tool(t) for t in tools]
+        payload: dict[str, object] = {
+            "model": self._model,
+            "stream": False,
+            "messages": self._build_messages(messages, system_prompt),
+            "tools": openai_tools,
+            "options": {"temperature": 0.1},  # lower temp for structured calls
+        }
+
+        async with httpx.AsyncClient(timeout=self._timeout) as client:
+            resp = await client.post(
+                f"{self._base_url}/api/chat",
+                json=payload,
+            )
+            resp.raise_for_status()
+            data = resp.json()
+
+        message = data.get("message", {})
+        raw_tool_calls = message.get("tool_calls") or []
+        tool_calls: list[ToolCall] = []
+        for tc in raw_tool_calls:
+            fn = tc.get("function", {})
+            args = fn.get("arguments", {})
+            if isinstance(args, str):
+                import json
+                try:
+                    args = json.loads(args)
+                except json.JSONDecodeError:
+                    args = {}
+            tool_calls.append(
+                ToolCall(
+                    name=fn.get("name", ""),
+                    arguments=dict(args),
+                    call_id=tc.get("id", ""),
+                )
+            )
+
+        text = self._strip_thinking(message.get("content") or "")
+        return LLMToolResponse(
+            tool_calls=tuple(tool_calls),
+            text=text,
+            provider=self.provider_name,
+            model=self.model_name,
+            finish_reason=data.get("done_reason", "tool_calls" if tool_calls else "stop"),
         )
 
     def _build_messages(
@@ -82,9 +143,23 @@ class OllamaAdapter(LLMPort):
         return result
 
     @staticmethod
+    def _to_openai_tool(t: ToolDefinition) -> dict[str, object]:
+        return {
+            "type": "function",
+            "function": {
+                "name": t.name,
+                "description": t.description,
+                "parameters": {
+                    "type": "object",
+                    "properties": t.parameters,
+                    "required": list(t.required_params),
+                },
+            },
+        }
+
+    @staticmethod
     def _strip_thinking(text: str) -> str:
         """Remove <think>...</think> chain-of-thought blocks from qwen3/deepseek-r1."""
-        import re
         return re.sub(r"<think>.*?</think>", "", text, flags=re.DOTALL).strip()
 
     @property
