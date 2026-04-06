@@ -79,7 +79,8 @@ def create_app(
     origins = cors_origins or [
         o.strip()
         for o in os.environ.get(
-            "CORS_ORIGINS", "http://localhost:19147,http://localhost:3000"
+            "CORS_ORIGINS",
+            "https://bearmacminimac-mini.tail56c751.ts.net,http://localhost:19147",
         ).split(",")
         if o.strip()
     ]
