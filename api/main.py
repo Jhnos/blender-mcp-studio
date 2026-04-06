@@ -26,6 +26,9 @@ async def _lifespan(app: FastAPI):
     from src.adapters.events.in_memory_event_bus import InMemoryEventBus
     from src.adapters.security.blender_code_sandbox import BlenderCodeSandbox
     from src.adapters.security.prompt_injection_sanitizer import PromptInjectionSanitizer
+    from src.adapters.vision.factory import build_vision_adapter
+    from src.adapters.prompt.blender_context_prompt_builder import BlenderContextPromptBuilder
+    from src.adapters.session.sqlite_session_store import SQLiteSessionStore
 
     env_file = app.state.env_file if hasattr(app.state, "env_file") else None
     load_env(env_file)
@@ -39,12 +42,18 @@ async def _lifespan(app: FastAPI):
 
     event_bus = InMemoryEventBus()
     adapter_factory = ConcreteAdapterFactory()
+    vision = build_vision_adapter()  # None if no vision API key configured
+    prompt_builder = BlenderContextPromptBuilder()
+    session_store = SQLiteSessionStore()
 
     app.state.blender = blender
     app.state.event_bus = event_bus
     app.state.adapter_factory = adapter_factory
     app.state.sandbox = sandbox
     app.state.sanitizer = PromptInjectionSanitizer()
+    app.state.vision = vision
+    app.state.prompt_builder = prompt_builder
+    app.state.session_store = session_store
     yield
     await blender.disconnect()
 

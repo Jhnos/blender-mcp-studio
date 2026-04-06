@@ -25,6 +25,13 @@ from src.core.domain.session import Session
 from src.core.ports.blender_port import BlenderPort
 from src.core.ports.event_bus_port import EventBusPort
 from src.core.ports.llm_port import LLMChatPort, LLMToolChatPort, ToolDefinition
+from src.core.ports.prompt_builder_port import PromptBuilderPort
+
+try:
+    from src.adapters.prompt.semantic_tool_router import SemanticToolRouter
+    _router = SemanticToolRouter()
+except Exception:
+    _router = None  # type: ignore[assignment]
 
 SYSTEM_PROMPT = """\
 You are a 3D modeling assistant connected to Blender via MCP.
@@ -99,6 +106,24 @@ _BLENDER_TOOLS: list[ToolDefinition] = [
         parameters={"code": {"type": "string", "description": "Python bpy code to execute"}},
         required_params=("code",),
     ),
+    ToolDefinition(
+        name="hunyuan3d_generate",
+        description="Generate a 3D mesh from text using Hunyuan3D AI (returns imported object in Blender).",
+        parameters={
+            "prompt": {"type": "string", "description": "Text description of the 3D model to generate"},
+            "negative_prompt": {"type": "string", "description": "What to avoid in the generation"},
+        },
+        required_params=("prompt",),
+    ),
+    ToolDefinition(
+        name="hyper3d_rodin_generate",
+        description="Generate a high-quality 3D model using Hyper3D Rodin AI from text description.",
+        parameters={
+            "prompt": {"type": "string", "description": "Text description of the 3D model"},
+            "geometry_file_format": {"type": "string", "description": "Output format: glb, usdz, fbx, obj, stl"},
+        },
+        required_params=("prompt",),
+    ),
 ]
 
 
@@ -107,6 +132,7 @@ class ConversationalModelingUseCase:
 
     Prefers native tool calling (LLMToolChatPort) when available; falls back
     to regex JSON parsing for models that don't support function calling.
+    Uses PromptBuilderPort when provided for API-context-enriched system prompts.
     """
 
     def __init__(
@@ -114,11 +140,18 @@ class ConversationalModelingUseCase:
         llm: LLMChatPort,
         blender: BlenderPort,
         event_bus: EventBusPort | None = None,
+        prompt_builder: PromptBuilderPort | None = None,
     ) -> None:
         self._llm = llm
         self._blender = blender
         self._bus = event_bus
+        self._prompt_builder = prompt_builder
         self._use_tool_calling = isinstance(llm, LLMToolChatPort)
+
+    def _get_system_prompt(self, context: dict[str, object] | None = None) -> str:
+        if self._prompt_builder is not None:
+            return self._prompt_builder.build_system_prompt(context)
+        return SYSTEM_PROMPT if self._use_tool_calling else SYSTEM_PROMPT_FALLBACK
 
     async def execute(self, session: Session) -> tuple[Session, str, str | None]:
         """Process the latest user message and execute in Blender.
@@ -191,12 +224,25 @@ class ConversationalModelingUseCase:
     async def _chat_with_tools(
         self, session: Session
     ) -> tuple[Command | None, str]:
-        """Native tool calling path — structured, no regex."""
+        """Native tool calling path — structured, no regex.
+
+        Uses SemanticToolRouter to pre-filter tools based on user message,
+        reducing token usage and improving LLM accuracy.
+        """
         assert isinstance(self._llm, LLMToolChatPort)
+
+        # Semantic pre-filtering: only send relevant tools to the LLM
+        user_msg = session.messages[-1].content if session.messages else ""
+        tools = (
+            _router.select_tools(user_msg, _BLENDER_TOOLS)
+            if _router is not None
+            else _BLENDER_TOOLS
+        )
+
         response = await self._llm.chat_with_tools(
             messages=session.messages,
-            tools=_BLENDER_TOOLS,
-            system_prompt=SYSTEM_PROMPT,
+            tools=tools,
+            system_prompt=self._get_system_prompt(),
         )
         if response.tool_calls:
             tc = response.tool_calls[0]
@@ -211,7 +257,7 @@ class ConversationalModelingUseCase:
         """Regex JSON fallback for models without native tool calling."""
         llm_response = await self._llm.chat(
             messages=session.messages,
-            system_prompt=SYSTEM_PROMPT_FALLBACK,
+            system_prompt=self._get_system_prompt(),
         )
         reply = llm_response.content
         command = CommandParser.from_llm_output(reply)

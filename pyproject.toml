@@ -18,6 +18,7 @@ dependencies = [
     "fastapi",
     "uvicorn[standard]",
     "websockets",
+    "aiosqlite",
 ]
 
 [project.optional-dependencies]

@@ -30,9 +30,10 @@ export function useWebSocket() {
         content: string
         status: 'done' | 'error' | 'streaming'
         blender_output?: string | null
+        screenshot?: string | null  // base64 PNG — live viewport update
       }
       if (data.session_id) setSessionId(data.session_id)
-      addAssistantMessage(data.content, data.status, data.blender_output)
+      addAssistantMessage(data.content, data.status, data.blender_output, data.screenshot)
     }
   }, [setConnected, addAssistantMessage, setSessionId])
 

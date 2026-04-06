@@ -21,9 +21,14 @@ export function SceneView() {
   const [loading, setLoading] = useState(false)
   const [previewLoading, setPreviewLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+  const [polledPreviewUrl, setPolledPreviewUrl] = useState<string | null>(null)
 
-  const { blenderLogs, sceneRefreshTick, triggerSceneRefresh } = useChatStore()
+  const { blenderLogs, sceneRefreshTick, triggerSceneRefresh, liveScreenshot } = useChatStore()
+
+  // Prefer live screenshot (pushed via WebSocket) over polled preview
+  const displayUrl = liveScreenshot
+    ? `data:image/png;base64,${liveScreenshot}`
+    : polledPreviewUrl
 
   const refreshScene = useCallback(async () => {
     setLoading(true)
@@ -48,9 +53,9 @@ export function SceneView() {
       if (!res.ok) throw new Error()
       const blob = await res.blob()
       const url = URL.createObjectURL(blob)
-      setPreviewUrl((prev) => { if (prev) URL.revokeObjectURL(prev); return url })
+      setPolledPreviewUrl((prev) => { if (prev) URL.revokeObjectURL(prev); return url })
     } catch {
-      setPreviewUrl(null)
+      setPolledPreviewUrl(null)
     } finally {
       setPreviewLoading(false)
     }
@@ -61,9 +66,11 @@ export function SceneView() {
     void refreshPreview()
   }, [refreshScene, refreshPreview])
 
-  // Auto-refresh when Blender executes something
+  // Auto-refresh when Blender executes something (also triggers via sceneRefreshTick)
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { refreshAll() }, [sceneRefreshTick])
+
+  const isLive = liveScreenshot !== null
 
   return (
     <div className="w-96 flex flex-col border-l border-slate-700 bg-slate-900">
@@ -79,7 +86,11 @@ export function SceneView() {
                 : 'text-slate-500 hover:text-slate-300'
             }`}
           >
-            {t === 'preview' ? '🖼 預覽' : t === 'objects' ? `◼ 物件 (${objects.length})` : '📋 記錄'}
+            {t === 'preview'
+              ? `🖼 預覽${isLive ? ' 🔴' : ''}`
+              : t === 'objects'
+              ? `◼ 物件 (${objects.length})`
+              : '📋 記錄'}
           </button>
         ))}
         <button
@@ -94,17 +105,24 @@ export function SceneView() {
       {/* Preview tab */}
       {tab === 'preview' && (
         <div className="flex-1 flex flex-col items-center justify-center p-3 overflow-hidden">
-          {previewLoading && (
+          {isLive && (
+            <div className="w-full text-right mb-1">
+              <span className="text-xs text-green-400 bg-green-900/30 px-2 py-0.5 rounded-full">
+                ● 即時更新
+              </span>
+            </div>
+          )}
+          {previewLoading && !displayUrl && (
             <div className="text-slate-500 text-xs animate-pulse">載入預覽中...</div>
           )}
-          {!previewLoading && previewUrl && (
+          {displayUrl && (
             <img
-              src={previewUrl}
+              src={displayUrl}
               alt="Blender viewport"
               className="max-w-full max-h-full object-contain rounded-lg border border-slate-700 shadow-lg"
             />
           )}
-          {!previewLoading && !previewUrl && (
+          {!previewLoading && !displayUrl && (
             <div className="text-slate-600 text-xs text-center">
               <div className="text-4xl mb-3">🎭</div>
               <p>無法取得預覽</p>
@@ -154,3 +172,4 @@ export function SceneView() {
     </div>
   )
 }
+

@@ -18,13 +18,20 @@ interface ChatStore {
   isConnected: boolean
   isLoading: boolean
   blenderLogs: BlenderLog[]
-  sceneRefreshTick: number  // increment to trigger scene refresh
+  sceneRefreshTick: number
+  liveScreenshot: string | null  // base64 PNG from last Blender command
   addUserMessage: (content: string) => void
-  addAssistantMessage: (content: string, status: ChatMessage['status'], blenderOut?: string | null) => void
+  addAssistantMessage: (
+    content: string,
+    status: ChatMessage['status'],
+    blenderOut?: string | null,
+    screenshot?: string | null,
+  ) => void
   setConnected: (v: boolean) => void
   setLoading: (v: boolean) => void
   setSessionId: (id: string) => void
   triggerSceneRefresh: () => void
+  setLiveScreenshot: (b64: string | null) => void
 }
 
 export const useChatStore = create<ChatStore>((set) => ({
@@ -34,11 +41,12 @@ export const useChatStore = create<ChatStore>((set) => ({
   isLoading: false,
   blenderLogs: [],
   sceneRefreshTick: 0,
+  liveScreenshot: null,
 
   addUserMessage: (content) =>
     set((s) => ({ messages: [...s.messages, { role: 'user', content }] })),
 
-  addAssistantMessage: (content, status, blenderOut) =>
+  addAssistantMessage: (content, status, blenderOut, screenshot) =>
     set((s) => {
       const logs = blenderOut != null
         ? [...s.blenderLogs, {
@@ -52,6 +60,7 @@ export const useChatStore = create<ChatStore>((set) => ({
         isLoading: false,
         blenderLogs: logs,
         sceneRefreshTick: blenderOut != null ? s.sceneRefreshTick + 1 : s.sceneRefreshTick,
+        liveScreenshot: screenshot !== undefined ? screenshot : s.liveScreenshot,
       }
     }),
 
@@ -59,4 +68,5 @@ export const useChatStore = create<ChatStore>((set) => ({
   setLoading: (isLoading) => set({ isLoading }),
   setSessionId: (sessionId) => set({ sessionId }),
   triggerSceneRefresh: () => set((s) => ({ sceneRefreshTick: s.sceneRefreshTick + 1 })),
+  setLiveScreenshot: (liveScreenshot) => set({ liveScreenshot }),
 }))

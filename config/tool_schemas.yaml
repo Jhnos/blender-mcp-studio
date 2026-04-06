@@ -54,6 +54,25 @@ tools:
       - scale
       - visible
 
+  - name: hunyuan3d_generate
+    description: Generate a 3D mesh from text description using Hunyuan3D AI model
+    required:
+      - prompt
+    optional:
+      - negative_prompt
+      - steps
+      - guidance_scale
+      - output_path
+
+  - name: hyper3d_rodin_generate
+    description: Generate a 3D model using Hyper3D Rodin AI from text or image
+    required:
+      - prompt
+    optional:
+      - input_image_path
+      - geometry_file_format
+      - material
+
   - name: apply_material
     description: Apply a material to an object
     required:
