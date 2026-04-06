@@ -592,3 +592,213 @@ async def apply_material(body: MaterialApplyRequest, request: Request) -> dict:
         "url": ph_file.url,
         "blender_output": result.output,
     }
+
+
+# ---------------------------------------------------------------------------
+# V4: Scene Graph — object select / rename / delete / visibility
+# ---------------------------------------------------------------------------
+
+class ObjectUpdateRequest(BaseModel):
+    new_name: str | None = None
+    visible: bool | None = None
+    selected: bool | None = None
+
+
+async def _exec(blender, code: str) -> dict:
+    """Helper: execute bpy code and return {success, output, error}."""
+    cmd = Command(tool_name="execute_code", arguments={"code": code})
+    try:
+        result = await blender.execute(cmd)
+        return {"success": result.success, "output": result.output, "error": result.error}
+    except Exception as e:
+        return {"success": False, "output": None, "error": str(e)}
+
+
+@router.put("/object/{name}")
+async def update_object(name: str, body: ObjectUpdateRequest, request: Request) -> dict:
+    """Rename, show/hide, or select a Blender scene object by name."""
+    blender = request.app.state.blender
+    ops: list[str] = ["import bpy"]
+
+    safe_name = name.replace("'", "\\'")
+    ops.append(f"obj = bpy.data.objects.get('{safe_name}')")
+    ops.append("if obj is None: raise ValueError(f'Object not found: {repr(obj)}')")
+
+    if body.visible is not None:
+        ops.append(f"obj.hide_viewport = {not body.visible}")
+        ops.append(f"obj.hide_render = {not body.visible}")
+
+    if body.selected is not None:
+        ops.append("bpy.ops.object.select_all(action='DESELECT')" if not body.selected else "")
+        ops.append(f"obj.select_set({body.selected})")
+        if body.selected:
+            ops.append("bpy.context.view_layer.objects.active = obj")
+
+    new_name = name
+    if body.new_name:
+        safe_new = body.new_name.replace("'", "\\'")
+        ops.append(f"obj.name = '{safe_new}'")
+        new_name = body.new_name
+
+    ops.append("print('updated')")
+    result = await _exec(blender, "\n".join(ops))
+    if not result["success"]:
+        raise HTTPException(status_code=500, detail=result["error"] or "Update failed")
+
+    return {"updated": True, "name": new_name, "original_name": name}
+
+
+@router.delete("/object/{name}")
+async def delete_object(name: str, request: Request) -> dict:
+    """Delete a Blender scene object by name."""
+    blender = request.app.state.blender
+    safe = name.replace("'", "\\'")
+    code = f"""\
+import bpy
+obj = bpy.data.objects.get('{safe}')
+if obj is None:
+    raise ValueError('Object not found: {safe}')
+bpy.data.objects.remove(obj, do_unlink=True)
+print('deleted')
+"""
+    result = await _exec(blender, code)
+    if not result["success"]:
+        raise HTTPException(status_code=500, detail=result["error"] or "Delete failed")
+    return {"deleted": True, "name": name}
+
+
+@router.post("/object/{name}/select")
+async def select_object(name: str, request: Request) -> dict:
+    """Select an object and make it the active object in Blender."""
+    blender = request.app.state.blender
+    safe = name.replace("'", "\\'")
+    code = f"""\
+import bpy
+bpy.ops.object.select_all(action='DESELECT')
+obj = bpy.data.objects.get('{safe}')
+if obj is None:
+    raise ValueError('Object not found: {safe}')
+obj.select_set(True)
+bpy.context.view_layer.objects.active = obj
+print(f'selected:{{obj.name}}')
+"""
+    result = await _exec(blender, code)
+    if not result["success"]:
+        raise HTTPException(status_code=500, detail=result["error"] or "Select failed")
+    return {"selected": True, "name": name}
+
+
+# ---------------------------------------------------------------------------
+# V4: Multimodal image upload → describe → inject as chat context
+# ---------------------------------------------------------------------------
+
+@router.post("/chat/image")
+async def analyze_image(request: Request) -> dict:
+    """Upload an image; vision LLM describes it; return description for use as prompt context.
+
+    Client sends multipart/form-data with field 'image' (PNG/JPEG).
+    Response: { description, suggestions, provider, model }
+    Caller should prepend the description to the next chat message.
+    """
+    vision = getattr(request.app.state, "vision", None)
+    if vision is None:
+        raise HTTPException(
+            status_code=503,
+            detail="No vision provider configured. Set OPENAI_API_KEY or ANTHROPIC_API_KEY.",
+        )
+
+    # Parse multipart body manually (FastAPI endpoint with Request gives us raw body)
+    form = await request.form()
+    image_field = form.get("image")
+    if image_field is None or not hasattr(image_field, "read"):
+        raise HTTPException(status_code=422, detail="Field 'image' is required (file upload)")
+
+    image_bytes: bytes = await image_field.read()  # type: ignore[union-attr]
+    if len(image_bytes) > 10 * 1024 * 1024:
+        raise HTTPException(status_code=413, detail="Image too large (max 10MB)")
+
+    _DEFAULT_PROMPT = (
+        "Describe this 3D scene or reference image in detail. "
+        "What objects, materials, lighting, and style do you see?"
+    )
+    prompt = str(form.get("prompt", _DEFAULT_PROMPT))
+
+    try:
+        analysis = await vision.analyze_image(image_bytes, prompt=prompt)
+    except Exception as e:
+        logger.exception("Vision analysis failed")
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+    return {
+        "description": analysis.description,
+        "suggestions": list(analysis.suggestions),
+        "provider": analysis.provider,
+        "model": analysis.model,
+    }
+
+
+# ---------------------------------------------------------------------------
+# V4: Text-to-3D generation (Hunyuan3D-2)
+# ---------------------------------------------------------------------------
+
+class Generate3DRequest(BaseModel):
+    prompt: str = Field(..., min_length=3, max_length=500)
+    negative_prompt: str = Field(default="")
+    steps: int = Field(default=20, ge=5, le=50)
+    guidance_scale: float = Field(default=7.5, ge=1.0, le=20.0)
+    import_to_blender: bool = Field(default=True)
+
+
+@router.post("/generate3d")
+async def generate_3d(req: Generate3DRequest, request: Request) -> dict:
+    """Generate a 3D GLB mesh from a text prompt via Hunyuan3D-2.
+
+    If import_to_blender is True, the GLB is saved to a temp file and
+    imported into the active Blender scene via bpy.ops.import_scene.gltf.
+
+    Response: { glb_url, blender_object, generation_time_s, provider }
+    """
+    text3d = getattr(request.app.state, "text3d", None)
+    if text3d is None:
+        raise HTTPException(
+            status_code=503,
+            detail="Hunyuan3D not configured. Set HUNYUAN3D_MODE or HUNYUAN3D_ENDPOINT.",
+        )
+
+    try:
+        result = await text3d.generate(
+            req.prompt,
+            negative_prompt=req.negative_prompt,
+            steps=req.steps,
+            guidance_scale=req.guidance_scale,
+        )
+    except Exception as e:
+        logger.exception("Text-to-3D generation failed")
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+    # Save GLB to disk
+    import pathlib
+    import time as _time
+    glb_dir = pathlib.Path("data/generated3d")
+    glb_dir.mkdir(parents=True, exist_ok=True)
+    glb_path = glb_dir / f"gen_{int(_time.time())}.glb"
+    glb_path.write_bytes(result.glb_bytes)
+
+    blender_object: str | None = None
+    if req.import_to_blender:
+        blender = request.app.state.blender
+        safe_path = str(glb_path.resolve()).replace("'", "\\'")
+        code = f"bpy.ops.import_scene.gltf(filepath='{safe_path}')"
+        import_result = await _exec(blender, code)
+        if import_result["success"]:
+            blender_object = "imported"
+        else:
+            logger.warning("GLB import to Blender failed: %s", import_result.get("error"))
+
+    return {
+        "glb_path": str(glb_path),
+        "blender_object": blender_object,
+        "generation_time_s": round(result.generation_time_s, 2),
+        "provider": result.provider,
+        "prompt": result.prompt,
+    }

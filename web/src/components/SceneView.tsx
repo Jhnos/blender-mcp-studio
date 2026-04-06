@@ -4,6 +4,8 @@ import { MaterialBrowserPanel } from './MaterialBrowserPanel'
 import { RefinementPanel } from './RefinementPanel'
 import { SnapshotPanel } from './SnapshotPanel'
 
+const _base = import.meta.env.BASE_URL.replace(/\/$/, '')
+
 interface SceneObject {
   name: string
   type: string
@@ -16,6 +18,90 @@ const TYPE_ICON: Record<string, string> = {
   CAMERA: '📷',
   EMPTY: '○',
   ARMATURE: '🦴',
+}
+
+// ---------------------------------------------------------------------------
+// ObjectRow — inline rename, select, delete, visibility toggle
+// ---------------------------------------------------------------------------
+
+function ObjectRow({ obj, onRefresh }: { obj: SceneObject; onRefresh: () => void }) {
+  const [editing, setEditing] = useState(false)
+  const [nameInput, setNameInput] = useState(obj.name)
+  const [busy, setBusy] = useState(false)
+
+  const apiCall = async (method: string, path: string, body?: object) => {
+    setBusy(true)
+    try {
+      const res = await fetch(`${_base}/api${path}`, {
+        method,
+        headers: body ? { 'Content-Type': 'application/json' } : {},
+        body: body ? JSON.stringify(body) : undefined,
+      })
+      if (!res.ok) console.warn(`${method} ${path} → ${res.status}`)
+      onRefresh()
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const handleSelect = () => void apiCall('POST', `/object/${encodeURIComponent(obj.name)}/select`)
+  const handleDelete = () => {
+    if (!window.confirm(`刪除物件「${obj.name}」？`)) return
+    void apiCall('DELETE', `/object/${encodeURIComponent(obj.name)}`)
+  }
+  const handleRename = async () => {
+    if (nameInput === obj.name || !nameInput.trim()) { setEditing(false); return }
+    await apiCall('PUT', `/object/${encodeURIComponent(obj.name)}`, { new_name: nameInput.trim() })
+    setEditing(false)
+  }
+
+  return (
+    <div className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg hover:bg-slate-800 group transition-colors">
+      {/* Type icon */}
+      <span className="text-slate-400 w-4 text-center text-xs shrink-0">
+        {TYPE_ICON[obj.type] ?? '?'}
+      </span>
+
+      {/* Name / rename input */}
+      {editing ? (
+        <input
+          autoFocus
+          value={nameInput}
+          onChange={(e) => setNameInput(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') void handleRename()
+            if (e.key === 'Escape') { setEditing(false); setNameInput(obj.name) }
+          }}
+          onBlur={() => void handleRename()}
+          className="flex-1 rounded bg-slate-700 px-1.5 py-0.5 text-xs text-white focus:outline-none focus:ring-1 focus:ring-violet-500"
+        />
+      ) : (
+        <button
+          onClick={handleSelect}
+          disabled={busy}
+          className="flex-1 text-left text-sm text-slate-200 truncate hover:text-violet-300 transition-colors disabled:opacity-50"
+        >
+          {obj.name}
+        </button>
+      )}
+
+      <span className="text-xs text-slate-600 shrink-0 hidden group-hover:inline">{obj.type}</span>
+
+      {/* Action buttons — appear on hover */}
+      <div className="hidden group-hover:flex items-center gap-0.5 shrink-0">
+        <button
+          onClick={() => setEditing(true)}
+          title="重新命名"
+          className="rounded px-1 py-0.5 text-xs text-slate-400 hover:text-white hover:bg-slate-700"
+        >✏️</button>
+        <button
+          onClick={handleDelete}
+          title="刪除"
+          className="rounded px-1 py-0.5 text-xs text-slate-400 hover:text-red-400 hover:bg-slate-700"
+        >🗑️</button>
+      </div>
+    </div>
+  )
 }
 
 export function SceneView() {
@@ -37,7 +123,7 @@ export function SceneView() {
     setLoading(true)
     setError(null)
     try {
-      const res = await fetch('/api/scene')
+      const res = await fetch(`${_base}/api/scene`)
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
       const data = await res.json() as { objects: SceneObject[] }
       setObjects(data.objects ?? [])
@@ -52,7 +138,7 @@ export function SceneView() {
   const refreshPreview = useCallback(async () => {
     setPreviewLoading(true)
     try {
-      const res = await fetch(`/api/preview?t=${Date.now()}`)
+      const res = await fetch(`${_base}/api/preview?t=${Date.now()}`)
       if (!res.ok) throw new Error()
       const blob = await res.blob()
       const url = URL.createObjectURL(blob)
@@ -151,11 +237,7 @@ export function SceneView() {
             <p className="text-xs text-slate-600 text-center mt-8">場景是空的</p>
           )}
           {objects.map((obj, i) => (
-            <div key={i} className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-slate-800 transition-colors">
-              <span className="text-slate-400 w-4 text-center text-xs">{TYPE_ICON[obj.type] ?? '?'}</span>
-              <span className="text-sm text-slate-200 truncate flex-1">{obj.name}</span>
-              <span className="text-xs text-slate-600 shrink-0">{obj.type}</span>
-            </div>
+            <ObjectRow key={i} obj={obj} onRefresh={refreshAll} />
           ))}
         </div>
       )}

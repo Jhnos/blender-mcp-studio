@@ -30,6 +30,7 @@ async def _lifespan(app: FastAPI):
     from src.adapters.security.prompt_injection_sanitizer import PromptInjectionSanitizer
     from src.adapters.session.sqlite_session_store import SQLiteSessionStore
     from src.adapters.snapshot.sqlite_snapshot_store import SQLiteSnapshotStore
+    from src.adapters.text3d.hunyuan3d_adapter import build_text3d_adapter
     from src.adapters.vision.factory import build_vision_adapter
     from src.infrastructure.env_loader import load_env
 
@@ -48,6 +49,7 @@ async def _lifespan(app: FastAPI):
     session_store = SQLiteSessionStore()
     snapshot_store = SQLiteSnapshotStore()
     polyhaven = PolyHavenAdapter()
+    text3d = build_text3d_adapter()
 
     app.state.blender = blender
     app.state.event_bus = event_bus
@@ -59,6 +61,7 @@ async def _lifespan(app: FastAPI):
     app.state.session_store = session_store
     app.state.snapshot_store = snapshot_store
     app.state.polyhaven = polyhaven
+    app.state.text3d = text3d
     yield
     await blender.disconnect()
 

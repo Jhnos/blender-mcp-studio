@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback, type FormEvent } from 'react'
 import { useChatStore } from '../stores/chatStore'
 import { useWebSocket } from '../hooks/useWebSocket'
+import { ImageUploadButton } from './ImageUploadButton'
 
 const _base = import.meta.env.BASE_URL.replace(/\/$/, '')
 const API_BASE = `${location.origin}${_base}`
@@ -165,8 +166,8 @@ export function ChatPanel() {
 
       {/* Input + toolbar */}
       <div className="p-3 border-t border-slate-700">
-        {/* Toolbar: undo/redo + export */}
-        <div className="flex gap-1.5 mb-2">
+        {/* Toolbar: undo/redo + image upload + export */}
+        <div className="flex gap-1.5 mb-2 items-center">
           <button
             onClick={() => void runAction('undo')}
             className="text-xs px-2.5 py-1 rounded bg-slate-700 hover:bg-slate-600 text-slate-400 transition-colors"
@@ -182,6 +183,11 @@ export function ChatPanel() {
             ↪
           </button>
           <div className="flex-1" />
+          {/* Image upload: vision describe → prepend to input */}
+          <ImageUploadButton
+            disabled={!isConnected}
+            onDescription={(desc) => setInput((prev) => prev ? `${desc}\n\n${prev}` : desc)}
+          />
           <ExportMenu />
         </div>
 
