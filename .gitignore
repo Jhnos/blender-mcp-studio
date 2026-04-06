@@ -1,0 +1,52 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Virtual environments / conda
+.venv/
+venv/
+env/
+.conda/
+
+# Environment / secrets — NEVER commit these
+.env
+*.env.local
+*.env.*.local
+
+# Logs & temp
+*.log
+/tmp/
+*.tmp
+.DS_Store
+
+# Node / frontend
+web/node_modules/
+web/dist/
+web/.vite/
+
+# IDE
+.vscode/settings.json
+.idea/
+*.swp
+*.swo
+
+# Test / coverage
+.coverage
+htmlcov/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Blender temp files
+*.blend1
+*.blend2
+
+# Screenshots / generated previews
+/tmp/*.png

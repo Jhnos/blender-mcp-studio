@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.blender-mcp.web</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>/opt/homebrew/opt/node/bin/node</string>
+    <string>node_modules/.bin/vite</string>
+    <string>--port</string>
+    <string>19147</string>
+    <string>--logLevel</string>
+    <string>warn</string>
+    <string>--host</string>
+    <string>127.0.0.1</string>
+  </array>
+
+  <key>WorkingDirectory</key>
+  <string>/Users/bearmacmini/Desktop/Blender_MCP_drawer/web</string>
+
+  <key>StandardOutPath</key>
+  <string>/tmp/blender-mcp-web.log</string>
+  <key>StandardErrorPath</key>
+  <string>/tmp/blender-mcp-web.err</string>
+
+  <key>RunAtLoad</key>
+  <false/>
+  <key>KeepAlive</key>
+  <false/>
+</dict>
+</plist>

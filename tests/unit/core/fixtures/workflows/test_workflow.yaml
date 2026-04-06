@@ -1,0 +1,9 @@
+name: test_workflow
+version: 0.0.1
+description: Fixture workflow for unit tests
+llm_provider: ollama
+mcp_server: blender_local
+steps:
+  - id: step_one
+    type: user_input
+    description: Test step

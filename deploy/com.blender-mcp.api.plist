@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.blender-mcp.api</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>/Users/bearmacmini/miniconda3/envs/blender-mcp/bin/python</string>
+    <string>-c</string>
+    <string>import uvicorn; uvicorn.run('api.main:app', host='127.0.0.1', port=17823, log_level='info')</string>
+  </array>
+
+  <key>WorkingDirectory</key>
+  <string>/Users/bearmacmini/Desktop/Blender_MCP_drawer</string>
+
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>CORS_ORIGINS</key>
+    <string>https://bearmacminimac-mini.tail56c751.ts.net,http://localhost:19147</string>
+    <key>BLENDER_HOST</key>
+    <string>localhost</string>
+    <key>BLENDER_PORT</key>
+    <string>9876</string>
+  </dict>
+
+  <key>StandardOutPath</key>
+  <string>/tmp/blender-mcp-api.log</string>
+  <key>StandardErrorPath</key>
+  <string>/tmp/blender-mcp-api.err</string>
+
+  <key>RunAtLoad</key>
+  <false/>
+  <key>KeepAlive</key>
+  <false/>
+</dict>
+</plist>

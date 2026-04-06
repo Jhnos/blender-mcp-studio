@@ -1,0 +1,65 @@
+# Blender MCP Tool Schemas
+# Used by ToolSchemaRegistry to validate LLM-generated commands before sending to Blender.
+# Unknown tools are allowed through (no schema = no constraint) for forward compatibility.
+
+tools:
+  - name: execute_code
+    description: Execute arbitrary Python (bpy) code in Blender
+    required:
+      - code
+    optional: []
+
+  - name: get_scene_info
+    description: Get current scene object list and metadata
+    required: []
+    optional: []
+
+  - name: get_object_info
+    description: Get details about a specific object
+    required:
+      - name
+    optional: []
+
+  - name: get_viewport_screenshot
+    description: Capture current viewport as PNG
+    required:
+      - filepath
+    optional:
+      - max_size
+      - format
+
+  - name: create_object
+    description: Create a new 3D object in the scene
+    required:
+      - type
+    optional:
+      - name
+      - location
+      - rotation
+      - scale
+
+  - name: delete_object
+    description: Delete an object from the scene
+    required:
+      - name
+    optional: []
+
+  - name: modify_object
+    description: Modify properties of an existing object
+    required:
+      - name
+    optional:
+      - location
+      - rotation
+      - scale
+      - visible
+
+  - name: apply_material
+    description: Apply a material to an object
+    required:
+      - object_name
+      - material_name
+    optional:
+      - color
+      - metallic
+      - roughness

@@ -1,0 +1,26 @@
+name: conversational_modeling
+version: 1.0.0
+description: |
+  對話驅動 3D 建模工作流程。
+  使用者輸入自然語言，LLM 解析意圖，透過 MCP 操控 Blender。
+
+llm_provider: "${LLM_PROVIDER:-ollama}"
+mcp_server: blender_local
+
+steps:
+  - id: receive_input
+    type: user_input
+    description: 接收使用者的文字描述
+
+  - id: translate_to_command
+    type: llm_call
+    description: LLM 解析意圖並產生 Blender 指令 JSON
+    script: src/workflows/scripts/conversational_modeling.py
+
+  - id: execute_in_blender
+    type: mcp_tool_call
+    description: 執行指令於 Blender
+
+  - id: return_result
+    type: response
+    description: 回傳操作結果給使用者

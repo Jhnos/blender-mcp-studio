@@ -1,0 +1,6 @@
+servers:
+  blender_local:
+    host: "${BLENDER_HOST:-localhost}"
+    port: "${BLENDER_PORT:-9876}"
+    timeout_seconds: 10
+    description: "Local Blender instance via ahujasid/blender-mcp addon"
