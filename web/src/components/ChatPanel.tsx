@@ -139,10 +139,14 @@ export function ChatPanel() {
               }`}
             >
               {msg.content}
+              {/* Blinking cursor while streaming */}
+              {msg.status === 'streaming' && (
+                <span className="ml-0.5 inline-block w-0.5 h-3.5 align-middle bg-violet-400 animate-[blink_0.8s_step-start_infinite]" />
+              )}
             </div>
           </div>
         ))}
-        {isLoading && (
+        {isLoading && messages[messages.length - 1]?.status !== 'streaming' && (
           <div className="flex justify-start">
             <div className="bg-slate-800 rounded-2xl px-4 py-2 text-slate-400 text-sm animate-pulse">
               思考中...
