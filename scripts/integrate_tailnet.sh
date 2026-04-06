@@ -66,8 +66,15 @@ export default defineConfig({
   plugins: [react(), tailwindcss()],
   server: {
     proxy: {
-      '/ws': { target: 'ws://localhost:17823', ws: true },
-      '/api': { target: 'http://localhost:17823' },
+      '/blender/ws': {
+        target: 'ws://localhost:17823',
+        ws: true,
+        rewrite: (path: string) => path.replace(/^\\/blender/, ''),
+      },
+      '/blender/api': {
+        target: 'http://localhost:17823',
+        rewrite: (path: string) => path.replace(/^\\/blender/, ''),
+      },
     },
   },
 })
