@@ -2,14 +2,16 @@
 
 ISP (Interface Segregation):
   - LLMChatPort: minimal interface, only chat(). Use cases depend on this.
+  - LLMStreamPort(LLMChatPort): token-by-token streaming via astream().
   - LLMToolChatPort(LLMChatPort): structured output via tool/function calling.
   - LLMMetadataPort: provider/model identity, for logging/monitoring.
-  - LLMPort: full interface for adapters to implement (all three).
+  - LLMPort: full interface for adapters to implement (all four).
 """
 
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from collections.abc import AsyncGenerator
 from dataclasses import dataclass, field
 
 from src.core.domain.session import Message
@@ -73,6 +75,31 @@ class LLMChatPort(ABC):
         """Send messages to the LLM and return a response."""
 
 
+class LLMStreamPort(LLMChatPort):
+    """Extended interface for token-by-token streaming.
+
+    Use cases check isinstance(llm, LLMStreamPort) and prefer astream()
+    for better UX (no wait for full response before rendering).
+    """
+
+    @abstractmethod
+    async def astream(
+        self,
+        messages: list[Message],
+        system_prompt: str | None = None,
+    ) -> AsyncGenerator[str, None]:
+        """Stream response tokens one at a time.
+
+        Yields:
+            str: Individual text tokens/chunks as they arrive from the LLM.
+
+        Note: Implementations must use 'yield' — this method is an async generator.
+        """
+        # required by ABC: subclasses override with actual yield statements
+        raise NotImplementedError
+        yield  # make this an async generator in the ABC
+
+
 class LLMToolChatPort(LLMChatPort):
     """Extended interface supporting structured tool/function calling.
 
@@ -104,5 +131,6 @@ class LLMMetadataPort(ABC):
         """Return the model identifier (e.g. 'claude-3-5-sonnet-20241022')."""
 
 
-class LLMPort(LLMToolChatPort, LLMMetadataPort):
+class LLMPort(LLMStreamPort, LLMToolChatPort, LLMMetadataPort):
     """Full LLM interface — all adapters implement this."""
+

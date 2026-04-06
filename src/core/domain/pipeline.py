@@ -7,10 +7,10 @@ Each stage maps to a specific Blender operation with validation criteria.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from enum import Enum
+from enum import StrEnum
 
 
-class StageStatus(str, Enum):
+class StageStatus(StrEnum):
     PENDING = "pending"
     IN_PROGRESS = "in_progress"
     DONE = "done"

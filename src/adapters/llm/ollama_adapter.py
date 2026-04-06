@@ -78,6 +78,54 @@ class OllamaAdapter(LLMPort):
             finish_reason=data.get("done_reason", "stop"),
         )
 
+    async def astream(  # type: ignore[override]
+        self,
+        messages: list[Message],
+        system_prompt: str | None = None,
+    ):
+        """Stream response tokens via Ollama's NDJSON streaming API.
+
+        Yields individual text chunks as they arrive. Strips <think> blocks
+        in-place so the caller receives clean output without waiting for completion.
+        """
+        import json as _json
+
+        payload: dict[str, object] = {
+            "model": self._model,
+            "stream": True,
+            "messages": self._build_messages(messages, system_prompt),
+            "options": {"temperature": 0.3},
+        }
+
+        in_think = False
+        async with httpx.AsyncClient(timeout=self._timeout) as client, client.stream(
+                "POST",
+                f"{self._base_url}/api/chat",
+                json=payload,
+            ) as resp:
+                resp.raise_for_status()
+                async for line in resp.aiter_lines():
+                    if not line.strip():
+                        continue
+                    try:
+                        chunk = _json.loads(line)
+                    except _json.JSONDecodeError:
+                        continue
+                    token: str = chunk.get("message", {}).get("content", "")
+                    if not token:
+                        continue
+                    # Strip <think> blocks on-the-fly
+                    if "<think>" in token:
+                        in_think = True
+                    if in_think:
+                        if "</think>" in token:
+                            in_think = False
+                            token = token.split("</think>", 1)[-1]
+                        else:
+                            continue
+                    if token:
+                        yield token
+
     async def chat_with_tools(
         self,
         messages: list[Message],

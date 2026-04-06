@@ -18,7 +18,7 @@ def require(key: str) -> str:
     """Return an env variable or raise if missing."""
     value = os.environ.get(key)
     if not value:
-        raise EnvironmentError(f"Required environment variable '{key}' is not set.")
+        raise OSError(f"Required environment variable '{key}' is not set.")
     return value
 
 

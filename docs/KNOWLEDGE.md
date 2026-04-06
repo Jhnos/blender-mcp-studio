@@ -235,19 +235,165 @@ OllamaAdapter(model=os.environ.get("OLLAMA_MODEL", "..."))
 
 ---
 
-## 架構演進記錄
+## LLM 工具呼叫（V2 Structured Output）
+
+### Claude tool_use 實作要點
+```python
+# AnthropicAdapter.chat_with_tools()
+response = client.messages.create(
+    model=self._model,
+    max_tokens=4096,
+    tools=[t.to_anthropic_dict() for t in tools],
+    messages=[...],
+)
+# 回應中 tool_use block
+for block in response.content:
+    if block.type == "tool_use":
+        tc = ToolCall(name=block.name, arguments=dict(block.input))
+```
+
+### Ollama OpenAI-compatible tools
+```python
+# OllamaAdapter — tools param 格式等同 OpenAI
+payload = {
+    "model": self._model,
+    "tools": [t.to_openai_dict() for t in tools],
+    "messages": [...],
+}
+# 解析 message.tool_calls[].function.{name, arguments}
+```
+
+### ISP 最佳實踐：`LLMToolChatPort extends LLMChatPort`
+```python
+# use case 用 isinstance 決定路徑
+if isinstance(self._llm, LLMToolChatPort):
+    return await self._chat_with_tools(session)
+else:
+    return await self._chat_with_regex_fallback(session)
+```
+
+---
+
+## 安全沙箱（V2 Security）
+
+### BlenderCodeSandbox 設計
+- 18 個 regex pattern，以「黑名單 + 白名單思路」
+- `os`, `subprocess`, `eval`, `exec(` (standalone), `__import__`, `socket`, `ctypes`, `pickle` 全封
+- `bpy.*` 全放行
+- 檔案**讀取**放行（資源載入需要）
+- **決策**：pattern 存 list，新增 pattern 無需改 code
+
+### PromptInjectionSanitizer 順序
+1. Strip bidi override chars（\u202a-\u202e, \u2066-\u2069）— 隱藏 prompt 攻擊
+2. NFC normalize — unicode 變體同一化
+3. 7 個注入 pattern match（`ignore previous`, `system prompt`, etc.）
+4. 回傳 `SanitizeResult(clean, sanitized_text)` — 永不回傳 None
+
+---
+
+## Vision 迭代精煉（V2 Vision Loop）
+
+### IterativeRefinementUseCase 流程
+```
+1. capture_screenshot() → bytes
+2. vision.analyze_image(bytes, prompt) → VisionAnalysis
+3. _is_converged(vision_text)? → 任何 CONVERGENCE_KEYWORDS 出現即收斂
+4. 否 → LLM chat_with_tools(refinement_prompt) → commands
+5. blender.execute(commands)
+6. repeat max_iterations 次
+```
+
+### 收斂關鍵詞（data-driven，可編輯 _CONVERGENCE_KEYWORDS）
+```python
+_CONVERGENCE_KEYWORDS = frozenset([
+    "looks good", "complete", "done", "accurate", "matches",
+    "符合", "完成", "準確", "正確", "很好", "很棒", "完美",
+])
+```
+
+### Vision Adapter 選擇
+- `OPENAI_API_KEY` 設定 → `GPT4oVisionAdapter`（OpenAI REST，httpx 直呼）
+- `ANTHROPIC_API_KEY` 設定 → `ClaudeVisionAdapter`（anthropic SDK）
+- 兩者都沒有 → `None`（/api/refine 回 503）
+- `VISION_PROVIDER=anthropic` 可強制指定
+
+---
+
+## Semantic Tool Routing（V2 d2）
+
+### SemanticToolRouter 設計
+- 關鍵字 → tool_name 的倒排索引（`_KEYWORD_INDEX`）
+- 用 `re.findall(r'\w+', message.lower())` tokenize
+- 若無 match → fallback 全部 tools（安全）
+- `min_tools=3` 確保至少傳 3 個 tools 給 LLM
+- **升級路徑**：換 sentence-transformers 不需改介面
+
+---
+
+## Multi-step Pipeline（V2 c2）
+
+### PipelineStage Placeholder 語法
+```yaml
+- name: create_base
+  tool: create_object
+  arguments:
+    name: "{{ object_name }}"   # 從 context dict 解析
+    type: "{{ object_type }}"
+```
+
+### 錯誤處理策略
+| 情況 | 處理 |
+|---|---|
+| required stage 失敗 | 中止整個 pipeline |
+| optional stage 失敗 | 標記 SKIPPED，繼續 |
+| 執行例外（network/timeout）| 標記 FAILED，message 在 error 欄位 |
+| validation_key 不在輸出 | 標記 FAILED |
+
+---
+
+## MCP SDK SSE 傳輸（V2 d1）
+
+### 兩種 BlenderPort 實作
+| 實作 | 設定 | 用途 |
+|---|---|---|
+| `BlenderMCPAdapter` | `BLENDER_TRANSPORT=socket`（預設）| ahujasid 原始 add-on |
+| `MCPClientBlenderAdapter` | `BLENDER_TRANSPORT=mcp_sse` | FastMCP/標準 MCP SSE 伺服器 |
+
+### MCPClientBlenderAdapter 注意事項
+- 每次 tool call 都建立新的 SSE session（HTTP stateless）
+- `connect()` 探測 `list_tools()`，失敗不拋例外
+- 適合：任何實作 `tools/call` 的 MCP 相容伺服器
+
+---
+
+## Session 持久化（V2 d3）
+
+### SQLiteSessionStore
+```python
+# data/sessions.db 自動建立（Path 可注入，方便測試 tmp_path）
+store = SQLiteSessionStore(db_path=Path("data/sessions.db"))
+session = await store.create()       # uuid4 id
+session = session.add_message(...)   # 不可變 add
+await store.save(session)            # upsert JSON
+loaded = await store.get(session.id) # Pydantic model_validate_json
+```
+
+### Chat router fallback
+```python
+# session_store 存在 → SQLite；否則 → app.state._sessions (dict)
+session_store = getattr(request.app.state, "session_store", None)
+```
+
+---
+
+## 架構演進記錄（V2 追加）
 
 | 日期 | 決策 | 理由 |
 |---|---|---|
-| 2026-04-06 | 採用 ahujasid/blender-mcp | 最成熟開源實作，MIT 授權 |
-| 2026-04-06 | 加入 FastAPI + WebSocket | 對話建模需要即時回饋 |
-| 2026-04-06 | 選用 React + TypeScript | 可擴充、型別安全 |
-| 2026-04-06 | LLM 多 adapter 抽象 | 不鎖定單一 LLM 提供商 |
-| 2026-04-06 | 直連 Blender socket（跳過 stdio MCP） | 減少進程，架構更乾淨 |
-| 2026-04-06 | Blender singleton（app.state） | 避免每 request 重建 TCP 連線 |
-| 2026-04-06 | Port 17823/19147（非常用 port） | 設備掛很多服務，避免衝突 |
-| 2026-04-06 | qwen3-coder:480b-cloud | 本機記憶體被佔用時的零成本選擇 |
-| 2026-04-06 | Provider registry（OCP） | 新增 LLM 不需修改 factory 核心 |
-| 2026-04-06 | BlenderMCPAdapter 組合模式 | 移除多重繼承，SRP 更清晰 |
-| 2026-04-06 | CommandParser 在 domain | 解析命令是業務邏輯，不屬於 use case |
-| 2026-04-06 | GetScenePreviewUseCase | 將截圖 I/O 從 router 解耦 |
+| 2026-04-06 | `LLMToolChatPort extends LLMChatPort`（ISP）| 向後相容；use case 用 isinstance 決定 path |
+| 2026-04-06 | Vision adapter 回傳 `None` 而非拋例外 | router 用 503 告知客戶端，不 crash server |
+| 2026-04-06 | `SemanticToolRouter` 以 keyword 而非 embedding | 零依賴、快速、可測；embedding 升級路徑保留 |
+| 2026-04-06 | Pipeline stage optional flag | 3D printing 部分步驟（solidify, UV）可選 |
+| 2026-04-06 | `MCPClientBlenderAdapter` 每次重建 session | MCP SSE stateless 設計，避免 connection leak |
+| 2026-04-06 | `PipelineLoader` 用 `@lru_cache` | YAML 只讀一次；測試用 `tmp_path` 注入不同 config |
+| 2026-04-06 | RefinementPanel 用 Zustand 獨立 store | 精煉狀態與對話狀態完全解耦，可獨立測試 |

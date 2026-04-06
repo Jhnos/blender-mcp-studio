@@ -27,6 +27,7 @@ interface ChatStore {
     blenderOut?: string | null,
     screenshot?: string | null,
   ) => void
+  appendStreamToken: (token: string, sessionId?: string) => void
   setConnected: (v: boolean) => void
   setLoading: (v: boolean) => void
   setSessionId: (id: string) => void
@@ -46,8 +47,31 @@ export const useChatStore = create<ChatStore>((set) => ({
   addUserMessage: (content) =>
     set((s) => ({ messages: [...s.messages, { role: 'user', content }] })),
 
+  // Called when status === 'streaming': append token to last assistant message,
+  // or create a new streaming message if last message is from user.
+  appendStreamToken: (token) =>
+    set((s) => {
+      const msgs = [...s.messages]
+      const last = msgs[msgs.length - 1]
+      if (last?.role === 'assistant' && last.status === 'streaming') {
+        msgs[msgs.length - 1] = { ...last, content: last.content + token }
+      } else {
+        msgs.push({ role: 'assistant', content: token, status: 'streaming' })
+      }
+      return { messages: msgs, isLoading: false }
+    }),
+
   addAssistantMessage: (content, status, blenderOut, screenshot) =>
     set((s) => {
+      // Replace the last streaming message (if any) with the final content
+      const msgs = [...s.messages]
+      const last = msgs[msgs.length - 1]
+      const isReplacingStream = last?.role === 'assistant' && last.status === 'streaming'
+      const newMessage: ChatMessage = { role: 'assistant', content, status }
+      const nextMsgs = isReplacingStream
+        ? [...msgs.slice(0, -1), newMessage]
+        : [...msgs, newMessage]
+
       const logs = blenderOut != null
         ? [...s.blenderLogs, {
             timestamp: new Date().toLocaleTimeString('zh-TW'),
@@ -56,7 +80,7 @@ export const useChatStore = create<ChatStore>((set) => ({
           }]
         : s.blenderLogs
       return {
-        messages: [...s.messages, { role: 'assistant', content, status }],
+        messages: nextMsgs,
         isLoading: false,
         blenderLogs: logs,
         sceneRefreshTick: blenderOut != null ? s.sceneRefreshTick + 1 : s.sceneRefreshTick,
@@ -70,3 +94,4 @@ export const useChatStore = create<ChatStore>((set) => ({
   triggerSceneRefresh: () => set((s) => ({ sceneRefreshTick: s.sceneRefreshTick + 1 })),
   setLiveScreenshot: (liveScreenshot) => set({ liveScreenshot }),
 }))
+

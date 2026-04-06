@@ -55,7 +55,7 @@ class ToolSchemaRegistry:
         return tool_name in self._schemas
 
     @classmethod
-    def from_yaml(cls, path: str) -> "ToolSchemaRegistry":
+    def from_yaml(cls, path: str) -> ToolSchemaRegistry:
         """Load schemas from a YAML file."""
         import yaml
         with open(path) as f:
@@ -71,7 +71,7 @@ class ToolSchemaRegistry:
         return registry
 
     @classmethod
-    def default(cls) -> "ToolSchemaRegistry":
+    def default(cls) -> ToolSchemaRegistry:
         """Return registry loaded from the default config path."""
         from pathlib import Path
         yaml_path = Path(__file__).parents[3] / "config" / "tool_schemas.yaml"

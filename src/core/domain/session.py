@@ -28,7 +28,7 @@ class Session(BaseModel):
     workflow: str = "conversational_modeling"
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
-    def add_message(self, role: str, content: str) -> "Session":
+    def add_message(self, role: str, content: str) -> Session:
         msg = Message(role=role, content=content)
         return self.model_copy(update={"messages": [*self.messages, msg]})
 

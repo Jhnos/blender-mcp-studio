@@ -9,7 +9,13 @@ const WS_URL = `${_proto}//${location.host}${_base}/ws/chat`
 
 export function useWebSocket() {
   const wsRef = useRef<WebSocket | null>(null)
-  const { setConnected, addAssistantMessage, setSessionId, sessionId } = useChatStore()
+  const {
+    setConnected,
+    addAssistantMessage,
+    appendStreamToken,
+    setSessionId,
+    sessionId,
+  } = useChatStore()
 
   const connect = useCallback(() => {
     if (wsRef.current?.readyState === WebSocket.OPEN) return
@@ -33,9 +39,16 @@ export function useWebSocket() {
         screenshot?: string | null  // base64 PNG — live viewport update
       }
       if (data.session_id) setSessionId(data.session_id)
-      addAssistantMessage(data.content, data.status, data.blender_output, data.screenshot)
+
+      if (data.status === 'streaming') {
+        // Token-by-token: append to the live streaming bubble
+        appendStreamToken(data.content, data.session_id)
+      } else {
+        // done / error: replace streaming bubble with final message
+        addAssistantMessage(data.content, data.status, data.blender_output, data.screenshot)
+      }
     }
-  }, [setConnected, addAssistantMessage, setSessionId])
+  }, [setConnected, addAssistantMessage, appendStreamToken, setSessionId])
 
   useEffect(() => {
     connect()
@@ -52,3 +65,4 @@ export function useWebSocket() {
 
   return { sendMessage }
 }
+

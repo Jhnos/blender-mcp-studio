@@ -6,7 +6,6 @@ For multi-process / async fan-out: replace with Redis Streams or similar.
 
 from __future__ import annotations
 
-import asyncio
 import inspect
 import logging
 from collections import defaultdict

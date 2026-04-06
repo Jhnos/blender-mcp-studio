@@ -8,7 +8,6 @@ Thread-safe: each async call opens a short-lived connection via aiosqlite contex
 
 from __future__ import annotations
 
-import json
 import logging
 from pathlib import Path
 
@@ -43,18 +42,17 @@ class SQLiteSessionStore(SessionStorePort):
 
     async def get(self, session_id: str) -> Session | None:
         await self._ensure_db()
-        async with aiosqlite.connect(self._db) as conn:
-            async with conn.execute(
-                "SELECT data FROM sessions WHERE id = ?", (session_id,)
-            ) as cursor:
-                row = await cursor.fetchone()
-                if row is None:
-                    return None
-                try:
-                    return Session.model_validate_json(row[0])
-                except Exception as e:
-                    logger.error("Failed to deserialize session %s: %s", session_id, e)
-                    return None
+        async with aiosqlite.connect(self._db) as conn, conn.execute(
+            "SELECT data FROM sessions WHERE id = ?", (session_id,)
+        ) as cursor:
+            row = await cursor.fetchone()
+            if row is None:
+                return None
+            try:
+                return Session.model_validate_json(row[0])
+            except Exception as e:
+                logger.error("Failed to deserialize session %s: %s", session_id, e)
+                return None
 
     async def save(self, session: Session) -> None:
         await self._ensure_db()

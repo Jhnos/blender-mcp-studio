@@ -7,6 +7,9 @@ Depends on:
   app.state.sanitizer        — InputSanitizerPort (prompt injection protection)
   app.state.prompt_builder   — PromptBuilderPort (context-enriched system prompts)
   app.state.session_store    — SessionStorePort (persistent session storage)
+
+V3: Streaming — if LLM implements LLMStreamPort, tokens are pushed to the client
+in real-time as `status: "streaming"` messages before the final `status: "done"`.
 """
 
 from __future__ import annotations
@@ -19,6 +22,7 @@ import tempfile
 
 from fastapi import APIRouter, Request, WebSocket, WebSocketDisconnect
 
+from src.core.ports.llm_port import LLMStreamPort
 from src.core.use_cases.conversational_modeling import ConversationalModelingUseCase
 
 logger = logging.getLogger(__name__)
@@ -43,6 +47,7 @@ async def chat_websocket(websocket: WebSocket, request: Request) -> None:
         event_bus=event_bus,
         prompt_builder=prompt_builder,
     )
+    supports_streaming = isinstance(llm, LLMStreamPort)
 
     try:
         while True:
@@ -82,6 +87,20 @@ async def chat_websocket(websocket: WebSocket, request: Request) -> None:
                 request.app.state._sessions[session.id] = session
 
             try:
+                # --- Streaming: push tokens as they arrive (text-only path) ---
+                # Tool-calling path always runs non-streaming (tools need full response)
+                if supports_streaming:
+                    from src.core.ports.llm_port import LLMToolChatPort
+                    prefers_tools = isinstance(llm, LLMToolChatPort)
+                    # Only stream when we won't be using tool-calling
+                    if not prefers_tools:
+                        await _handle_streaming(
+                            websocket, llm, use_case, session,  # type: ignore[arg-type]
+                            session_store, request, prompt_builder,
+                        )
+                        continue
+
+                # --- Non-streaming (tool calling or no stream support) ---
                 updated, reply, blender_out = await use_case.execute(session)
 
                 if session_store is not None:
@@ -89,20 +108,7 @@ async def chat_websocket(websocket: WebSocket, request: Request) -> None:
                 else:
                     request.app.state._sessions[updated.id] = updated
 
-                # Capture live viewport screenshot after successful Blender execution
-                screenshot_b64: str | None = None
-                if blender_out and not blender_out.startswith("❌"):
-                    try:
-                        tmp = tempfile.mktemp(suffix=".png")
-                        shot = await blender.call_tool(
-                            "get_viewport_screenshot", {"filepath": tmp}
-                        )
-                        if shot.success and os.path.exists(tmp):
-                            with open(tmp, "rb") as f:
-                                screenshot_b64 = base64.b64encode(f.read()).decode()
-                            os.unlink(tmp)
-                    except Exception as exc:
-                        logger.debug("Screenshot capture failed: %s", exc)
+                screenshot_b64 = await _capture_screenshot(blender, blender_out)
 
                 await websocket.send_text(json.dumps({
                     "type": "response",
@@ -124,3 +130,86 @@ async def chat_websocket(websocket: WebSocket, request: Request) -> None:
 
     except WebSocketDisconnect:
         pass
+
+
+async def _handle_streaming(
+    websocket: WebSocket,
+    llm: LLMStreamPort,
+    use_case: ConversationalModelingUseCase,
+    session,
+    session_store,
+    request: Request,
+    prompt_builder,
+) -> None:
+    """Push LLM tokens to client in real-time, then execute Blender commands."""
+    from src.core.domain.command import CommandParser
+
+    system_prompt = use_case._get_system_prompt() if hasattr(use_case, "_get_system_prompt") else None
+    accumulated = ""
+
+    try:
+        # Stream text tokens to client
+        async for token in llm.astream(session.messages, system_prompt=system_prompt):
+            accumulated += token
+            await websocket.send_text(json.dumps({
+                "type": "response",
+                "content": token,
+                "status": "streaming",
+                "session_id": session.id,
+            }))
+
+        # After streaming, parse commands from full response and execute
+        command = CommandParser.from_llm_output(accumulated)
+        blender_out: str | None = None
+        if command:
+            try:
+                result = await use_case._blender.execute(command)
+                blender_out = result.output if result.success else f"❌ {result.error}"
+            except Exception as exc:
+                blender_out = f"❌ {exc}"
+
+        updated = session.add_message("assistant", accumulated)
+        if session_store is not None:
+            await session_store.save(updated)
+        elif hasattr(request.app.state, "_sessions"):
+            request.app.state._sessions[updated.id] = updated
+
+        screenshot_b64 = await _capture_screenshot(use_case._blender, blender_out)
+
+        # Final "done" message with full content + blender output
+        await websocket.send_text(json.dumps({
+            "type": "response",
+            "content": accumulated,
+            "blender_output": blender_out,
+            "screenshot": screenshot_b64,
+            "status": "done",
+            "session_id": updated.id,
+        }))
+
+    except Exception as e:
+        await websocket.send_text(json.dumps({
+            "type": "response",
+            "content": f"⚠️ Streaming error: {e}",
+            "blender_output": None,
+            "screenshot": None,
+            "status": "error",
+            "session_id": session.id,
+        }))
+
+
+async def _capture_screenshot(blender, blender_out: str | None) -> str | None:
+    """Take a viewport screenshot after a successful Blender command."""
+    if not blender_out or blender_out.startswith("❌"):
+        return None
+    try:
+        tmp = tempfile.mktemp(suffix=".png")
+        shot = await blender.call_tool("get_viewport_screenshot", {"filepath": tmp})
+        if shot.success and os.path.exists(tmp):
+            with open(tmp, "rb") as f:
+                b64 = base64.b64encode(f.read()).decode()
+            os.unlink(tmp)
+            return b64
+    except Exception as exc:
+        logger.debug("Screenshot capture failed: %s", exc)
+    return None
+

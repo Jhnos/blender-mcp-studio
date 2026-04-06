@@ -59,6 +59,9 @@ class FakeToolCallingLLM(LLMPort):
             model="fake",
         )
 
+    async def astream(self, messages, system_prompt=None):
+        yield self._text
+
     @property
     def provider_name(self) -> str: return "fake"
 
@@ -78,6 +81,9 @@ class FakePlainLLM(LLMPort):
     async def chat_with_tools(self, messages, tools, system_prompt=None) -> LLMToolResponse:
         # This should never be called for plain LLMs by the use case
         raise AssertionError("chat_with_tools should not be called on plain LLM")
+
+    async def astream(self, messages, system_prompt=None):
+        yield self._response
 
     @property
     def provider_name(self) -> str: return "fake"

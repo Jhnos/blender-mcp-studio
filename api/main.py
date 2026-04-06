@@ -7,6 +7,7 @@ Use create_app() for library integration:
 
 from __future__ import annotations
 
+import contextlib
 import os
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -20,25 +21,23 @@ from api.routers import chat, scene
 @asynccontextmanager
 async def _lifespan(app: FastAPI):
     """Startup/shutdown: load env once, init shared adapters and event bus."""
-    from src.infrastructure.env_loader import load_env
-    from src.adapters.mcp.factory import build_blender_adapter
-    from src.adapters.factory.concrete_adapter_factory import ConcreteAdapterFactory
     from src.adapters.events.in_memory_event_bus import InMemoryEventBus
+    from src.adapters.factory.concrete_adapter_factory import ConcreteAdapterFactory
+    from src.adapters.mcp.factory import build_blender_adapter
+    from src.adapters.prompt.blender_context_prompt_builder import BlenderContextPromptBuilder
     from src.adapters.security.blender_code_sandbox import BlenderCodeSandbox
     from src.adapters.security.prompt_injection_sanitizer import PromptInjectionSanitizer
-    from src.adapters.vision.factory import build_vision_adapter
-    from src.adapters.prompt.blender_context_prompt_builder import BlenderContextPromptBuilder
     from src.adapters.session.sqlite_session_store import SQLiteSessionStore
+    from src.adapters.vision.factory import build_vision_adapter
+    from src.infrastructure.env_loader import load_env
 
     env_file = app.state.env_file if hasattr(app.state, "env_file") else None
     load_env(env_file)
 
     sandbox = BlenderCodeSandbox()
     blender = build_blender_adapter(sandbox=sandbox)
-    try:
+    with contextlib.suppress(Exception):
         await blender.connect()
-    except Exception:
-        pass  # Blender may not be running at startup
 
     event_bus = InMemoryEventBus()
     adapter_factory = ConcreteAdapterFactory()

@@ -68,6 +68,29 @@ class AnthropicAdapter(LLMPort):
             finish_reason=response.stop_reason or "stop",
         )
 
+    async def astream(  # type: ignore[override]
+        self,
+        messages: list[Message],
+        system_prompt: str | None = None,
+    ):
+        """Stream response tokens via the Anthropic streaming API."""
+        sdk_messages = [
+            {"role": m.role, "content": m.content}
+            for m in messages
+            if m.role in ("user", "assistant")
+        ]
+        kwargs: dict[str, object] = {
+            "model": self._model,
+            "max_tokens": self._max_tokens,
+            "messages": sdk_messages,
+        }
+        if system_prompt:
+            kwargs["system"] = system_prompt
+
+        async with self._client.messages.stream(**kwargs) as stream:  # type: ignore[arg-type]
+            async for text in stream.text_stream:
+                yield text
+
     async def chat_with_tools(
         self,
         messages: list[Message],

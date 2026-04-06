@@ -5,7 +5,6 @@ Data-driven: add new pipelines by editing YAML without code changes.
 
 from __future__ import annotations
 
-from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
@@ -15,15 +14,22 @@ from src.core.domain.pipeline import PipelineStage
 
 
 class PipelineLoader:
-    """Reads pipeline definitions from YAML and constructs PipelineStage lists."""
+    """Reads pipeline definitions from YAML and constructs PipelineStage lists.
+
+    YAML is loaded once per config_path and cached at the class level to
+    avoid per-instance lru_cache (which can cause memory leaks on methods).
+    """
+
+    _cache: dict[Path, dict[str, Any]] = {}
 
     def __init__(self, config_path: str | Path = "config/modeling_pipeline.yaml") -> None:
         self._config_path = Path(config_path)
 
-    @lru_cache(maxsize=1)
     def _load_raw(self) -> dict[str, Any]:
-        with open(self._config_path, encoding="utf-8") as f:
-            return yaml.safe_load(f) or {}
+        if self._config_path not in PipelineLoader._cache:
+            with open(self._config_path, encoding="utf-8") as f:
+                PipelineLoader._cache[self._config_path] = yaml.safe_load(f) or {}
+        return PipelineLoader._cache[self._config_path]
 
     def load(self, pipeline_name: str) -> list[PipelineStage]:
         """Load stages for a named pipeline from YAML.
@@ -61,3 +67,4 @@ class PipelineLoader:
     def list_pipelines(self) -> list[str]:
         """Return names of all available pipelines."""
         return list(self._load_raw().get("pipelines", {}).keys())
+

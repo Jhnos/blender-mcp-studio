@@ -39,7 +39,7 @@ class BlenderSocketClient:
                 asyncio.open_connection(self._host, self._port),
                 timeout=10.0,
             )
-        except (ConnectionRefusedError, asyncio.TimeoutError, OSError) as e:
+        except (TimeoutError, ConnectionRefusedError, OSError) as e:
             raise BlenderConnectionError(
                 f"Cannot connect to Blender at {self._host}:{self._port}"
             ) from e

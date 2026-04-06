@@ -46,6 +46,9 @@ class MockToolCallingLLM(LLMPort):
         self._call_count += 1
         return resp
 
+    async def astream(self, messages, system_prompt=None):
+        yield "mock text"
+
     @property
     def provider_name(self) -> str: return "mock"
 

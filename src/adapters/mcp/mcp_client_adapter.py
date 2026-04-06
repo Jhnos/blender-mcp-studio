@@ -16,11 +16,9 @@ Architecture: Implements BlenderPort — zero changes in use cases or routers.
 
 from __future__ import annotations
 
-import asyncio
 import json
 import logging
-from contextlib import asynccontextmanager
-from typing import Any, AsyncGenerator
+from typing import Any
 
 from src.core.domain.command import Command
 from src.core.ports.blender_port import BlenderPort
@@ -87,36 +85,34 @@ class MCPClientBlenderAdapter(BlenderPort):
 
     async def _list_tools(self) -> list[Any]:
         """List tools available on the MCP server."""
-        from mcp.client.sse import sse_client
         from mcp.client.session import ClientSession
+        from mcp.client.sse import sse_client
 
-        async with sse_client(self._sse_url) as (read, write):
-            async with ClientSession(read, write) as session:
-                await session.initialize()
-                result = await session.list_tools()
-                return result.tools
+        async with sse_client(self._sse_url) as (read, write), ClientSession(read, write) as session:
+            await session.initialize()
+            result = await session.list_tools()
+            return result.tools
 
     async def _call_tool(self, tool_name: str, arguments: dict) -> ToolResult:
         """Call a tool on the MCP server and return the result."""
-        from mcp.client.sse import sse_client
         from mcp.client.session import ClientSession
+        from mcp.client.sse import sse_client
 
         try:
-            async with sse_client(self._sse_url) as (read, write):
-                async with ClientSession(read, write) as session:
-                    await session.initialize()
-                    result = await session.call_tool(tool_name, arguments)
+            async with sse_client(self._sse_url) as (read, write), ClientSession(read, write) as session:
+                await session.initialize()
+                result = await session.call_tool(tool_name, arguments)
 
-                    if result.isError:
-                        error_text = " ".join(
-                            c.text for c in result.content if hasattr(c, "text")
-                        )
-                        return ToolResult(success=False, output=None, error=error_text)
-
-                    output_text = " ".join(
+                if result.isError:
+                    error_text = " ".join(
                         c.text for c in result.content if hasattr(c, "text")
                     )
-                    return ToolResult(success=True, output=output_text, error=None)
+                    return ToolResult(success=False, output=None, error=error_text)
+
+                output_text = " ".join(
+                    c.text for c in result.content if hasattr(c, "text")
+                )
+                return ToolResult(success=True, output=output_text, error=None)
 
         except Exception as e:
             logger.error("MCPClientBlenderAdapter._call_tool(%s) failed: %s", tool_name, e)

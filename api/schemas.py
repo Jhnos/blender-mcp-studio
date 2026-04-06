@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Literal
+
 from pydantic import BaseModel
 
 
@@ -21,3 +23,14 @@ class ChatResponse(BaseModel):
 class SceneInfoResponse(BaseModel):
     objects: list[dict[str, object]]
     description: str
+
+
+class ExportRequest(BaseModel):
+    format: Literal["stl", "obj", "fbx", "glb"] = "stl"
+    selection_only: bool = False
+
+
+class UndoRedoResponse(BaseModel):
+    success: bool
+    action: Literal["undo", "redo"]
+    message: str

@@ -17,10 +17,13 @@ from typing import Any
 
 from src.core.domain.command import Command
 from src.core.domain.pipeline import (
-    PipelineResult, PipelineStage, StageResult, StageStatus,
+    PipelineResult,
+    PipelineStage,
+    StageResult,
+    StageStatus,
 )
 from src.core.ports.blender_port import BlenderPort
-from src.core.ports.llm_port import LLMChatPort, LLMToolChatPort, ToolDefinition
+from src.core.ports.llm_port import LLMChatPort
 
 logger = logging.getLogger(__name__)
 
@@ -104,14 +107,13 @@ class ModelingPipelineUseCase:
             )
 
         # Validation: if validation_key specified, check output contains it
-        if stage.validation_key and tool_result.output:
-            if stage.validation_key not in str(tool_result.output):
-                return StageResult(
-                    stage_name=stage.name,
-                    status=StageStatus.FAILED,
-                    error=f"Validation failed: '{stage.validation_key}' not in output",
-                    output=str(tool_result.output),
-                )
+        if stage.validation_key and tool_result.output and stage.validation_key not in str(tool_result.output):
+            return StageResult(
+                stage_name=stage.name,
+                status=StageStatus.FAILED,
+                error=f"Validation failed: '{stage.validation_key}' not in output",
+                output=str(tool_result.output),
+            )
 
         return StageResult(
             stage_name=stage.name,
