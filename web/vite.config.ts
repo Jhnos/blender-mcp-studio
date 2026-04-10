@@ -8,6 +8,7 @@ export default defineConfig({
   plugins: [react(), tailwindcss()],
   server: {
     host: '127.0.0.1',
+    allowedHosts: ['bearmacminimac-mini.tail56c751.ts.net'],
     proxy: {
       '/blender/ws': {
         target: 'ws://localhost:17823',
