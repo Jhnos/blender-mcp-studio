@@ -32,6 +32,7 @@ class BlenderSocketClient:
         self._timeout = timeout
         self._reader: asyncio.StreamReader | None = None
         self._writer: asyncio.StreamWriter | None = None
+        self._lock = asyncio.Lock()  # serialize concurrent calls on single socket
 
     async def connect(self) -> None:
         try:
@@ -52,26 +53,31 @@ class BlenderSocketClient:
             self._reader = None
 
     async def send_command(self, payload: dict[str, Any]) -> dict[str, Any]:
-        """Send JSON payload and recv until we have a complete JSON response."""
-        if not self._writer or not self._reader:
-            raise BlenderConnectionError("Not connected to Blender.")
+        """Send JSON payload and recv until we have a complete JSON response.
 
-        data = json.dumps(payload).encode("utf-8")
-        self._writer.write(data)
-        await self._writer.drain()
+        Acquires _lock to prevent concurrent callers from interleaving
+        writes/reads on the shared TCP socket.
+        """
+        async with self._lock:
+            if not self._writer or not self._reader:
+                raise BlenderConnectionError("Not connected to Blender.")
 
-        raw = b""
-        async with asyncio.timeout(self._timeout):
-            while True:
-                chunk = await self._reader.read(4096)
-                if not chunk:
-                    break
-                raw += chunk
-                try:
-                    return json.loads(raw.decode("utf-8"))
-                except json.JSONDecodeError:
-                    continue
-        return json.loads(raw.decode("utf-8"))
+            data = json.dumps(payload).encode("utf-8")
+            self._writer.write(data)
+            await self._writer.drain()
+
+            raw = b""
+            async with asyncio.timeout(self._timeout):
+                while True:
+                    chunk = await self._reader.read(4096)
+                    if not chunk:
+                        break
+                    raw += chunk
+                    try:
+                        return json.loads(raw.decode("utf-8"))
+                    except json.JSONDecodeError:
+                        continue
+            return json.loads(raw.decode("utf-8"))
 
     @property
     def is_connected(self) -> bool:
