@@ -7,6 +7,7 @@ export default defineConfig({
   base: '/blender',
   plugins: [react(), tailwindcss()],
   server: {
+    host: '127.0.0.1',
     proxy: {
       '/blender/ws': {
         target: 'ws://localhost:17823',
