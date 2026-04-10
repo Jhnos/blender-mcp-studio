@@ -7,6 +7,7 @@ Use create_app() for library integration:
 
 from __future__ import annotations
 
+import asyncio
 import contextlib
 import os
 from contextlib import asynccontextmanager
@@ -16,6 +17,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from api.routers import chat, scene
+from api.routers.ws_manager import ConnectionManager, viewport_broadcast_loop
 
 
 @asynccontextmanager
@@ -62,7 +64,20 @@ async def _lifespan(app: FastAPI):
     app.state.snapshot_store = snapshot_store
     app.state.polyhaven = polyhaven
     app.state.text3d = text3d
+
+    # Viewport live-preview: shared connection registry + broadcast task
+    ws_manager = ConnectionManager()
+    app.state.ws_manager = ws_manager
+    push_interval = float(os.environ.get("VIEWPORT_PUSH_INTERVAL", "3"))
+    broadcast_task = asyncio.create_task(
+        viewport_broadcast_loop(app.state, interval=push_interval)
+    )
+
     yield
+
+    broadcast_task.cancel()
+    with contextlib.suppress(asyncio.CancelledError):
+        await broadcast_task
     await blender.disconnect()
 
 

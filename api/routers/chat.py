@@ -39,6 +39,10 @@ async def chat_websocket(websocket: WebSocket, request: Request) -> None:
     sanitizer = getattr(request.app.state, "sanitizer", None)
     prompt_builder = getattr(request.app.state, "prompt_builder", None)
     session_store = getattr(request.app.state, "session_store", None)
+    ws_manager = getattr(request.app.state, "ws_manager", None)
+
+    if ws_manager is not None:
+        ws_manager.register(websocket)
 
     llm = factory.build_llm_adapter()
     use_case = ConversationalModelingUseCase(
@@ -130,6 +134,9 @@ async def chat_websocket(websocket: WebSocket, request: Request) -> None:
 
     except WebSocketDisconnect:
         pass
+    finally:
+        if ws_manager is not None:
+            ws_manager.unregister(websocket)
 
 
 async def _handle_streaming(

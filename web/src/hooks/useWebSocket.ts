@@ -14,6 +14,7 @@ export function useWebSocket() {
     addAssistantMessage,
     appendStreamToken,
     setSessionId,
+    setLiveScreenshot,
     sessionId,
   } = useChatStore()
 
@@ -32,23 +33,29 @@ export function useWebSocket() {
 
     ws.onmessage = (event: MessageEvent) => {
       const data = JSON.parse(event.data as string) as {
+        type?: string
         session_id?: string
-        content: string
-        status: 'done' | 'error' | 'streaming'
+        content?: string
+        status?: 'done' | 'error' | 'streaming'
         blender_output?: string | null
-        screenshot?: string | null  // base64 PNG — live viewport update
+        screenshot?: string | null
       }
+
+      // Autonomous viewport push from background broadcast task
+      if (data.type === 'viewport_update') {
+        if (data.screenshot) setLiveScreenshot(data.screenshot)
+        return
+      }
+
       if (data.session_id) setSessionId(data.session_id)
 
       if (data.status === 'streaming') {
-        // Token-by-token: append to the live streaming bubble
-        appendStreamToken(data.content, data.session_id)
+        appendStreamToken(data.content ?? '', data.session_id)
       } else {
-        // done / error: replace streaming bubble with final message
-        addAssistantMessage(data.content, data.status, data.blender_output, data.screenshot)
+        addAssistantMessage(data.content ?? '', data.status, data.blender_output, data.screenshot)
       }
     }
-  }, [setConnected, addAssistantMessage, appendStreamToken, setSessionId])
+  }, [setConnected, addAssistantMessage, appendStreamToken, setSessionId, setLiveScreenshot])
 
   useEffect(() => {
     connect()

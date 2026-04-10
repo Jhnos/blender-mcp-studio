@@ -113,6 +113,11 @@ export function SceneView() {
   const [polledPreviewUrl, setPolledPreviewUrl] = useState<string | null>(null)
 
   const { blenderLogs, sceneRefreshTick, triggerSceneRefresh, liveScreenshot } = useChatStore()
+  const [lastUpdateTime, setLastUpdateTime] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (liveScreenshot) setLastUpdateTime(new Date().toLocaleTimeString('zh-TW'))
+  }, [liveScreenshot])
 
   // Prefer live screenshot (pushed via WebSocket) over polled preview
   const displayUrl = liveScreenshot
@@ -201,10 +206,13 @@ export function SceneView() {
       {tab === 'preview' && (
         <div className="flex-1 flex flex-col items-center justify-center p-3 overflow-hidden">
           {isLive && (
-            <div className="w-full text-right mb-1">
-              <span className="text-xs text-green-400 bg-green-900/30 px-2 py-0.5 rounded-full">
-                ● 即時更新
+            <div className="w-full flex items-center justify-between mb-1">
+              <span className="text-xs text-green-400 bg-green-900/30 px-2 py-0.5 rounded-full animate-pulse">
+                ● 即時串流
               </span>
+              {lastUpdateTime && (
+                <span className="text-xs text-slate-500">{lastUpdateTime}</span>
+              )}
             </div>
           )}
           {previewLoading && !displayUrl && (
