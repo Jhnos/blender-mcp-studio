@@ -1,5 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  SSOT for com.blender-mcp.web LaunchAgent.
+  Placeholders are substituted by deploy/launchd/install.sh:
+    __PROJECT_ROOT__   → repo root (e.g. /Users/<you>/Desktop/Blender_MCP_drawer)
+    __NODE_BIN__       → node binary (e.g. /opt/homebrew/opt/node/bin/node — Apple Silicon Homebrew default)
+  Do NOT install this file directly with `cp`; use install.sh.
+-->
 <plist version="1.0">
 <dict>
 	<key>KeepAlive</key>
@@ -8,7 +15,7 @@
 	<string>com.blender-mcp.web</string>
 	<key>ProgramArguments</key>
 	<array>
-		<string>/opt/homebrew/opt/node/bin/node</string>
+		<string>__NODE_BIN__</string>
 		<string>node_modules/.bin/vite</string>
 		<string>--port</string>
 		<string>19147</string>
@@ -24,6 +31,6 @@
 	<key>StandardOutPath</key>
 	<string>/tmp/blender-mcp-web.log</string>
 	<key>WorkingDirectory</key>
-	<string>/Users/bearmacmini/Desktop/Blender_MCP_drawer/web</string>
+	<string>__PROJECT_ROOT__/web</string>
 </dict>
 </plist>
