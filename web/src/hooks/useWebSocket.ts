@@ -9,6 +9,9 @@ const WS_URL = `${_proto}//${location.host}${_base}/ws/chat`
 
 export function useWebSocket() {
   const wsRef = useRef<WebSocket | null>(null)
+  // latest-ref pattern：存最新的 connect 供重連呼叫，避免 useCallback 自我引用
+  // 造成的 stale-closure（react-hooks/immutability）
+  const connectRef = useRef<() => void>(() => {})
   const {
     setConnected,
     addAssistantMessage,
@@ -27,7 +30,7 @@ export function useWebSocket() {
     ws.onopen = () => setConnected(true)
     ws.onclose = () => {
       setConnected(false)
-      setTimeout(connect, 3000) // auto-reconnect
+      setTimeout(() => connectRef.current(), 3000) // auto-reconnect
     }
     ws.onerror = () => ws.close()
 
@@ -56,6 +59,10 @@ export function useWebSocket() {
       }
     }
   }, [setConnected, addAssistantMessage, appendStreamToken, setSessionId, setLiveScreenshot])
+
+  useEffect(() => {
+    connectRef.current = connect
+  }, [connect])
 
   useEffect(() => {
     connect()
