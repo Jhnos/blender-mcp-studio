@@ -5,8 +5,8 @@
 set -e
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 
-API_PORT=17823
-WEB_PORT=19147
+API_PORT=19505
+WEB_PORT=19504
 
 echo "🚀 Blender MCP Studio 服務啟動"
 echo "================================"

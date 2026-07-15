@@ -1,9 +1,17 @@
 import { create } from 'zustand'
 
+export type UiMode = 'basic' | 'advanced'
+
+const UI_MODE_KEY = 'blender-mcp:ui-mode'
+const loadUiMode = (): UiMode =>
+  (typeof localStorage !== 'undefined' && localStorage.getItem(UI_MODE_KEY) === 'advanced')
+    ? 'advanced' : 'basic'
+
 export interface ChatMessage {
   role: 'user' | 'assistant'
   content: string
   status?: 'done' | 'error' | 'streaming'
+  executed?: boolean  // true when this AI reply ran Blender commands (trust signifier)
 }
 
 export interface BlenderLog {
@@ -20,6 +28,8 @@ interface ChatStore {
   blenderLogs: BlenderLog[]
   sceneRefreshTick: number
   liveScreenshot: string | null  // base64 PNG from last Blender command
+  uiMode: UiMode                 // progressive-disclosure level (persisted)
+  setUiMode: (mode: UiMode) => void
   addUserMessage: (content: string) => void
   addAssistantMessage: (
     content: string,
@@ -43,6 +53,12 @@ export const useChatStore = create<ChatStore>((set) => ({
   blenderLogs: [],
   sceneRefreshTick: 0,
   liveScreenshot: null,
+  uiMode: loadUiMode(),
+
+  setUiMode: (uiMode) => {
+    if (typeof localStorage !== 'undefined') localStorage.setItem(UI_MODE_KEY, uiMode)
+    set({ uiMode })
+  },
 
   addUserMessage: (content) =>
     set((s) => ({ messages: [...s.messages, { role: 'user', content }] })),
@@ -67,7 +83,7 @@ export const useChatStore = create<ChatStore>((set) => ({
       const msgs = [...s.messages]
       const last = msgs[msgs.length - 1]
       const isReplacingStream = last?.role === 'assistant' && last.status === 'streaming'
-      const newMessage: ChatMessage = { role: 'assistant', content, status }
+      const newMessage: ChatMessage = { role: 'assistant', content, status, executed: blenderOut != null }
       const nextMsgs = isReplacingStream
         ? [...msgs.slice(0, -1), newMessage]
         : [...msgs, newMessage]

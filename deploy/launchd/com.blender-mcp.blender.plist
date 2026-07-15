@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  SSOT for com.blender-mcp.blender LaunchAgent.
+  Launches Blender + the BlenderMCP addon (socket server on port 9876), which
+  is the engine the API (com.blender-mcp.api, BLENDER_PORT=9876) talks to.
+
+  Policy (chosen 2026-07-15): RunAtLoad=true, KeepAlive=false — starts Blender
+  at login, but does NOT force-restart if the user closes Blender to work
+  interactively. The MHH watchdog can still one-key restart via launchd_label.
+
+  Blender is a GUI app; this runs in the user's Aqua session (gui/<uid> domain,
+  see install.sh) so its window can display.
+
+  Placeholders substituted by deploy/launchd/install.sh:
+    __PROJECT_ROOT__   → repo root
+    __BLENDER_BIN__    → Blender executable (default /Applications/Blender.app/Contents/MacOS/Blender)
+  Do NOT install this file directly with `cp`; use install.sh.
+-->
+<plist version="1.0">
+<dict>
+	<key>KeepAlive</key>
+	<false/>
+	<key>Label</key>
+	<string>com.blender-mcp.blender</string>
+	<key>ProgramArguments</key>
+	<array>
+		<string>__BLENDER_BIN__</string>
+		<string>--python</string>
+		<string>__PROJECT_ROOT__/scripts/blender_autostart.py</string>
+	</array>
+	<key>RunAtLoad</key>
+	<true/>
+	<key>StandardErrorPath</key>
+	<string>/tmp/blender-mcp-blender.err</string>
+	<key>StandardOutPath</key>
+	<string>/tmp/blender-mcp-blender.log</string>
+	<key>WorkingDirectory</key>
+	<string>__PROJECT_ROOT__</string>
+</dict>
+</plist>

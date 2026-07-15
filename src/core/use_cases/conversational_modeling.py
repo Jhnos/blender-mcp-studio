@@ -14,6 +14,7 @@ from __future__ import annotations
 import json
 
 from src.core.domain.command import Command, CommandParser
+from src.core.use_cases.blender_tool_codegen import translate as _translate_command
 from src.core.domain.events import (
     CommandExecutedEvent,
     CommandFailedEvent,
@@ -198,6 +199,9 @@ class ConversationalModelingUseCase:
 
         blender_output: str | None = None
         if command is not None:
+            # Rewrite high-level modeling tools the addon can't handle
+            # (create_object, …) into equivalent execute_code before dispatch.
+            command = _translate_command(command)
             result = await self._blender.execute(command)
             if not result.success:
                 await self._emit(

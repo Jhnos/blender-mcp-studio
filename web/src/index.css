@@ -1,14 +1,64 @@
 @import "tailwindcss";
 
+/* ===========================================================================
+ * Design Tokens (SSOT) — Blender MCP Studio
+ * ---------------------------------------------------------------------------
+ * Tailwind v4 CSS-first tokens. Semantic names (surface/fg/accent/…) so the
+ * whole UI theme changes by editing tokens, not components.
+ *
+ * Dark-only palette for now. Contrast values are PROVISIONAL — the T3 dummy
+ * run measures real contrast (target body text ≥ 4.5:1, UI/large ≥ 3:1).
+ * Do not claim WCAG-pass until that check is green.
+ * ========================================================================= */
+@theme {
+  /* --- Surfaces (elevation from deep → raised) --- */
+  --color-surface: #0b0d12;          /* app canvas */
+  --color-surface-sunken: #07090d;   /* inputs, wells */
+  --color-surface-raised: #12151c;   /* panels, cards */
+  --color-surface-overlay: #1a1f29;  /* popovers, raised buttons, menus */
+
+  /* --- Borders --- */
+  --color-border: #232a36;
+  --color-border-strong: #323b4a;
+
+  /* --- Foreground / text --- */
+  --color-fg: #e6e9ef;         /* primary text */
+  --color-fg-muted: #a3abbb;   /* secondary text */
+  --color-fg-subtle: #7b8494;  /* tertiary text, placeholders */
+
+  /* --- Accent (brand violet) --- */
+  --color-accent: #7c5cff;
+  --color-accent-hover: #8f72ff;
+  --color-accent-muted: #241d47;  /* subtle accent background */
+  --color-accent-fg: #ffffff;     /* text/icon on accent fill */
+
+  /* --- Semantic status (each: solid + subtle bg) --- */
+  --color-success: #3fb950;
+  --color-success-bg: #0f2417;
+  --color-warning: #e3b341;
+  --color-warning-bg: #2a2010;
+  --color-danger: #f85149;
+  --color-danger-bg: #2c1416;
+  --color-info: #58a6ff;
+  --color-info-bg: #0f2036;
+
+  /* --- Radii --- */
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+}
+
 * {
   box-sizing: border-box;
 }
 
 body {
   margin: 0;
-  background: #0f0f13;
-  color: #e2e8f0;
+  background: var(--color-surface);
+  color: var(--color-fg);
   font-family: system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
 }
 
 #root {
@@ -17,8 +67,17 @@ body {
   flex-direction: column;
 }
 
+/* Streaming caret */
 @keyframes blink {
   0%, 100% { opacity: 1; }
   50% { opacity: 0; }
 }
 
+/* Respect reduced-motion preference (a11y) */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

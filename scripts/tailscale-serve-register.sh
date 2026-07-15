@@ -1,17 +1,17 @@
 #!/usr/bin/env bash
 # tailscale-serve-register.sh
-# 冪等：確保 Tailscale Serve 有 /blender 路由指向 Vite (port 19147)
+# 冪等：確保 Tailscale Serve 有 /blender 路由指向 Vite (port 19504)
 # 重複執行安全（已設定則跳過）
 #
 # 用途：MacHomeHub 透過 https://bearmacminimac-mini.tail56c751.ts.net/blender/
 #       存取 Blender MCP Studio。Vite dev server 負責把 /blender/api 和
-#       /blender/ws 代理到 FastAPI (port 17823)。
+#       /blender/ws 代理到 FastAPI (port 19505)。
 #
 # 執行：bash scripts/tailscale-serve-register.sh
 
 set -euo pipefail
 
-WEB_PORT=19147
+WEB_PORT=19504
 TAILSCALE_HOST="bearmacminimac-mini.tail56c751.ts.net"
 MOUNT_PATH="/blender"
 # Target 必須含 /blender，讓 Tailscale 剝除前綴後路徑仍正確

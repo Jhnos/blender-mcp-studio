@@ -24,20 +24,20 @@ Tailscale Funnel (bearmacminimac-mini.tail56c751.ts.net)
     ▼ HTTP (port 8443)
 MacHomeHub（reverse proxy）
     │
-    ├── /blender/*  ──────────► Vite Dev Server  (127.0.0.1:19147)
+    ├── /blender/*  ──────────► Vite Dev Server  (127.0.0.1:19504)
     │                                │
     │                    ┌───────────┴────────────┐
     │                    │ Vite proxy (dev server) │
     │                    └───────────┬────────────┘
     │                                │
     │                    ┌───────────┴──────────────┐
-    │                    │  /blender/api/*  ──────► FastAPI (127.0.0.1:17823)
+    │                    │  /blender/api/*  ──────► FastAPI (127.0.0.1:19505)
     │                    │  /blender/ws/*   ──────► FastAPI WebSocket
     │                    └──────────────────────────┘
     │
     └── /blender/api/health  ─────► FastAPI health endpoint
 
-FastAPI (17823)
+FastAPI (19505)
     │
     └── TCP 9876  ──────────────► Blender (手動啟動)
                                         │
@@ -50,8 +50,8 @@ FastAPI (17823)
 
 | 服務 | Port | 協定 | 說明 |
 |------|------|------|------|
-| Vite Dev Server（Web UI） | 19147 | HTTP | React + Vite 前端，含 API proxy |
-| FastAPI（API Server） | 17823 | HTTP / WebSocket | 後端 API，`/api/*` 和 `/ws/chat` |
+| Vite Dev Server（Web UI） | 19504 | HTTP | React + Vite 前端，含 API proxy |
+| FastAPI（API Server） | 19505 | HTTP / WebSocket | 後端 API，`/api/*` 和 `/ws/chat` |
 | Blender TCP Server | 9876 | TCP | Blender blender-mcp addon 監聽 |
 
 ---
@@ -66,7 +66,7 @@ Tailscale Funnel 根路徑 `/` 由 MacHomeHub 接管，Blender MCP Studio 使用
 https://bearmacminimac-mini.tail56c751.ts.net/blender/
 ```
 
-MacHomeHub 以預設的 `strip_prefix: true` 模式將 `/blender/*` 轉發至 Vite（port 19147），
+MacHomeHub 以預設的 `strip_prefix: true` 模式將 `/blender/*` 轉發至 Vite（port 19504），
 前綴 `/blender` 在轉發前被剝除，Vite 接收到的路徑不含前綴。
 
 路徑轉換示例：
@@ -83,8 +83,8 @@ export default defineConfig({
   plugins: [react(), tailwindcss()],
   server: {
     proxy: {
-      '/ws': { target: 'ws://localhost:17823', ws: true },
-      '/api': { target: 'http://localhost:17823' },
+      '/ws': { target: 'ws://localhost:19505', ws: true },
+      '/api': { target: 'http://localhost:19505' },
     },
   },
 })
@@ -107,20 +107,20 @@ const WS_URL = `${proto}//${location.host}${base}/ws/chat`
 ```
 
 這樣：
-- 直接開 `http://localhost:19147/blender/` 時：`ws://localhost:19147/blender/ws/chat` → Vite proxy → 後端
+- 直接開 `http://localhost:19504/blender/` 時：`ws://localhost:19504/blender/ws/chat` → Vite proxy → 後端
 - 透過 Tailscale 開 `https://host/blender/` 時：`wss://host/blender/ws/chat` → MHH → Vite proxy → 後端
 
 ### 3.4 launchd plist（兩個服務）
 
 #### `deploy/com.blender-mcp.api.plist`
 - Label：`com.blender-mcp.api`
-- 啟動 FastAPI uvicorn，port 17823
+- 啟動 FastAPI uvicorn，port 19505
 - WorkingDirectory：Blender MCP 專案根目錄
 - 環境變數：`CORS_ORIGINS` 含 Tailscale URL
 
 #### `deploy/com.blender-mcp.web.plist`
 - Label：`com.blender-mcp.web`
-- 啟動 Vite dev server，port 19147
+- 啟動 Vite dev server，port 19504
 - WorkingDirectory：`web/` 子目錄
 
 安裝至 `~/Library/LaunchAgents/`，用 `launchctl load` 啟用。
@@ -132,7 +132,7 @@ const WS_URL = `${proto}//${location.host}${base}/ws/chat`
     icon: "🎨"
     description: "Blender AI 建模工作室（React + FastAPI）"
     primary:
-      port: 19147
+      port: 19504
       funnel_path: "/blender/"
       open_url: "https://bearmacminimac-mini.tail56c751.ts.net/blender/"
       strip_prefix: false
@@ -143,7 +143,7 @@ const WS_URL = `${proto}//${location.host}${base}/ws/chat`
       expected_process: "node"
     internal:
       - name: "Blender MCP API"
-        port: 17823
+        port: 19505
         expected_process: "python3"
 ```
 

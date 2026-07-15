@@ -62,7 +62,10 @@ async def test_execute_calls_blender_when_json_command_found() -> None:
 
     blender.execute.assert_called_once()
     called_cmd = blender.execute.call_args[0][0]
-    assert called_cmd.tool_name == "create_object"
+    # create_object is translated to execute_code before dispatch — the addon
+    # has no create_object handler, so raw dispatch silently did nothing.
+    assert called_cmd.tool_name == "execute_code"
+    assert "import bpy" in called_cmd.arguments["code"]
 
 
 @pytest.mark.asyncio

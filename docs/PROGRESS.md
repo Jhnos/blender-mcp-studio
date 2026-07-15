@@ -114,8 +114,8 @@
 
 | 服務 | 位址 | 說明 |
 |---|---|---|
-| FastAPI | `http://localhost:17823` | 主 API + WebSocket |
-| Vite UI | `http://localhost:19147` | React 前端 |
+| FastAPI | `http://localhost:19505` | 主 API + WebSocket |
+| Vite UI | `http://localhost:19504` | React 前端 |
 | Blender socket | `localhost:9876` | MCP addon（socket 模式）|
 | Blender MCP SSE | `http://localhost:8765/sse` | MCP SDK 模式（可選）|
 | Ollama | `http://localhost:11434` | LLM inference |

@@ -201,7 +201,7 @@ OllamaAdapter(model=os.environ.get("OLLAMA_MODEL", "..."))
 
 ### Port 管理（重要！）
 這台設備掛了很多服務。**每次啟動前必須用 `lsof -i :PORT` 確認**。
-- 專案使用：API=17823，Vite=19147，Blender socket=9876，Ollama=11434
+- 專案使用：API=19505，Vite=19504，Blender socket=9876，Ollama=11434
 - 禁止使用：8000, 8001, 5000, 5173, 3000（常見服務）
 
 ---
@@ -224,8 +224,8 @@ OllamaAdapter(model=os.environ.get("OLLAMA_MODEL", "..."))
 3. `.env` 中 `OLLAMA_MODEL` 是否正確
 
 ### React WebSocket 斷線
-1. `curl http://localhost:17823/api/health`：確認 API 在線
-2. `vite.config.ts` proxy target 需指向正確 port（17823）
+1. `curl http://localhost:19505/api/health`：確認 API 在線
+2. `vite.config.ts` proxy target 需指向正確 port（19505）
 3. WS URL 必須走 proxy（`/ws/chat`），不可直連
 
 ### Vite dev server 掉線（常見！）

@@ -95,7 +95,7 @@ def create_app(
         o.strip()
         for o in os.environ.get(
             "CORS_ORIGINS",
-            "https://bearmacminimac-mini.tail56c751.ts.net,http://localhost:19147",
+            "https://bearmacminimac-mini.tail56c751.ts.net,http://localhost:19504",
         ).split(",")
         if o.strip()
     ]
@@ -121,7 +121,18 @@ def create_app(
 
     @app.get("/api/health")
     async def health() -> dict[str, str]:
-        return {"status": "ok"}
+        # `status` reflects the API's own health (kept "ok" so the MHH watchdog
+        # doesn't needlessly restart a healthy API when only Blender is down).
+        # `blender` reports the REAL engine connectivity, so a live API is never
+        # mistaken for a live Blender (previously this hardcoded "ok").
+        blender_state = "unknown"
+        adapter = getattr(app.state, "blender", None)
+        if adapter is not None:
+            try:
+                blender_state = "connected" if await adapter.is_connected() else "disconnected"
+            except Exception:
+                blender_state = "disconnected"
+        return {"status": "ok", "blender": blender_state}
 
     return app
 

@@ -7,7 +7,7 @@
 ```
 [React Web UI]
     ↕ WebSocket /ws/chat
-[FastAPI 17823]
+[FastAPI 19505]
     ├── LLMChatPort → OllamaAdapter / AnthropicAdapter / ...
     └── BlenderPort → BlenderMCPAdapter
                           ↓ TCP :9876
@@ -56,9 +56,9 @@ cd web && npm install && cd ..
 ./scripts/start_services.sh
 ```
 
-開啟瀏覽器：**http://localhost:19147**
+開啟瀏覽器：**http://localhost:19504**
 
-> ⚠️ 本機有其他服務時，使用非常用 port（API=17823，Vite=19147）。
+> ⚠️ 本機有其他服務時，使用非常用 port（API=19505，Vite=19504）。
 > 修改 `.env` 的 `BLENDER_HOST/PORT`，`vite.config.ts` 的 proxy target 需同步更新。
 
 ---

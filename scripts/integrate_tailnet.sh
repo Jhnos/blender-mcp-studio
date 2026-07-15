@@ -20,8 +20,8 @@ LAUNCH_AGENTS="$HOME/Library/LaunchAgents"
 MHH_SERVICES="$HOME/MacHomeHub/config/services.yaml"
 TAILSCALE_HOST="bearmacminimac-mini.tail56c751.ts.net"
 
-API_PORT=17823
-WEB_PORT=19147
+API_PORT=19505
+WEB_PORT=19504
 BLENDER_TCP_PORT=9876
 
 GREEN='\033[0;32m'
@@ -67,12 +67,12 @@ export default defineConfig({
   server: {
     proxy: {
       '/blender/ws': {
-        target: 'ws://localhost:17823',
+        target: 'ws://localhost:19505',
         ws: true,
         rewrite: (path: string) => path.replace(/^\\/blender/, ''),
       },
       '/blender/api': {
-        target: 'http://localhost:17823',
+        target: 'http://localhost:19505',
         rewrite: (path: string) => path.replace(/^\\/blender/, ''),
       },
     },

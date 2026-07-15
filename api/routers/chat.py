@@ -30,7 +30,13 @@ router = APIRouter()
 
 
 @router.websocket("/ws/chat")
-async def chat_websocket(websocket: WebSocket, request: Request) -> None:
+async def chat_websocket(websocket: WebSocket) -> None:
+    # WebSocket routes are NOT given a Request (that is HTTP-only); declaring
+    # `request: Request` here made FastAPI fail to inject it → every connection
+    # crashed with "missing 1 required positional argument: 'request'".
+    # WebSocket subclasses Starlette's HTTPConnection, so `.app.state` is the
+    # same object a Request would expose — alias it to keep the code below.
+    request = websocket
     await websocket.accept()
 
     blender = request.app.state.blender

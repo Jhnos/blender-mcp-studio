@@ -16,6 +16,13 @@ providers:
     temperature: 0.7
 
   ollama:
-    model: qwen3-coder:480b-cloud
+    # Default: local Gemma 4 (works offline, no cloud auth needed).
+    model: hf.co/HauhauCS/Gemma-4-E4B-Uncensored-HauhauCS-Aggressive:Q4_K_M
     max_tokens: 4096
     temperature: 0.7
+    # Cloud alternative — set `model:` to a valid Ollama Cloud tag (needs
+    # `ollama signin`; runs remotely, no local VRAM). Not limited to one model.
+    # Verified working 2026-07-15 [實測]: gemma4:cloud (32.7B, 256K), gemma4:31b-cloud.
+    # NOTE: cloud tags can be RETIRED (qwen3-coder:480b-cloud was, 2026-07-15) —
+    # re-test a tag before relying on it.
+    # cloud_model: gemma4:cloud

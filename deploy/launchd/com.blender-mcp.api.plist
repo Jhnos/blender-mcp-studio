@@ -26,7 +26,7 @@
 	<array>
 		<string>__CONDA_PYTHON__</string>
 		<string>-c</string>
-		<string>import uvicorn; uvicorn.run('api.main:app', host='127.0.0.1', port=17823, log_level='info')</string>
+		<string>import uvicorn; uvicorn.run('api.main:app', host='127.0.0.1', port=19505, log_level='info')</string>
 	</array>
 	<key>RunAtLoad</key>
 	<true/>

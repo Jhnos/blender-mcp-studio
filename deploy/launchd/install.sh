@@ -25,6 +25,7 @@ DOMAIN="gui/${UID_NUM}"
 
 CONDA_PYTHON="${CONDA_PYTHON:-${HOME}/miniconda3/envs/blender-mcp/bin/python}"
 NODE_BIN="${NODE_BIN:-/opt/homebrew/opt/node/bin/node}"
+BLENDER_BIN="${BLENDER_BIN:-/Applications/Blender.app/Contents/MacOS/Blender}"
 
 # launchctl bootout returns non-zero / noisy errors when the service isn't
 # loaded. Treat the following as success: not loaded (5 / 113), EIO (5),
@@ -70,6 +71,7 @@ _install_one() {
     -e "s|__HOME__|${HOME}|g" \
     -e "s|__CONDA_PYTHON__|${CONDA_PYTHON}|g" \
     -e "s|__NODE_BIN__|${NODE_BIN}|g" \
+    -e "s|__BLENDER_BIN__|${BLENDER_BIN}|g" \
     "${template}" > "${tmp}"
 
   if ! plutil -lint "${tmp}" >/dev/null; then
@@ -94,8 +96,12 @@ main() {
   local which="${1:-all}"
   case "${which}" in
     all)
+      _install_one com.blender-mcp.blender
       _install_one com.blender-mcp.api
       _install_one com.blender-mcp.web
+      ;;
+    blender)
+      _install_one com.blender-mcp.blender
       ;;
     api)
       _install_one com.blender-mcp.api
@@ -104,17 +110,19 @@ main() {
       _install_one com.blender-mcp.web
       ;;
     *)
-      echo "usage: $0 [all|api|web]" >&2
+      echo "usage: $0 [all|blender|api|web]" >&2
       exit 2
       ;;
   esac
 
   echo
   echo "verify with:"
+  echo "  launchctl print ${DOMAIN}/com.blender-mcp.blender | head -40"
   echo "  launchctl print ${DOMAIN}/com.blender-mcp.api | head -40"
   echo "  launchctl print ${DOMAIN}/com.blender-mcp.web | head -40"
-  echo "  lsof -iTCP:17823 -sTCP:LISTEN   # api"
-  echo "  lsof -iTCP:19147 -sTCP:LISTEN   # web"
+  echo "  lsof -iTCP:9876  -sTCP:LISTEN   # blender addon (engine)"
+  echo "  lsof -iTCP:19505 -sTCP:LISTEN   # api"
+  echo "  lsof -iTCP:19504 -sTCP:LISTEN   # web"
 }
 
 main "$@"

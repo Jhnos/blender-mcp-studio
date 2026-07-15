@@ -5,8 +5,8 @@ that run Blender MCP Studio in the background.
 
 ```
 deploy/launchd/
-├── com.blender-mcp.api.plist     # FastAPI service on port 17823 (template)
-├── com.blender-mcp.web.plist     # Vite dev server on port 19147 (template)
+├── com.blender-mcp.api.plist     # FastAPI service on port 19505 (template)
+├── com.blender-mcp.web.plist     # Vite dev server on port 19504 (template)
 ├── install.sh                    # render → ~/Library/LaunchAgents/ → bootstrap
 ├── uninstall.sh                  # bootout + archive (.deprecated.YYYYMMDD)
 └── README.md                     # you are here
@@ -69,8 +69,8 @@ diff \
 # services running?
 launchctl print "gui/$(id -u)/com.blender-mcp.api" | head -40
 launchctl print "gui/$(id -u)/com.blender-mcp.web" | head -40
-lsof -iTCP:17823 -sTCP:LISTEN   # api
-lsof -iTCP:19147 -sTCP:LISTEN   # web
+lsof -iTCP:19505 -sTCP:LISTEN   # api
+lsof -iTCP:19504 -sTCP:LISTEN   # web
 ```
 
 A clean diff means the installed plist is faithful to the SSOT.
