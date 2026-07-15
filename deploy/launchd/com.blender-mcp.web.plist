@@ -18,7 +18,7 @@
 		<string>__NODE_BIN__</string>
 		<string>node_modules/.bin/vite</string>
 		<string>--port</string>
-		<string>19147</string>
+		<string>19504</string>
 		<string>--logLevel</string>
 		<string>warn</string>
 		<string>--host</string>
