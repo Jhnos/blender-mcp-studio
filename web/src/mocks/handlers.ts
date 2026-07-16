@@ -69,7 +69,12 @@ export const handlers = [
 // WebSocket mock: accept the connection (→ isConnected = true) and echo a
 // canned streamed reply that reports a scene change (drives AI tag + executed
 // chip + preview refresh).
-const chat = ws.link('ws://localhost:5173/blender/ws/chat')
+// Mirror useWebSocket's URL derivation exactly. A hardcoded host/port silently
+// fails to intercept on any other port (e.g. the deployed vite on 19504), so
+// the REAL backend leaks into what should be an isolated dummy run — the mock
+// appears "on" while live data flows through. Derive, never hardcode.
+const _wsProto = location.protocol === 'https:' ? 'wss:' : 'ws:'
+const chat = ws.link(`${_wsProto}//${location.host}/blender/ws/chat`)
 export const wsHandlers = [
   chat.addEventListener('connection', ({ client }) => {
     client.addEventListener('message', () => {
