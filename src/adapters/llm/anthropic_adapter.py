@@ -60,7 +60,7 @@ class AnthropicAdapter(LLMPort):
         if system_prompt:
             kwargs["system"] = system_prompt
 
-        response = await self._client.messages.create(**kwargs)  # type: ignore[arg-type]
+        response = await self._client.messages.create(**kwargs)
         return LLMResponse(
             content=response.content[0].text,
             provider=self.provider_name,
@@ -68,7 +68,7 @@ class AnthropicAdapter(LLMPort):
             finish_reason=response.stop_reason or "stop",
         )
 
-    async def astream(  # type: ignore[override]
+    async def astream(
         self,
         messages: list[Message],
         system_prompt: str | None = None,
@@ -114,7 +114,7 @@ class AnthropicAdapter(LLMPort):
         if system_prompt:
             kwargs["system"] = system_prompt
 
-        response = await self._client.messages.create(**kwargs)  # type: ignore[arg-type]
+        response = await self._client.messages.create(**kwargs)
 
         tool_calls: list[ToolCall] = []
         text_parts: list[str] = []

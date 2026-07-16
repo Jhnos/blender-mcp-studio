@@ -23,6 +23,7 @@ from src.core.domain.session import Session
 from src.core.ports.blender_port import BlenderPort
 from src.core.ports.llm_port import LLMChatPort, LLMToolChatPort
 from src.core.ports.vision_port import VisionPort
+from src.core.use_cases.blender_tool_codegen import translate as _translate_command
 
 logger = logging.getLogger(__name__)
 
@@ -174,7 +175,12 @@ class IterativeRefinementUseCase:
 
             # Step 5: execute commands
             for cmd in commands:
-                result = await self._blender.execute(cmd)
+                # Same translation the chat path needs: the addon has no
+                # create_object/modify_object/… handlers, so dispatching an LLM
+                # tool call raw returns "Unknown command type" and the scene is
+                # never corrected — refinement would loop, reporting success.
+                dispatched = _translate_command(cmd)
+                result = await self._blender.execute(dispatched)
                 status = "✅" if result.success else f"❌ {result.error}"
                 iteration.commands_executed.append(f"{cmd.tool_name}: {status}")
                 logger.info("Refinement command %s: %s", cmd.tool_name, status)
@@ -212,20 +218,23 @@ class IterativeRefinementUseCase:
             assert isinstance(self._llm, LLMToolChatPort)
             from src.core.use_cases.conversational_modeling import _BLENDER_TOOLS
 
-            response = await self._llm.chat_with_tools(
+            tool_response = await self._llm.chat_with_tools(
                 messages=session.messages,
                 tools=_BLENDER_TOOLS,
                 system_prompt=_REFINEMENT_SYSTEM_PROMPT,
             )
             return [
-                Command(tool_name=tc.name, arguments=tc.arguments) for tc in response.tool_calls
+                Command(tool_name=tc.name, arguments=tc.arguments)
+                for tc in tool_response.tool_calls
             ]
         else:
-            response = await self._llm.chat(
+            # Distinct name: the two branches return different response types,
+            # and reusing one name made the second branch's .content unverifiable.
+            chat_response = await self._llm.chat(
                 messages=session.messages,
                 system_prompt=_REFINEMENT_SYSTEM_PROMPT,
             )
-            cmd = CommandParser.from_llm_output(response.content)
+            cmd = CommandParser.from_llm_output(chat_response.content)
             return [cmd] if cmd else []
 
     @staticmethod

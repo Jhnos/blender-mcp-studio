@@ -9,11 +9,29 @@ from src.core.ports.mcp_port import ToolResult
 
 
 class BlenderPort(ABC):
-    """High-level abstract interface for Blender 3D scene manipulation."""
+    """High-level abstract interface for Blender 3D scene manipulation.
+
+    The contract declares everything consumers actually call. connect /
+    disconnect / call_tool were used by api.main and the preview/refinement
+    use cases while missing from this interface — the port under-declared what
+    it promised, so type checking could not see those calls at all.
+    """
+
+    @abstractmethod
+    async def connect(self) -> None:
+        """Open the connection to Blender."""
+
+    @abstractmethod
+    async def disconnect(self) -> None:
+        """Close the connection to Blender."""
 
     @abstractmethod
     async def execute(self, command: Command) -> ToolResult:
         """Execute a Command in Blender and return the result."""
+
+    @abstractmethod
+    async def call_tool(self, tool_name: str, arguments: dict[str, object]) -> ToolResult:
+        """Invoke a Blender MCP tool directly by name."""
 
     @abstractmethod
     async def get_scene_info(self) -> dict[str, object]:

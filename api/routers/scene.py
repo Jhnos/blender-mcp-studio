@@ -48,7 +48,7 @@ async def get_scene(request: Request) -> SceneInfoResponse:
     except Exception:
         info = {}
     return SceneInfoResponse(
-        objects=info.get("objects", []),  # type: ignore[arg-type]
+        objects=info.get("objects", []),
         description=str(info.get("description", "")),
     )
 
@@ -718,7 +718,7 @@ async def analyze_image(request: Request) -> dict:
     if image_field is None or not hasattr(image_field, "read"):
         raise HTTPException(status_code=422, detail="Field 'image' is required (file upload)")
 
-    image_bytes: bytes = await image_field.read()  # type: ignore[union-attr]
+    image_bytes: bytes = await image_field.read()
     if len(image_bytes) > 10 * 1024 * 1024:
         raise HTTPException(status_code=413, detail="Image too large (max 10MB)")
 

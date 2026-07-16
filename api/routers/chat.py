@@ -110,7 +110,7 @@ async def chat_websocket(websocket: WebSocket) -> None:
                             websocket,
                             llm,
                             use_case,
-                            session,  # type: ignore[arg-type]
+                            session,
                             session_store,
                             request,
                             prompt_builder,

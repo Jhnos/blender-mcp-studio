@@ -101,7 +101,7 @@ class Hunyuan3DAdapter(Text3DGenerationPort):
     ) -> bytes:
         """Use gradio_client to call the HuggingFace Space API."""
         try:
-            from gradio_client import Client  # type: ignore[import]
+            from gradio_client import Client
         except ImportError as exc:
             raise RuntimeError(
                 "gradio_client not installed. Run: pip install gradio-client"

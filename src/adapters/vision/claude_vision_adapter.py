@@ -52,7 +52,10 @@ class ClaudeVisionAdapter(VisionPort):
                 }
             ],
         )
-        text: str = response.content[0].text
+        # response.content is a union of block types (text / thinking / tool_use / …).
+        # Reading [0].text blindly raises AttributeError whenever the first block
+        # isn't text — e.g. with extended thinking on. Keep the text blocks, in order.
+        text: str = "".join(b.text for b in response.content if b.type == "text")
         suggestions = tuple(m.group(1).strip() for m in _SUGGESTION_RE.finditer(text))
         return VisionAnalysis(
             description=text,

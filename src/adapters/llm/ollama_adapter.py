@@ -78,7 +78,7 @@ class OllamaAdapter(LLMPort):
             finish_reason=data.get("done_reason", "stop"),
         )
 
-    async def astream(  # type: ignore[override]
+    async def astream(
         self,
         messages: list[Message],
         system_prompt: str | None = None,
