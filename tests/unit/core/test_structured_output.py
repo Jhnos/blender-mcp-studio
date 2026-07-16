@@ -137,8 +137,13 @@ async def test_use_case_uses_tool_calling_when_llm_supports_it():
     updated, reply, blender_out = await use_case.execute(session)
 
     assert blender.last_command is not None
-    assert blender.last_command.tool_name == "create_object"
-    assert blender.last_command.arguments["type"] == "MESH"
+    # create_object is translated to execute_code before dispatch (the addon has
+    # no create_object handler; raw dispatch silently did nothing).
+    assert blender.last_command.tool_name == "execute_code"
+    # The tool-call intent must survive the translation into bpy code.
+    code = str(blender.last_command.arguments["code"])
+    assert "primitive_cube_add" in code  # type: MESH
+    assert 'obj.name = "Cube"' in code   # name: Cube
     assert blender_out == "ok"
 
 
@@ -192,7 +197,9 @@ async def test_use_case_fallback_with_chat_only_llm():
     updated, reply, blender_out = await use_case.execute(session)
 
     assert blender.last_command is not None
-    assert blender.last_command.tool_name == "create_object"
+    # create_object is translated to execute_code before dispatch (the addon has
+    # no create_object handler; raw dispatch silently did nothing).
+    assert blender.last_command.tool_name == "execute_code"
 
 
 @pytest.mark.asyncio

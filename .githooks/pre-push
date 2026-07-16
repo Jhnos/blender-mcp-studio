@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+#
+# pre-push — run the local CI before anything leaves this machine.
+#
+# Version-controlled (not .git/hooks, which clones don't get). Enable with:
+#   git config core.hooksPath .githooks
+#
+# Runs the default tiers (static + unit + headless dummy run) — fast, no side
+# effects. The real-machine tier is NOT run here: it needs Blender up and
+# mutates the live scene, which a push hook must never do silently. Run it
+# deliberately with `scripts/ci.sh --real`.
+#
+# Emergency bypass (use honestly): git push --no-verify
+#
+set -uo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
+echo "pre-push: running local CI (scripts/ci.sh) …"
+if ! "$ROOT/scripts/ci.sh"; then
+  echo
+  echo "pre-push: BLOCKED — local CI failed. Fix the hard gates, or bypass with:"
+  echo "  git push --no-verify"
+  exit 1
+fi
