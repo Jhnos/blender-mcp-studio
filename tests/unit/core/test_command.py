@@ -1,13 +1,14 @@
 """Unit tests for Command value object."""
 
 import pytest
+from pydantic import ValidationError
 
 from src.core.domain.command import Command
 
 
 def test_command_is_immutable() -> None:
     cmd = Command(tool_name="create_object", arguments={"type": "CUBE"})
-    with pytest.raises(Exception):
+    with pytest.raises(ValidationError):
         cmd.tool_name = "delete_object"  # type: ignore[misc]
 
 

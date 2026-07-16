@@ -21,9 +21,7 @@ class WorkflowEngine:
         self.name: str = str(self._config.get("name", workflow_name))
         self.version: str = str(self._config.get("version", "1.0.0"))
         self.description: str = str(self._config.get("description", ""))
-        self.llm_provider: str = self._resolve_env(
-            str(self._config.get("llm_provider", "ollama"))
-        )
+        self.llm_provider: str = self._resolve_env(str(self._config.get("llm_provider", "ollama")))
         self.mcp_server: str = str(self._config.get("mcp_server", "blender_local"))
         self.steps: list[dict[str, Any]] = list(
             self._config.get("steps", [])  # type: ignore[arg-type]
@@ -37,6 +35,7 @@ class WorkflowEngine:
     def build_llm_adapter(self):  # type: ignore[return]
         """Instantiate the correct LLM adapter via the shared factory."""
         from src.adapters.llm.factory import build_llm_adapter
+
         return build_llm_adapter(provider=self.llm_provider)
 
     # ── Internal ──────────────────────────────────────────────────────────────
@@ -44,9 +43,9 @@ class WorkflowEngine:
     @staticmethod
     def _resolve_env(value: str) -> str:
         """Expand ${VAR:-default} patterns using the current environment."""
+
         def replacer(m: re.Match) -> str:
             var, _, default = m.group(1).partition(":-")
             return os.environ.get(var, default)
 
         return re.sub(r"\$\{([^}]+)\}", replacer, value)
-

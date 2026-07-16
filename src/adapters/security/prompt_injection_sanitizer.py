@@ -61,19 +61,21 @@ _INJECTION_PATTERNS: list[tuple[re.Pattern[str], str, str]] = [
 ]
 
 # Unicode direction-override characters used in visual injection attacks
-_BIDI_CHARS = frozenset([
-    "\u200f",  # RIGHT-TO-LEFT MARK
-    "\u200e",  # LEFT-TO-RIGHT MARK
-    "\u202a",  # LEFT-TO-RIGHT EMBEDDING
-    "\u202b",  # RIGHT-TO-LEFT EMBEDDING
-    "\u202c",  # POP DIRECTIONAL FORMATTING
-    "\u202d",  # LEFT-TO-RIGHT OVERRIDE
-    "\u202e",  # RIGHT-TO-LEFT OVERRIDE (RLO)
-    "\u2066",  # LEFT-TO-RIGHT ISOLATE
-    "\u2067",  # RIGHT-TO-LEFT ISOLATE
-    "\u2068",  # FIRST STRONG ISOLATE
-    "\u2069",  # POP DIRECTIONAL ISOLATE
-])
+_BIDI_CHARS = frozenset(
+    [
+        "\u200f",  # RIGHT-TO-LEFT MARK
+        "\u200e",  # LEFT-TO-RIGHT MARK
+        "\u202a",  # LEFT-TO-RIGHT EMBEDDING
+        "\u202b",  # RIGHT-TO-LEFT EMBEDDING
+        "\u202c",  # POP DIRECTIONAL FORMATTING
+        "\u202d",  # LEFT-TO-RIGHT OVERRIDE
+        "\u202e",  # RIGHT-TO-LEFT OVERRIDE (RLO)
+        "\u2066",  # LEFT-TO-RIGHT ISOLATE
+        "\u2067",  # RIGHT-TO-LEFT ISOLATE
+        "\u2068",  # FIRST STRONG ISOLATE
+        "\u2069",  # POP DIRECTIONAL ISOLATE
+    ]
+)
 
 
 class PromptInjectionSanitizer(InputSanitizerPort):

@@ -7,7 +7,12 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 
 from src.adapters.events.in_memory_event_bus import InMemoryEventBus
-from src.core.domain.events import CommandExecutedEvent, CommandFailedEvent, DomainEvent, MessageAddedEvent
+from src.core.domain.events import (
+    CommandExecutedEvent,
+    CommandFailedEvent,
+    DomainEvent,
+    MessageAddedEvent,
+)
 from src.core.domain.session import Session
 from src.core.ports.llm_port import LLMResponse
 from src.core.ports.mcp_port import ToolResult
@@ -72,9 +77,7 @@ async def test_execute_calls_blender_when_json_command_found() -> None:
 async def test_execute_raises_on_empty_session() -> None:
     from src.core.domain.exceptions import SceneCreationError
 
-    use_case = ConversationalModelingUseCase(
-        llm=_make_llm_mock(""), blender=_make_blender_mock()
-    )
+    use_case = ConversationalModelingUseCase(llm=_make_llm_mock(""), blender=_make_blender_mock())
     with pytest.raises(SceneCreationError):
         await use_case.execute(Session())
 
@@ -136,7 +139,9 @@ async def test_use_case_publishes_command_failed_event() -> None:
     json_reply = '{"tool_name": "delete_object", "arguments": {"name": "Cube"}}'
     llm = _make_llm_mock(json_reply)
     blender = _make_blender_mock(success=False)
-    blender.execute = AsyncMock(return_value=ToolResult(success=False, output=None, error="not found"))
+    blender.execute = AsyncMock(
+        return_value=ToolResult(success=False, output=None, error="not found")
+    )
     use_case = ConversationalModelingUseCase(llm=llm, blender=blender, event_bus=bus)
     session = Session().add_message("user", "delete cube")
     await use_case.execute(session)
@@ -156,4 +161,3 @@ async def test_use_case_works_without_event_bus() -> None:
     session = Session().add_message("user", "hi")
     updated, reply, _ = await use_case.execute(session)
     assert reply == "OK"
-

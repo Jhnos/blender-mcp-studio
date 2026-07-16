@@ -26,10 +26,22 @@ from src.core.ports.vision_port import VisionPort
 
 logger = logging.getLogger(__name__)
 
-_CONVERGENCE_KEYWORDS = frozenset([
-    "looks good", "complete", "done", "accurate", "matches",
-    "符合", "完成", "準確", "正確", "很好", "很棒", "完美",
-])
+_CONVERGENCE_KEYWORDS = frozenset(
+    [
+        "looks good",
+        "complete",
+        "done",
+        "accurate",
+        "matches",
+        "符合",
+        "完成",
+        "準確",
+        "正確",
+        "很好",
+        "很棒",
+        "完美",
+    ]
+)
 
 _VISION_PROMPT_TEMPLATE = """\
 You are reviewing a Blender 3D viewport screenshot.
@@ -184,9 +196,7 @@ class IterativeRefinementUseCase:
     async def _capture_screenshot(self) -> bytes | None:
         try:
             tmp = tempfile.mktemp(suffix=".png")
-            result = await self._blender.call_tool(
-                "get_viewport_screenshot", {"filepath": tmp}
-            )
+            result = await self._blender.call_tool("get_viewport_screenshot", {"filepath": tmp})
             if result.success and os.path.exists(tmp):
                 with open(tmp, "rb") as f:
                     data = f.read()
@@ -201,14 +211,14 @@ class IterativeRefinementUseCase:
         if self._use_tool_calling:
             assert isinstance(self._llm, LLMToolChatPort)
             from src.core.use_cases.conversational_modeling import _BLENDER_TOOLS
+
             response = await self._llm.chat_with_tools(
                 messages=session.messages,
                 tools=_BLENDER_TOOLS,
                 system_prompt=_REFINEMENT_SYSTEM_PROMPT,
             )
             return [
-                Command(tool_name=tc.name, arguments=tc.arguments)
-                for tc in response.tool_calls
+                Command(tool_name=tc.name, arguments=tc.arguments) for tc in response.tool_calls
             ]
         else:
             response = await self._llm.chat(

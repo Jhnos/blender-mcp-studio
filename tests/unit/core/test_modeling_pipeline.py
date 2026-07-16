@@ -6,8 +6,8 @@ import pytest
 import yaml
 
 from src.core.domain.pipeline import PipelineStage, StageStatus
-from src.core.use_cases.modeling_pipeline import ModelingPipelineUseCase
 from src.core.ports.mcp_port import ToolResult
+from src.core.use_cases.modeling_pipeline import ModelingPipelineUseCase
 
 
 class MockBlenderForPipeline:
@@ -19,8 +19,11 @@ class MockBlenderForPipeline:
 
     async def connect(self): ...
     async def disconnect(self): ...
-    async def is_connected(self): return True
-    async def get_scene_info(self): return {"objects": []}
+    async def is_connected(self):
+        return True
+
+    async def get_scene_info(self):
+        return {"objects": []}
 
     async def execute(self, command):
         self.executed.append((command.tool_name, dict(command.arguments)))
@@ -117,7 +120,7 @@ async def test_pipeline_propagates_output_to_context():
     context: dict = {}
     use_case = ModelingPipelineUseCase(blender=blender)
 
-    result = await use_case.execute(stages, context=context, pipeline_name="test")
+    await use_case.execute(stages, context=context, pipeline_name="test")
 
     # Output of create_object should be in context for subsequent stages
     assert "stage_create_object_output" in context
@@ -179,6 +182,7 @@ async def test_pipeline_loader_loads_yaml(tmp_path):
     config_file.write_text(yaml.dump(yaml_content))
 
     from src.adapters.pipeline.pipeline_loader import PipelineLoader
+
     loader = PipelineLoader(config_path=config_file)
     stages = loader.load("test_pipe")
 
@@ -195,6 +199,7 @@ async def test_pipeline_loader_raises_on_missing_pipeline(tmp_path):
     config_file.write_text(yaml.dump({"pipelines": {}}))
 
     from src.adapters.pipeline.pipeline_loader import PipelineLoader
+
     loader = PipelineLoader(config_path=config_file)
 
     with pytest.raises(KeyError, match="not found"):
@@ -204,14 +209,19 @@ async def test_pipeline_loader_raises_on_missing_pipeline(tmp_path):
 @pytest.mark.asyncio
 async def test_pipeline_loader_lists_pipelines(tmp_path):
     config_file = tmp_path / "pipeline.yaml"
-    config_file.write_text(yaml.dump({
-        "pipelines": {
-            "pipe_a": {"stages": []},
-            "pipe_b": {"stages": []},
-        }
-    }))
+    config_file.write_text(
+        yaml.dump(
+            {
+                "pipelines": {
+                    "pipe_a": {"stages": []},
+                    "pipe_b": {"stages": []},
+                }
+            }
+        )
+    )
 
     from src.adapters.pipeline.pipeline_loader import PipelineLoader
+
     loader = PipelineLoader(config_path=config_file)
     names = loader.list_pipelines()
 
@@ -222,6 +232,7 @@ async def test_pipeline_loader_lists_pipelines(tmp_path):
 async def test_real_yaml_config_loads():
     """Smoke test: the actual modeling_pipeline.yaml is valid and loadable."""
     from src.adapters.pipeline.pipeline_loader import PipelineLoader
+
     loader = PipelineLoader()
     pipelines = loader.list_pipelines()
 

@@ -58,7 +58,8 @@ class PolyHavenAdapter(PolyHavenPort):
         if query:
             q = query.lower()
             assets = [
-                a for a in assets
+                a
+                for a in assets
                 if q in a.name.lower()
                 or any(q in t for t in a.tags)
                 or any(q in c for c in a.categories)
@@ -124,15 +125,17 @@ class PolyHavenAdapter(PolyHavenPort):
 
         assets = []
         for asset_id, info in raw.items():
-            assets.append(PolyHavenAsset(
-                id=asset_id,
-                name=info.get("name", asset_id),
-                asset_type=asset_type,
-                categories=tuple(info.get("categories") or []),
-                tags=tuple(info.get("tags") or []),
-                thumbnail_url=info.get("thumbnail_url", ""),
-                download_count=info.get("download_count", 0),
-            ))
+            assets.append(
+                PolyHavenAsset(
+                    id=asset_id,
+                    name=info.get("name", asset_id),
+                    asset_type=asset_type,
+                    categories=tuple(info.get("categories") or []),
+                    tags=tuple(info.get("tags") or []),
+                    thumbnail_url=info.get("thumbnail_url", ""),
+                    download_count=info.get("download_count", 0),
+                )
+            )
 
         return sorted(assets, key=lambda a: a.download_count, reverse=True)
 

@@ -15,11 +15,11 @@ class SceneSnapshot:
     """Immutable value object representing one saved scene state."""
 
     id: str
-    label: str                    # human-readable name (e.g. "After ears")
-    blend_path: str               # absolute path to the .blend file
-    thumbnail_b64: str            # base64-encoded PNG thumbnail (may be empty)
-    created_at: str               # ISO 8601 UTC timestamp
-    session_id: str = ""          # optional — links snapshot to a chat session
+    label: str  # human-readable name (e.g. "After ears")
+    blend_path: str  # absolute path to the .blend file
+    thumbnail_b64: str  # base64-encoded PNG thumbnail (may be empty)
+    created_at: str  # ISO 8601 UTC timestamp
+    session_id: str = ""  # optional — links snapshot to a chat session
 
 
 @dataclass(frozen=True)

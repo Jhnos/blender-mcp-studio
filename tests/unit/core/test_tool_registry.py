@@ -2,13 +2,11 @@
 
 from __future__ import annotations
 
-import pytest
-
-from src.core.domain.command import Command, CommandParser
+from src.core.domain.command import CommandParser
 from src.core.domain.tool_registry import ToolSchema, ToolSchemaRegistry
 
-
 # ── ToolSchema tests ──────────────────────────────────────────────────────────
+
 
 def test_schema_valid_when_all_required_present() -> None:
     schema = ToolSchema(name="create_object", required=frozenset(["type"]))
@@ -29,6 +27,7 @@ def test_schema_no_required_always_valid() -> None:
 
 
 # ── ToolSchemaRegistry tests ──────────────────────────────────────────────────
+
 
 def test_registry_unknown_tool_passes_through() -> None:
     registry = ToolSchemaRegistry()
@@ -66,6 +65,7 @@ tools:
 
 
 # ── CommandParser with validation ─────────────────────────────────────────────
+
 
 def test_commandparser_returns_command_on_valid_json() -> None:
     text = '{"tool_name": "get_scene_info", "arguments": {}}'

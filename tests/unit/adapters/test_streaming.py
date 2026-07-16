@@ -7,13 +7,13 @@ from __future__ import annotations
 
 import pytest
 
-from src.core.domain.session import Message, Session
-from src.core.ports.llm_port import LLMChatPort, LLMStreamPort, LLMPort
-
+from src.core.domain.session import Session
+from src.core.ports.llm_port import LLMChatPort, LLMPort, LLMStreamPort
 
 # ---------------------------------------------------------------------------
 # Port contract tests
 # ---------------------------------------------------------------------------
+
 
 class TestLLMStreamPortContract:
     """Verify the ISP hierarchy: LLMStreamPort is a LLMChatPort."""
@@ -28,7 +28,6 @@ class TestLLMStreamPortContract:
         assert hasattr(LLMStreamPort, "astream")
 
     def test_astream_is_abstract(self):
-        import inspect
         method = LLMStreamPort.__abstractmethods__
         assert "astream" in method
 
@@ -37,12 +36,14 @@ class TestLLMStreamPortContract:
 # OllamaAdapter streaming tests
 # ---------------------------------------------------------------------------
 
+
 class TestOllamaAdapterStreaming:
     """Test OllamaAdapter.astream() with mocked httpx streaming."""
 
     @pytest.fixture
     def adapter(self):
         from src.adapters.llm.ollama_adapter import OllamaAdapter
+
         return OllamaAdapter(model="test-model", base_url="http://localhost:11434")
 
     @pytest.fixture
@@ -55,13 +56,16 @@ class TestOllamaAdapterStreaming:
     async def test_astream_yields_tokens(self, adapter, messages, respx_mock):
         """astream() should yield each non-empty token."""
         import json
+
         import httpx
 
-        ndjson_lines = "\n".join([
-            json.dumps({"message": {"content": "Hello"}, "done": False}),
-            json.dumps({"message": {"content": " world"}, "done": False}),
-            json.dumps({"message": {"content": "!"}, "done": True}),
-        ])
+        ndjson_lines = "\n".join(
+            [
+                json.dumps({"message": {"content": "Hello"}, "done": False}),
+                json.dumps({"message": {"content": " world"}, "done": False}),
+                json.dumps({"message": {"content": "!"}, "done": True}),
+            ]
+        )
 
         respx_mock.post("http://localhost:11434/api/chat").mock(
             return_value=httpx.Response(200, text=ndjson_lines)
@@ -77,14 +81,17 @@ class TestOllamaAdapterStreaming:
     async def test_astream_strips_think_blocks(self, adapter, messages, respx_mock):
         """Tokens inside <think>...</think> should be filtered out."""
         import json
+
         import httpx
 
-        ndjson_lines = "\n".join([
-            json.dumps({"message": {"content": "<think>"}, "done": False}),
-            json.dumps({"message": {"content": "internal thought"}, "done": False}),
-            json.dumps({"message": {"content": "</think>visible"}, "done": False}),
-            json.dumps({"message": {"content": " more"}, "done": True}),
-        ])
+        ndjson_lines = "\n".join(
+            [
+                json.dumps({"message": {"content": "<think>"}, "done": False}),
+                json.dumps({"message": {"content": "internal thought"}, "done": False}),
+                json.dumps({"message": {"content": "</think>visible"}, "done": False}),
+                json.dumps({"message": {"content": " more"}, "done": True}),
+            ]
+        )
 
         respx_mock.post("http://localhost:11434/api/chat").mock(
             return_value=httpx.Response(200, text=ndjson_lines)
@@ -102,12 +109,15 @@ class TestOllamaAdapterStreaming:
     async def test_astream_skips_empty_tokens(self, adapter, messages, respx_mock):
         """Empty content tokens should not be yielded."""
         import json
+
         import httpx
 
-        ndjson_lines = "\n".join([
-            json.dumps({"message": {"content": ""}, "done": False}),
-            json.dumps({"message": {"content": "real"}, "done": True}),
-        ])
+        ndjson_lines = "\n".join(
+            [
+                json.dumps({"message": {"content": ""}, "done": False}),
+                json.dumps({"message": {"content": "real"}, "done": True}),
+            ]
+        )
 
         respx_mock.post("http://localhost:11434/api/chat").mock(
             return_value=httpx.Response(200, text=ndjson_lines)
@@ -123,13 +133,16 @@ class TestOllamaAdapterStreaming:
     async def test_astream_with_system_prompt(self, adapter, messages, respx_mock):
         """System prompt should be sent in the payload."""
         import json
+
         import httpx
 
         captured_body: dict = {}
 
         def handler(request: httpx.Request) -> httpx.Response:
             captured_body.update(json.loads(request.content))
-            return httpx.Response(200, text=json.dumps({"message": {"content": "ok"}, "done": True}))
+            return httpx.Response(
+                200, text=json.dumps({"message": {"content": "ok"}, "done": True})
+            )
 
         respx_mock.post("http://localhost:11434/api/chat").mock(side_effect=handler)
 
@@ -145,6 +158,7 @@ class TestOllamaAdapterStreaming:
 
     def test_ollama_adapter_implements_llm_port(self, adapter):
         from src.core.ports.llm_port import LLMPort
+
         assert isinstance(adapter, LLMPort)
 
     def test_ollama_adapter_implements_stream_port(self, adapter):
@@ -155,12 +169,14 @@ class TestOllamaAdapterStreaming:
 # AnthropicAdapter streaming tests
 # ---------------------------------------------------------------------------
 
+
 class TestAnthropicAdapterStreaming:
     """Test AnthropicAdapter.astream() — mocked Anthropic SDK."""
 
     @pytest.fixture
     def adapter(self, monkeypatch):
-        from unittest.mock import MagicMock, AsyncMock
+        from unittest.mock import MagicMock
+
         import anthropic as anthropic_sdk
 
         # Minimal mock of AsyncAnthropic to avoid real API calls
@@ -168,12 +184,12 @@ class TestAnthropicAdapterStreaming:
         monkeypatch.setattr(anthropic_sdk, "AsyncAnthropic", lambda api_key: mock_client)
 
         from src.adapters.llm.anthropic_adapter import AnthropicAdapter
+
         return AnthropicAdapter(api_key="test-key"), mock_client
 
     @pytest.mark.asyncio
     async def test_astream_yields_tokens(self, adapter):
         from unittest.mock import AsyncMock, MagicMock
-        import contextlib
 
         adp, mock_client = adapter
         session = Session().add_message("user", "hi")
@@ -202,6 +218,7 @@ class TestAnthropicAdapterStreaming:
 # ---------------------------------------------------------------------------
 # chatStore streaming logic (pure unit, no browser APIs)
 # ---------------------------------------------------------------------------
+
 
 class TestStreamingProtocol:
     """Verify streaming message protocol shape matches what backend sends."""

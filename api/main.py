@@ -69,9 +69,7 @@ async def _lifespan(app: FastAPI):
     ws_manager = ConnectionManager()
     app.state.ws_manager = ws_manager
     push_interval = float(os.environ.get("VIEWPORT_PUSH_INTERVAL", "3"))
-    broadcast_task = asyncio.create_task(
-        viewport_broadcast_loop(app.state, interval=push_interval)
-    )
+    broadcast_task = asyncio.create_task(viewport_broadcast_loop(app.state, interval=push_interval))
 
     yield
 

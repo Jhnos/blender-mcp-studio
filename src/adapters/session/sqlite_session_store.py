@@ -42,9 +42,10 @@ class SQLiteSessionStore(SessionStorePort):
 
     async def get(self, session_id: str) -> Session | None:
         await self._ensure_db()
-        async with aiosqlite.connect(self._db) as conn, conn.execute(
-            "SELECT data FROM sessions WHERE id = ?", (session_id,)
-        ) as cursor:
+        async with (
+            aiosqlite.connect(self._db) as conn,
+            conn.execute("SELECT data FROM sessions WHERE id = ?", (session_id,)) as cursor,
+        ):
             row = await cursor.fetchone()
             if row is None:
                 return None

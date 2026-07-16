@@ -24,12 +24,14 @@ def build_vision_adapter(provider: str | None = None) -> VisionPort | None:
 
     if _provider == "openai":
         from src.adapters.vision.gpt4o_vision_adapter import GPT4oVisionAdapter
+
         return GPT4oVisionAdapter(
             api_key=os.environ.get("OPENAI_API_KEY", ""),
             model=os.environ.get("VISION_MODEL", GPT4oVisionAdapter.DEFAULT_MODEL),
         )
     if _provider == "anthropic":
         from src.adapters.vision.claude_vision_adapter import ClaudeVisionAdapter
+
         return ClaudeVisionAdapter(
             api_key=os.environ.get("ANTHROPIC_API_KEY", ""),
             model=os.environ.get("VISION_MODEL", ClaudeVisionAdapter.DEFAULT_MODEL),

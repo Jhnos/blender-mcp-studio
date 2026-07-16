@@ -67,10 +67,13 @@ class SQLiteSnapshotStore(SnapshotStorePort):
 
     async def list_all(self) -> SnapshotList:
         await self._ensure_db()
-        async with aiosqlite.connect(self._db) as conn, conn.execute(
-            "SELECT id, label, blend_path, thumbnail_b64, created_at, session_id "
-            "FROM snapshots ORDER BY created_at DESC"
-        ) as cursor:
+        async with (
+            aiosqlite.connect(self._db) as conn,
+            conn.execute(
+                "SELECT id, label, blend_path, thumbnail_b64, created_at, session_id "
+                "FROM snapshots ORDER BY created_at DESC"
+            ) as cursor,
+        ):
             rows = await cursor.fetchall()
         return SnapshotList(
             snapshots=tuple(
@@ -88,11 +91,14 @@ class SQLiteSnapshotStore(SnapshotStorePort):
 
     async def get(self, snapshot_id: str) -> SceneSnapshot | None:
         await self._ensure_db()
-        async with aiosqlite.connect(self._db) as conn, conn.execute(
-            "SELECT id, label, blend_path, thumbnail_b64, created_at, session_id "
-            "FROM snapshots WHERE id = ?",
-            (snapshot_id,),
-        ) as cursor:
+        async with (
+            aiosqlite.connect(self._db) as conn,
+            conn.execute(
+                "SELECT id, label, blend_path, thumbnail_b64, created_at, session_id "
+                "FROM snapshots WHERE id = ?",
+                (snapshot_id,),
+            ) as cursor,
+        ):
             row = await cursor.fetchone()
         if row is None:
             return None

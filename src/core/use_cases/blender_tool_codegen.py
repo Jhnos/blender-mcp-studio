@@ -53,12 +53,14 @@ def _create_object(a: dict[str, object]) -> str:
 
 
 def _delete_object(a: dict[str, object]) -> str:
-    return "\n".join([
-        "import bpy",
-        f"o = bpy.data.objects.get({_lit(a.get('name'))})",
-        "if o: bpy.data.objects.remove(o, do_unlink=True); print('deleted', o.name)",
-        "else: print('not found')",
-    ])
+    return "\n".join(
+        [
+            "import bpy",
+            f"o = bpy.data.objects.get({_lit(a.get('name'))})",
+            "if o: bpy.data.objects.remove(o, do_unlink=True); print('deleted', o.name)",
+            "else: print('not found')",
+        ]
+    )
 
 
 def _modify_object(a: dict[str, object]) -> str:

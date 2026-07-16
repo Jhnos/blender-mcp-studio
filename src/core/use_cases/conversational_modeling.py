@@ -14,7 +14,6 @@ from __future__ import annotations
 import json
 
 from src.core.domain.command import Command, CommandParser
-from src.core.use_cases.blender_tool_codegen import translate as _translate_command
 from src.core.domain.events import (
     CommandExecutedEvent,
     CommandFailedEvent,
@@ -27,9 +26,11 @@ from src.core.ports.blender_port import BlenderPort
 from src.core.ports.event_bus_port import EventBusPort
 from src.core.ports.llm_port import LLMChatPort, LLMToolChatPort, ToolDefinition
 from src.core.ports.prompt_builder_port import PromptBuilderPort
+from src.core.use_cases.blender_tool_codegen import translate as _translate_command
 
 try:
     from src.adapters.prompt.semantic_tool_router import SemanticToolRouter
+
     _router = SemanticToolRouter()
 except Exception:
     _router = None  # type: ignore[assignment]
@@ -111,7 +112,10 @@ _BLENDER_TOOLS: list[ToolDefinition] = [
         name="hunyuan3d_generate",
         description="Generate a 3D mesh from text using Hunyuan3D AI (returns imported object in Blender).",
         parameters={
-            "prompt": {"type": "string", "description": "Text description of the 3D model to generate"},
+            "prompt": {
+                "type": "string",
+                "description": "Text description of the 3D model to generate",
+            },
             "negative_prompt": {"type": "string", "description": "What to avoid in the generation"},
         },
         required_params=("prompt",),
@@ -121,7 +125,10 @@ _BLENDER_TOOLS: list[ToolDefinition] = [
         description="Generate a high-quality 3D model using Hyper3D Rodin AI from text description.",
         parameters={
             "prompt": {"type": "string", "description": "Text description of the 3D model"},
-            "geometry_file_format": {"type": "string", "description": "Output format: glb, usdz, fbx, obj, stl"},
+            "geometry_file_format": {
+                "type": "string",
+                "description": "Output format: glb, usdz, fbx, obj, stl",
+            },
         },
         required_params=("prompt",),
     ),
@@ -225,9 +232,7 @@ class ConversationalModelingUseCase:
 
         return updated_session, assistant_reply, blender_output
 
-    async def _chat_with_tools(
-        self, session: Session
-    ) -> tuple[Command | None, str]:
+    async def _chat_with_tools(self, session: Session) -> tuple[Command | None, str]:
         """Native tool calling path — structured, no regex.
 
         Uses SemanticToolRouter to pre-filter tools based on user message,
@@ -255,9 +260,7 @@ class ConversationalModelingUseCase:
             return command, reply
         return None, response.text
 
-    async def _chat_fallback(
-        self, session: Session
-    ) -> tuple[Command | None, str]:
+    async def _chat_fallback(self, session: Session) -> tuple[Command | None, str]:
         """Regex JSON fallback for models without native tool calling."""
         llm_response = await self._llm.chat(
             messages=session.messages,
@@ -270,6 +273,6 @@ class ConversationalModelingUseCase:
     async def _emit(self, event: object) -> None:
         if self._bus is not None:
             from src.core.domain.events import DomainEvent
+
             if isinstance(event, DomainEvent):
                 await self._bus.publish(event)
-

@@ -98,33 +98,36 @@ class OllamaAdapter(LLMPort):
         }
 
         in_think = False
-        async with httpx.AsyncClient(timeout=self._timeout) as client, client.stream(
+        async with (
+            httpx.AsyncClient(timeout=self._timeout) as client,
+            client.stream(
                 "POST",
                 f"{self._base_url}/api/chat",
                 json=payload,
-            ) as resp:
-                resp.raise_for_status()
-                async for line in resp.aiter_lines():
-                    if not line.strip():
+            ) as resp,
+        ):
+            resp.raise_for_status()
+            async for line in resp.aiter_lines():
+                if not line.strip():
+                    continue
+                try:
+                    chunk = _json.loads(line)
+                except _json.JSONDecodeError:
+                    continue
+                token: str = chunk.get("message", {}).get("content", "")
+                if not token:
+                    continue
+                # Strip <think> blocks on-the-fly
+                if "<think>" in token:
+                    in_think = True
+                if in_think:
+                    if "</think>" in token:
+                        in_think = False
+                        token = token.split("</think>", 1)[-1]
+                    else:
                         continue
-                    try:
-                        chunk = _json.loads(line)
-                    except _json.JSONDecodeError:
-                        continue
-                    token: str = chunk.get("message", {}).get("content", "")
-                    if not token:
-                        continue
-                    # Strip <think> blocks on-the-fly
-                    if "<think>" in token:
-                        in_think = True
-                    if in_think:
-                        if "</think>" in token:
-                            in_think = False
-                            token = token.split("</think>", 1)[-1]
-                        else:
-                            continue
-                    if token:
-                        yield token
+                if token:
+                    yield token
 
     async def chat_with_tools(
         self,
@@ -158,6 +161,7 @@ class OllamaAdapter(LLMPort):
             args = fn.get("arguments", {})
             if isinstance(args, str):
                 import json
+
                 try:
                     args = json.loads(args)
                 except json.JSONDecodeError:

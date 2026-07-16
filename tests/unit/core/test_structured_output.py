@@ -2,8 +2,12 @@
 
 from __future__ import annotations
 
+from dataclasses import FrozenInstanceError
+
 import pytest
 
+from src.core.domain.session import Session
+from src.core.ports.blender_port import BlenderPort
 from src.core.ports.llm_port import (
     LLMChatPort,
     LLMPort,
@@ -13,15 +17,13 @@ from src.core.ports.llm_port import (
     ToolCall,
     ToolDefinition,
 )
-from src.core.domain.session import Session
-from src.core.use_cases.conversational_modeling import ConversationalModelingUseCase
-from src.core.ports.blender_port import BlenderPort
 from src.core.ports.mcp_port import ToolResult
-
+from src.core.use_cases.conversational_modeling import ConversationalModelingUseCase
 
 # ---------------------------------------------------------------------------
 # Fakes / stubs
 # ---------------------------------------------------------------------------
+
 
 class FakeBlender(BlenderPort):
     def __init__(self) -> None:
@@ -29,8 +31,11 @@ class FakeBlender(BlenderPort):
 
     async def connect(self) -> None: ...
     async def disconnect(self) -> None: ...
-    async def is_connected(self) -> bool: return True
-    async def get_scene_info(self) -> dict: return {}
+    async def is_connected(self) -> bool:
+        return True
+
+    async def get_scene_info(self) -> dict:
+        return {}
 
     async def execute(self, command):
         self.last_command = command
@@ -63,10 +68,12 @@ class FakeToolCallingLLM(LLMPort):
         yield self._text
 
     @property
-    def provider_name(self) -> str: return "fake"
+    def provider_name(self) -> str:
+        return "fake"
 
     @property
-    def model_name(self) -> str: return "fake-tool"
+    def model_name(self) -> str:
+        return "fake-tool"
 
 
 class FakePlainLLM(LLMPort):
@@ -86,15 +93,18 @@ class FakePlainLLM(LLMPort):
         yield self._response
 
     @property
-    def provider_name(self) -> str: return "fake"
+    def provider_name(self) -> str:
+        return "fake"
 
     @property
-    def model_name(self) -> str: return "fake-plain"
+    def model_name(self) -> str:
+        return "fake-plain"
 
 
 # ---------------------------------------------------------------------------
 # Port hierarchy tests
 # ---------------------------------------------------------------------------
+
 
 def test_llm_tool_chat_port_is_subtype_of_llm_chat_port():
     """LLMToolChatPort IS-A LLMChatPort — use cases can accept either."""
@@ -104,25 +114,27 @@ def test_llm_tool_chat_port_is_subtype_of_llm_chat_port():
 def test_llm_port_is_full_interface():
     """LLMPort inherits from both LLMToolChatPort and LLMMetadataPort."""
     from src.core.ports.llm_port import LLMMetadataPort
+
     assert issubclass(LLMPort, LLMToolChatPort)
     assert issubclass(LLMPort, LLMMetadataPort)
 
 
 def test_tool_definition_is_frozen():
     t = ToolDefinition(name="test", description="desc")
-    with pytest.raises(Exception):
+    with pytest.raises(FrozenInstanceError):
         t.name = "changed"  # type: ignore
 
 
 def test_tool_call_is_frozen():
     tc = ToolCall(name="create_object", arguments={"type": "MESH"})
-    with pytest.raises(Exception):
+    with pytest.raises(FrozenInstanceError):
         tc.name = "changed"  # type: ignore
 
 
 # ---------------------------------------------------------------------------
 # Use case: prefers tool calling when available
 # ---------------------------------------------------------------------------
+
 
 @pytest.mark.asyncio
 async def test_use_case_uses_tool_calling_when_llm_supports_it():
@@ -143,7 +155,7 @@ async def test_use_case_uses_tool_calling_when_llm_supports_it():
     # The tool-call intent must survive the translation into bpy code.
     code = str(blender.last_command.arguments["code"])
     assert "primitive_cube_add" in code  # type: MESH
-    assert 'obj.name = "Cube"' in code   # name: Cube
+    assert 'obj.name = "Cube"' in code  # name: Cube
     assert blender_out == "ok"
 
 
@@ -180,6 +192,7 @@ async def test_use_case_detects_plain_llm_and_uses_fallback():
 @pytest.mark.asyncio
 async def test_use_case_fallback_with_chat_only_llm():
     """A LLMChatPort-only implementation triggers regex fallback."""
+
     class ChatOnlyLLM(LLMChatPort):
         async def chat(self, messages, system_prompt=None) -> LLMResponse:
             return LLMResponse(
@@ -220,9 +233,11 @@ async def test_tool_call_reply_shows_tool_name():
 # ToolDefinition builder tests
 # ---------------------------------------------------------------------------
 
+
 def test_blender_tools_list_has_required_tools():
     """_BLENDER_TOOLS covers the essential operations."""
     from src.core.use_cases.conversational_modeling import _BLENDER_TOOLS
+
     names = {t.name for t in _BLENDER_TOOLS}
     assert "create_object" in names
     assert "delete_object" in names
@@ -233,5 +248,6 @@ def test_blender_tools_list_has_required_tools():
 
 def test_create_object_tool_requires_type():
     from src.core.use_cases.conversational_modeling import _BLENDER_TOOLS
+
     tool = next(t for t in _BLENDER_TOOLS if t.name == "create_object")
     assert "type" in tool.required_params

@@ -9,7 +9,6 @@ import pytest
 
 from api.routers.ws_manager import ConnectionManager, viewport_broadcast_loop
 
-
 # ---------------------------------------------------------------------------
 # ConnectionManager unit tests
 # ---------------------------------------------------------------------------
@@ -70,9 +69,7 @@ class TestConnectionManager:
         ws = AsyncMock()
         mgr.register(ws)
         await mgr.broadcast_viewport("abc123")
-        ws.send_json.assert_awaited_once_with(
-            {"type": "viewport_update", "screenshot": "abc123"}
-        )
+        ws.send_json.assert_awaited_once_with({"type": "viewport_update", "screenshot": "abc123"})
 
     @pytest.mark.asyncio
     async def test_broadcast_json_no_connections_is_noop(self):
@@ -181,9 +178,11 @@ async def test_broadcast_loop_continues_after_blender_error():
         if call_count >= 3:
             raise asyncio.CancelledError
 
-    with patch("asyncio.sleep", new_callable=AsyncMock, side_effect=sleep_side_effect):
-        with pytest.raises(asyncio.CancelledError):
-            await viewport_broadcast_loop(state, interval=0.01)
+    with (
+        patch("asyncio.sleep", new_callable=AsyncMock, side_effect=sleep_side_effect),
+        pytest.raises(asyncio.CancelledError),
+    ):
+        await viewport_broadcast_loop(state, interval=0.01)
 
     # No screenshot sent — but no crash either
     ws.send_json.assert_not_awaited()

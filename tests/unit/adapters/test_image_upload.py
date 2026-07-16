@@ -14,7 +14,12 @@ def _make_client_with_vision(vision_mock=None) -> TestClient:
     app = create_app()
 
     mock_blender = AsyncMock()
-    mock_blender.execute_code.return_value = {"success": True, "output": "", "error": None, "screenshot": None}
+    mock_blender.execute_code.return_value = {
+        "success": True,
+        "output": "",
+        "error": None,
+        "screenshot": None,
+    }
 
     app.state.blender = mock_blender
     app.state.event_bus = MagicMock()
@@ -34,6 +39,7 @@ def _make_client_with_vision(vision_mock=None) -> TestClient:
 def _fake_image_bytes() -> bytes:
     """Minimal 1x1 PNG."""
     import base64
+
     return base64.b64decode(
         "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="
     )

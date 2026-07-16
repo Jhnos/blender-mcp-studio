@@ -15,7 +15,14 @@ from src.core.ports.text3d_port import Text3DGenerationPort, Text3DResult
 
 
 class FakeText3DAdapter(Text3DGenerationPort):
-    async def generate(self, prompt: str, *, negative_prompt: str = "", steps: int = 20, guidance_scale: float = 7.5) -> Text3DResult:
+    async def generate(
+        self,
+        prompt: str,
+        *,
+        negative_prompt: str = "",
+        steps: int = 20,
+        guidance_scale: float = 7.5,
+    ) -> Text3DResult:
         return Text3DResult(
             glb_bytes=b"GLB",
             prompt=prompt,
@@ -25,8 +32,10 @@ class FakeText3DAdapter(Text3DGenerationPort):
 
 
 def test_port_is_abstract():
-    assert not hasattr(Text3DGenerationPort, "__abstractmethods__") or \
-           "generate" in Text3DGenerationPort.__abstractmethods__
+    assert (
+        not hasattr(Text3DGenerationPort, "__abstractmethods__")
+        or "generate" in Text3DGenerationPort.__abstractmethods__
+    )
 
 
 def test_fake_implements_port():
@@ -76,7 +85,9 @@ async def test_local_mode_binary_response(respx_mock):
     import httpx
 
     respx_mock.post("http://localhost:8080/generate").mock(
-        return_value=httpx.Response(200, content=fake_glb, headers={"content-type": "model/gltf-binary"})
+        return_value=httpx.Response(
+            200, content=fake_glb, headers={"content-type": "model/gltf-binary"}
+        )
     )
     result = await adapter.generate("a dragon", steps=10)
 
@@ -126,7 +137,10 @@ async def test_local_mode_http_error_raises(respx_mock):
 async def test_gradio_mode_missing_package_raises():
     """If gradio_client not installed, RuntimeError with helpful message."""
     adapter = Hunyuan3DAdapter(mode="gradio", hf_space="tencent/Hunyuan3D-2")
-    with patch("builtins.__import__", side_effect=ImportError("gradio_client")), pytest.raises(RuntimeError, match="gradio_client not installed"):
+    with (
+        patch("builtins.__import__", side_effect=ImportError("gradio_client")),
+        pytest.raises(RuntimeError, match="gradio_client not installed"),
+    ):
         await adapter._generate_gradio("test", "", 10, 7.5)
 
 
@@ -141,7 +155,10 @@ async def test_gradio_mode_calls_client(tmp_path):
     mock_client_instance.predict.return_value = str(glb_file)
 
     adapter = Hunyuan3DAdapter(mode="gradio", hf_space="tencent/Hunyuan3D-2")
-    with patch.dict("sys.modules", {"gradio_client": MagicMock(Client=MagicMock(return_value=mock_client_instance))}):
+    with patch.dict(
+        "sys.modules",
+        {"gradio_client": MagicMock(Client=MagicMock(return_value=mock_client_instance))},
+    ):
         result = await adapter._generate_gradio("a dragon", "", 20, 7.5)
 
     assert result == fake_glb

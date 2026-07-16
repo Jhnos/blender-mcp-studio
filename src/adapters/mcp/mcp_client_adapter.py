@@ -88,7 +88,10 @@ class MCPClientBlenderAdapter(BlenderPort):
         from mcp.client.session import ClientSession
         from mcp.client.sse import sse_client
 
-        async with sse_client(self._sse_url) as (read, write), ClientSession(read, write) as session:
+        async with (
+            sse_client(self._sse_url) as (read, write),
+            ClientSession(read, write) as session,
+        ):
             await session.initialize()
             result = await session.list_tools()
             return result.tools
@@ -99,19 +102,18 @@ class MCPClientBlenderAdapter(BlenderPort):
         from mcp.client.sse import sse_client
 
         try:
-            async with sse_client(self._sse_url) as (read, write), ClientSession(read, write) as session:
+            async with (
+                sse_client(self._sse_url) as (read, write),
+                ClientSession(read, write) as session,
+            ):
                 await session.initialize()
                 result = await session.call_tool(tool_name, arguments)
 
                 if result.isError:
-                    error_text = " ".join(
-                        c.text for c in result.content if hasattr(c, "text")
-                    )
+                    error_text = " ".join(c.text for c in result.content if hasattr(c, "text"))
                     return ToolResult(success=False, output=None, error=error_text)
 
-                output_text = " ".join(
-                    c.text for c in result.content if hasattr(c, "text")
-                )
+                output_text = " ".join(c.text for c in result.content if hasattr(c, "text"))
                 return ToolResult(success=True, output=output_text, error=None)
 
         except Exception as e:

@@ -124,7 +124,7 @@ OLLAMA_BASE_URL=http://localhost:11434
 
 | Tier | 內容 | 硬 gate |
 |---|---|---|
-| T1 靜態 | web build(tsc) / eslint；ruff・format・mypy | 前兩者；python lint 為既有債 → WARN 不擋 |
+| T1 靜態 | web build(tsc)・eslint・ruff check・ruff format | ✅（mypy 為 strict 模式既有債 ~109 → WARN 不擋）|
 | T2 單元 | pytest `tests/unit`；vitest（含**自動化 dummy run**：真前端+真 MDR 引擎+假後端）| ✅ |
 | T3 真機 | `scripts/verify/mcp_verify_rest.py`——nonce + 獨立 oracle 證 MCP↔Blender 真的在作用 | ✅（Blender 沒開＝顯式 SKIP，不當 pass）|
 

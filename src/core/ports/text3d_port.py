@@ -19,9 +19,9 @@ from dataclasses import dataclass
 class Text3DResult:
     """Result from a text-to-3D generation request."""
 
-    glb_bytes: bytes          # raw GLB file content
-    prompt: str               # original prompt
-    provider: str             # e.g. "hunyuan3d", "hyper3d"
+    glb_bytes: bytes  # raw GLB file content
+    prompt: str  # original prompt
+    provider: str  # e.g. "hunyuan3d", "hyper3d"
     generation_time_s: float  # elapsed seconds
 
 

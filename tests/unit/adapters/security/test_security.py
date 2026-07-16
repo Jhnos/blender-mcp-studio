@@ -2,17 +2,19 @@
 
 from __future__ import annotations
 
+from dataclasses import FrozenInstanceError
+
 import pytest
 
 from src.adapters.security.blender_code_sandbox import BlenderCodeSandbox
 from src.adapters.security.prompt_injection_sanitizer import PromptInjectionSanitizer
 from src.core.ports.code_sandbox_port import CodeSandboxPort, SandboxResult
-from src.core.ports.input_sanitizer_port import InputSanitizerPort, SanitizeResult
-
+from src.core.ports.input_sanitizer_port import InputSanitizerPort
 
 # ---------------------------------------------------------------------------
 # Port contract tests
 # ---------------------------------------------------------------------------
+
 
 def test_blender_code_sandbox_implements_port():
     assert isinstance(BlenderCodeSandbox(), CodeSandboxPort)
@@ -24,13 +26,14 @@ def test_prompt_injection_sanitizer_implements_port():
 
 def test_sandbox_result_frozen():
     r = SandboxResult(allowed=True, violations=())
-    with pytest.raises(Exception):
+    with pytest.raises(FrozenInstanceError):
         r.allowed = False  # type: ignore
 
 
 # ---------------------------------------------------------------------------
 # BlenderCodeSandbox — safe code
 # ---------------------------------------------------------------------------
+
 
 def test_safe_bpy_code_is_allowed():
     sandbox = BlenderCodeSandbox()
@@ -67,6 +70,7 @@ def test_math_and_typing_allowed():
 # BlenderCodeSandbox — dangerous code
 # ---------------------------------------------------------------------------
 
+
 def test_import_os_is_blocked():
     sandbox = BlenderCodeSandbox()
     result = sandbox.validate("import os\nos.system('rm -rf /')")
@@ -82,7 +86,7 @@ def test_import_subprocess_is_blocked():
 
 def test_eval_is_blocked():
     sandbox = BlenderCodeSandbox()
-    result = sandbox.validate("eval('__import__(\"os\").system(\"id\")')")
+    result = sandbox.validate('eval(\'__import__("os").system("id")\')')
     assert result.allowed is False
     assert any("eval" in v for v in result.violations)
 
@@ -129,6 +133,7 @@ def test_multiple_violations_reported():
 # PromptInjectionSanitizer — clean input
 # ---------------------------------------------------------------------------
 
+
 def test_clean_input_passes_through():
     sanitizer = PromptInjectionSanitizer()
     result = sanitizer.sanitize("建立一個紅色的球體")
@@ -146,6 +151,7 @@ def test_english_clean_input_passes():
 # ---------------------------------------------------------------------------
 # PromptInjectionSanitizer — injection patterns
 # ---------------------------------------------------------------------------
+
 
 def test_ignore_previous_instructions_detected():
     sanitizer = PromptInjectionSanitizer()
@@ -201,6 +207,7 @@ def test_sanitized_text_is_always_returned():
 # ---------------------------------------------------------------------------
 # Integration: sandbox wired into BlenderMCPAdapter
 # ---------------------------------------------------------------------------
+
 
 @pytest.mark.asyncio
 async def test_blender_adapter_blocks_dangerous_code_via_sandbox():

@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import os
 import pytest
 
 
@@ -12,8 +11,8 @@ def test_factory_returns_socket_adapter_by_default(monkeypatch):
     monkeypatch.setenv("BLENDER_HOST", "localhost")
     monkeypatch.setenv("BLENDER_PORT", "9876")
 
-    from src.adapters.mcp.factory import build_blender_adapter
     from src.adapters.mcp.blender_mcp_adapter import BlenderMCPAdapter
+    from src.adapters.mcp.factory import build_blender_adapter
 
     adapter = build_blender_adapter()
     assert isinstance(adapter, BlenderMCPAdapter)
@@ -23,8 +22,8 @@ def test_factory_returns_socket_adapter_explicitly(monkeypatch):
     """Factory returns socket adapter when BLENDER_TRANSPORT=socket."""
     monkeypatch.setenv("BLENDER_TRANSPORT", "socket")
 
-    from src.adapters.mcp.factory import build_blender_adapter
     from src.adapters.mcp.blender_mcp_adapter import BlenderMCPAdapter
+    from src.adapters.mcp.factory import build_blender_adapter
 
     adapter = build_blender_adapter()
     assert isinstance(adapter, BlenderMCPAdapter)

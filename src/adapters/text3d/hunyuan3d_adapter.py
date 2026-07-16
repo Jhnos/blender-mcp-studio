@@ -70,6 +70,7 @@ class Hunyuan3DAdapter(Text3DGenerationPort):
     ) -> bytes:
         """POST to local Hunyuan3D HTTP server, return raw GLB bytes."""
         import httpx
+
         payload = {
             "prompt": prompt,
             "negative_prompt": negative_prompt,
@@ -86,6 +87,7 @@ class Hunyuan3DAdapter(Text3DGenerationPort):
                 data = resp.json()
                 if "glb_base64" in data:
                     import base64
+
                     return base64.b64decode(data["glb_base64"])
                 if "glb_url" in data:
                     dl = await client.get(data["glb_url"])

@@ -46,6 +46,7 @@ def test_concrete_factory_returns_blender_port(monkeypatch) -> None:
 
 def test_mock_factory_satisfies_port() -> None:
     """A mock factory can fully replace the concrete one — testability confirmed."""
+
     class MockFactory(AdapterFactoryPort):
         def build_llm_adapter(self, provider=None):
             return MagicMock()

@@ -8,25 +8,28 @@ from __future__ import annotations
 
 import pytest
 
-from src.core.domain.session import Session
-from src.core.ports.blender_port import BlenderPort
-from src.core.ports.llm_port import (
-    LLMPort, LLMResponse, LLMToolResponse, ToolCall, ToolDefinition,
-)
-from src.core.ports.mcp_port import ToolResult
-from src.core.ports.vision_port import VisionAnalysis, VisionPort
-from src.core.use_cases.conversational_modeling import ConversationalModelingUseCase
-from src.core.use_cases.iterative_refinement import IterativeRefinementUseCase
 from src.adapters.prompt.blender_context_prompt_builder import BlenderContextPromptBuilder
 from src.adapters.prompt.semantic_tool_router import SemanticToolRouter
 from src.adapters.security.blender_code_sandbox import BlenderCodeSandbox
 from src.adapters.security.prompt_injection_sanitizer import PromptInjectionSanitizer
 from src.adapters.session.sqlite_session_store import SQLiteSessionStore
-
+from src.core.domain.session import Session
+from src.core.ports.blender_port import BlenderPort
+from src.core.ports.llm_port import (
+    LLMPort,
+    LLMResponse,
+    LLMToolResponse,
+    ToolCall,
+)
+from src.core.ports.mcp_port import ToolResult
+from src.core.ports.vision_port import VisionAnalysis, VisionPort
+from src.core.use_cases.conversational_modeling import ConversationalModelingUseCase
+from src.core.use_cases.iterative_refinement import IterativeRefinementUseCase
 
 # ---------------------------------------------------------------------------
 # Mock adapters
 # ---------------------------------------------------------------------------
+
 
 class MockToolCallingLLM(LLMPort):
     """Controllable LLM that returns preset tool calls."""
@@ -50,10 +53,12 @@ class MockToolCallingLLM(LLMPort):
         yield "mock text"
 
     @property
-    def provider_name(self) -> str: return "mock"
+    def provider_name(self) -> str:
+        return "mock"
 
     @property
-    def model_name(self) -> str: return "mock-tool"
+    def model_name(self) -> str:
+        return "mock-tool"
 
 
 class MockBlender(BlenderPort):
@@ -65,13 +70,18 @@ class MockBlender(BlenderPort):
 
     async def connect(self) -> None: ...
     async def disconnect(self) -> None: ...
-    async def is_connected(self) -> bool: return True
-    async def get_scene_info(self) -> dict: return {"objects": [{"name": "Cube", "type": "MESH"}]}
+    async def is_connected(self) -> bool:
+        return True
+
+    async def get_scene_info(self) -> dict:
+        return {"objects": [{"name": "Cube", "type": "MESH"}]}
 
     async def execute(self, command):
         self.executed.append((command.tool_name, dict(command.arguments)))
         if self._fail_on and command.tool_name == self._fail_on:
-            return ToolResult(success=False, output=None, error=f"mock failure: {command.tool_name}")
+            return ToolResult(
+                success=False, output=None, error=f"mock failure: {command.tool_name}"
+            )
         return ToolResult(success=True, output=f"executed {command.tool_name}", error=None)
 
     async def call_tool(self, tool_name, arguments):
@@ -95,18 +105,23 @@ class MockVision(VisionPort):
 # Full pipeline E2E tests
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.asyncio
 async def test_full_pipeline_create_object():
     """E2E: user asks to create an object → tool call → Blender executes."""
     blender = MockBlender()
-    llm = MockToolCallingLLM([
-        LLMToolResponse(
-            tool_calls=(ToolCall(name="create_object", arguments={"type": "MESH", "name": "BlackCat"}),),
-            text="",
-            provider="mock",
-            model="mock",
-        )
-    ])
+    llm = MockToolCallingLLM(
+        [
+            LLMToolResponse(
+                tool_calls=(
+                    ToolCall(name="create_object", arguments={"type": "MESH", "name": "BlackCat"}),
+                ),
+                text="",
+                provider="mock",
+                model="mock",
+            )
+        ]
+    )
 
     use_case = ConversationalModelingUseCase(llm=llm, blender=blender)
     session = Session().add_message("user", "建立一個黑貓模型")
@@ -124,14 +139,16 @@ async def test_full_pipeline_create_object():
 async def test_full_pipeline_with_prompt_builder():
     """E2E: BlenderContextPromptBuilder enriches system prompt."""
     blender = MockBlender()
-    llm = MockToolCallingLLM([
-        LLMToolResponse(
-            tool_calls=(ToolCall(name="get_scene_info", arguments={}),),
-            text="",
-            provider="mock",
-            model="mock",
-        )
-    ])
+    llm = MockToolCallingLLM(
+        [
+            LLMToolResponse(
+                tool_calls=(ToolCall(name="get_scene_info", arguments={}),),
+                text="",
+                provider="mock",
+                model="mock",
+            )
+        ]
+    )
     prompt_builder = BlenderContextPromptBuilder()
 
     use_case = ConversationalModelingUseCase(
@@ -175,9 +192,13 @@ async def test_security_sandbox_blocks_dangerous_code():
 async def test_iterative_refinement_converges():
     """E2E: IterativeRefinementUseCase converges when vision says 'looks good'."""
     blender = MockBlender()
-    llm = MockToolCallingLLM([
-        LLMToolResponse(tool_calls=(), text="Applied adjustments", provider="mock", model="mock"),
-    ])
+    llm = MockToolCallingLLM(
+        [
+            LLMToolResponse(
+                tool_calls=(), text="Applied adjustments", provider="mock", model="mock"
+            ),
+        ]
+    )
     vision = MockVision(["looks good, the cat model matches the request perfectly."])
 
     # Override screenshot to return fake bytes (no real Blender)
@@ -199,14 +220,18 @@ async def test_iterative_refinement_converges():
 async def test_iterative_refinement_runs_max_iterations():
     """E2E: IterativeRefinementUseCase runs max iterations when never converging."""
     blender = MockBlender()
-    llm = MockToolCallingLLM([
-        LLMToolResponse(
-            tool_calls=(ToolCall(name="modify_object", arguments={"name": "Cube", "scale": [2, 2, 2]}),),
-            text="Adjusted",
-            provider="mock",
-            model="mock",
-        )
-    ])
+    llm = MockToolCallingLLM(
+        [
+            LLMToolResponse(
+                tool_calls=(
+                    ToolCall(name="modify_object", arguments={"name": "Cube", "scale": [2, 2, 2]}),
+                ),
+                text="Adjusted",
+                provider="mock",
+                model="mock",
+            )
+        ]
+    )
     vision = MockVision(["The scene needs improvement: the cat is missing ears and tail."])
 
     async def _fake_screenshot():
@@ -308,5 +333,6 @@ async def test_vision_factory_returns_none_without_api_key(monkeypatch):
     monkeypatch.delenv("VISION_PROVIDER", raising=False)
 
     from src.adapters.vision.factory import build_vision_adapter
+
     vision = build_vision_adapter()
     assert vision is None

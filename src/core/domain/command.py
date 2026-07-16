@@ -17,9 +17,7 @@ class Command(BaseModel):
     model_config = {"frozen": True}
 
     tool_name: str = Field(..., description="MCP tool name (e.g. 'create_object')")
-    arguments: dict[str, object] = Field(
-        default_factory=dict, description="Tool arguments"
-    )
+    arguments: dict[str, object] = Field(default_factory=dict, description="Tool arguments")
 
     def __str__(self) -> str:
         return f"Command({self.tool_name}, args={self.arguments})"
@@ -40,6 +38,7 @@ class CommandParser:
     def _get_registry(cls):
         if cls._registry is None:
             from src.core.domain.tool_registry import ToolSchemaRegistry
+
             cls._registry = ToolSchemaRegistry.default()
         return cls._registry
 

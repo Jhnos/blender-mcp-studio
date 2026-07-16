@@ -61,13 +61,8 @@ class PipelineResult:
 
     @property
     def success(self) -> bool:
-        return all(
-            r.status in (StageStatus.DONE, StageStatus.SKIPPED)
-            for r in self.stage_results
-        )
+        return all(r.status in (StageStatus.DONE, StageStatus.SKIPPED) for r in self.stage_results)
 
     @property
     def failed_stage(self) -> StageResult | None:
-        return next(
-            (r for r in self.stage_results if r.status == StageStatus.FAILED), None
-        )
+        return next((r for r in self.stage_results if r.status == StageStatus.FAILED), None)

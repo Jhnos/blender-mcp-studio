@@ -84,6 +84,7 @@ async def chat_websocket(websocket: WebSocket) -> None:
                 ) or await session_store.create()
             else:
                 from src.core.domain.session import Session
+
                 if not hasattr(request.app.state, "_sessions"):
                     request.app.state._sessions = {}
                 _sessions: dict = request.app.state._sessions
@@ -101,12 +102,18 @@ async def chat_websocket(websocket: WebSocket) -> None:
                 # Tool-calling path always runs non-streaming (tools need full response)
                 if supports_streaming:
                     from src.core.ports.llm_port import LLMToolChatPort
+
                     prefers_tools = isinstance(llm, LLMToolChatPort)
                     # Only stream when we won't be using tool-calling
                     if not prefers_tools:
                         await _handle_streaming(
-                            websocket, llm, use_case, session,  # type: ignore[arg-type]
-                            session_store, request, prompt_builder,
+                            websocket,
+                            llm,
+                            use_case,
+                            session,  # type: ignore[arg-type]
+                            session_store,
+                            request,
+                            prompt_builder,
                         )
                         continue
 
@@ -120,23 +127,31 @@ async def chat_websocket(websocket: WebSocket) -> None:
 
                 screenshot_b64 = await _capture_screenshot(blender, blender_out)
 
-                await websocket.send_text(json.dumps({
-                    "type": "response",
-                    "content": reply,
-                    "blender_output": blender_out,
-                    "screenshot": screenshot_b64,
-                    "status": "done",
-                    "session_id": updated.id,
-                }))
+                await websocket.send_text(
+                    json.dumps(
+                        {
+                            "type": "response",
+                            "content": reply,
+                            "blender_output": blender_out,
+                            "screenshot": screenshot_b64,
+                            "status": "done",
+                            "session_id": updated.id,
+                        }
+                    )
+                )
             except Exception as e:
-                await websocket.send_text(json.dumps({
-                    "type": "response",
-                    "content": f"⚠️ Error: {e}",
-                    "blender_output": None,
-                    "screenshot": None,
-                    "status": "error",
-                    "session_id": session.id,
-                }))
+                await websocket.send_text(
+                    json.dumps(
+                        {
+                            "type": "response",
+                            "content": f"⚠️ Error: {e}",
+                            "blender_output": None,
+                            "screenshot": None,
+                            "status": "error",
+                            "session_id": session.id,
+                        }
+                    )
+                )
 
     except WebSocketDisconnect:
         pass
@@ -157,19 +172,25 @@ async def _handle_streaming(
     """Push LLM tokens to client in real-time, then execute Blender commands."""
     from src.core.domain.command import CommandParser
 
-    system_prompt = use_case._get_system_prompt() if hasattr(use_case, "_get_system_prompt") else None
+    system_prompt = (
+        use_case._get_system_prompt() if hasattr(use_case, "_get_system_prompt") else None
+    )
     accumulated = ""
 
     try:
         # Stream text tokens to client
         async for token in llm.astream(session.messages, system_prompt=system_prompt):
             accumulated += token
-            await websocket.send_text(json.dumps({
-                "type": "response",
-                "content": token,
-                "status": "streaming",
-                "session_id": session.id,
-            }))
+            await websocket.send_text(
+                json.dumps(
+                    {
+                        "type": "response",
+                        "content": token,
+                        "status": "streaming",
+                        "session_id": session.id,
+                    }
+                )
+            )
 
         # After streaming, parse commands from full response and execute
         command = CommandParser.from_llm_output(accumulated)
@@ -190,24 +211,32 @@ async def _handle_streaming(
         screenshot_b64 = await _capture_screenshot(use_case._blender, blender_out)
 
         # Final "done" message with full content + blender output
-        await websocket.send_text(json.dumps({
-            "type": "response",
-            "content": accumulated,
-            "blender_output": blender_out,
-            "screenshot": screenshot_b64,
-            "status": "done",
-            "session_id": updated.id,
-        }))
+        await websocket.send_text(
+            json.dumps(
+                {
+                    "type": "response",
+                    "content": accumulated,
+                    "blender_output": blender_out,
+                    "screenshot": screenshot_b64,
+                    "status": "done",
+                    "session_id": updated.id,
+                }
+            )
+        )
 
     except Exception as e:
-        await websocket.send_text(json.dumps({
-            "type": "response",
-            "content": f"⚠️ Streaming error: {e}",
-            "blender_output": None,
-            "screenshot": None,
-            "status": "error",
-            "session_id": session.id,
-        }))
+        await websocket.send_text(
+            json.dumps(
+                {
+                    "type": "response",
+                    "content": f"⚠️ Streaming error: {e}",
+                    "blender_output": None,
+                    "screenshot": None,
+                    "status": "error",
+                    "session_id": session.id,
+                }
+            )
+        )
 
 
 async def _capture_screenshot(blender, blender_out: str | None) -> str | None:
@@ -225,4 +254,3 @@ async def _capture_screenshot(blender, blender_out: str | None) -> str | None:
     except Exception as exc:
         logger.debug("Screenshot capture failed: %s", exc)
     return None
-

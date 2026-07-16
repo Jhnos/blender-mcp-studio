@@ -33,47 +33,188 @@ class ToolKeywords:
 
 # Data-driven: add/remove keywords without changing routing logic
 _TOOL_KEYWORD_MAP: list[ToolKeywords] = [
-    ToolKeywords("create_object", frozenset([
-        "create", "add", "make", "build", "new", "place", "insert",
-        "建立", "新增", "加入", "製作", "新建", "生成物件",
-        "cube", "sphere", "cylinder", "cone", "torus", "plane", "mesh",
-        "立方體", "球", "圓柱", "圓錐", "甜甜圈", "平面",
-    ])),
-    ToolKeywords("delete_object", frozenset([
-        "delete", "remove", "destroy", "erase", "clear",
-        "刪除", "移除", "清除",
-    ])),
-    ToolKeywords("modify_object", frozenset([
-        "move", "scale", "resize", "rotate", "position", "location",
-        "transform", "modify", "change", "adjust", "hide", "show",
-        "移動", "縮放", "旋轉", "調整", "修改", "位置",
-    ])),
-    ToolKeywords("apply_material", frozenset([
-        "material", "color", "colour", "texture", "metallic", "roughness",
-        "shiny", "matte", "glossy", "paint", "surface", "appearance",
-        "材質", "顏色", "紋理", "表面", "光澤", "粗糙度",
-    ])),
-    ToolKeywords("get_scene_info", frozenset([
-        "scene", "list", "objects", "what", "show", "info", "describe",
-        "場景", "物件列表", "有什麼", "顯示",
-    ])),
-    ToolKeywords("execute_code", frozenset([
-        "code", "script", "python", "bpy", "custom", "advanced", "complex",
-        "geometry nodes", "animation", "modifier", "constraint",
-        "程式碼", "腳本", "幾何節點", "動畫", "修改器",
-    ])),
-    ToolKeywords("hunyuan3d_generate", frozenset([
-        "hunyuan", "ai generate", "ai model", "text to 3d", "generate model",
-        "ai 生成", "文字轉3d", "hunyuan3d",
-    ])),
-    ToolKeywords("hyper3d_rodin_generate", frozenset([
-        "rodin", "hyper3d", "high quality model", "ai 3d generation",
-        "高品質模型",
-    ])),
-    ToolKeywords("get_viewport_screenshot", frozenset([
-        "screenshot", "capture", "preview", "photo", "image", "render",
-        "截圖", "預覽", "拍照",
-    ])),
+    ToolKeywords(
+        "create_object",
+        frozenset(
+            [
+                "create",
+                "add",
+                "make",
+                "build",
+                "new",
+                "place",
+                "insert",
+                "建立",
+                "新增",
+                "加入",
+                "製作",
+                "新建",
+                "生成物件",
+                "cube",
+                "sphere",
+                "cylinder",
+                "cone",
+                "torus",
+                "plane",
+                "mesh",
+                "立方體",
+                "球",
+                "圓柱",
+                "圓錐",
+                "甜甜圈",
+                "平面",
+            ]
+        ),
+    ),
+    ToolKeywords(
+        "delete_object",
+        frozenset(
+            [
+                "delete",
+                "remove",
+                "destroy",
+                "erase",
+                "clear",
+                "刪除",
+                "移除",
+                "清除",
+            ]
+        ),
+    ),
+    ToolKeywords(
+        "modify_object",
+        frozenset(
+            [
+                "move",
+                "scale",
+                "resize",
+                "rotate",
+                "position",
+                "location",
+                "transform",
+                "modify",
+                "change",
+                "adjust",
+                "hide",
+                "show",
+                "移動",
+                "縮放",
+                "旋轉",
+                "調整",
+                "修改",
+                "位置",
+            ]
+        ),
+    ),
+    ToolKeywords(
+        "apply_material",
+        frozenset(
+            [
+                "material",
+                "color",
+                "colour",
+                "texture",
+                "metallic",
+                "roughness",
+                "shiny",
+                "matte",
+                "glossy",
+                "paint",
+                "surface",
+                "appearance",
+                "材質",
+                "顏色",
+                "紋理",
+                "表面",
+                "光澤",
+                "粗糙度",
+            ]
+        ),
+    ),
+    ToolKeywords(
+        "get_scene_info",
+        frozenset(
+            [
+                "scene",
+                "list",
+                "objects",
+                "what",
+                "show",
+                "info",
+                "describe",
+                "場景",
+                "物件列表",
+                "有什麼",
+                "顯示",
+            ]
+        ),
+    ),
+    ToolKeywords(
+        "execute_code",
+        frozenset(
+            [
+                "code",
+                "script",
+                "python",
+                "bpy",
+                "custom",
+                "advanced",
+                "complex",
+                "geometry nodes",
+                "animation",
+                "modifier",
+                "constraint",
+                "程式碼",
+                "腳本",
+                "幾何節點",
+                "動畫",
+                "修改器",
+            ]
+        ),
+    ),
+    ToolKeywords(
+        "hunyuan3d_generate",
+        frozenset(
+            [
+                "hunyuan",
+                "ai generate",
+                "ai model",
+                "text to 3d",
+                "generate model",
+                "ai 生成",
+                "文字轉3d",
+                "hunyuan3d",
+            ]
+        ),
+    ),
+    ToolKeywords(
+        "hyper3d_rodin_generate",
+        frozenset(
+            [
+                "rodin",
+                "hyper3d",
+                "high quality model",
+                "ai 3d generation",
+                "高品質模型",
+            ]
+        ),
+    ),
+    ToolKeywords(
+        "get_viewport_screenshot",
+        frozenset(
+            [
+                "screenshot",
+                "capture",
+                "preview",
+                "photo",
+                "image",
+                "render",
+                "截圖",
+                "預覽",
+                "拍照",
+            ]
+        ),
+    ),
 ]
 
 # Pre-build normalized keyword → tool_name mapping
@@ -106,7 +247,7 @@ class SemanticToolRouter:
         Returns:
             Filtered tool list. Falls back to all_tools if no matches found.
         """
-        tokens = set(re.findall(r'\w+', user_message.lower()))
+        tokens = set(re.findall(r"\w+", user_message.lower()))
         matched_names: set[str] = set()
 
         for token in tokens:
@@ -114,7 +255,9 @@ class SemanticToolRouter:
                 matched_names.add(name)
 
         if not matched_names:
-            logger.debug("SemanticToolRouter: no keyword matches, returning all %d tools", len(all_tools))
+            logger.debug(
+                "SemanticToolRouter: no keyword matches, returning all %d tools", len(all_tools)
+            )
             return all_tools
 
         # Build filtered list preserving original order

@@ -85,6 +85,7 @@ async def refine_model(body: RefineRequest, request: Request) -> dict:
 
     if session is None:
         from src.core.domain.session import Session
+
         session = Session()
 
     # Build LLM adapter
@@ -121,9 +122,7 @@ async def refine_model(body: RefineRequest, request: Request) -> dict:
             for it in result.iterations
         ],
         "final_screenshot": (
-            base64.b64encode(result.final_screenshot).decode()
-            if result.final_screenshot
-            else None
+            base64.b64encode(result.final_screenshot).decode() if result.final_screenshot else None
         ),
     }
 
@@ -176,6 +175,7 @@ async def run_pipeline(body: PipelineRequest, request: Request) -> dict:
 async def list_pipelines() -> dict:
     """List all available pipeline names from YAML config."""
     from src.adapters.pipeline.pipeline_loader import PipelineLoader
+
     loader = PipelineLoader()
     return {"pipelines": loader.list_pipelines()}
 
@@ -263,6 +263,7 @@ async def export_scene(body: ExportRequest, request: Request) -> Response:
 # V3: Undo / Redo endpoints
 # ---------------------------------------------------------------------------
 
+
 @router.post("/undo")
 async def undo_action(request: Request) -> dict:
     """Undo the last operation in Blender (bpy.ops.ed.undo)."""
@@ -348,6 +349,7 @@ async def create_snapshot(body: SnapshotCreateRequest, request: Request) -> dict
     # Capture thumbnail
     thumbnail_b64 = ""
     import tempfile
+
     try:
         tmp = tempfile.mktemp(suffix=".png")
         shot = await blender.call_tool("get_viewport_screenshot", {"filepath": tmp})
@@ -359,6 +361,7 @@ async def create_snapshot(body: SnapshotCreateRequest, request: Request) -> dict
         logger.debug("Thumbnail capture failed: %s", exc)
 
     from src.core.ports.snapshot_store_port import SceneSnapshot
+
     snap = SceneSnapshot(
         id=str(uuid.uuid4()),
         label=body.label,
@@ -454,7 +457,7 @@ async def delete_snapshot(snapshot_id: str, request: Request) -> dict:
 # V3: Poly Haven — HDRI / texture search & apply
 # ---------------------------------------------------------------------------
 
-_APPLY_HDRI_CODE = '''\
+_APPLY_HDRI_CODE = """\
 import bpy, urllib.request, os, tempfile
 
 # Download HDRI to a temp file
@@ -478,9 +481,9 @@ env.image = bpy.data.images.load(tmp)
 nt.links.new(env.outputs[0], bg.inputs[0])
 nt.links.new(bg.outputs[0], out.inputs[0])
 print(f"hdri_applied:{tmp}")
-'''
+"""
 
-_APPLY_TEXTURE_CODE = '''\
+_APPLY_TEXTURE_CODE = """\
 import bpy, urllib.request, tempfile
 
 url = "{url}"
@@ -505,7 +508,7 @@ else:
     tex.image = bpy.data.images.load(tmp)
     nt.links.new(tex.outputs["Color"], bsdf.inputs["Base Color"])
     print(f"texture_applied:{tmp}")
-'''
+"""
 
 
 class MaterialApplyRequest(BaseModel):
@@ -597,6 +600,7 @@ async def apply_material(body: MaterialApplyRequest, request: Request) -> dict:
 # ---------------------------------------------------------------------------
 # V4: Scene Graph — object select / rename / delete / visibility
 # ---------------------------------------------------------------------------
+
 
 class ObjectUpdateRequest(BaseModel):
     new_name: str | None = None
@@ -692,6 +696,7 @@ print(f'selected:{{obj.name}}')
 # V4: Multimodal image upload → describe → inject as chat context
 # ---------------------------------------------------------------------------
 
+
 @router.post("/chat/image")
 async def analyze_image(request: Request) -> dict:
     """Upload an image; vision LLM describes it; return description for use as prompt context.
@@ -741,6 +746,7 @@ async def analyze_image(request: Request) -> dict:
 # V4: Text-to-3D generation (Hunyuan3D-2)
 # ---------------------------------------------------------------------------
 
+
 class Generate3DRequest(BaseModel):
     prompt: str = Field(..., min_length=3, max_length=500)
     negative_prompt: str = Field(default="")
@@ -779,6 +785,7 @@ async def generate_3d(req: Generate3DRequest, request: Request) -> dict:
     # Save GLB to disk
     import pathlib
     import time as _time
+
     glb_dir = pathlib.Path("data/generated3d")
     glb_dir.mkdir(parents=True, exist_ok=True)
     glb_path = glb_dir / f"gen_{int(_time.time())}.glb"

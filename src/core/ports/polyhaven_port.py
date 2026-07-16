@@ -18,9 +18,9 @@ from dataclasses import dataclass, field
 class PolyHavenAsset:
     """Minimal asset record from the Poly Haven catalogue."""
 
-    id: str                          # e.g. "abandoned_church"
-    name: str                        # human-readable e.g. "Abandoned Church"
-    asset_type: str                  # "hdri" | "texture" | "model"
+    id: str  # e.g. "abandoned_church"
+    name: str  # human-readable e.g. "Abandoned Church"
+    asset_type: str  # "hdri" | "texture" | "model"
     categories: tuple[str, ...] = field(default_factory=tuple)
     tags: tuple[str, ...] = field(default_factory=tuple)
     thumbnail_url: str = ""
@@ -32,8 +32,8 @@ class PolyHavenFile:
     """Download URL for a resolved resolution/format of an asset."""
 
     asset_id: str
-    resolution: str    # e.g. "1k", "2k", "4k"
-    file_format: str   # e.g. "hdr", "exr"
+    resolution: str  # e.g. "1k", "2k", "4k"
+    file_format: str  # e.g. "hdr", "exr"
     url: str
     size_bytes: int = 0
 

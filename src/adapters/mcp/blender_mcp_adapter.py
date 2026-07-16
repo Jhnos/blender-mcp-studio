@@ -93,20 +93,18 @@ class BlenderMCPClient(MCPPort):
 
     # Known addon tools (addon has no list_tools endpoint)
     _KNOWN_TOOLS = [
-        "get_scene_info", "get_object_info", "execute_code",
+        "get_scene_info",
+        "get_object_info",
+        "execute_code",
         "get_viewport_screenshot",
     ]
 
     def __init__(self, socket: BlenderSocketClient) -> None:
         self._socket = socket
 
-    async def call_tool(
-        self, tool_name: str, arguments: dict[str, object]
-    ) -> ToolResult:
+    async def call_tool(self, tool_name: str, arguments: dict[str, object]) -> ToolResult:
         try:
-            response = await self._socket.send_command(
-                {"type": tool_name, "params": arguments}
-            )
+            response = await self._socket.send_command({"type": tool_name, "params": arguments})
             if response.get("status") == "error":
                 return ToolResult(
                     success=False,
@@ -169,9 +167,7 @@ class BlenderMCPAdapter(BlenderPort):
             code = str(command.arguments.get("code", ""))
             result = self._sandbox.validate(code)
             if not result.allowed:
-                logger.warning(
-                    "Blocked execute_code: %s", "; ".join(result.violations)
-                )
+                logger.warning("Blocked execute_code: %s", "; ".join(result.violations))
                 return ToolResult(
                     success=False,
                     output=None,
@@ -179,9 +175,7 @@ class BlenderMCPAdapter(BlenderPort):
                 )
         return await self._mcp.call_tool(command.tool_name, dict(command.arguments))
 
-    async def call_tool(
-        self, tool_name: str, arguments: dict[str, object]
-    ) -> ToolResult:
+    async def call_tool(self, tool_name: str, arguments: dict[str, object]) -> ToolResult:
         """Expose MCP tool calls for routers that need direct access."""
         if tool_name == _EXECUTE_CODE_TOOL and self._sandbox is not None:
             code = str(arguments.get("code", ""))
@@ -204,4 +198,3 @@ class BlenderMCPAdapter(BlenderPort):
 
     async def is_connected(self) -> bool:
         return self._socket.is_connected
-

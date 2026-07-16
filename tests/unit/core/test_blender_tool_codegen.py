@@ -11,8 +11,12 @@ from src.core.use_cases.blender_tool_codegen import translate
 
 
 def test_create_object_becomes_execute_code():
-    out = translate(Command(tool_name="create_object",
-                            arguments={"type": "MESH", "name": "foo", "location": [1, 2, 3]}))
+    out = translate(
+        Command(
+            tool_name="create_object",
+            arguments={"type": "MESH", "name": "foo", "location": [1, 2, 3]},
+        )
+    )
     assert out.tool_name == "execute_code"
     code = out.arguments["code"]
     assert "import bpy" in code
@@ -42,8 +46,9 @@ def test_string_argument_is_a_literal_not_injectable_code():
     # NOTE: the "os.system" below is an INERT test payload (a string), never run.
     # This test asserts the codegen embeds it as a quoted literal, so a crafted
     # object name cannot become executable code in the generated bpy snippet.
-    out = translate(Command(tool_name="create_object",
-                            arguments={"name": "a'; import os; os.system('x')#"}))
+    out = translate(
+        Command(tool_name="create_object", arguments={"name": "a'; import os; os.system('x')#"})
+    )
     code = out.arguments["code"]
     # the payload lives inside a quoted string on the name line, not as a statement
     assert "os.system" in code  # present...
@@ -55,6 +60,10 @@ def test_string_argument_is_a_literal_not_injectable_code():
 
 
 def test_apply_material_pads_rgb_to_rgba():
-    out = translate(Command(tool_name="apply_material",
-                            arguments={"object_name": "o", "material_name": "m", "color": [1, 0, 0]}))
+    out = translate(
+        Command(
+            tool_name="apply_material",
+            arguments={"object_name": "o", "material_name": "m", "color": [1, 0, 0]},
+        )
+    )
     assert "[1.0, 0.0, 0.0, 1.0]" in out.arguments["code"]

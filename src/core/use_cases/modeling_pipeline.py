@@ -107,7 +107,11 @@ class ModelingPipelineUseCase:
             )
 
         # Validation: if validation_key specified, check output contains it
-        if stage.validation_key and tool_result.output and stage.validation_key not in str(tool_result.output):
+        if (
+            stage.validation_key
+            and tool_result.output
+            and stage.validation_key not in str(tool_result.output)
+        ):
             return StageResult(
                 stage_name=stage.name,
                 status=StageStatus.FAILED,

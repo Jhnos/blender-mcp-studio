@@ -3,14 +3,13 @@
 from __future__ import annotations
 
 import pytest
-import pytest_asyncio
 
 from src.core.ports.snapshot_store_port import SceneSnapshot, SnapshotList, SnapshotStorePort
-
 
 # ---------------------------------------------------------------------------
 # Port contract
 # ---------------------------------------------------------------------------
+
 
 class TestSnapshotStorePortContract:
     def test_is_abstract(self):
@@ -21,16 +20,22 @@ class TestSnapshotStorePortContract:
 
     def test_scene_snapshot_is_immutable(self):
         snap = SceneSnapshot(
-            id="s1", label="Test", blend_path="/tmp/t.blend",
-            thumbnail_b64="", created_at="2026-01-01T00:00:00Z"
+            id="s1",
+            label="Test",
+            blend_path="/tmp/t.blend",
+            thumbnail_b64="",
+            created_at="2026-01-01T00:00:00Z",
         )
         with pytest.raises((AttributeError, TypeError)):
             snap.label = "mutated"  # type: ignore[misc]
 
     def test_snapshot_list_len(self):
         snap = SceneSnapshot(
-            id="s1", label="A", blend_path="/tmp/a.blend",
-            thumbnail_b64="", created_at="2026-01-01T00:00:00Z"
+            id="s1",
+            label="A",
+            blend_path="/tmp/a.blend",
+            thumbnail_b64="",
+            created_at="2026-01-01T00:00:00Z",
         )
         sl = SnapshotList(snapshots=(snap,))
         assert len(sl) == 1
@@ -40,9 +45,11 @@ class TestSnapshotStorePortContract:
 # SQLiteSnapshotStore unit tests
 # ---------------------------------------------------------------------------
 
+
 @pytest.fixture
 def tmp_store(tmp_path):
     from src.adapters.snapshot.sqlite_snapshot_store import SQLiteSnapshotStore
+
     return SQLiteSnapshotStore(db_path=tmp_path / "test_snapshots.db")
 
 
@@ -77,12 +84,18 @@ async def test_get_nonexistent_returns_none(tmp_store):
 @pytest.mark.asyncio
 async def test_list_all_newest_first(tmp_store):
     snap1 = SceneSnapshot(
-        id="a", label="A", blend_path="/tmp/a.blend",
-        thumbnail_b64="", created_at="2026-01-01T10:00:00+00:00"
+        id="a",
+        label="A",
+        blend_path="/tmp/a.blend",
+        thumbnail_b64="",
+        created_at="2026-01-01T10:00:00+00:00",
     )
     snap2 = SceneSnapshot(
-        id="b", label="B", blend_path="/tmp/b.blend",
-        thumbnail_b64="", created_at="2026-01-01T11:00:00+00:00"
+        id="b",
+        label="B",
+        blend_path="/tmp/b.blend",
+        thumbnail_b64="",
+        created_at="2026-01-01T11:00:00+00:00",
     )
     await tmp_store.save(snap1)
     await tmp_store.save(snap2)
@@ -132,11 +145,14 @@ async def test_list_all_empty_db(tmp_store):
 # Snapshot API endpoint tests (using TestClient — no real Blender)
 # ---------------------------------------------------------------------------
 
+
 @pytest.fixture
 def client_with_mock_store(tmp_path):
     """FastAPI TestClient with a real SQLiteSnapshotStore but mocked Blender."""
     from unittest.mock import AsyncMock, MagicMock
+
     from fastapi.testclient import TestClient
+
     from api.main import create_app
     from src.adapters.snapshot.sqlite_snapshot_store import SQLiteSnapshotStore
 
@@ -158,7 +174,6 @@ def client_with_mock_store(tmp_path):
 
 
 class TestSnapshotEndpoints:
-
     def test_list_snapshots_empty(self, client_with_mock_store):
         client, _, _ = client_with_mock_store
         resp = client.get("/api/snapshots")

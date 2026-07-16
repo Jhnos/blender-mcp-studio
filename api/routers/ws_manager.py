@@ -73,6 +73,7 @@ class ConnectionManager:
 # Background task
 # ---------------------------------------------------------------------------
 
+
 async def viewport_broadcast_loop(
     app_state,
     interval: float = 3.0,

@@ -35,7 +35,8 @@ def test_scene_object_names() -> None:
 
 def test_scene_object_is_immutable() -> None:
     import pytest
+    from pydantic import ValidationError
 
     obj = SceneObject(name="Cube", object_type="MESH")
-    with pytest.raises(Exception):
+    with pytest.raises(ValidationError):
         obj.name = "Sphere"  # type: ignore[misc]

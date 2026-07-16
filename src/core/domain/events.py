@@ -13,6 +13,7 @@ from datetime import datetime
 @dataclass(frozen=True)
 class DomainEvent:
     """Base class for all domain events."""
+
     occurred_at: datetime = field(default_factory=datetime.utcnow)
 
 
@@ -33,7 +34,7 @@ class MessageAddedEvent(DomainEvent):
 class CommandExecutedEvent(DomainEvent):
     session_id: str = ""
     tool_name: str = ""
-    arguments: str = ""   # JSON string — avoid mutable dict in frozen dataclass
+    arguments: str = ""  # JSON string — avoid mutable dict in frozen dataclass
     output_preview: str = ""
 
 

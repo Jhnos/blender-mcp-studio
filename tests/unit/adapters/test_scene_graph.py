@@ -54,7 +54,14 @@ def test_rename_object_success():
 
 
 def test_rename_object_not_found():
-    client = _make_client(blender_response={"success": False, "output": "", "error": "Object not found", "screenshot": None})
+    client = _make_client(
+        blender_response={
+            "success": False,
+            "output": "",
+            "error": "Object not found",
+            "screenshot": None,
+        }
+    )
     resp = client.put("/api/object/NotExist", json={"new_name": "X"})
     assert resp.status_code in (404, 422, 500)
 
@@ -79,7 +86,9 @@ def test_delete_object_success():
 
 
 def test_delete_object_not_found():
-    client = _make_client(blender_response={"success": False, "output": "", "error": "not found", "screenshot": None})
+    client = _make_client(
+        blender_response={"success": False, "output": "", "error": "not found", "screenshot": None}
+    )
     resp = client.delete("/api/object/Ghost")
     assert resp.status_code in (404, 500)
 
@@ -98,7 +107,9 @@ def test_select_object_success():
 
 
 def test_select_object_not_found():
-    client = _make_client(blender_response={"success": False, "output": "", "error": "not found", "screenshot": None})
+    client = _make_client(
+        blender_response={"success": False, "output": "", "error": "not found", "screenshot": None}
+    )
     resp = client.post("/api/object/Ghost/select")
     assert resp.status_code in (404, 500)
 

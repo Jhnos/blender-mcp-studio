@@ -47,9 +47,7 @@ class PipelineLoader:
         pipelines = raw.get("pipelines", {})
         if pipeline_name not in pipelines:
             available = list(pipelines.keys())
-            raise KeyError(
-                f"Pipeline '{pipeline_name}' not found. Available: {available}"
-            )
+            raise KeyError(f"Pipeline '{pipeline_name}' not found. Available: {available}")
 
         stages_raw = pipelines[pipeline_name].get("stages", [])
         return [
@@ -67,4 +65,3 @@ class PipelineLoader:
     def list_pipelines(self) -> list[str]:
         """Return names of all available pipelines."""
         return list(self._load_raw().get("pipelines", {}).keys())
-

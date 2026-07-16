@@ -13,8 +13,8 @@
 #   scripts/ci.sh          # T1 static + T2 unit (incl. headless dummy run). No side effects.
 #   scripts/ci.sh --real   # + T3 real machine. Needs Blender up; creates/deletes verify_* objects.
 #
-# HARD gates fail the run. Lint debt (ruff / ruff-format / mypy) is reported as
-# WARN and does not block — it predates this gate; clean it, then promote.
+# HARD gates fail the run. mypy is the only remaining WARN (strict mode, ~109
+# pre-existing errors); ruff check/format were cleaned and are now hard gates.
 # Browser-driven dummy-run checks (layout widths, live WS, screenshots) are
 # documented in docs/verification/frontend-redesign/dummy-run-plan.md.
 #
@@ -49,8 +49,10 @@ cd "$ROOT"
 _tier "T1 · static"
 _run hard "web build (tsc + vite)"   bash -c 'cd web && npm run build'
 _run hard "web lint (eslint)"        bash -c 'cd web && npm run lint'
-_run warn "python lint (ruff)"       "$PY" -m ruff check src tests api
-_run warn "python format (ruff)"     "$PY" -m ruff format --check src tests api
+_run hard "python lint (ruff)"       "$PY" -m ruff check src tests api
+_run hard "python format (ruff)"     "$PY" -m ruff format --check src tests api
+# mypy is strict-mode with ~109 pre-existing errors — reported, not blocking.
+# Clean it, then promote to `hard` like ruff was.
 _run warn "python types (mypy)"      "$PY" -m mypy src api --ignore-missing-imports --no-error-summary
 
 _tier "T2 · unit + headless dummy run"

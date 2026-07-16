@@ -16,10 +16,12 @@ class ConcreteAdapterFactory(AdapterFactoryPort):
 
     def build_llm_adapter(self, provider: str | None = None) -> LLMChatPort:
         from src.adapters.llm.factory import build_llm_adapter
+
         return build_llm_adapter(provider=provider)
 
     def build_blender_adapter(
         self, host: str | None = None, port: int | None = None
     ) -> BlenderPort:
         from src.adapters.mcp.factory import build_blender_adapter
+
         return build_blender_adapter(host=host, port=port)

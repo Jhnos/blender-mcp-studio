@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import pytest
 
+from src.adapters.events.in_memory_event_bus import InMemoryEventBus
 from src.core.domain.events import (
     CommandExecutedEvent,
     CommandFailedEvent,
@@ -12,7 +13,6 @@ from src.core.domain.events import (
     MessageAddedEvent,
     SessionCreatedEvent,
 )
-from src.adapters.events.in_memory_event_bus import InMemoryEventBus
 
 
 @pytest.mark.asyncio

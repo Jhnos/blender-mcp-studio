@@ -29,6 +29,7 @@ class LLMResponse:
 # Structured Output / Tool Calling types
 # ---------------------------------------------------------------------------
 
+
 @dataclass(frozen=True)
 class ToolDefinition:
     """Declarative schema for a single callable tool (JSON Schema style)."""
@@ -62,6 +63,7 @@ class LLMToolResponse:
 # ---------------------------------------------------------------------------
 # Port interfaces
 # ---------------------------------------------------------------------------
+
 
 class LLMChatPort(ABC):
     """Minimal interface for LLM chat — use cases depend only on this."""
@@ -133,4 +135,3 @@ class LLMMetadataPort(ABC):
 
 class LLMPort(LLMStreamPort, LLMToolChatPort, LLMMetadataPort):
     """Full LLM interface — all adapters implement this."""
-
