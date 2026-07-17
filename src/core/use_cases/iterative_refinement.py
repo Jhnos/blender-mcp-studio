@@ -23,7 +23,6 @@ from src.core.domain.session import Session
 from src.core.ports.blender_port import BlenderPort
 from src.core.ports.llm_port import LLMChatPort, LLMToolChatPort
 from src.core.ports.vision_port import VisionPort
-from src.core.use_cases.blender_tool_codegen import translate as _translate_command
 
 logger = logging.getLogger(__name__)
 
@@ -175,12 +174,12 @@ class IterativeRefinementUseCase:
 
             # Step 5: execute commands
             for cmd in commands:
-                # Same translation the chat path needs: the addon has no
-                # create_object/modify_object/… handlers, so dispatching an LLM
-                # tool call raw returns "Unknown command type" and the scene is
-                # never corrected — refinement would loop, reporting success.
-                dispatched = _translate_command(cmd)
-                result = await self._blender.execute(dispatched)
+                # Dispatch the domain command as-is; the socket adapter rewrites
+                # tools the addon can't handle (create_object, …) to execute_code.
+                # Dispatching raw once returned "Unknown command type" and the
+                # scene was never corrected — refinement would loop reporting
+                # success. That is now the adapter's enforced responsibility.
+                result = await self._blender.execute(cmd)
                 status = "✅" if result.success else f"❌ {result.error}"
                 iteration.commands_executed.append(f"{cmd.tool_name}: {status}")
                 logger.info("Refinement command %s: %s", cmd.tool_name, status)

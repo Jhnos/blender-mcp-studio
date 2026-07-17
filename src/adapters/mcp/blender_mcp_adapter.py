@@ -6,6 +6,7 @@ import asyncio
 import json
 import logging
 
+from src.adapters.mcp.blender_tool_codegen import is_translatable, translate
 from src.core.domain.command import Command
 from src.core.domain.exceptions import BlenderConnectionError
 from src.core.ports.blender_port import BlenderPort
@@ -119,6 +120,19 @@ class BlenderMCPClient(MCPPort):
         self._socket = socket
 
     async def call_tool(self, tool_name: str, arguments: dict[str, object]) -> ToolResult:
+        # Enforcement: a high-level tool here means a caller bypassed the
+        # adapter's translation chokepoint. Fail loud rather than hand the addon
+        # a name it will reject as "Unknown command type".
+        if is_translatable(tool_name):
+            logger.error(
+                "high-level tool %r reached the socket untranslated — dispatch bypassed",
+                tool_name,
+            )
+            return ToolResult(
+                success=False,
+                output=None,
+                error=f"{tool_name} reached the addon untranslated (translation bypassed)",
+            )
         try:
             response = await self._socket.send_command({"type": tool_name, "params": arguments})
             if response.get("status") == "error":
@@ -180,6 +194,24 @@ class BlenderMCPAdapter(BlenderPort):
         await self._socket.disconnect()
 
     async def execute(self, command: Command) -> ToolResult:
+        return await self._dispatch(command.tool_name, dict(command.arguments))
+
+    async def call_tool(self, tool_name: str, arguments: dict[str, object]) -> ToolResult:
+        """Expose MCP tool calls for routers that need direct access."""
+        return await self._dispatch(tool_name, dict(arguments))
+
+    async def _dispatch(self, tool_name: str, arguments: dict[str, object]) -> ToolResult:
+        """The one point every socket dispatch funnels through.
+
+        High-level modeling tools (create_object, …) are rewritten to
+        execute_code here — the addon has no handler for them — so no caller,
+        current or future, can reach the addon untranslated. Translation runs
+        before the sandbox, so generated bpy code is validated too. This is what
+        makes translate's "single choke point" true instead of merely intended:
+        both entry points funnel here, and BlenderMCPClient rejects any
+        translatable tool that still slips through.
+        """
+        command = translate(Command(tool_name=tool_name, arguments=arguments))
         if command.tool_name == _EXECUTE_CODE_TOOL and self._sandbox is not None:
             code = str(command.arguments.get("code", ""))
             result = self._sandbox.validate(code)
@@ -191,23 +223,6 @@ class BlenderMCPAdapter(BlenderPort):
                     error=f"Security: blocked code ({'; '.join(result.violations)})",
                 )
         return await self._mcp.call_tool(command.tool_name, dict(command.arguments))
-
-    async def call_tool(self, tool_name: str, arguments: dict[str, object]) -> ToolResult:
-        """Expose MCP tool calls for routers that need direct access."""
-        if tool_name == _EXECUTE_CODE_TOOL and self._sandbox is not None:
-            code = str(arguments.get("code", ""))
-            result = self._sandbox.validate(code)
-            if not result.allowed:
-                logger.warning(
-                    "Blocked execute_code via call_tool: %s",
-                    "; ".join(result.violations),
-                )
-                return ToolResult(
-                    success=False,
-                    output=None,
-                    error=f"Security: blocked code ({'; '.join(result.violations)})",
-                )
-        return await self._mcp.call_tool(tool_name, arguments)
 
     async def get_scene_info(self) -> dict[str, object]:
         result = await self._mcp.call_tool("get_scene_info", {})

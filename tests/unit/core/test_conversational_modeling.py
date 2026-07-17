@@ -67,10 +67,11 @@ async def test_execute_calls_blender_when_json_command_found() -> None:
 
     blender.execute.assert_called_once()
     called_cmd = blender.execute.call_args[0][0]
-    # create_object is translated to execute_code before dispatch — the addon
-    # has no create_object handler, so raw dispatch silently did nothing.
-    assert called_cmd.tool_name == "execute_code"
-    assert "import bpy" in called_cmd.arguments["code"]
+    # The use case dispatches the domain command untouched. Rewriting
+    # create_object into execute_code is the socket adapter's job now — see
+    # tests/unit/adapters/test_blender_mcp_adapter.py for that translation.
+    assert called_cmd.tool_name == "create_object"
+    assert called_cmd.arguments["type"] == "CUBE"
 
 
 @pytest.mark.asyncio

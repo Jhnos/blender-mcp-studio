@@ -6,6 +6,12 @@
 
 ## 2026-07-18
 
+### 純函式的「層」由它承載的知識決定，不由它的形狀（純度）決定
+- **觸發情境**：一個 helper 看起來像 domain（純函式、無 I/O、只做資料轉換），但它**編碼了某個特定 backend 的知識**（某 addon 只吃哪些指令、產出某引擎的方言／DSL／SQL 方言／bpy 程式碼）。決定它放哪一層時。
+- **該主動檢查**：這個函式**知道什麼**？若它知道「某個具體外部系統的限制或方言」，它屬 adapters 層，**不管它多純**。反問：domain 或 use case 匯入它，會不會就等於讓核心層知道了某個 addon/DB/引擎的存在？會＝放錯層。
+- **為什麼沒抓到**：「純函式」直覺上很想放進 domain/use_case（無副作用、好測）。但純度是**機械性質**，跟**知識歸屬**無關。放進 use case 後，每條 dispatch 路徑都得自己記得呼叫它（本輪的 chokepoint bug 正是這樣長出來的：翻譯知識放在 use case，第二條 use case 忘了呼叫）。而且它一旦想下沉到唯一必經層（adapter），就會發現 domain/use_case→adapter 是反向匯入、動不了——放錯層在架構上是會「卡住」的。
+- **如何預防**：放層看**知識**不看**純度**。backend-specific 的純函式（codegen/方言轉換/協定 quirk）放進該 backend 的 adapter，讓它成為那條路徑的唯一必經點；核心層只說領域語言，由 adapter 翻譯成方言。本輪：把 `blender_tool_codegen`（產 bpy code）從 `use_cases/` 移到 `adapters/mcp/`，翻譯下沉到 `BlenderMCPAdapter._dispatch`（execute+call_tool 都必經），最內層 `BlenderMCPClient` 對「仍是高階工具＝有人繞過」大聲失敗（runtime sentinel）——上一條『自稱唯一入口若無機制強制』的處方就此**機制化落地**（真 Blender 驗證：高階 create_object 過真 adapter 後 addon 回 exists＋8 頂點）。
+
 ### 部分 gate 給的是假覆蓋率：綠勾只涵蓋被跑到的子集，沒跑到的測試會靜默腐爛
 - **觸發情境**：一個測試/檢查存在於 repo，但 CI 的 runner 只跑其中一部分（例：`pytest tests/unit`，而 `tests/e2e` 從不被跑）。任何時候看到「gate 只指向一個子目錄／一個標籤／一組檔案」都要警覺。
 - **該主動檢查**：這個 gate 的涵蓋範圍，和「repo 裡實際存在的同類檢查全集」對得起來嗎？有沒有測試檔**存在但從不被任何 gate 執行**？綠燈是「全部通過」還是「被跑到的那些通過」？

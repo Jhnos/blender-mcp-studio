@@ -26,7 +26,6 @@ from src.core.ports.blender_port import BlenderPort
 from src.core.ports.event_bus_port import EventBusPort
 from src.core.ports.llm_port import LLMChatPort, LLMToolChatPort, ToolDefinition
 from src.core.ports.prompt_builder_port import PromptBuilderPort
-from src.core.use_cases.blender_tool_codegen import translate as _translate_command
 
 try:
     from src.adapters.prompt.semantic_tool_router import SemanticToolRouter
@@ -206,9 +205,9 @@ class ConversationalModelingUseCase:
 
         blender_output: str | None = None
         if command is not None:
-            # Rewrite high-level modeling tools the addon can't handle
-            # (create_object, …) into equivalent execute_code before dispatch.
-            command = _translate_command(command)
+            # Dispatch the domain command as-is. Rewriting high-level tools the
+            # addon can't handle (create_object, …) into execute_code is the
+            # socket adapter's job, not ours — we don't know which backend we hold.
             result = await self._blender.execute(command)
             if not result.success:
                 await self._emit(

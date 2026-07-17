@@ -6,8 +6,8 @@ raw produced "Unknown command type" and the scene never changed. Every
 translatable tool must become an execute_code Command here.
 """
 
+from src.adapters.mcp.blender_tool_codegen import translate
 from src.core.domain.command import Command
-from src.core.use_cases.blender_tool_codegen import translate
 
 
 def test_create_object_becomes_execute_code():

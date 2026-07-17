@@ -1,16 +1,22 @@
-"""Translate high-level modeling tool calls into `execute_code` (bpy Python).
+"""Rewrite high-level modeling tool calls into `execute_code` (bpy Python).
 
 The LLM is offered structured tools (create_object, delete_object,
-modify_object, apply_material), but the BlenderMCP addon only implements
+modify_object, apply_material), but the ahujasid socket addon only implements
 `execute_code` (+ read tools) — it has NO handler for those names, so sending
-them raised "Unknown command type" and the scene never changed.
+them raises "Unknown command type" and the scene never changes.
 
-This module is the single choke point that rewrites such a Command into an
-equivalent `execute_code` Command, matching the addon's design (all mutation
-goes through Python). Values are injected via json.dumps so a crafted string
-argument becomes a Python literal, not code (the api sandbox is a 2nd layer).
+This lives in the adapters layer, next to BlenderMCPAdapter, because it encodes
+one specific backend's limitation and emits that backend's dialect (bpy Python)
+— knowledge the use cases must not carry. BlenderMCPAdapter applies `translate`
+at the single point every socket dispatch funnels through, and BlenderMCPClient
+rejects any translatable tool that still reaches the socket, so "the addon only
+sees execute_code" is *enforced* rather than merely intended. (It used to be
+claimed here as "the single choke point" while a second dispatch path bypassed
+it — see docs/LESSONS_LEARNED.md 2026-07-18.)
 
-Pure function — no I/O, no bpy import here (the code string runs in Blender).
+Values are injected via json.dumps so a crafted string argument becomes a Python
+literal, not code (the sandbox is a 2nd layer). The generated string runs in
+Blender; there is no bpy import here.
 """
 
 from __future__ import annotations
@@ -21,6 +27,11 @@ from src.core.domain.command import Command
 
 # Tools the addon cannot handle directly → must be expressed as bpy code.
 _TRANSLATABLE = {"create_object", "delete_object", "modify_object", "apply_material"}
+
+
+def is_translatable(tool_name: str) -> bool:
+    """True if this tool has no addon handler and must be rewritten to execute_code."""
+    return tool_name in _TRANSLATABLE
 
 
 def _lit(value: object) -> str:
