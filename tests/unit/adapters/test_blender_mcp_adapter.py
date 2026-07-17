@@ -14,11 +14,13 @@ These tests pin translation to the adapter and prove no caller can bypass it.
 
 from __future__ import annotations
 
+import logging
+
 import pytest
 
 from src.adapters.mcp.blender_mcp_adapter import BlenderMCPAdapter, BlenderMCPClient
 from src.core.domain.command import Command
-from src.core.ports.mcp_port import ToolResult
+from src.core.ports.mcp_port import MCPPort, ToolDefinition, ToolResult
 
 
 class _RecordingMCP:
@@ -119,3 +121,67 @@ async def test_socket_client_rejects_untranslated_high_level_tool() -> None:
     assert not result.success
     assert result.error is not None
     assert "translat" in result.error.lower()
+
+
+# ---------------------------------------------------------------------------
+# get_scene_info — narrowing + fallback contract.
+#
+# Salvaged from an unmerged parallel-session commit (d5d3b07): the get_scene_info
+# narrowing fix reached main but its dedicated tests did not. Guards the
+# 2026-07-18 fix — get_scene_info must return a genuine dict[str, object] via
+# as_str_keyed (keys actually checked), and degrade to {} with a warning on a
+# non-mapping reply, never smuggling a dict[Any, Any] through. See
+# docs/LESSONS_LEARNED.md 2026-07-18.
+# ---------------------------------------------------------------------------
+
+
+class _StubMCP(MCPPort):
+    """Returns a preset output for any tool call — isolates get_scene_info."""
+
+    def __init__(self, output: object) -> None:
+        self._output = output
+
+    async def call_tool(self, tool_name: str, arguments: dict[str, object]) -> ToolResult:
+        return ToolResult(success=True, output=self._output)
+
+    async def list_tools(self) -> list[ToolDefinition]:
+        return []
+
+    async def connect(self) -> None: ...
+
+    async def disconnect(self) -> None: ...
+
+
+def _adapter_with(output: object) -> BlenderMCPAdapter:
+    adapter = BlenderMCPAdapter("localhost", 9999)
+    adapter._mcp = _StubMCP(output)  # type: ignore[assignment]  # inject fake transport
+    return adapter
+
+
+@pytest.mark.asyncio
+async def test_get_scene_info_returns_mapping_unchanged() -> None:
+    """A str-keyed mapping is returned as-is."""
+    scene = {"objects": ["Cube"], "description": "one cube"}
+    info = await _adapter_with(scene).get_scene_info()
+    assert info == scene
+
+
+@pytest.mark.asyncio
+async def test_get_scene_info_drops_non_string_keys() -> None:
+    """Keys are actually checked — non-str keys are dropped, not smuggled through.
+
+    This is the exact difference from the old isinstance-only code, which
+    returned a dict[Any, Any] as dict[str, object] without ever looking at keys.
+    """
+    info = await _adapter_with({"objects": [], True: "yes"}).get_scene_info()
+    assert info == {"objects": []}
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("bad", [None, ["not", "a", "map"], "raw string", 42])
+async def test_get_scene_info_returns_empty_and_warns_on_non_mapping(bad, caplog) -> None:
+    """Non-mapping output → {} with a warning (NO_SILENT_FALLBACK), never a lie-typed dict."""
+    with caplog.at_level(logging.WARNING):
+        info = await _adapter_with(bad).get_scene_info()
+    assert info == {}
+    assert any("get_scene_info" in record.message for record in caplog.records)

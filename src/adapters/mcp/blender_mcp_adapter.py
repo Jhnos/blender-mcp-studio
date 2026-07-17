@@ -229,7 +229,15 @@ class BlenderMCPAdapter(BlenderPort):
         # result.output is `object`; a bare isinstance(dict) would only reach
         # dict[Any, Any] and mypy would wave the return through blind. Rebuild
         # keys honestly via the narrowing SSOT (see src/infrastructure/narrowing).
-        return as_str_keyed(result.output, context="get_scene_info") or {}
+        scene = as_str_keyed(result.output, context="get_scene_info")
+        if scene is None:
+            # A non-mapping reply (list, str, null) is a real anomaly — degrade
+            # to {} but never silently (NO_SILENT_FALLBACK); `or {}` would hide it.
+            logger.warning(
+                "get_scene_info: expected a mapping, got %s", type(result.output).__name__
+            )
+            return {}
+        return scene
 
     async def is_connected(self) -> bool:
         return self._socket.is_connected
