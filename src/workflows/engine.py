@@ -58,7 +58,7 @@ class WorkflowEngine:
         steps: list[dict[str, object]] = []
         for i, entry in enumerate(raw):
             step: object = entry
-            if not isinstance(step, dict):
+            if not isinstance(step, dict):  # narrow-ok: keys rebuilt with isinstance(key,str)
                 logger.warning(
                     "workflow step %d is %s, expected a mapping — skipping", i, type(step).__name__
                 )

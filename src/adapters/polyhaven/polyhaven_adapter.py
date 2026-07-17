@@ -108,7 +108,7 @@ class PolyHavenAdapter(PolyHavenPort):
         # Fallback: return the first available format at requested resolution
         for section in files_data.values():
             res_data = dig(section, resolution)
-            if not isinstance(res_data, dict):
+            if not isinstance(res_data, dict):  # narrow-ok: fmt/url re-narrowed below
                 continue
             for fmt, fdata in res_data.items():
                 url = dig(fdata, "url")
