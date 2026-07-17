@@ -18,6 +18,7 @@ import os
 import time
 
 from src.core.ports.text3d_port import Text3DGenerationPort, Text3DResult
+from src.infrastructure.narrowing import as_str, dig
 
 logger = logging.getLogger(__name__)
 
@@ -121,13 +122,26 @@ class Hunyuan3DAdapter(Text3DGenerationPort):
                 guidance,
                 api_name="/generate",
             )
-            # Result may be a file path or dict with "value"
+            # gradio_client is lazy-imported and untyped, so `result` is `Any`.
+            # It may be a file path (str) or a dict carrying "value"/"path".
+            # Narrow it honestly through `object` (see src/infrastructure/narrowing):
+            # a bare isinstance(dict) would only reach `dict[Any, Any]`, leaving
+            # every lookup `Any` and mypy blind all the way into open().
             if isinstance(result, dict):
-                path = result.get("value") or result.get("path", "")
+                path: object = dig(result, "value") or dig(result, "path")
             else:
-                path = str(result)
+                path = result
 
-            with open(path, "rb") as f:
+            path_str = as_str(path)
+            if not path_str:
+                # NO_SILENT_FALLBACK: an empty path would surface as a confusing
+                # FileNotFoundError on open(""); report the real upstream shape.
+                raise RuntimeError(
+                    "Hunyuan3D (gradio) returned an unexpected result; expected a "
+                    f"file path or a dict with 'value'/'path', got {result!r}"
+                )
+
+            with open(path_str, "rb") as f:
                 return f.read()
 
         loop = asyncio.get_event_loop()
