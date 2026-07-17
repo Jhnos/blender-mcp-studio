@@ -17,6 +17,7 @@ from pydantic import BaseModel, Field
 
 from api.schemas import ExportRequest, SceneInfoResponse
 from src.core.domain.command import Command
+from src.core.ports.blender_port import BlenderPort
 from src.core.use_cases.get_scene_preview import GetScenePreviewUseCase
 from src.core.use_cases.iterative_refinement import IterativeRefinementUseCase
 from src.core.use_cases.modeling_pipeline import ModelingPipelineUseCase
@@ -37,7 +38,7 @@ class RefineRequest(BaseModel):
 
 class PipelineRequest(BaseModel):
     pipeline_name: str
-    context: dict = Field(default_factory=dict)
+    context: dict[str, object] = Field(default_factory=dict)
 
 
 @router.get("/scene", response_model=SceneInfoResponse)
@@ -65,7 +66,7 @@ async def get_preview(request: Request) -> Response:
 
 
 @router.post("/refine")
-async def refine_model(body: RefineRequest, request: Request) -> dict:
+async def refine_model(body: RefineRequest, request: Request) -> dict[str, object]:
     """Run iterative vision-guided refinement loop on the current Blender scene.
 
     Requires a vision adapter to be configured (OPENAI_API_KEY or ANTHROPIC_API_KEY).
@@ -128,7 +129,7 @@ async def refine_model(body: RefineRequest, request: Request) -> dict:
 
 
 @router.post("/pipeline")
-async def run_pipeline(body: PipelineRequest, request: Request) -> dict:
+async def run_pipeline(body: PipelineRequest, request: Request) -> dict[str, object]:
     """Execute a named YAML-defined modeling pipeline in Blender.
 
     Pipeline names come from config/modeling_pipeline.yaml.
@@ -172,7 +173,7 @@ async def run_pipeline(body: PipelineRequest, request: Request) -> dict:
 
 
 @router.get("/pipelines")
-async def list_pipelines() -> dict:
+async def list_pipelines() -> dict[str, object]:
     """List all available pipeline names from YAML config."""
     from src.adapters.pipeline.pipeline_loader import PipelineLoader
 
@@ -265,18 +266,18 @@ async def export_scene(body: ExportRequest, request: Request) -> Response:
 
 
 @router.post("/undo")
-async def undo_action(request: Request) -> dict:
+async def undo_action(request: Request) -> dict[str, object]:
     """Undo the last operation in Blender (bpy.ops.ed.undo)."""
     return await _run_undo_redo(request, "undo")
 
 
 @router.post("/redo")
-async def redo_action(request: Request) -> dict:
+async def redo_action(request: Request) -> dict[str, object]:
     """Redo the last undone operation in Blender (bpy.ops.ed.undo_redo)."""
     return await _run_undo_redo(request, "redo")
 
 
-async def _run_undo_redo(request: Request, action: str) -> dict:
+async def _run_undo_redo(request: Request, action: str) -> dict[str, object]:
     blender = request.app.state.blender
     bpy_call = "bpy.ops.ed.undo()" if action == "undo" else "bpy.ops.ed.undo_redo()"
     code = f"import bpy\n{bpy_call}\nprint('{action} ok')"
@@ -321,7 +322,7 @@ class SnapshotCreateRequest(BaseModel):
 
 
 @router.post("/snapshot")
-async def create_snapshot(body: SnapshotCreateRequest, request: Request) -> dict:
+async def create_snapshot(body: SnapshotCreateRequest, request: Request) -> dict[str, object]:
     """Save the current Blender scene to a .blend file and record in snapshot store."""
     import uuid
     from datetime import datetime
@@ -381,7 +382,7 @@ async def create_snapshot(body: SnapshotCreateRequest, request: Request) -> dict
 
 
 @router.get("/snapshots")
-async def list_snapshots(request: Request) -> dict:
+async def list_snapshots(request: Request) -> dict[str, object]:
     """List all saved scene snapshots (newest first)."""
     snapshot_store = getattr(request.app.state, "snapshot_store", None)
     if snapshot_store is None:
@@ -403,7 +404,7 @@ async def list_snapshots(request: Request) -> dict:
 
 
 @router.post("/snapshot/{snapshot_id}/restore")
-async def restore_snapshot(snapshot_id: str, request: Request) -> dict:
+async def restore_snapshot(snapshot_id: str, request: Request) -> dict[str, object]:
     """Restore Blender scene from a previously saved snapshot."""
     snapshot_store = getattr(request.app.state, "snapshot_store", None)
     if snapshot_store is None:
@@ -439,7 +440,7 @@ async def restore_snapshot(snapshot_id: str, request: Request) -> dict:
 
 
 @router.delete("/snapshot/{snapshot_id}")
-async def delete_snapshot(snapshot_id: str, request: Request) -> dict:
+async def delete_snapshot(snapshot_id: str, request: Request) -> dict[str, object]:
     """Delete a snapshot record from the store (does not remove .blend file)."""
     snapshot_store = getattr(request.app.state, "snapshot_store", None)
     if snapshot_store is None:
@@ -524,7 +525,7 @@ async def search_materials(
     asset_type: str = "hdri",
     limit: int = 20,
     request: Request = None,  # type: ignore[assignment]
-) -> dict:
+) -> dict[str, object]:
     """Search Poly Haven assets by keyword, type and limit."""
     ph = getattr(request.app.state, "polyhaven", None)
     if ph is None:
@@ -549,7 +550,7 @@ async def search_materials(
 
 
 @router.post("/materials/apply")
-async def apply_material(body: MaterialApplyRequest, request: Request) -> dict:
+async def apply_material(body: MaterialApplyRequest, request: Request) -> dict[str, object]:
     """Download a Poly Haven asset and apply it in Blender.
 
     apply_as='hdri'    → sets scene World environment lighting
@@ -608,7 +609,7 @@ class ObjectUpdateRequest(BaseModel):
     selected: bool | None = None
 
 
-async def _exec(blender, code: str) -> dict:
+async def _exec(blender: BlenderPort, code: str) -> dict[str, object]:
     """Helper: execute bpy code and return {success, output, error}."""
     cmd = Command(tool_name="execute_code", arguments={"code": code})
     try:
@@ -619,7 +620,9 @@ async def _exec(blender, code: str) -> dict:
 
 
 @router.put("/object/{name}")
-async def update_object(name: str, body: ObjectUpdateRequest, request: Request) -> dict:
+async def update_object(
+    name: str, body: ObjectUpdateRequest, request: Request
+) -> dict[str, object]:
     """Rename, show/hide, or select a Blender scene object by name."""
     blender = request.app.state.blender
     ops: list[str] = ["import bpy"]
@@ -653,7 +656,7 @@ async def update_object(name: str, body: ObjectUpdateRequest, request: Request) 
 
 
 @router.delete("/object/{name}")
-async def delete_object(name: str, request: Request) -> dict:
+async def delete_object(name: str, request: Request) -> dict[str, object]:
     """Delete a Blender scene object by name."""
     blender = request.app.state.blender
     safe = name.replace("'", "\\'")
@@ -672,7 +675,7 @@ print('deleted')
 
 
 @router.post("/object/{name}/select")
-async def select_object(name: str, request: Request) -> dict:
+async def select_object(name: str, request: Request) -> dict[str, object]:
     """Select an object and make it the active object in Blender."""
     blender = request.app.state.blender
     safe = name.replace("'", "\\'")
@@ -698,7 +701,7 @@ print(f'selected:{{obj.name}}')
 
 
 @router.post("/chat/image")
-async def analyze_image(request: Request) -> dict:
+async def analyze_image(request: Request) -> dict[str, object]:
     """Upload an image; vision LLM describes it; return description for use as prompt context.
 
     Client sends multipart/form-data with field 'image' (PNG/JPEG).
@@ -756,7 +759,7 @@ class Generate3DRequest(BaseModel):
 
 
 @router.post("/generate3d")
-async def generate_3d(req: Generate3DRequest, request: Request) -> dict:
+async def generate_3d(req: Generate3DRequest, request: Request) -> dict[str, object]:
     """Generate a 3D GLB mesh from a text prompt via Hunyuan3D-2.
 
     If import_to_blender is True, the GLB is saved to a temp file and

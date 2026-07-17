@@ -8,7 +8,14 @@ All configuration injected via constructor or os.environ:
 
 from __future__ import annotations
 
+from collections.abc import AsyncGenerator, Iterable
+
 import anthropic
+from anthropic.types import ContentBlock, MessageParam, ToolParam
+from anthropic.types.message_create_params import (
+    MessageCreateParamsBase,
+    MessageCreateParamsNonStreaming,
+)
 
 from src.core.domain.session import Message
 from src.core.ports.llm_port import (
@@ -18,6 +25,30 @@ from src.core.ports.llm_port import (
     ToolCall,
     ToolDefinition,
 )
+
+
+def _to_sdk_messages(messages: list[Message]) -> list[MessageParam]:
+    """Project domain messages onto the SDK shape.
+
+    The literal per branch is what lets these satisfy MessageParam's
+    `role: Literal["user", "assistant"]` — `m.role` is a plain `str`, so passing
+    it through would not narrow.
+    """
+    return [
+        {"role": "user" if m.role == "user" else "assistant", "content": m.content}
+        for m in messages
+        if m.role in ("user", "assistant")
+    ]
+
+
+def _first_text(blocks: Iterable[ContentBlock]) -> str:
+    """Return the first text block's text, or "" if the reply carries none.
+
+    `content[0]` is not necessarily text — with extended thinking enabled the
+    first block is a ThinkingBlock, which has no `.text`. Same rule as
+    claude_vision_adapter and the tool-calling branch below.
+    """
+    return next((b.text for b in blocks if b.type == "text"), "")
 
 
 class AnthropicAdapter(LLMPort):
@@ -47,22 +78,17 @@ class AnthropicAdapter(LLMPort):
         messages: list[Message],
         system_prompt: str | None = None,
     ) -> LLMResponse:
-        sdk_messages = [
-            {"role": m.role, "content": m.content}
-            for m in messages
-            if m.role in ("user", "assistant")
-        ]
-        kwargs: dict[str, object] = {
+        kwargs: MessageCreateParamsNonStreaming = {
             "model": self._model,
             "max_tokens": self._max_tokens,
-            "messages": sdk_messages,
+            "messages": _to_sdk_messages(messages),
         }
         if system_prompt:
             kwargs["system"] = system_prompt
 
         response = await self._client.messages.create(**kwargs)
         return LLMResponse(
-            content=response.content[0].text,
+            content=_first_text(response.content),
             provider=self.provider_name,
             model=self.model_name,
             finish_reason=response.stop_reason or "stop",
@@ -72,22 +98,19 @@ class AnthropicAdapter(LLMPort):
         self,
         messages: list[Message],
         system_prompt: str | None = None,
-    ):
+    ) -> AsyncGenerator[str, None]:
         """Stream response tokens via the Anthropic streaming API."""
-        sdk_messages = [
-            {"role": m.role, "content": m.content}
-            for m in messages
-            if m.role in ("user", "assistant")
-        ]
-        kwargs: dict[str, object] = {
+        # MessageCreateParamsBase, not ...NonStreaming: the latter carries a
+        # `stream` key that .stream() rejects as an extra argument.
+        kwargs: MessageCreateParamsBase = {
             "model": self._model,
             "max_tokens": self._max_tokens,
-            "messages": sdk_messages,
+            "messages": _to_sdk_messages(messages),
         }
         if system_prompt:
             kwargs["system"] = system_prompt
 
-        async with self._client.messages.stream(**kwargs) as stream:  # type: ignore[arg-type]
+        async with self._client.messages.stream(**kwargs) as stream:
             async for text in stream.text_stream:
                 yield text
 
@@ -98,18 +121,11 @@ class AnthropicAdapter(LLMPort):
         system_prompt: str | None = None,
     ) -> LLMToolResponse:
         """Use Claude's native tool_use for structured output — no regex needed."""
-        sdk_messages = [
-            {"role": m.role, "content": m.content}
-            for m in messages
-            if m.role in ("user", "assistant")
-        ]
-        anthropic_tools = [self._to_anthropic_tool(t) for t in tools]
-
-        kwargs: dict[str, object] = {
+        kwargs: MessageCreateParamsNonStreaming = {
             "model": self._model,
             "max_tokens": self._max_tokens,
-            "messages": sdk_messages,
-            "tools": anthropic_tools,
+            "messages": _to_sdk_messages(messages),
+            "tools": [self._to_anthropic_tool(t) for t in tools],
         }
         if system_prompt:
             kwargs["system"] = system_prompt
@@ -140,7 +156,7 @@ class AnthropicAdapter(LLMPort):
         )
 
     @staticmethod
-    def _to_anthropic_tool(t: ToolDefinition) -> dict[str, object]:
+    def _to_anthropic_tool(t: ToolDefinition) -> ToolParam:
         return {
             "name": t.name,
             "description": t.description,

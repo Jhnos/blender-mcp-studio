@@ -53,7 +53,7 @@ class ConnectionManager:
     # Broadcast
     # ------------------------------------------------------------------
 
-    async def broadcast_json(self, data: dict) -> None:
+    async def broadcast_json(self, data: dict[str, object]) -> None:
         """Send *data* to all active connections; silently drops dead ones."""
         dead: list[WebSocket] = []
         for ws in list(self._connections):
@@ -75,7 +75,7 @@ class ConnectionManager:
 
 
 async def viewport_broadcast_loop(
-    app_state,
+    app_state: object,
     interval: float = 3.0,
 ) -> None:
     """Periodically capture the Blender viewport and push to all clients.
@@ -94,7 +94,7 @@ async def viewport_broadcast_loop(
     while True:
         await asyncio.sleep(interval)
 
-        ws_manager: ConnectionManager = getattr(app_state, "ws_manager", None)
+        ws_manager: ConnectionManager | None = getattr(app_state, "ws_manager", None)
         if ws_manager is None or not ws_manager.has_connections:
             continue  # no clients — skip capture
 

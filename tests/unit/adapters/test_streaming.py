@@ -5,10 +5,16 @@ Tests use mocked HTTP / SDK calls so they run without real LLM credentials.
 
 from __future__ import annotations
 
+import json
+from types import SimpleNamespace
+from unittest.mock import AsyncMock
+
 import pytest
 
-from src.core.domain.session import Session
+from api.routers.chat import _handle_streaming
+from src.core.domain.session import Message, Session
 from src.core.ports.llm_port import LLMChatPort, LLMPort, LLMStreamPort
+from src.core.ports.mcp_port import ToolResult
 
 # ---------------------------------------------------------------------------
 # Port contract tests
@@ -215,6 +221,65 @@ class TestAnthropicAdapterStreaming:
         assert isinstance(adp, LLMStreamPort)
 
 
+class TestAnthropicAdapterChatBlocks:
+    """chat() must survive a response whose first content block isn't text.
+
+    Uses real SDK block types on purpose — a MagicMock would grow a `.text`
+    attribute on demand and pass even while the bug is present.
+    """
+
+    @pytest.fixture
+    def adapter(self, monkeypatch):
+        from unittest.mock import MagicMock
+
+        import anthropic as anthropic_sdk
+
+        mock_client = MagicMock()
+        monkeypatch.setattr(anthropic_sdk, "AsyncAnthropic", lambda api_key: mock_client)
+
+        from src.adapters.llm.anthropic_adapter import AnthropicAdapter
+
+        return AnthropicAdapter(api_key="test-key"), mock_client
+
+    @staticmethod
+    def _reply(mock_client, blocks):
+        from unittest.mock import MagicMock
+
+        response = MagicMock()
+        response.content = blocks
+        response.stop_reason = "end_turn"
+        mock_client.messages.create = AsyncMock(return_value=response)
+
+    async def test_chat_reads_text_past_a_thinking_block(self, adapter):
+        from anthropic.types import TextBlock, ThinkingBlock
+
+        adp, mock_client = adapter
+        self._reply(
+            mock_client,
+            [
+                ThinkingBlock(type="thinking", thinking="let me think", signature="sig"),
+                TextBlock(type="text", text="Hello", citations=None),
+            ],
+        )
+
+        result = await adp.chat([Message(role="user", content="hi")])
+
+        assert result.content == "Hello"
+
+    async def test_chat_returns_empty_when_no_text_block(self, adapter):
+        from anthropic.types import ThinkingBlock
+
+        adp, mock_client = adapter
+        self._reply(
+            mock_client,
+            [ThinkingBlock(type="thinking", thinking="only thinking", signature="sig")],
+        )
+
+        result = await adp.chat([Message(role="user", content="hi")])
+
+        assert result.content == ""
+
+
 # ---------------------------------------------------------------------------
 # chatStore streaming logic (pure unit, no browser APIs)
 # ---------------------------------------------------------------------------
@@ -244,3 +309,78 @@ class TestStreamingProtocol:
         }
         assert done_msg["status"] == "done"
         assert "blender_output" in done_msg
+
+
+# ---------------------------------------------------------------------------
+# _handle_streaming — the real backend path.
+#
+# TestStreamingProtocol above only asserts on hand-written literals, so it
+# cannot catch a backend regression. These drive the actual router coroutine.
+# ---------------------------------------------------------------------------
+
+
+class _FakeLLM:
+    def __init__(self, tokens: list[str]) -> None:
+        self._tokens = tokens
+
+    async def astream(self, messages, system_prompt=None):
+        for token in self._tokens:
+            yield token
+
+
+class _FakeBlender:
+    """Stands in for BlenderMCPAdapter.execute().
+
+    BlenderMCPClient.call_tool builds `output=response.get("result") or response`
+    (blender_mcp_adapter.py:116), so the addon's raw response dict reaches the
+    caller whenever the "result" key is absent or falsy.
+    """
+
+    def __init__(self, output: object) -> None:
+        self._output = output
+
+    async def execute(self, command):
+        return ToolResult(success=True, output=self._output, error=None)
+
+    async def call_tool(self, tool_name: str, arguments):
+        return ToolResult(success=False, output=None, error="screenshot off in tests")
+
+
+class _FakeWebSocket:
+    def __init__(self) -> None:
+        self.sent: list[dict] = []
+
+    async def send_text(self, text: str) -> None:
+        self.sent.append(json.loads(text))
+
+
+async def _drive_streaming(blender_output: object) -> list[dict]:
+    ws = _FakeWebSocket()
+    llm = _FakeLLM(['{"tool_name": "create_object", "arguments": {"type": "CUBE"}}'])
+    use_case = SimpleNamespace(_blender=_FakeBlender(blender_output))
+    session = Session(messages=[Message(role="user", content="make a cube")])
+    session_store = AsyncMock()
+
+    await _handle_streaming(ws, llm, use_case, session, session_store)
+    return ws.sent
+
+
+class TestHandleStreamingBlenderOutput:
+    async def test_dict_blender_output_still_reaches_done(self):
+        """A dict output must not abort the turn.
+
+        Regression: `blender_out` was assigned straight from `result.output`
+        (declared `object`), then `_capture_screenshot` called `.startswith()`
+        on it — outside its own try — so the AttributeError escaped to the
+        handler's except and the user lost the whole reply.
+        """
+        sent = await _drive_streaming({"status": "success", "name": "Cube"})
+
+        assert sent[-1]["status"] == "done"
+        assert "Cube" in sent[-1]["blender_output"]
+
+    async def test_str_blender_output_is_unchanged(self):
+        sent = await _drive_streaming("Created cube")
+
+        assert sent[-1]["status"] == "done"
+        assert sent[-1]["blender_output"] == "Created cube"

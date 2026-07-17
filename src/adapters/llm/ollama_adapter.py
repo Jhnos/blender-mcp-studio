@@ -14,6 +14,7 @@ Recommended models for Blender bpy code generation:
 from __future__ import annotations
 
 import re
+from collections.abc import AsyncGenerator
 
 import httpx
 
@@ -82,7 +83,7 @@ class OllamaAdapter(LLMPort):
         self,
         messages: list[Message],
         system_prompt: str | None = None,
-    ):
+    ) -> AsyncGenerator[str, None]:
         """Stream response tokens via Ollama's NDJSON streaming API.
 
         Yields individual text chunks as they arrive. Strips <think> blocks

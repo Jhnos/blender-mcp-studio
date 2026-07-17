@@ -23,6 +23,7 @@ from typing import Any
 from src.core.domain.command import Command
 from src.core.ports.blender_port import BlenderPort
 from src.core.ports.mcp_port import ToolResult
+from src.infrastructure.narrowing import as_str_keyed
 
 logger = logging.getLogger(__name__)
 
@@ -64,19 +65,29 @@ class MCPClientBlenderAdapter(BlenderPort):
     async def is_connected(self) -> bool:
         return self._connected
 
-    async def get_scene_info(self) -> dict:
+    async def get_scene_info(self) -> dict[str, object]:
         result = await self._call_tool("get_scene_info", {})
-        if result.success and result.output:
-            try:
-                return json.loads(result.output)
-            except json.JSONDecodeError:
-                return {"raw": result.output}
-        return {}
+        if not (result.success and result.output):
+            return {}
+        if not isinstance(result.output, str):
+            logger.warning(
+                "get_scene_info: expected str output, got %s", type(result.output).__name__
+            )
+            return {}
+        try:
+            parsed: object = json.loads(result.output)
+        except json.JSONDecodeError:
+            return {"raw": result.output}
+        scene = as_str_keyed(parsed, context="scene info")
+        if scene is None:
+            logger.warning("get_scene_info: expected a JSON object, got %s", type(parsed).__name__)
+            return {"raw": result.output}
+        return scene
 
     async def execute(self, command: Command) -> ToolResult:
         return await self._call_tool(command.tool_name, dict(command.arguments))
 
-    async def call_tool(self, tool_name: str, arguments: dict) -> ToolResult:
+    async def call_tool(self, tool_name: str, arguments: dict[str, object]) -> ToolResult:
         return await self._call_tool(tool_name, arguments)
 
     # ------------------------------------------------------------------
@@ -96,7 +107,7 @@ class MCPClientBlenderAdapter(BlenderPort):
             result = await session.list_tools()
             return result.tools
 
-    async def _call_tool(self, tool_name: str, arguments: dict) -> ToolResult:
+    async def _call_tool(self, tool_name: str, arguments: dict[str, object]) -> ToolResult:
         """Call a tool on the MCP server and return the result."""
         from mcp.client.session import ClientSession
         from mcp.client.sse import sse_client

@@ -5,13 +5,13 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
-from typing import Any
 
 from src.core.domain.command import Command
 from src.core.domain.exceptions import BlenderConnectionError
 from src.core.ports.blender_port import BlenderPort
 from src.core.ports.code_sandbox_port import CodeSandboxPort
 from src.core.ports.mcp_port import MCPPort, ToolDefinition, ToolResult
+from src.infrastructure.narrowing import as_str_keyed
 
 logger = logging.getLogger(__name__)
 
@@ -52,7 +52,23 @@ class BlenderSocketClient:
             self._writer = None
             self._reader = None
 
-    async def send_command(self, payload: dict[str, Any]) -> dict[str, Any]:
+    @staticmethod
+    def _decode_response(raw: bytes) -> dict[str, object]:
+        """Decode the addon's JSON reply into a genuinely typed mapping.
+
+        Propagates json.JSONDecodeError while the buffer is still incomplete —
+        send_command relies on that to keep reading. The ValueError below is
+        deliberately not a BlenderConnectionError: a well-formed reply of the
+        wrong shape is not a dropped connection, and call_tool's `except
+        Exception` should turn it into a failed ToolResult like any other.
+        """
+        parsed: object = json.loads(raw.decode("utf-8"))
+        narrowed = as_str_keyed(parsed, context="Blender response")
+        if narrowed is None:
+            raise ValueError(f"Blender returned a JSON {type(parsed).__name__}, expected an object")
+        return narrowed
+
+    async def send_command(self, payload: dict[str, object]) -> dict[str, object]:
         """Send JSON payload and recv until we have a complete JSON response.
 
         Acquires _lock to prevent concurrent callers from interleaving
@@ -74,10 +90,10 @@ class BlenderSocketClient:
                         break
                     raw += chunk
                     try:
-                        return json.loads(raw.decode("utf-8"))
+                        return self._decode_response(raw)
                     except json.JSONDecodeError:
                         continue
-            return json.loads(raw.decode("utf-8"))
+            return self._decode_response(raw)
 
     @property
     def is_connected(self) -> bool:
@@ -106,10 +122,11 @@ class BlenderMCPClient(MCPPort):
         try:
             response = await self._socket.send_command({"type": tool_name, "params": arguments})
             if response.get("status") == "error":
+                message: object = response.get("message")
                 return ToolResult(
                     success=False,
                     output=None,
-                    error=response.get("message", "Unknown Blender error"),
+                    error=str(message) if message is not None else "Unknown Blender error",
                 )
             return ToolResult(
                 success=True,

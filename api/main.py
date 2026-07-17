@@ -10,6 +10,7 @@ from __future__ import annotations
 import asyncio
 import contextlib
 import os
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -21,7 +22,7 @@ from api.routers.ws_manager import ConnectionManager, viewport_broadcast_loop
 
 
 @asynccontextmanager
-async def _lifespan(app: FastAPI):
+async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
     """Startup/shutdown: load env once, init shared adapters and event bus."""
     from src.adapters.events.in_memory_event_bus import InMemoryEventBus
     from src.adapters.factory.concrete_adapter_factory import ConcreteAdapterFactory

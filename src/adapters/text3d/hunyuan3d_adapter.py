@@ -109,7 +109,7 @@ class Hunyuan3DAdapter(Text3DGenerationPort):
 
         import asyncio
 
-        kwargs: dict = {"hf_token": self._api_key} if self._api_key else {}
+        kwargs: dict[str, object] = {"hf_token": self._api_key} if self._api_key else {}
 
         def _sync_call() -> bytes:
             client = Client(self._hf_space, **kwargs)

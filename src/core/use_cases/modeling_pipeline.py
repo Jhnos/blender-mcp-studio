@@ -85,7 +85,7 @@ class ModelingPipelineUseCase:
 
         return result
 
-    async def _execute_stage(self, stage: PipelineStage, context: dict) -> StageResult:
+    async def _execute_stage(self, stage: PipelineStage, context: dict[str, object]) -> StageResult:
         """Execute a single pipeline stage and return its outcome."""
         args = stage.resolve_arguments(context)
         command = Command(tool_name=stage.tool_name, arguments=args)

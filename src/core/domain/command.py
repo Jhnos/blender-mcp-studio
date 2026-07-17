@@ -5,8 +5,12 @@ from __future__ import annotations
 import json
 import logging
 import re
+from typing import TYPE_CHECKING
 
 from pydantic import BaseModel, Field
+
+if TYPE_CHECKING:
+    from src.core.domain.tool_registry import ToolSchemaRegistry
 
 logger = logging.getLogger(__name__)
 
@@ -32,10 +36,10 @@ class CommandParser:
     """
 
     _JSON_RE = re.compile(r"\{.*\}", re.DOTALL)
-    _registry = None  # lazy-loaded singleton
+    _registry: ToolSchemaRegistry | None = None  # lazy-loaded singleton
 
     @classmethod
-    def _get_registry(cls):
+    def _get_registry(cls) -> ToolSchemaRegistry:
         if cls._registry is None:
             from src.core.domain.tool_registry import ToolSchemaRegistry
 

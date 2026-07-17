@@ -20,9 +20,12 @@ import logging
 import os
 import tempfile
 
-from fastapi import APIRouter, Request, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
+from src.core.domain.session import Session
+from src.core.ports.blender_port import BlenderPort
 from src.core.ports.llm_port import LLMStreamPort
+from src.core.ports.session_store_port import SessionStorePort
 from src.core.use_cases.conversational_modeling import ConversationalModelingUseCase
 
 logger = logging.getLogger(__name__)
@@ -83,11 +86,9 @@ async def chat_websocket(websocket: WebSocket) -> None:
                     await session_store.get(session_id) if session_id else None
                 ) or await session_store.create()
             else:
-                from src.core.domain.session import Session
-
                 if not hasattr(request.app.state, "_sessions"):
                     request.app.state._sessions = {}
-                _sessions: dict = request.app.state._sessions
+                _sessions: dict[str, Session] = request.app.state._sessions
                 session = (_sessions.get(session_id) if session_id else None) or Session()
                 _sessions[session.id] = session
 
@@ -112,8 +113,6 @@ async def chat_websocket(websocket: WebSocket) -> None:
                             use_case,
                             session,
                             session_store,
-                            request,
-                            prompt_builder,
                         )
                         continue
 
@@ -164,10 +163,8 @@ async def _handle_streaming(
     websocket: WebSocket,
     llm: LLMStreamPort,
     use_case: ConversationalModelingUseCase,
-    session,
-    session_store,
-    request: Request,
-    prompt_builder,
+    session: Session,
+    session_store: SessionStorePort | None,
 ) -> None:
     """Push LLM tokens to client in real-time, then execute Blender commands."""
     from src.core.domain.command import CommandParser
@@ -198,15 +195,21 @@ async def _handle_streaming(
         if command:
             try:
                 result = await use_case._blender.execute(command)
-                blender_out = result.output if result.success else f"❌ {result.error}"
+                if result.success:
+                    # ToolResult.output is `object` — the socket adapter hands back
+                    # the addon's raw response dict when it carries no "result" key
+                    # (blender_mcp_adapter.py:116). Match the non-streaming path.
+                    blender_out = str(result.output) if result.output else None
+                else:
+                    blender_out = f"❌ {result.error}"
             except Exception as exc:
                 blender_out = f"❌ {exc}"
 
         updated = session.add_message("assistant", accumulated)
         if session_store is not None:
             await session_store.save(updated)
-        elif hasattr(request.app.state, "_sessions"):
-            request.app.state._sessions[updated.id] = updated
+        elif hasattr(websocket.app.state, "_sessions"):
+            websocket.app.state._sessions[updated.id] = updated
 
         screenshot_b64 = await _capture_screenshot(use_case._blender, blender_out)
 
@@ -239,7 +242,7 @@ async def _handle_streaming(
         )
 
 
-async def _capture_screenshot(blender, blender_out: str | None) -> str | None:
+async def _capture_screenshot(blender: BlenderPort, blender_out: str | None) -> str | None:
     """Take a viewport screenshot after a successful Blender command."""
     if not blender_out or blender_out.startswith("❌"):
         return None

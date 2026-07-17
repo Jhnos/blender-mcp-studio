@@ -25,13 +25,13 @@ class PipelineStage:
     name: str
     description: str
     tool_name: str
-    arguments_template: dict  # placeholders resolved at runtime
+    arguments_template: dict[str, object]  # placeholders resolved at runtime
     validation_key: str | None = None  # response key that must be truthy to pass
     optional: bool = False
 
-    def resolve_arguments(self, context: dict) -> dict:
+    def resolve_arguments(self, context: dict[str, object]) -> dict[str, object]:
         """Fill placeholders in arguments_template from context dict."""
-        resolved: dict = {}
+        resolved: dict[str, object] = {}
         for k, v in self.arguments_template.items():
             if isinstance(v, str) and v.startswith("{{") and v.endswith("}}"):
                 placeholder = v[2:-2].strip()
@@ -57,7 +57,7 @@ class PipelineResult:
 
     pipeline_name: str
     stage_results: list[StageResult] = field(default_factory=list)
-    context: dict = field(default_factory=dict)
+    context: dict[str, object] = field(default_factory=dict)
 
     @property
     def success(self) -> bool:

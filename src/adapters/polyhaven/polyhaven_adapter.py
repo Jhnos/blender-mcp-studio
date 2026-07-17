@@ -18,12 +18,26 @@ from functools import cached_property
 import httpx
 
 from src.core.ports.polyhaven_port import PolyHavenAsset, PolyHavenFile, PolyHavenPort
+from src.infrastructure.narrowing import as_int, as_str, as_str_keyed, dig
 
 logger = logging.getLogger(__name__)
 
 _TYPE_MAP = {"hdri": 0, "texture": 1, "model": 2}
 _BASE = "https://api.polyhaven.com"
 _CACHE_TTL = 300  # seconds
+_CATALOGUE = "PolyHaven asset catalogue"
+
+
+def _size(value: object) -> int:
+    """PolyHaven omits `size` on some formats; absent or malformed reads as 0."""
+    return as_int(value) or 0
+
+
+def _str_tuple(value: object) -> tuple[str, ...]:
+    """Read a list-of-strings field; empty when absent, and non-strings are dropped."""
+    if not isinstance(value, list):
+        return ()
+    return tuple(item for item in value if isinstance(item, str))
 
 
 class PolyHavenAdapter(PolyHavenPort):
@@ -32,7 +46,7 @@ class PolyHavenAdapter(PolyHavenPort):
     def __init__(self, timeout: float = 15.0) -> None:
         self._timeout = timeout
         self._assets_cache: dict[str, tuple[float, list[PolyHavenAsset]]] = {}
-        self._files_cache: dict[str, tuple[float, dict]] = {}
+        self._files_cache: dict[str, tuple[float, dict[str, object]]] = {}
 
     @cached_property
     def _client(self) -> httpx.AsyncClient:
@@ -80,31 +94,31 @@ class PolyHavenAdapter(PolyHavenPort):
         # HDRI structure: files["hdri"][resolution][format]["url"]
         # Try both top-level keys
         for section_key in ("hdri", "blend", "gltf", "fbx"):
-            section = files_data.get(section_key, {})
-            res_data = section.get(resolution, {})
-            fmt_data = res_data.get(file_format, {})
-            if fmt_data.get("url"):
+            file_node = dig(files_data, section_key, resolution, file_format)
+            url = dig(file_node, "url")
+            if isinstance(url, str) and url:
                 return PolyHavenFile(
                     asset_id=asset_id,
                     resolution=resolution,
                     file_format=file_format,
-                    url=fmt_data["url"],
-                    size_bytes=fmt_data.get("size", 0),
+                    url=url,
+                    size_bytes=_size(dig(file_node, "size")),
                 )
 
         # Fallback: return the first available format at requested resolution
         for section in files_data.values():
-            if not isinstance(section, dict):
+            res_data = dig(section, resolution)
+            if not isinstance(res_data, dict):
                 continue
-            res_data = section.get(resolution, {})
             for fmt, fdata in res_data.items():
-                if isinstance(fdata, dict) and fdata.get("url"):
+                url = dig(fdata, "url")
+                if isinstance(fmt, str) and isinstance(url, str) and url:
                     return PolyHavenFile(
                         asset_id=asset_id,
                         resolution=resolution,
                         file_format=fmt,
-                        url=fdata["url"],
-                        size_bytes=fdata.get("size", 0),
+                        url=url,
+                        size_bytes=_size(dig(fdata, "size")),
                     )
 
         logger.warning("No download URL found for %s @ %s/%s", asset_id, resolution, file_format)
@@ -118,28 +132,37 @@ class PolyHavenAdapter(PolyHavenPort):
                 params={"type": type_id},
             )
             resp.raise_for_status()
-            raw: dict = resp.json()
+            payload: object = resp.json()
         except Exception as exc:
             logger.error("PolyHaven assets fetch failed: %s", exc)
             return []
 
+        raw = as_str_keyed(payload, context=_CATALOGUE)
+        if raw is None:
+            logger.error("%s: expected a JSON object, got %s", _CATALOGUE, type(payload).__name__)
+            return []
+
         assets = []
         for asset_id, info in raw.items():
+            fields = as_str_keyed(info, context=_CATALOGUE)
+            if fields is None:
+                logger.warning("PolyHaven asset '%s' has unexpected shape — skipping", asset_id)
+                continue
             assets.append(
                 PolyHavenAsset(
                     id=asset_id,
-                    name=info.get("name", asset_id),
+                    name=as_str(fields.get("name")) or asset_id,
                     asset_type=asset_type,
-                    categories=tuple(info.get("categories") or []),
-                    tags=tuple(info.get("tags") or []),
-                    thumbnail_url=info.get("thumbnail_url", ""),
-                    download_count=info.get("download_count", 0),
+                    categories=_str_tuple(fields.get("categories")),
+                    tags=_str_tuple(fields.get("tags")),
+                    thumbnail_url=as_str(fields.get("thumbnail_url")) or "",
+                    download_count=_size(fields.get("download_count")),
                 )
             )
 
         return sorted(assets, key=lambda a: a.download_count, reverse=True)
 
-    async def _fetch_files(self, asset_id: str) -> dict:
+    async def _fetch_files(self, asset_id: str) -> dict[str, object]:
         cached = self._files_cache.get(asset_id)
         if cached and (time.monotonic() - cached[0]) < _CACHE_TTL:
             return cached[1]
@@ -147,9 +170,18 @@ class PolyHavenAdapter(PolyHavenPort):
         try:
             resp = await self._client.get(f"{_BASE}/files/{asset_id}")
             resp.raise_for_status()
-            data: dict = resp.json()
+            payload: object = resp.json()
         except Exception as exc:
             logger.error("PolyHaven files fetch failed for %s: %s", asset_id, exc)
+            return {}
+
+        data = as_str_keyed(payload, context=f"PolyHaven files/{asset_id}")
+        if data is None:
+            logger.error(
+                "PolyHaven files/%s: expected a JSON object, got %s",
+                asset_id,
+                type(payload).__name__,
+            )
             return {}
 
         self._files_cache[asset_id] = (time.monotonic(), data)
