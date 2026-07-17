@@ -6,6 +6,12 @@
 
 ## 2026-07-18
 
+### `narrow(x) or default` 把「畸形」訊號連同「空」一起塌掉——正確用了 SSOT，尾巴一個 `or {}` 又是 silent-fallback
+- **觸發情境**：一個收窄／解析函式以 `None`（或空）表示「輸入畸形／不符預期」，呼叫端寫成 `narrow(x) or default`（`as_str_keyed(o) or {}`、`parse(s) or []`、`.get(k) or fallback`）。尤其在剛把某個 bug class 改成「一律走 narrowing SSOT」之後——會覺得「用了 SSOT 就安全了」。
+- **該主動檢查**：`narrow` 回 `None` 的**語意**是什麼？若它同時代表「合法的空」與「畸形輸入」兩種情況，`or default` 就把兩者**塌成同一個值、且無聲**——呼叫端從此分不出「addon 回了 list/null」和「場景本來就空」。問：畸形這條路徑有沒有留下**可觀測**的痕跡（log/raise/metric）？
+- **為什麼沒抓到**：`or default` 讀起來像無害的 defaulting，而且**它前面確實用了正確的 narrowing 工具**，所以 review 和 CI（mypy、container-narrowing gate）全綠——那些 gate 檢查「有沒有收窄」，不檢查「收窄失敗後有沒有靜默吞掉」。本輪 `get_scene_info` 就是：`as_str_keyed(...) or {}`，`as_str_keyed` 只在非字串 key 時警告，非 mapping 時回 `None` → `or {}` 靜默成 `{}`。與 07-15『health/靜默退化成空』、NO_SILENT_FALLBACK 同族。
+- **如何預防**：收窄失敗要**明確分支**、留痕再回退：`n = narrow(x); if n is None: logger.warning(...); return default; return n`——別用 `or default` 把 `None` 一步吞掉。把「畸形 → 有 log / raise」當契約，並為它寫一個「餵畸形輸入、斷言有 warning」的測試（本輪這條測試正是抓到 bug 的那個）。延伸：**搶救「不是我建、即將丟棄」的 commit 前，先查它是否含 main 沒有的測試覆蓋**——那些測試可能正守著一個 main 已違反的契約（本 bug 就是併入被搶救的測試時當場 fail 才暴露的）。
+
 ### 純函式的「層」由它承載的知識決定，不由它的形狀（純度）決定
 - **觸發情境**：一個 helper 看起來像 domain（純函式、無 I/O、只做資料轉換），但它**編碼了某個特定 backend 的知識**（某 addon 只吃哪些指令、產出某引擎的方言／DSL／SQL 方言／bpy 程式碼）。決定它放哪一層時。
 - **該主動檢查**：這個函式**知道什麼**？若它知道「某個具體外部系統的限制或方言」，它屬 adapters 層，**不管它多純**。反問：domain 或 use case 匯入它，會不會就等於讓核心層知道了某個 addon/DB/引擎的存在？會＝放錯層。
