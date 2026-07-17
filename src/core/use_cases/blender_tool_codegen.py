@@ -90,7 +90,7 @@ def _apply_material(a: dict[str, object]) -> str:
         "    b = mat.node_tree.nodes.get('Principled BSDF')",
         "    if b:",
     ]
-    if isinstance(color, (list, tuple)) and color:
+    if isinstance(color, (list, tuple)) and color:  # narrow-ok: elements coerced by float()
         c = [float(x) for x in color]
         rgba = c + [1.0] * (4 - len(c)) if len(c) < 4 else c[:4]
         lines.append(f"        b.inputs['Base Color'].default_value = tuple({_lit(rgba)})")

@@ -55,11 +55,11 @@ _run hard "python format (ruff)"     "$PY" -m ruff format --check src tests api
 # here is only worth something if nothing reintroduces `Any` at a JSON boundary
 # — see docs/LESSONS_LEARNED.md, "型別檢查器的綠燈可能是 Any 造成的盲區".
 _run hard "python types (mypy)"      "$PY" -m mypy src api --ignore-missing-imports --no-error-summary
-# mypy is blind to the isinstance(_, dict) -> dict[Any, Any] hole (a green run can
-# be a zero-check run). This gate makes that class un-silent: every hit must route
-# through the narrowing SSOT or carry a `# narrow-ok:` waiver. See the script header
-# and docs/LESSONS_LEARNED.md 2026-07-17/18.
-_run hard "python dict-narrowing"    "$PY" scripts/check_dict_narrowing.py src api
+# mypy is blind to the isinstance(_, dict|list) -> dict[Any, Any] / list[Any] hole
+# (a green run can be a zero-check run). This gate makes that class un-silent: every
+# hit must route through the narrowing SSOT or carry a `# narrow-ok:` waiver. See the
+# script header and docs/LESSONS_LEARNED.md 2026-07-17/18.
+_run hard "python container-narrowing" "$PY" scripts/check_container_narrowing.py src api
 
 _tier "T2 · unit + headless dummy run"
 # tests/e2e is hermetic (Mock adapters / TestClient — no real Blender or LLM)

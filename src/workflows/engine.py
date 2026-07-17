@@ -52,7 +52,7 @@ class WorkflowEngine:
         """
         if raw is None:
             return []
-        if not isinstance(raw, list):
+        if not isinstance(raw, list):  # narrow-ok: each entry re-annotated to object below
             logger.warning("workflow 'steps' is %s, expected a list — ignoring", type(raw).__name__)
             return []
         steps: list[dict[str, object]] = []
