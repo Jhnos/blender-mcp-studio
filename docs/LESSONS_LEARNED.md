@@ -4,6 +4,16 @@
 
 ---
 
+## 2026-07-18
+
+### 「用檢查器列出同 class 全部實例」有個盲區：檢查器對第三方/`Any` 邊界結構性看不到 → 那個子類要用 grep
+- **觸發情境**：清一個 bug class 的殘留（承 2026-07-17「同 class 只修了人看到那處」）。其中有些實例的值源自**未定型第三方 SDK 或宣告成 `object` 的欄位**——`isinstance(x, dict)` 後直接用／直接回傳。
+- **該主動檢查**：這個 class 的實例裡，**哪些檢查器根本沉默**？值一旦退化成 `Any`（lazy-import 的未定型套件、`--ignore-missing-imports`、`object` 欄位經 `isinstance` 只到 `dict[Any,Any]`），檢查器對它零報錯＝零線索。這種子類**不能靠檢查器盤點**，要用結構性 grep：`isinstance(.*, dict)`、餵給 `open(`/`dict[str,object]` 回傳的 SDK 取值點。
+- **為什麼沒抓到**：2026-07-17 的處方是「用檢查器去問其餘實例」——對 union/可空型別成立，但對「檢查器被 `Any` 蒙眼」的那一半實例**恰好失效**：你拿一個對這些實例天生瞎的工具去盤點，回報「乾淨」。本輪就有兩個殘留（`hunyuan3d_adapter` 直接 `open(Any)`、`blender_mcp_adapter.get_scene_info` 把 `dict[Any,Any]` 當 `dict[str,object]` 回傳）在 mypy --strict 全綠下存活。
+- **如何預防**：① 盤點一個 bug class 時先分流——「檢查器看得到的」用檢查器、「值會退化成 `Any` 的邊界」用 grep，兩條都要跑，不可只信檢查器的綠燈；② 抽出防腐層 helper（本專案的 `src/infrastructure/narrowing.py`）那一刻，**同批掃完所有既有邊界**改用它，別只轉換觸發它誕生的那一處——否則未遷移的邊界就是這個 class 的下一批溫床（narrowing 誕生於 07-17，這兩處當時沒一起遷）。
+
+---
+
 ## 2026-07-17
 
 ### 型別檢查器報綠 ≠ 它有在檢查：`Any` 是靜音區，零錯誤可能是零檢查
