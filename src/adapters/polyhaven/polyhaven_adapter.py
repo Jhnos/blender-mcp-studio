@@ -35,7 +35,7 @@ def _size(value: object) -> int:
 
 def _str_tuple(value: object) -> tuple[str, ...]:
     """Read a list-of-strings field; empty when absent, and non-strings are dropped."""
-    if not isinstance(value, list):
+    if not isinstance(value, list):  # narrow-ok: items filtered by isinstance(item, str) below
         return ()
     return tuple(item for item in value if isinstance(item, str))
 

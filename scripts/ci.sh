@@ -55,18 +55,19 @@ _run hard "python format (ruff)"     "$PY" -m ruff format --check src tests api
 # here is only worth something if nothing reintroduces `Any` at a JSON boundary
 # — see docs/LESSONS_LEARNED.md, "型別檢查器的綠燈可能是 Any 造成的盲區".
 _run hard "python types (mypy)"      "$PY" -m mypy src api --ignore-missing-imports --no-error-summary
-# mypy is blind to the isinstance(_, dict) -> dict[Any, Any] hole (a green run can
-# be a zero-check run). This gate makes that class un-silent: every hit must route
-# through the narrowing SSOT or carry a `# narrow-ok:` waiver. See the script header
-# and docs/LESSONS_LEARNED.md 2026-07-17/18.
-_run hard "python dict-narrowing"    "$PY" scripts/check_dict_narrowing.py src api
+# mypy is blind to the isinstance(_, dict|list) -> dict[Any, Any] / list[Any] hole
+# (a green run can be a zero-check run). This gate makes that class un-silent: every
+# hit must route through the narrowing SSOT or carry a `# narrow-ok:` waiver. See the
+# script header and docs/LESSONS_LEARNED.md 2026-07-17/18.
+_run hard "python container-narrowing" "$PY" scripts/check_container_narrowing.py src api
 
 _tier "T2 · unit + headless dummy run"
-# The e2e smoke test is named explicitly, not `tests/e2e`: it is hermetic
-# (TestClient + fakes, no real Blender) and must be gated, but the rest of
-# tests/e2e carries a pre-existing failure (test_full_pipeline_create_object,
-# create_object vs execute_code) that is out of scope here.
-_run hard "python unit + ws smoke (pytest)" "$PY" -m pytest tests/unit tests/e2e/test_chat_websocket_smoke.py -q --no-header -p no:cacheprovider --no-cov
+# tests/e2e is hermetic (Mock adapters / TestClient — no real Blender or LLM)
+# and now fully green, so the whole directory is gated. It was previously
+# ungated, which let test_full_pipeline_create_object rot red for a month
+# (create_object vs execute_code — a stale assertion, not a bug; the pipeline
+# correctly rewrites high-level tools to execute_code since 46fe5b3).
+_run hard "python unit + e2e (pytest)" "$PY" -m pytest tests/unit tests/e2e -q --no-header -p no:cacheprovider --no-cov
 _run hard "web unit + dummy run (vitest)" bash -c 'cd web && npx vitest run'
 
 if (( REAL )); then

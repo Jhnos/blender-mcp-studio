@@ -108,7 +108,15 @@ class MockVision(VisionPort):
 
 @pytest.mark.asyncio
 async def test_full_pipeline_create_object():
-    """E2E: user asks to create an object → tool call → Blender executes."""
+    """E2E: user asks to create an object → tool call → Blender executes it.
+
+    The addon has no `create_object` handler (only execute_code + read tools),
+    so the pipeline rewrites high-level modeling tools into an equivalent bpy
+    script via blender_tool_codegen.translate before dispatch (added in 46fe5b3,
+    "fix chat modeling pipeline"). This test therefore asserts the *translated*
+    execute_code command still carries the original request — the object name
+    and mesh primitive — rather than the pre-translation tool name.
+    """
     blender = MockBlender()
     llm = MockToolCallingLLM(
         [
@@ -129,8 +137,14 @@ async def test_full_pipeline_create_object():
     updated, reply, blender_out = await use_case.execute(session)
 
     assert len(blender.executed) == 1
-    assert blender.executed[0][0] == "create_object"
-    assert blender.executed[0][1]["name"] == "BlackCat"
+    tool_name, arguments = blender.executed[0]
+    # High-level create_object is translated to an execute_code bpy script...
+    assert tool_name == "execute_code"
+    code = arguments["code"]
+    assert isinstance(code, str)
+    # ...that must preserve the request: a mesh primitive named BlackCat.
+    assert "primitive_cube_add" in code
+    assert "BlackCat" in code
     assert blender_out is not None
     assert "executed" in blender_out
 

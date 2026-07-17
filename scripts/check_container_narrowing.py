@@ -1,19 +1,22 @@
 #!/usr/bin/env python3
-"""CI gate: every ``isinstance(_, dict)`` must be an honestly-narrowed decision.
+"""CI gate: every ``isinstance(_, dict|list)`` must be an honestly-narrowed decision.
 
 The bug class (docs/LESSONS_LEARNED.md, 2026-07-17 / 2026-07-18)
 --------------------------------------------------------------
-``isinstance(x, dict)`` cannot check type parameters at runtime, so it narrows
-only to ``dict[Any, Any]``. Returning or using that as ``dict[str, object]``
-type-checks while every value is a silent ``Any`` — and ``mypy --strict`` stays
-green because ``Any`` is compatible with everything. The checker is BLIND to it.
-The SSOT fix is ``src.infrastructure.narrowing.as_str_keyed`` (and ``dig`` for
-staying at ``object``), which rebuilds mappings with explicitly checked keys.
+``isinstance(x, dict)`` / ``isinstance(x, list)`` cannot check type parameters at
+runtime, so they narrow only to ``dict[Any, Any]`` / ``list[Any]``. Returning or
+using that as ``dict[str, object]`` / ``list[str]`` type-checks while every
+element is a silent ``Any`` — and ``mypy --strict`` stays green because ``Any``
+is compatible with everything. The checker is BLIND to it. The SSOT fix is
+``src.infrastructure.narrowing`` (``as_str_keyed`` for mappings, ``dig`` for
+staying at ``object``, ``as_str`` / ``as_int`` per element), which rebuilds
+containers with explicitly checked elements.
 
-Four instances were cleaned by hand; a fifth (``blender_mcp_adapter``'s second
-method) survived a "same file, only fixed the spot a human happened to see" pass.
-Manual ``grep`` was the only defence and it was not in CI. This gate is that
-defence, made un-silent and un-forgettable.
+Five ``dict`` instances were cleaned by hand; the last (``blender_mcp_adapter``'s
+second method) survived a "same file, only fixed the spot a human happened to
+see" pass. Manual ``grep`` was the only defence and it was not in CI. This gate is
+that defence, made un-silent and un-forgettable — for both container kinds, since
+``list[Any]`` is exactly as silent as ``dict[Any, Any]``.
 
 Why a waiver instead of clever flow analysis
 --------------------------------------------
@@ -21,9 +24,9 @@ The meta-lesson is that a checker which is *itself* blind to the class will
 happily report "clean". Auto-deciding "is this site honestly narrowed?" from the
 AST is exactly such a blind heuristic — honesty is only provable with
 ``reveal_type`` at the value site, which CI cannot do per-call. So this gate does
-NOT try to prove honesty. It makes every ``isinstance(_, dict)`` a *declared,
-greppable, reviewable* decision — the same discipline the project already
-requires of ``# type: ignore``. A site is allowed only when:
+NOT try to prove honesty. It makes every ``isinstance(_, dict|list)`` a
+*declared, greppable, reviewable* decision — the same discipline the project
+already requires of ``# type: ignore``. A site is allowed only when:
 
   1. it lives in the narrowing SSOT module itself (where the primitives are
      defined), or
@@ -37,7 +40,7 @@ false-match.
 
 Usage
 -----
-    scripts/check_dict_narrowing.py [ROOT ...]     # default roots: src api
+    scripts/check_container_narrowing.py [ROOT ...]   # default roots: src api
 
 Exit 0 when every hit is accounted for; exit 1 (with a report) otherwise. Run
 from the repo root — ci.sh guarantees that.
@@ -60,6 +63,10 @@ ALLOWLIST_PATHS = {"src/infrastructure/narrowing.py"}
 # claim a reviewer can judge — never a bare mute switch.
 WAIVER_RE = re.compile(r"#\s*narrow-ok:\s*\S")
 
+# The generic builtins whose isinstance() check discards the element type params
+# (-> dict[Any, Any] / list[Any]). Both are equally silent under mypy --strict.
+TARGET_TYPES = {"dict", "list"}
+
 DEFAULT_ROOTS = ("src", "api")
 
 
@@ -75,8 +82,8 @@ def _iter_py_files(roots: tuple[str, ...]) -> Iterator[str]:
                     yield os.path.join(dirpath, name)
 
 
-def _is_dict_isinstance(node: ast.AST) -> bool:
-    """True for ``isinstance(<expr>, dict)`` or ``isinstance(<expr>, (..., dict, ...))``."""
+def _is_container_isinstance(node: ast.AST) -> bool:
+    """True for ``isinstance(<expr>, dict|list)``, incl. the ``(list, tuple)`` form."""
     if not isinstance(node, ast.Call):
         return False
     if not (isinstance(node.func, ast.Name) and node.func.id == "isinstance"):
@@ -85,7 +92,7 @@ def _is_dict_isinstance(node: ast.AST) -> bool:
         return False
     type_arg = node.args[1]
     candidates = type_arg.elts if isinstance(type_arg, ast.Tuple) else [type_arg]
-    return any(isinstance(c, ast.Name) and c.id == "dict" for c in candidates)
+    return any(isinstance(c, ast.Name) and c.id in TARGET_TYPES for c in candidates)
 
 
 def _rel(path: str) -> str:
@@ -109,7 +116,7 @@ def _check_file(path: str) -> list[tuple[str, int, str]]:
     lines = source.splitlines()
     findings: list[tuple[str, int, str]] = []
     for node in ast.walk(tree):
-        if not _is_dict_isinstance(node):
+        if not _is_container_isinstance(node):
             continue
         start = node.lineno  # type: ignore[attr-defined]  # Call always has lineno
         end = getattr(node, "end_lineno", start) or start
@@ -128,14 +135,14 @@ def main(argv: list[str]) -> int:
     findings.sort()
 
     if not findings:
-        print("dict-narrowing gate: OK — every isinstance(_, dict) is accounted for")
+        print("container-narrowing gate: OK — every isinstance(_, dict|list) is accounted for")
         return 0
 
-    print("dict-narrowing gate: FAIL — isinstance(_, dict) hit(s) with no honest narrowing")
-    print("  This narrows only to dict[Any, Any]; using it as dict[str, object] is a silent")
-    print("  Any hole mypy --strict cannot see (docs/LESSONS_LEARNED.md 2026-07-17/18).")
-    print("  Fix: route the value through src.infrastructure.narrowing (as_str_keyed / dig),")
-    print("  or, if the site rebuilds keys honestly, annotate it: `# narrow-ok: <reason>`.")
+    print("container-narrowing gate: FAIL — isinstance(_, dict|list) hit(s) with no honest narrowing")
+    print("  This narrows only to dict[Any, Any] / list[Any]; using it as a typed container is a")
+    print("  silent Any hole mypy --strict cannot see (docs/LESSONS_LEARNED.md 2026-07-17/18).")
+    print("  Fix: route through src.infrastructure.narrowing (as_str_keyed / dig / as_str / as_int),")
+    print("  or, if the site rebuilds elements honestly, annotate it: `# narrow-ok: <reason>`.")
     print()
     for rel, lineno, text in findings:
         print(f"  {rel}:{lineno}: {text}")

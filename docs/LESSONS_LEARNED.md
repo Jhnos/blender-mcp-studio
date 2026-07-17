@@ -6,11 +6,23 @@
 
 ## 2026-07-18
 
+### 部分 gate 給的是假覆蓋率：綠勾只涵蓋被跑到的子集，沒跑到的測試會靜默腐爛
+- **觸發情境**：一個測試/檢查存在於 repo，但 CI 的 runner 只跑其中一部分（例：`pytest tests/unit`，而 `tests/e2e` 從不被跑）。任何時候看到「gate 只指向一個子目錄／一個標籤／一組檔案」都要警覺。
+- **該主動檢查**：這個 gate 的涵蓋範圍，和「repo 裡實際存在的同類檢查全集」對得起來嗎？有沒有測試檔**存在但從不被任何 gate 執行**？綠燈是「全部通過」還是「被跑到的那些通過」？
+- **為什麼沒抓到**：綠勾同時相容於「測試都過」與「有測試根本沒跑」——和 07-17『型別檢查器報綠≠有在檢查』、以及 health『訊號說的比它守的多』同族。本輪一個 e2e 斷言在產品行為正確變更後過期變紅，紅了一個月沒人知，正因為 `tests/e2e` 不在 gate 內；它是被『補一個新測試、順手擴大跑 e2e』意外撞見的，不是被機制抓到的。
+- **如何預防**：gate 的涵蓋範圍要嘛是「全集」（跑整個 test root，而非某子目錄），要嘛對「刻意排除的部分」有顯式清單＋理由（一如 `# type: ignore`／deferral 要理由）。新增一批測試時，同時確認它落在被 gate 執行的路徑內——否則就是寫了個永遠不會 fail-loud 的測試。排除某些測試（需真硬體等）是合法的，但排除本身要可見、可 review，不能是「runner 剛好沒指到那裡」的沉默預設。
+
+### 自稱「唯一入口 / single chokepoint」的宣稱若無機制強制，新增一條路徑就會靜默繞過它
+- **觸發情境**：某個轉換／守衛／正規化被設計成「所有 X 都必須經過的單一收斂點」（docstring 或命名這樣寫），而呼叫它是**各呼叫端自律**、不是型別或架構強制。尤其當同一種操作有**多條 dispatch 路徑**時。
+- **該主動檢查**：這個「唯一入口」實際被呼叫了幾次、在哪幾條路徑？把「所有會做這種 dispatch 的路徑」列全，逐條確認它們**都**經過那個收斂點——別信 docstring 的宣稱，用 grep 把呼叫點數出來。宣稱（claim）與強制（enforcement）是兩回事。
+- **為什麼沒抓到**：宣稱寫在註解裡，沒有任何東西讓「繞過它」變成編譯錯或測試紅。第一條路徑正確接上後，收斂點看起來「就位了」；第二條路徑（可能後來才加、或本來就存在但沒人對照）直接 dispatch，型別檢查照過、單元測試各自 mock 掉真實下游也照過。本輪：一個把高階工具改寫成底層呼叫的 `translate` 自稱 single chokepoint，實際只有一條 use case 路徑用它，另一條生產 pipeline 路徑直送未翻譯的呼叫給只認底層工具的下游——與 07-17『同 class 只修了人看到那處』、checking-claims-are-enforced（宣稱≠強制）同族。
+- **如何預防**：真要「單一入口」就用機制強制，不要靠自律——把收斂點下沉到**所有路徑都必經的那一層**（例：dispatch 的最底層 adapter），或用型別讓「未經收斂的值」無法被 dispatch（newtype / 只有收斂點能產出的型別）。若因為下游會變（不同 adapter 對應不同能力）而無法下沉，那它本來就不是 single chokepoint——就別這樣宣稱，並為每條路徑各自加一個「有沒有經過收斂」的哨兵測試。
+
 ### 「debrief 點名了」不等於「程式碼修掉了」：一個 bug class 的防線若不進 CI，人肉巡檢就會漏
 - **觸發情境**：把一個 bug class 的殘留清乾淨後，靠「手動 grep + 記在 LESSONS」當防線。承前一筆——那筆 debrief 明確**點名** `blender_mcp_adapter.get_scene_info` 是存活實例之一。
 - **該主動檢查**：被 debrief 點名的每個實例，程式碼裡**真的改了嗎**？別把「已記錄」當「已修復」。本輪 `reveal_type` 實測：`get_scene_info` 直到今天仍回 `dict[Any,Any]`（fix 當時落在同檔另一個方法 `_decode_response`，被點名的那個方法沒動）——在 mypy --strict 全綠下又活了一天。
 - **為什麼沒抓到**：唯一防線是「手動 grep `isinstance(.*, dict)`」＋人的記憶，兩者都沒有到期日、沒有 fail-loud。名字寫進文件不會讓 CI 變紅；下一個人（或 subagent）照抄髒 pattern 時，沒有任何東西擋。
-- **如何預防**：把這個 class 做成**可執行 gate 進 CI**，別靠巡檢。做法採 **checker-first／顯式豁免**：gate 找出每個真實 `isinstance(_, dict)`（用 AST，不誤配字串/註解裡的字面），除非①位於 narrowing SSOT 定義檔、②該處帶 `# narrow-ok: <理由>`（必須有非空理由，一如專案對 `# type: ignore` 的要求），否則 fail。**不要**讓 gate 去「自動判斷某處誠不誠實」——誠實只有 `reveal_type` 在取值點才證得出，CI 做不到；gate 若自作聰明判斷，就又是一個對這個 class 天生瞎的工具（重蹈 07-17→07-18 的覆轍）。gate 的職責是把整個 class **從沉默變可見、可 review**，不是證明誠實。本專案落地：`scripts/check_dict_narrowing.py`，接在 `scripts/ci.sh` T1 mypy 之後。
+- **如何預防**：把這個 class 做成**可執行 gate 進 CI**，別靠巡檢。做法採 **checker-first／顯式豁免**：gate 找出每個真實 `isinstance(_, dict|list)`（`dict[Any,Any]` 與 `list[Any]` 同樣靜音；用 AST，不誤配字串/註解裡的字面），除非①位於 narrowing SSOT 定義檔、②該處帶 `# narrow-ok: <理由>`（必須有非空理由，一如專案對 `# type: ignore` 的要求），否則 fail。**不要**讓 gate 去「自動判斷某處誠不誠實」——誠實只有 `reveal_type` 在取值點才證得出，CI 做不到；gate 若自作聰明判斷，就又是一個對這個 class 天生瞎的工具（重蹈 07-17→07-18 的覆轍）。gate 的職責是把整個 class **從沉默變可見、可 review**，不是證明誠實。本專案落地：`scripts/check_container_narrowing.py`，接在 `scripts/ci.sh` T1 mypy 之後。
 
 ### 「用檢查器列出同 class 全部實例」有個盲區：檢查器對第三方/`Any` 邊界結構性看不到 → 那個子類要用 grep
 - **觸發情境**：清一個 bug class 的殘留（承 2026-07-17「同 class 只修了人看到那處」）。其中有些實例的值源自**未定型第三方 SDK 或宣告成 `object` 的欄位**——`isinstance(x, dict)` 後直接用／直接回傳。
