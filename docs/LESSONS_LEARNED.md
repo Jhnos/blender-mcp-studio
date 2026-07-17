@@ -6,6 +6,12 @@
 
 ## 2026-07-18
 
+### 「debrief 點名了」不等於「程式碼修掉了」：一個 bug class 的防線若不進 CI，人肉巡檢就會漏
+- **觸發情境**：把一個 bug class 的殘留清乾淨後，靠「手動 grep + 記在 LESSONS」當防線。承前一筆——那筆 debrief 明確**點名** `blender_mcp_adapter.get_scene_info` 是存活實例之一。
+- **該主動檢查**：被 debrief 點名的每個實例，程式碼裡**真的改了嗎**？別把「已記錄」當「已修復」。本輪 `reveal_type` 實測：`get_scene_info` 直到今天仍回 `dict[Any,Any]`（fix 當時落在同檔另一個方法 `_decode_response`，被點名的那個方法沒動）——在 mypy --strict 全綠下又活了一天。
+- **為什麼沒抓到**：唯一防線是「手動 grep `isinstance(.*, dict)`」＋人的記憶，兩者都沒有到期日、沒有 fail-loud。名字寫進文件不會讓 CI 變紅；下一個人（或 subagent）照抄髒 pattern 時，沒有任何東西擋。
+- **如何預防**：把這個 class 做成**可執行 gate 進 CI**，別靠巡檢。做法採 **checker-first／顯式豁免**：gate 找出每個真實 `isinstance(_, dict)`（用 AST，不誤配字串/註解裡的字面），除非①位於 narrowing SSOT 定義檔、②該處帶 `# narrow-ok: <理由>`（必須有非空理由，一如專案對 `# type: ignore` 的要求），否則 fail。**不要**讓 gate 去「自動判斷某處誠不誠實」——誠實只有 `reveal_type` 在取值點才證得出，CI 做不到；gate 若自作聰明判斷，就又是一個對這個 class 天生瞎的工具（重蹈 07-17→07-18 的覆轍）。gate 的職責是把整個 class **從沉默變可見、可 review**，不是證明誠實。本專案落地：`scripts/check_dict_narrowing.py`，接在 `scripts/ci.sh` T1 mypy 之後。
+
 ### 「用檢查器列出同 class 全部實例」有個盲區：檢查器對第三方/`Any` 邊界結構性看不到 → 那個子類要用 grep
 - **觸發情境**：清一個 bug class 的殘留（承 2026-07-17「同 class 只修了人看到那處」）。其中有些實例的值源自**未定型第三方 SDK 或宣告成 `object` 的欄位**——`isinstance(x, dict)` 後直接用／直接回傳。
 - **該主動檢查**：這個 class 的實例裡，**哪些檢查器根本沉默**？值一旦退化成 `Any`（lazy-import 的未定型套件、`--ignore-missing-imports`、`object` 欄位經 `isinstance` 只到 `dict[Any,Any]`），檢查器對它零報錯＝零線索。這種子類**不能靠檢查器盤點**，要用結構性 grep：`isinstance(.*, dict)`、餵給 `open(`/`dict[str,object]` 回傳的 SDK 取值點。

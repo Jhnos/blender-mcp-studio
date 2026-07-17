@@ -127,7 +127,7 @@ class Hunyuan3DAdapter(Text3DGenerationPort):
             # Narrow it honestly through `object` (see src/infrastructure/narrowing):
             # a bare isinstance(dict) would only reach `dict[Any, Any]`, leaving
             # every lookup `Any` and mypy blind all the way into open().
-            if isinstance(result, dict):
+            if isinstance(result, dict):  # narrow-ok: dig() keeps object, then as_str() narrows
                 path: object = dig(result, "value") or dig(result, "path")
             else:
                 path = result

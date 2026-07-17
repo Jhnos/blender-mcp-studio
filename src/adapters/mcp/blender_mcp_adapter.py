@@ -211,7 +211,10 @@ class BlenderMCPAdapter(BlenderPort):
 
     async def get_scene_info(self) -> dict[str, object]:
         result = await self._mcp.call_tool("get_scene_info", {})
-        return result.output if isinstance(result.output, dict) else {}
+        # result.output is `object`; a bare isinstance(dict) would only reach
+        # dict[Any, Any] and mypy would wave the return through blind. Rebuild
+        # keys honestly via the narrowing SSOT (see src/infrastructure/narrowing).
+        return as_str_keyed(result.output, context="get_scene_info") or {}
 
     async def is_connected(self) -> bool:
         return self._socket.is_connected
