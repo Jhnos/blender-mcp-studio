@@ -57,7 +57,11 @@ _run hard "python format (ruff)"     "$PY" -m ruff format --check src tests api
 _run hard "python types (mypy)"      "$PY" -m mypy src api --ignore-missing-imports --no-error-summary
 
 _tier "T2 · unit + headless dummy run"
-_run hard "python unit (pytest)"     "$PY" -m pytest tests/unit -q --no-header -p no:cacheprovider --no-cov
+# The e2e smoke test is named explicitly, not `tests/e2e`: it is hermetic
+# (TestClient + fakes, no real Blender) and must be gated, but the rest of
+# tests/e2e carries a pre-existing failure (test_full_pipeline_create_object,
+# create_object vs execute_code) that is out of scope here.
+_run hard "python unit + ws smoke (pytest)" "$PY" -m pytest tests/unit tests/e2e/test_chat_websocket_smoke.py -q --no-header -p no:cacheprovider --no-cov
 _run hard "web unit + dummy run (vitest)" bash -c 'cd web && npx vitest run'
 
 if (( REAL )); then
