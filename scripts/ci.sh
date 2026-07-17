@@ -62,11 +62,12 @@ _run hard "python types (mypy)"      "$PY" -m mypy src api --ignore-missing-impo
 _run hard "python dict-narrowing"    "$PY" scripts/check_dict_narrowing.py src api
 
 _tier "T2 · unit + headless dummy run"
-# The e2e smoke test is named explicitly, not `tests/e2e`: it is hermetic
-# (TestClient + fakes, no real Blender) and must be gated, but the rest of
-# tests/e2e carries a pre-existing failure (test_full_pipeline_create_object,
-# create_object vs execute_code) that is out of scope here.
-_run hard "python unit + ws smoke (pytest)" "$PY" -m pytest tests/unit tests/e2e/test_chat_websocket_smoke.py -q --no-header -p no:cacheprovider --no-cov
+# tests/e2e is hermetic (Mock adapters / TestClient — no real Blender or LLM)
+# and now fully green, so the whole directory is gated. It was previously
+# ungated, which let test_full_pipeline_create_object rot red for a month
+# (create_object vs execute_code — a stale assertion, not a bug; the pipeline
+# correctly rewrites high-level tools to execute_code since 46fe5b3).
+_run hard "python unit + e2e (pytest)" "$PY" -m pytest tests/unit tests/e2e -q --no-header -p no:cacheprovider --no-cov
 _run hard "web unit + dummy run (vitest)" bash -c 'cd web && npx vitest run'
 
 if (( REAL )); then
