@@ -8,8 +8,8 @@ updated to stay aligned.
 ## §1 Scope
 
 Blender MCP Studio is a single-host service that exposes Blender automation
-via an MCP-style HTTP API (port 17823) plus a Vite dev-server frontend
-(port 19147). Both run as per-user macOS LaunchAgents on the maintainer's
+via an MCP-style HTTP API (port 19505) plus a Vite dev-server frontend
+(port 19504). Both run as per-user macOS LaunchAgents on the maintainer's
 M4. The standards below are intentionally lightweight — sized for a
 one-machine service — but are still binding.
 
