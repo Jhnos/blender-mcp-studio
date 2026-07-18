@@ -1,224 +1,131 @@
-# Blender MCP Studio — Tailnet 整合文件
+# Blender MCP Studio — Tailnet 整合
 
-> 語言：繁體中文
-> 最後更新：2026-04-06
+> 最後更新：2026-07-18。架構模型 SSOT 見 [architecture.html](architecture.html)，
+> MCP client 設定見 [MCP_CLIENTS.md](MCP_CLIENTS.md)。
 
----
+## 路徑與服務
 
-## 1. 專案概述
+| 對外路徑 | 內部路徑 | Owner | 用途 |
+|---|---|---|---|
+| `/blender/` | Vite `127.0.0.1:19504` | Web LaunchAgent | React UI |
+| `/blender/api/*` | FastAPI `127.0.0.1:19505/api/*` | API LaunchAgent | REST |
+| `/blender/ws/*` | FastAPI `127.0.0.1:19505/ws/*` | API LaunchAgent | WebSocket |
+| `/blender/mcp` | FastAPI `127.0.0.1:19505/mcp` | API LaunchAgent | MCP Streamable HTTP |
+| — | Blender addon `127.0.0.1:9876` | Blender LaunchAgent/process | Scene execution |
 
-**Blender MCP Studio** 是一套透過對話驅動 3D 建模的工作站工具，整合了：
+Canonical URLs:
 
-- **LLM**（Claude / OpenAI / Ollama）作為意圖解析層
-- **MCP 協定**（Model Context Protocol）作為 Blender 控制介面
-- **Blender TCP Server**（blender-mcp addon）作為場景執行器
-
-### 架構圖
-
-```
-使用者瀏覽器
-    │
-    ▼ HTTPS
-Tailscale Funnel (bearmacminimac-mini.tail56c751.ts.net)
-    │
-    ▼ HTTP (port 8443)
-MacHomeHub（reverse proxy）
-    │
-    ├── /blender/*  ──────────► Vite Dev Server  (127.0.0.1:19504)
-    │                                │
-    │                    ┌───────────┴────────────┐
-    │                    │ Vite proxy (dev server) │
-    │                    └───────────┬────────────┘
-    │                                │
-    │                    ┌───────────┴──────────────┐
-    │                    │  /blender/api/*  ──────► FastAPI (127.0.0.1:19505)
-    │                    │  /blender/ws/*   ──────► FastAPI WebSocket
-    │                    └──────────────────────────┘
-    │
-    └── /blender/api/health  ─────► FastAPI health endpoint
-
-FastAPI (19505)
-    │
-    └── TCP 9876  ──────────────► Blender (手動啟動)
-                                        │
-                                  blender-mcp addon
+```text
+Web UI: https://bearmacminimac-mini.tail56c751.ts.net/blender/
+MCP:    https://bearmacminimac-mini.tail56c751.ts.net/blender/mcp
+Health: https://bearmacminimac-mini.tail56c751.ts.net/blender/api/health
 ```
 
----
+Ports and routes are SSOT in `~/MacHomeHub/config/services.yaml` and
+`deploy/launchd/*.plist`. Port `19147` is retired.
 
-## 2. 服務清單
+## Prefix contract
 
-| 服務 | Port | 協定 | 說明 |
-|------|------|------|------|
-| Vite Dev Server（Web UI） | 19504 | HTTP | React + Vite 前端，含 API proxy |
-| FastAPI（API Server） | 19505 | HTTP / WebSocket | 後端 API，`/api/*` 和 `/ws/chat` |
-| Blender TCP Server | 9876 | TCP | Blender blender-mcp addon 監聽 |
+MacHomeHub uses `strip_prefix: false`. Vite therefore receives the complete
+`/blender/...` path and applies explicit proxy rewrites:
 
----
-
-## 3. 整合需求
-
-### 3.1 Tailscale sub-path
-
-Tailscale Funnel 根路徑 `/` 由 MacHomeHub 接管，Blender MCP Studio 使用：
-
-```
-https://bearmacminimac-mini.tail56c751.ts.net/blender/
+```text
+/blender/mcp        → rewrite /mcp        → API :19505
+/blender/api/scene  → rewrite /api/scene  → API :19505
+/blender/ws/chat    → rewrite /ws/chat    → API :19505
 ```
 
-MacHomeHub 以預設的 `strip_prefix: true` 模式將 `/blender/*` 轉發至 Vite（port 19504），
-前綴 `/blender` 在轉發前被剝除，Vite 接收到的路徑不含前綴。
+The MCP proxy entry appears before `/blender/api` and preserves HTTP methods,
+`Accept`, `MCP-Protocol-Version`, and `MCP-Session-Id`. It does not buffer the
+stream or replace Host/Origin identity semantics.
 
-路徑轉換示例：
-- `/blender/` → Vite 收到 `/`
-- `/blender/api/health` → Vite 收到 `/api/health` → proxy 到 FastAPI
-- `/blender/ws/chat` → Vite 收到 `/ws/chat` → proxy 到 FastAPI WebSocket
-- `/blender/assets/main.js` → Vite 收到 `/assets/main.js`（靜態檔案）
+## Lifecycle and ownership
 
-### 3.2 vite.config.ts 修改
+The API process builds one `AppRuntime`. REST, WebSocket, and FastMCP receive
+aliases to the same `SceneOperationsService` and `BlenderPort`. Startup opens one
+addon connection; shutdown closes it once. The optional stdio process forwards to
+the HTTP endpoint and never connects to `9876`.
 
-```typescript
-export default defineConfig({
-  base: '/blender',            // ← 加入 base path（讓靜態資源路徑含前綴）
-  plugins: [react(), tailwindcss()],
-  server: {
-    proxy: {
-      '/ws': { target: 'ws://localhost:19505', ws: true },
-      '/api': { target: 'http://localhost:19505' },
-    },
-  },
-})
-```
+This matters because the addon protocol and scene state are not separate per MCP
+host. Codex, Claude, Cursor, VS Code, and the Web UI must converge on the same
+serialized socket owner.
 
-**說明**：
-- `base: '/blender'` 讓 HTML 中的資源路徑含 `/blender/` 前綴，符合瀏覽器的完整 URL
-- MHH 在轉發前已剝除 `/blender`，Vite 收到的是 `/ws/*` 和 `/api/*`
-- proxy 規則保持最簡單，不需要 rewrite
-- 後端不需感知任何前綴
+## Tailnet identity and Origin protection
 
-### 3.3 WebSocket URL 修改（useWebSocket.ts）
+Production sets `REQUIRE_TAILNET_IDENTITY=1`. MacHomeHub injects the trusted
+`x-mes-identity` header after Tailnet authentication and removes spoofed client
+values. `/api/health` is the sole HTTP exemption so the watchdog can probe the
+process; `/mcp` is protected.
 
-原本硬編碼的 `WS_URL = '/ws/chat'` 需改為動態推導：
+FastMCP strict Host/Origin protection allows only loopback and configured CORS
+hostnames. Unsupported MCP protocol versions receive HTTP 400. This is a private
+Tailnet service; it is not an OAuth-enabled public connector.
 
-```typescript
-const base = import.meta.env.BASE_URL.replace(/\/$/, '') // e.g. '/blender'
-const proto = location.protocol === 'https:' ? 'wss:' : 'ws:'
-const WS_URL = `${proto}//${location.host}${base}/ws/chat`
-```
+## LaunchAgent installation
 
-這樣：
-- 直接開 `http://localhost:19504/blender/` 時：`ws://localhost:19504/blender/ws/chat` → Vite proxy → 後端
-- 透過 Tailscale 開 `https://host/blender/` 時：`wss://host/blender/ws/chat` → MHH → Vite proxy → 後端
+Templates under `deploy/launchd/` are the SSOT. Installed files in
+`~/Library/LaunchAgents/` are derived state.
 
-### 3.4 launchd plist（兩個服務）
-
-#### `deploy/com.blender-mcp.api.plist`
-- Label：`com.blender-mcp.api`
-- 啟動 FastAPI uvicorn，port 19505
-- WorkingDirectory：Blender MCP 專案根目錄
-- 環境變數：`CORS_ORIGINS` 含 Tailscale URL
-
-#### `deploy/com.blender-mcp.web.plist`
-- Label：`com.blender-mcp.web`
-- 啟動 Vite dev server，port 19504
-- WorkingDirectory：`web/` 子目錄
-
-安裝至 `~/Library/LaunchAgents/`，用 `launchctl load` 啟用。
-
-### 3.5 MHH services.yaml 設定
-
-```yaml
-  - name: "Blender MCP Studio"
-    icon: "🎨"
-    description: "Blender AI 建模工作室（React + FastAPI）"
-    primary:
-      port: 19504
-      funnel_path: "/blender/"
-      open_url: "https://bearmacminimac-mini.tail56c751.ts.net/blender/"
-      strip_prefix: false
-      health_endpoints:
-        - path: "/blender/api/health"
-          url: "https://bearmacminimac-mini.tail56c751.ts.net/blender/api/health"
-      auto_intervene: false
-      expected_process: "node"
-    internal:
-      - name: "Blender MCP API"
-        port: 19505
-        expected_process: "python3"
-```
-
-**重點**：
-- `strip_prefix: false`：MHH 不剝除 `/blender` 前綴，原路轉發
-- `health_endpoints[].url`：必須走 Tailscale URL（CLAUDE.md 全域規則）
-- `internal` 欄位讓 MHH 同時監控 API process
-
-### 3.6 Health Check URL
-
-> ⚠️ 遵循 CLAUDE.md 全域規則：Health check 走 Tailscale URL，不走 localhost。
-
-```
-https://bearmacminimac-mini.tail56c751.ts.net/blender/api/health
-```
-
-預期回應：`{"status": "ok"}`
-
----
-
-## 4. 依賴條件
-
-| 依賴 | 狀態 | 說明 |
-|------|------|------|
-| Blender | **手動啟動** | 需在 Blender 中載入並啟用 blender-mcp addon，TCP server 監聽 9876 |
-| Ollama | 建議啟動 | 若使用本機 LLM（`config/llm_providers.yaml` 設為 ollama）需確認 Ollama 正在跑 |
-| conda env `blender-mcp` | 必須 | FastAPI 在此環境執行 |
-| Node.js | 必須 | Vite dev server 需要 |
-| MacHomeHub | 必須 | 負責 Tailnet sub-path routing |
-
-**啟動順序建議**：
-1. 啟動 MacHomeHub（已自動啟動，確認健康即可）
-2. 啟動 FastAPI：`launchctl start com.blender-mcp.api`
-3. 啟動 Vite：`launchctl start com.blender-mcp.web`
-4. 開啟 Blender，在 Blender 中啟用 addon 並啟動 TCP server
-5. 訪問 `https://bearmacminimac-mini.tail56c751.ts.net/blender/`
-
----
-
-## 5. 整合腳本說明
-
-`scripts/integrate_tailnet.sh` 一鍵完成以下步驟：
-
-1. **修改 `web/vite.config.ts`**：加入 `base: '/blender'`，更新 proxy 路徑和 rewrite 規則
-2. **修改 `web/src/hooks/useWebSocket.ts`**：WebSocket URL 改為動態推導
-3. **建立 launchd plist**：在 `deploy/` 目錄生成兩個 plist 檔案
-4. **安裝 plist**：複製到 `~/Library/LaunchAgents/` 並 load
-5. **更新 MHH services.yaml**：在 `~/MacHomeHub/config/services.yaml` 追加 Blender MCP Studio 項目
-
-執行方式：
 ```bash
 cd /Users/bearmacmini/Desktop/Blender_MCP_drawer
-bash scripts/integrate_tailnet.sh
+bash deploy/launchd/install.sh all
 ```
 
-腳本具有冪等性（idempotent）：重複執行不會重複修改，若設定已存在會跳過。
+Verify the processes and exact listeners rather than trusting plist text:
 
----
+```bash
+launchctl list | grep com.blender-mcp
+lsof -nP -iTCP:19504 -sTCP:LISTEN
+lsof -nP -iTCP:19505 -sTCP:LISTEN
+lsof -nP -iTCP:9876  -sTCP:LISTEN
+```
 
-## 6. 驗證清單（Phase 4）
+Health distinguishes API health from Blender availability:
 
-> 全部使用 Tailscale URL，不用 localhost
+```bash
+curl -s https://bearmacminimac-mini.tail56c751.ts.net/blender/api/health
+# {"status":"ok","blender":"connected"}
+```
 
-- [ ] `curl -sf https://bearmacminimac-mini.tail56c751.ts.net/blender/` → 回傳 HTML（含 `<div id="root">`）
-- [ ] `curl -sf https://bearmacminimac-mini.tail56c751.ts.net/blender/api/health` → `{"status":"ok"}`
-- [ ] MHH 儀表板（`https://bearmacminimac-mini.tail56c751.ts.net/`）顯示 Blender MCP Studio 綠燈
-- [ ] 瀏覽器開啟 `https://bearmacminimac-mini.tail56c751.ts.net/blender/`，聊天介面正常載入
-- [ ] WebSocket 連線成功（介面顯示「連線中...」消失，輸入框可用）
-- [ ] 送出測試訊息，AI 有回應（不需 Blender 連線，API 會 graceful 處理）
+`status: "ok"` alone only proves the API process. The `blender` field must be
+`connected` before scene tools can succeed.
 
----
+## MCP verification
 
-## 7. 已知問題與注意事項
+A browser GET or HTTP 200 is not a valid MCP check because Vite can serve an HTML
+fallback. Hermetic CI drives real initialize, `tools/list`, content, Origin,
+identity, and protocol framing with a fake Blender port:
 
-- **Blender 不會自動啟動**：blender-mcp TCP server 必須手動在 Blender 內啟用，launchd 無法自動管理 Blender GUI。
-- **Vite dev server 的 HMR**：透過 Tailscale 訪問時，HMR（熱更新）WebSocket 可能連不上，但不影響正常使用，僅影響開發體驗。如需 HMR，改用 `vite preview` 或 build 後服務。
-- **CORS**：FastAPI 的 `CORS_ORIGINS` 必須包含 Tailscale URL，plist 已設定，如手動啟動需注意。
-- **MHH strip_prefix**：若 MHH 版本不支援 `strip_prefix: false`，需改用 Tailscale serve 直接路由（見腳本中備用方案）。
+```bash
+scripts/ci.sh
+```
+
+The real gate requires Blender and mutates only nonce-prefixed verification
+objects, which it removes in `finally`:
+
+```bash
+scripts/ci.sh --real
+```
+
+It invokes both REST and MCP through the Tailnet URL, then independently reads
+Blender truth through socket `9876`. When the addon is offline the tier prints
+`SKIP`; do not report that as a real-machine pass.
+
+## Troubleshooting
+
+| Symptom | Check |
+|---|---|
+| MCP returns 401 | Confirm request goes through authenticated Tailnet/MHH, not anonymous Funnel |
+| MCP returns 403 | Check request Host/Origin against `CORS_ORIGINS` and allowed hosts |
+| MCP initialize fails | Inspect MCP response framing and `MCP-Protocol-Version`; do not use browser GET |
+| Health says `disconnected` | Start Blender and addon on `9876`; inspect API warning log |
+| Web works but MCP URL shows HTML | Confirm `/blender/mcp` Vite proxy exists before fallback routes |
+| stdio host starts but has no tools | Run the proxy with absolute Python/script paths and check Tailnet reachability |
+
+## Explicit non-goals
+
+- No public Internet multi-user distribution.
+- No legacy SSE endpoint.
+- No client-name-specific behavior.
+- No public arbitrary `execute_code` tool.
+- No second Blender connection for stdio or a particular MCP host.

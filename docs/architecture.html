@@ -1,0 +1,369 @@
+<!doctype html>
+<html lang="zh-Hant">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Blender MCP Studio architecture SSOT</title>
+<script type="application/json" id="model">
+{
+  "meta": {
+    "name": "Blender MCP Studio",
+    "version": "client-neutral-mcp-v1",
+    "updated": "2026-07-18",
+    "invariant": "All inbound transports converge on one AppRuntime and one Blender addon socket."
+  },
+  "levels": ["clients", "gateway", "proxy", "process", "inbound", "application", "adapter", "engine"],
+  "nodes": [
+    {
+      "id": "http_hosts", "level": "clients", "label": "HTTP MCP hosts",
+      "responsibility": "Use standard MCP Streamable HTTP without host-specific server behavior",
+      "inputs": ["tool results", "PNG image content"], "outputs": ["initialize", "tools/call"],
+      "invariants": ["Tailnet authenticated", "clientInfo never authorizes"], "dependsOn": ["tailnet_gateway"],
+      "adr": "MCP_LAYER_ADR §A", "status": "confirmed"
+    },
+    {
+      "id": "stdio_hosts", "level": "clients", "label": "stdio-only hosts",
+      "responsibility": "Launch a local compatibility process for MCP JSON-RPC over stdio",
+      "inputs": ["tool results"], "outputs": ["stdio JSON-RPC"],
+      "invariants": ["no Blender socket ownership"], "dependsOn": ["stdio_proxy"],
+      "adr": "MCP_LAYER_ADR §F", "status": "confirmed"
+    },
+    {
+      "id": "tailnet_gateway", "level": "gateway", "label": "Tailnet gateway",
+      "responsibility": "Authenticate users and preserve the /blender prefix",
+      "inputs": ["HTTPS /blender/mcp"], "outputs": ["identity-injected HTTP"],
+      "invariants": ["strip_prefix=false", "public anonymous access rejected"], "dependsOn": ["vite_proxy"],
+      "adr": "MCP_LAYER_ADR §Security", "status": "confirmed"
+    },
+    {
+      "id": "vite_proxy", "level": "proxy", "label": "Vite route proxy",
+      "responsibility": "Forward /blender/mcp to API /mcp without buffering or header rewriting",
+      "inputs": ["/blender/mcp"], "outputs": ["http://localhost:19505/mcp"],
+      "invariants": ["changeOrigin=false", "MCP headers preserved"], "dependsOn": ["fastapi"],
+      "adr": "MCP_LAYER_ADR §Route", "status": "confirmed"
+    },
+    {
+      "id": "stdio_proxy", "level": "clients", "label": "stdio proxy",
+      "responsibility": "Translate local stdio MCP to the canonical remote HTTP endpoint",
+      "inputs": ["stdio JSON-RPC", "BLENDER_MCP_URL"], "outputs": ["Streamable HTTP"],
+      "invariants": ["transport-only", "never imports Blender adapter"], "dependsOn": ["tailnet_gateway"],
+      "adr": "MCP_LAYER_ADR §F", "status": "confirmed",
+      "anchor": {"path": "scripts/run_mcp_stdio_proxy.py", "kind": "function", "symbol": "main"}
+    },
+    {
+      "id": "fastapi", "level": "process", "label": "FastAPI process :19505",
+      "responsibility": "Mount REST, WebSocket, health, and MCP adapters around one runtime",
+      "inputs": ["HTTP", "WebSocket"], "outputs": ["route responses", "MCP responses"],
+      "invariants": ["/api/health only identity exemption", "combined lifespans"], "dependsOn": ["app_runtime", "rest_ws", "mcp_adapter"],
+      "adr": "MCP_LAYER_ADR §A", "status": "confirmed",
+      "anchor": {"path": "api/main.py", "kind": "function", "symbol": "create_app"}
+    },
+    {
+      "id": "rest_ws", "level": "inbound", "label": "REST + WebSocket adapters",
+      "responsibility": "Serve Web UI workflows through presentation-specific routes",
+      "inputs": ["REST DTO", "chat frames"], "outputs": ["application calls"],
+      "invariants": ["overlapping scene operations use shared service"], "dependsOn": ["scene_service"],
+      "adr": "MCP_LAYER_ADR §A", "status": "confirmed"
+    },
+    {
+      "id": "mcp_adapter", "level": "inbound", "label": "Curated FastMCP adapter",
+      "responsibility": "Expose eight strict client-neutral tools through incoming ports",
+      "inputs": ["validated tool arguments"], "outputs": ["structured content", "image content", "ToolError"],
+      "invariants": ["exactly eight tools", "execute_code absent", "legacy SSE absent"], "dependsOn": ["scene_service"],
+      "adr": "MCP_LAYER_ADR §A", "status": "confirmed",
+      "anchor": {"path": "src/adapters/mcp_server/server.py", "kind": "function", "symbol": "create_mcp_server"}
+    },
+    {
+      "id": "app_runtime", "level": "application", "label": "AppRuntime",
+      "responsibility": "Own one composed dependency graph and one Blender connection lifecycle",
+      "inputs": ["startup", "shutdown"], "outputs": ["shared ports and adapters"],
+      "invariants": ["connect once", "disconnect once", "same object identity for REST and MCP"], "dependsOn": ["scene_service", "blender_adapter"],
+      "adr": "MCP_LAYER_ADR §A", "status": "confirmed",
+      "anchor": {"path": "api/runtime.py", "kind": "class", "symbol": "AppRuntime"}
+    },
+    {
+      "id": "scene_service", "level": "application", "label": "SceneOperationsService",
+      "responsibility": "Narrow Blender data and orchestrate scene operations in domain language",
+      "inputs": ["domain specs"], "outputs": ["immutable domain results"],
+      "invariants": ["no FastAPI dependency", "no FastMCP dependency", "invalid shapes fail visibly"], "dependsOn": ["blender_adapter"],
+      "adr": "MCP_LAYER_ADR §Domain", "status": "confirmed",
+      "anchor": {"path": "src/core/use_cases/scene_operations.py", "kind": "class", "symbol": "SceneOperationsService"}
+    },
+    {
+      "id": "blender_adapter", "level": "adapter", "label": "BlenderMCPAdapter",
+      "responsibility": "Translate client-neutral commands to the addon dialect at one chokepoint",
+      "inputs": ["BlenderPort commands"], "outputs": ["execute_code addon calls"],
+      "invariants": ["sandbox applied", "high-level tools never reach socket untranslated"], "dependsOn": ["socket_client"],
+      "adr": "MCP_LAYER_ADR §Ownership", "status": "confirmed",
+      "anchor": {"path": "src/adapters/mcp/blender_mcp_adapter.py", "kind": "class", "symbol": "BlenderMCPAdapter"}
+    },
+    {
+      "id": "socket_client", "level": "adapter", "label": "BlenderSocketClient",
+      "responsibility": "Serialize raw TCP request-response traffic to the addon",
+      "inputs": ["addon payload"], "outputs": ["addon JSON reply"],
+      "invariants": ["single asyncio lock", "port 9876 only here"], "dependsOn": ["blender_addon"],
+      "adr": "MCP_LAYER_ADR §Ownership", "status": "confirmed",
+      "anchor": {"path": "src/adapters/mcp/blender_mcp_adapter.py", "kind": "class", "symbol": "BlenderSocketClient"}
+    },
+    {
+      "id": "blender_addon", "level": "engine", "label": "Blender + addon :9876",
+      "responsibility": "Execute bpy mutations and return observable scene state",
+      "inputs": ["raw addon JSON"], "outputs": ["Blender scene state"],
+      "invariants": ["one shared API connection", "independent oracle for real verification"], "dependsOn": [],
+      "adr": "ADR-001", "status": "confirmed"
+    }
+  ],
+  "edges": [
+    {"from": "http_hosts", "to": "tailnet_gateway", "contract": "MCP Streamable HTTP", "data": "/blender/mcp"},
+    {"from": "stdio_hosts", "to": "stdio_proxy", "contract": "MCP stdio", "data": "JSON-RPC"},
+    {"from": "stdio_proxy", "to": "tailnet_gateway", "contract": "HTTP proxy", "data": "MCP messages"},
+    {"from": "tailnet_gateway", "to": "vite_proxy", "contract": "identity-injected reverse proxy", "data": "/blender/mcp"},
+    {"from": "vite_proxy", "to": "fastapi", "contract": "unbuffered HTTP proxy", "data": "/mcp"},
+    {"from": "fastapi", "to": "rest_ws", "contract": "route dispatch", "data": "REST / WS"},
+    {"from": "fastapi", "to": "mcp_adapter", "contract": "mounted ASGI app", "data": "MCP"},
+    {"from": "fastapi", "to": "app_runtime", "contract": "shared state and lifespan", "data": "one runtime", "critical": true},
+    {"from": "rest_ws", "to": "scene_service", "contract": "application calls", "data": "domain specs"},
+    {"from": "mcp_adapter", "to": "scene_service", "contract": "SceneQueryPort + SceneCommandPort", "data": "domain specs"},
+    {"from": "app_runtime", "to": "scene_service", "contract": "constructs once", "data": "same service", "critical": true},
+    {"from": "scene_service", "to": "blender_adapter", "contract": "BlenderPort", "data": "Command / ToolResult", "critical": true},
+    {"from": "blender_adapter", "to": "socket_client", "contract": "translated addon dialect", "data": "execute_code", "critical": true},
+    {"from": "socket_client", "to": "blender_addon", "contract": "locked TCP request-response", "data": ":9876", "critical": true}
+  ]
+}
+</script>
+
+<style>
+  :root {
+    color-scheme: light;
+    --ink: #13212d;
+    --muted: #536675;
+    --paper: #f5f8fa;
+    --panel: #ffffff;
+    --grid: #d7e1e8;
+    --line: #617482;
+    --blue: #176b87;
+    --orange: #d95f02;
+    --orange-soft: #fff0e4;
+    --danger: #a61b1b;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    color: var(--ink);
+    background: var(--paper);
+    font: 15px/1.5 "Avenir Next", "Segoe UI", sans-serif;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 360px;
+    grid-template-rows: auto auto 1fr;
+  }
+  header {
+    grid-column: 1 / -1;
+    padding: 18px 24px 16px;
+    background: var(--ink);
+    color: #fff;
+    display: flex;
+    gap: 18px;
+    align-items: baseline;
+    border-bottom: 5px solid var(--orange);
+  }
+  h1 { margin: 0; font-size: 21px; letter-spacing: .01em; }
+  .meta { color: #c8d7e1; font: 13px ui-monospace, SFMono-Regular, monospace; }
+  .thesis { margin-left: auto; max-width: 540px; color: #f5c9a8; font-weight: 650; }
+  header button { padding: 6px 10px; color: #fff; background: transparent; border: 1px solid #8194a2; border-radius: 4px; font: 12px ui-monospace, SFMono-Regular, monospace; cursor: pointer; }
+  header button:focus { outline: 3px solid #f5c9a8; outline-offset: 2px; }
+  #integrity { grid-column: 1 / -1; }
+  #integrity.bad {
+    padding: 10px 20px;
+    color: var(--danger);
+    background: #fff0f0;
+    border-bottom: 2px solid var(--danger);
+    font-weight: 700;
+  }
+  #diagram { overflow: auto; padding: 20px; }
+  #detail {
+    background: var(--panel);
+    border-left: 1px solid var(--grid);
+    padding: 24px;
+    min-width: 0;
+  }
+  #detail h2 { margin: 0 0 5px; font-size: 18px; }
+  .hint { color: var(--muted); }
+  .band { fill: #e7eef3; }
+  .band:nth-of-type(even) { fill: #edf3f6; }
+  .lane-label {
+    fill: var(--muted);
+    font: 700 13px ui-monospace, SFMono-Regular, monospace;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+  }
+  .node rect { fill: #fff; stroke: var(--blue); stroke-width: 1.6; rx: 7; }
+  .node[role="button"] { cursor: pointer; outline: none; }
+  .node:focus rect, .node.selected rect { stroke: var(--orange); stroke-width: 3; fill: var(--orange-soft); }
+  .node .label { fill: var(--ink); font-size: 15px; font-weight: 750; }
+  .node .sub { fill: var(--muted); font-size: 12px; }
+  .edge { stroke: var(--line); stroke-width: 1.5; fill: none; marker-end: url(#arrow); }
+  .edge.critical { stroke: var(--orange); stroke-width: 3; marker-end: url(#arrow-critical); }
+  .edge-label-bg { fill: var(--paper); fill-opacity: .94; }
+  .edge-label { fill: var(--muted); font: 12px ui-monospace, SFMono-Regular, monospace; }
+  dl { margin: 0; }
+  dt { margin-top: 14px; color: var(--muted); font: 700 11px ui-monospace, SFMono-Regular, monospace; letter-spacing: .08em; text-transform: uppercase; }
+  dd { margin: 4px 0 0; }
+  code { font-family: ui-monospace, SFMono-Regular, monospace; }
+  .pill { display: inline-block; margin: 2px 4px 2px 0; padding: 2px 7px; border: 1px solid var(--grid); border-radius: 3px; background: #f7fafb; font-size: 12px; }
+  @media (max-width: 900px) {
+    body { display: block; }
+    header { display: block; }
+    .thesis { margin: 8px 0 0; }
+    #detail { border: 1px solid var(--grid); margin: 0 20px 20px; }
+  }
+</style>
+
+<header>
+  <h1 id="title"></h1>
+  <span class="meta" id="subtitle"></span>
+  <span class="thesis" id="thesis"></span>
+  <button id="toggle" aria-pressed="true">Hide internals</button>
+</header>
+<div id="integrity" role="alert"></div>
+<main id="diagram"></main>
+<aside id="detail"><p class="hint">選取節點可查看 AI 與開發者共用的結構化責任、輸入、輸出與不變式。</p></aside>
+
+<script>
+const model = JSON.parse(document.getElementById('model').textContent);
+const svgNS = 'http://www.w3.org/2000/svg';
+const NODE_W = 220, NODE_H = 70, GAP_X = 44, LANE_H = 116, PAD_X = 140, PAD_Y = 52;
+let showInternals = true;
+
+document.getElementById('title').textContent = model.meta.name + ' · Architecture SSOT';
+document.getElementById('subtitle').textContent = model.meta.version + ' · ' + model.meta.updated;
+document.getElementById('thesis').textContent = model.meta.invariant;
+
+function el(tag, attrs = {}, parent) {
+  const node = document.createElementNS(svgNS, tag);
+  Object.entries(attrs).forEach(([key, value]) => node.setAttribute(key, value));
+  if (parent) parent.appendChild(node);
+  return node;
+}
+
+function integrityErrors() {
+  const ids = new Set(model.nodes.map(node => node.id));
+  const errors = [];
+  model.edges.forEach(edge => {
+    if (!ids.has(edge.from)) errors.push(`edge.from=${edge.from}`);
+    if (!ids.has(edge.to)) errors.push(`edge.to=${edge.to}`);
+  });
+  model.nodes.forEach(node => (node.dependsOn || []).forEach(dependency => {
+    if (!ids.has(dependency)) errors.push(`${node.id}.dependsOn=${dependency}`);
+  }));
+  return [...new Set(errors)];
+}
+
+function truncate(value, size) {
+  return value.length <= size ? value : value.slice(0, size - 1) + '…';
+}
+
+function render() {
+  const levels = showInternals ? model.levels : model.levels.filter(level => !['adapter', 'engine'].includes(level));
+  const visibleNodes = model.nodes.filter(node => levels.includes(node.level));
+  const byLevel = Object.fromEntries(levels.map(level => [level, []]));
+  visibleNodes.forEach(node => byLevel[node.level].push(node));
+  const maxCount = Math.max(1, ...Object.values(byLevel).map(nodes => nodes.length));
+  const width = PAD_X * 2 + maxCount * NODE_W + (maxCount - 1) * GAP_X;
+  const height = PAD_Y + levels.length * LANE_H + 22;
+  const positions = {};
+  const wrapper = document.getElementById('diagram');
+  wrapper.textContent = '';
+  const svg = el('svg', {viewBox: `0 0 ${width} ${height}`, width, height, role: 'img', 'aria-label': 'Blender MCP Studio layered architecture'}, wrapper);
+  const defs = el('defs', {}, svg);
+  [['arrow', 'var(--line)'], ['arrow-critical', 'var(--orange)']].forEach(([id, fill]) => {
+    const marker = el('marker', {id, markerWidth: 9, markerHeight: 9, refX: 8, refY: 4.5, orient: 'auto', markerUnits: 'userSpaceOnUse'}, defs);
+    el('path', {d: 'M0,0 L9,4.5 L0,9 z', fill}, marker);
+  });
+
+  levels.forEach((level, lane) => {
+    const y = PAD_Y + lane * LANE_H - 17;
+    el('rect', {class: 'band', x: 8, y, width: width - 16, height: NODE_H + 34, rx: 9}, svg);
+    el('text', {class: 'lane-label', x: 20, y: y + 19}, svg).textContent = level;
+    const nodes = byLevel[level];
+    const laneWidth = nodes.length * NODE_W + Math.max(0, nodes.length - 1) * GAP_X;
+    const startX = (width - laneWidth) / 2;
+    nodes.forEach((node, index) => {
+      positions[node.id] = {x: startX + index * (NODE_W + GAP_X), y: PAD_Y + lane * LANE_H, w: NODE_W, h: NODE_H};
+    });
+  });
+
+  model.edges.forEach(edge => {
+    const from = positions[edge.from], to = positions[edge.to];
+    if (!from || !to) return;
+    let x1, y1, x2, y2;
+    if (to.y > from.y + from.h - 1) {
+      x1 = from.x + from.w / 2; y1 = from.y + from.h;
+      x2 = to.x + to.w / 2; y2 = to.y;
+    } else if (to.x > from.x) {
+      x1 = from.x + from.w; y1 = from.y + from.h / 2;
+      x2 = to.x; y2 = to.y + to.h / 2;
+    } else {
+      x1 = from.x; y1 = from.y + from.h / 2;
+      x2 = to.x + to.w; y2 = to.y + to.h / 2;
+    }
+    const middleX = (x1 + x2) / 2, middleY = (y1 + y2) / 2;
+    const path = Math.abs(x2 - x1) > Math.abs(y2 - y1)
+      ? `M${x1},${y1} C${middleX},${y1} ${middleX},${y2} ${x2},${y2}`
+      : `M${x1},${y1} C${x1},${middleY} ${x2},${middleY} ${x2},${y2}`;
+    el('path', {class: edge.critical ? 'edge critical' : 'edge', d: path}, svg);
+    const label = edge.data || '';
+    const labelWidth = Math.max(42, label.length * 7 + 12);
+    el('rect', {class: 'edge-label-bg', x: middleX - labelWidth / 2, y: middleY - 10, width: labelWidth, height: 17, rx: 3}, svg);
+    el('text', {class: 'edge-label', x: middleX, y: middleY + 3, 'text-anchor': 'middle'}, svg).textContent = label;
+  });
+
+  visibleNodes.forEach(node => {
+    const position = positions[node.id];
+    const group = el('g', {class: 'node', transform: `translate(${position.x},${position.y})`, tabindex: 0, role: 'button', 'aria-label': node.label}, svg);
+    el('rect', {width: NODE_W, height: NODE_H}, group);
+    el('text', {class: 'label', x: 14, y: 28}, group).textContent = node.label;
+    el('text', {class: 'sub', x: 14, y: 49}, group).textContent = truncate(node.responsibility, 34);
+    const activate = () => showDetail(node, group);
+    group.addEventListener('click', activate);
+    group.addEventListener('keydown', event => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        activate();
+      }
+    });
+  });
+}
+
+function showDetail(node, group) {
+  document.querySelectorAll('.node.selected').forEach(item => item.classList.remove('selected'));
+  group.classList.add('selected');
+  const pills = values => values.length ? values.map(value => `<span class="pill">${value}</span>`).join('') : '—';
+  const anchor = node.anchor ? `${node.anchor.path} · ${node.anchor.kind} ${node.anchor.symbol}` : 'external / configuration boundary';
+  document.getElementById('detail').innerHTML =
+    `<h2>${node.label} <code>#${node.id}</code></h2>` +
+    `<div class="hint">${node.level} · ${node.status} · ${node.adr}</div><dl>` +
+    `<dt>responsibility</dt><dd>${node.responsibility}</dd>` +
+    `<dt>inputs</dt><dd>${pills(node.inputs)}</dd>` +
+    `<dt>outputs</dt><dd>${pills(node.outputs)}</dd>` +
+    `<dt>invariants</dt><dd>${pills(node.invariants)}</dd>` +
+    `<dt>depends on</dt><dd>${pills(node.dependsOn)}</dd>` +
+    `<dt>code anchor</dt><dd><code>${anchor}</code></dd></dl>`;
+}
+
+const errors = integrityErrors();
+const integrity = document.getElementById('integrity');
+if (errors.length) {
+  integrity.className = 'bad';
+  integrity.textContent = `Model integrity failure: ${errors.join(' · ')}`;
+}
+render();
+
+const toggle = document.getElementById('toggle');
+toggle.addEventListener('click', () => {
+  showInternals = !showInternals;
+  toggle.setAttribute('aria-pressed', String(showInternals));
+  toggle.textContent = showInternals ? 'Hide internals' : 'Show internals';
+  render();
+});
+</script>
+</html>

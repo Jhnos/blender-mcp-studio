@@ -6,6 +6,12 @@
 
 ## 2026-07-18
 
+### 傳入 allowlist 不等於 guard 已啟用；安全選項的「資料」與「機制開關」要分開驗
+- **觸發情境**：第三方 server/middleware API 同時接受 `allowed_hosts`、`allowed_origins` 等 allowlist，另有一個獨立的 protection mode/enable flag。看到 allowlist 已傳入，就直覺認為 request guard 已生效。
+- **該主動檢查**：送一個明確不在 allowlist 的 Host/Origin，真的拿到 403 嗎？本輪 FastMCP 3.4 的 `allowed_*` 只是 guard 的參數，`host_origin_protection` 預設仍可為 false；資料存在但機制沒 mount，惡意 Origin 照樣 200。協定版本亦同：initialize 本身用 params 協商版本，不是驗證後續 request header 的鑑別點；要用 `tools/list` 帶錯誤 `MCP-Protocol-Version` 才會真正觸發 400。
+- **為什麼沒抓到**：把「設定物件看起來完整」當成 runtime behavior；單看 source/config 會得到假綠。initialize 又是特例，用它測 header 讓測試本身失去鑑別力。
+- **如何預防**：安全設定一律加 negative request sentinel：不可信 Origin→403、未支援 protocol header（非 initialize request）→400、缺 identity→401。先觀察 sentinel 在 guard 缺席時確實紅，再補 enable flag；禁止只 assertion config 文字或 constructor kwargs。
+
 ### 改了 plist env 卻「kickstart 重啟」→ 沒生效：kickstart 不 reload、載入的是另一份拷貝
 - **觸發情境**：改了 launchd plist 的環境變數（CORS、feature flag、port…）然後「重啟服務」想讓它生效。
 - **該主動檢查**：你的「重啟」真的 **reload 了 plist** 嗎？`launchctl kickstart -k` 只重啟**進程**、不重讀 plist；而且**載入中的 plist 往往是 `~/Library/LaunchAgents/` 的另一份拷貝**，不是你剛編輯的 repo/deploy 那份。驗證要讀「載入中進程的實際 env」——`launchctl print <domain>/<label>`，不是讀你剛改的檔。

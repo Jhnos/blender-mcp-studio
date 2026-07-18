@@ -4,6 +4,7 @@
 
 | 問題 | SSOT | 責任 |
 |---|---|---|
+| 現在做到哪、下一個 gate 是什麼？ | [STATUS.md](STATUS.md) | Campaign 唯一進度源與接手順序 |
 | MCP layer 應該是什麼、邊界在哪裡？ | [MCP_LAYER_DEVELOPMENT.md](MCP_LAYER_DEVELOPMENT.md) | 規範性架構、DDD/SOLID、工具契約、安全與生命週期 |
 | 如何用 TDD 實作並證明它是真的？ | [MCP_LAYER_TDD.md](MCP_LAYER_TDD.md) | RED/GREEN/REFACTOR、測試替身、可證偽 gate、真 Blender oracle |
 | 為何選 inbound adapter、又拒絕哪些方案？ | [MCP_LAYER_ADR.md](MCP_LAYER_ADR.md) | ADR-005 的 context、alternatives、consequences 與 status transition |
@@ -13,7 +14,9 @@
 
 ## 文件狀態
 
-`MCP_LAYER_DEVELOPMENT.md` 與 `MCP_LAYER_TDD.md` 描述的是目標狀態；在 implementation plan 完成、`scripts/ci.sh --real` 通過以前，不得把它們當作已部署能力。
+`MCP_LAYER_DEVELOPMENT.md` 與 `MCP_LAYER_TDD.md` 描述規範與驗證方法；實際
+進度只讀 `STATUS.md`。Hermetic implementation 已落地不代表已部署或真機通過，
+`scripts/ci.sh --real` 明確 PASS 前不得宣稱 Blender acceptance 完成。
 
 ## 衝突處理
 
