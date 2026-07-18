@@ -17,6 +17,8 @@
 		<string>9876</string>
 		<key>CORS_ORIGINS</key>
 		<string>https://bearmacminimac-mini.tail56c751.ts.net</string>
+		<key>REQUIRE_TAILNET_IDENTITY</key>
+		<string>1</string>
 	</dict>
 	<key>KeepAlive</key>
 	<true/>

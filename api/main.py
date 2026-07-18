@@ -83,13 +83,24 @@ async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
 def create_app(
     cors_origins: list[str] | None = None,
     env_file: Path | None = None,
+    require_identity: bool | None = None,
 ) -> FastAPI:
     """Factory — safe to import as a library.
 
     Args:
         cors_origins: Allowed CORS origins. Defaults to CORS_ORIGINS env var.
         env_file: Path to .env file. Defaults to project-root .env.
+        require_identity: Gate HTTP routes on the gateway-injected tailnet
+            identity header. Defaults to the REQUIRE_TAILNET_IDENTITY env var
+            (off unless set), so tests/local dev are unaffected and production
+            opts in via the plist.
     """
+    if require_identity is None:
+        require_identity = os.environ.get("REQUIRE_TAILNET_IDENTITY", "").lower() in (
+            "1",
+            "true",
+            "yes",
+        )
     origins = cors_origins or [
         o.strip()
         # Access is unified through Tailnet — no local/localhost origin. The
@@ -117,6 +128,11 @@ def create_app(
         allow_methods=["*"],
         allow_headers=["*"],
     )
+
+    if require_identity:
+        from api.require_identity import RequireTailnetIdentity
+
+        app.add_middleware(RequireTailnetIdentity)
 
     app.include_router(chat.router)
     app.include_router(scene.router)
