@@ -95,6 +95,22 @@ FICE 迴圈，每輪：
 
 **前置**：修了 3 個阻塞 bug 才跑得動——WS handler 收 `Request`（每連線 crash）、api plist 埠 17823→19505、`/api/health` 硬回 ok→附 `blender` 欄。獨立 oracle（socket 9876 execute_code）live 確認可讀真值。
 
+## Standards-compliant MCP machine gate
+
+`scripts/ci.sh --real` now runs two independent nonce-based paths when the
+Blender addon listens on `9876`:
+
+1. The existing REST verification.
+2. `scripts/verify/mcp_verify_real.py`, which creates, moves, and deletes a
+   `verify_mcp_<nonce>` cube through the public Streamable HTTP MCP endpoint.
+
+The MCP verifier never uses REST to observe its own effects. It reads vertex
+count, coordinates, and deletion directly through addon `execute_code`, then
+removes every remaining `verify_mcp_` object in `finally`. A healthy HTTP status
+alone is not evidence: initialize/tool calls and independent Blender state must
+both pass. If `9876` is down, the gate prints an explicit `SKIP`; it must not be
+reported as a real-machine pass.
+
 **REST 路徑：7/7 PASS**（`mcp_verify_rest.py`）——nonce 物件頂點數==8、Tailscale `/api/scene` 反映真值、REST 改名/刪除真的改到 Blender、差分 3→4→3。→ **api↔Blender 管線經前端 REST 已鑑別性證實為真**。
 
 **H0 chat 路徑：FAIL（決定性發現）**——chat（本地 Gemma-4-E4B，Tailscale WSS）：LLM 回 `🔧 執行 create_object`，但 `blender_output: ❌ Unknown command type: create_object`，oracle 確認物件**未建立**。根因：LLM 被賦予 `create_object/delete_object/modify_object/apply_material` 工具（`conversational_modeling.py:52,57`），但 **Blender addon 只實作 `execute_code`**（`addon.py:206-216`，無這些 handler）。**chat「看起來執行了」但真實場景從未改變。** 唯一能改場景的路徑是 LLM 選 `execute_code`。

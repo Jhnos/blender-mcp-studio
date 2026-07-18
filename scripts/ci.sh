@@ -74,7 +74,8 @@ _run hard "web unit + dummy run (vitest)" bash -c 'cd web && npx vitest run'
 if (( REAL )); then
   _tier "T3 · real machine (MCP↔Blender)"
   if nc -z localhost 9876 2>/dev/null; then
-    _run hard "MCP pipeline (nonce + independent oracle)" "$PY" scripts/verify/mcp_verify_rest.py
+    _run hard "REST pipeline (nonce + independent oracle)" "$PY" scripts/verify/mcp_verify_rest.py
+    _run hard "MCP protocol (nonce + independent oracle)" "$PY" scripts/verify/mcp_verify_real.py
   else
     # Explicit SKIP, never a silent pass: with Blender down this tier is vacuous.
     printf '  %sSKIP%s MCP pipeline — Blender addon not listening on 9876 %s(start it: launchctl kickstart -k gui/$(id -u)/com.blender-mcp.blender)%s\n' \
