@@ -9,6 +9,10 @@ class SceneCreationError(DomainError):
     """Raised when a scene operation fails."""
 
 
+class SceneOperationError(DomainError):
+    """A scene operation failed with a recoverable, user-facing reason."""
+
+
 class LLMConnectionError(DomainError):
     """Raised when the LLM is unreachable."""
 
