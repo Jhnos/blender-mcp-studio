@@ -6,6 +6,12 @@
 
 ## 2026-07-18
 
+### 改了 plist env 卻「kickstart 重啟」→ 沒生效：kickstart 不 reload、載入的是另一份拷貝
+- **觸發情境**：改了 launchd plist 的環境變數（CORS、feature flag、port…）然後「重啟服務」想讓它生效。
+- **該主動檢查**：你的「重啟」真的 **reload 了 plist** 嗎？`launchctl kickstart -k` 只重啟**進程**、不重讀 plist；而且**載入中的 plist 往往是 `~/Library/LaunchAgents/` 的另一份拷貝**，不是你剛編輯的 repo/deploy 那份。驗證要讀「載入中進程的實際 env」——`launchctl print <domain>/<label>`，不是讀你剛改的檔。
+- **為什麼沒抓到**：本輪我改了 `deploy/launchd/*.plist` + `kickstart`，宣稱「已部署＋已驗證」。但 kickstart 沒 reload、載入的是舊拷貝，env 根本沒變。更糟的是驗證**不夠鑑別**：我只測了一個「新舊設定都會擋」的 case（CORS Origin=19504，在舊的 [tailscale,19147] 與新的 [tailscale-only] 下**都**被擋），於是假綠，直到下一輪查別的才撞見。同族：本 session 一路的「表面訊號≠真實、驗證要鑑別性」。
+- **如何預防**：① env 變更要用**會 reload** 的機制（本專案 = `bash deploy/launchd/install.sh <svc>`，做 bootout→bootstrap→kickstart；EIO on bootstrap 良性、等 3s 補 bootstrap）；② 驗證讀 `launchctl print <label>` 的**實際載入 env**，或送一個「**只有新設定會通過、舊設定會擋**」的鑑別性請求（例：直打服務、帶/不帶新 header 各一次看 401 vs 200）；③ 別把「編輯了 repo 裡的 plist」當成「載入中的服務變了」——那是兩份不同的檔。
+
 ### `narrow(x) or default` 把「畸形」訊號連同「空」一起塌掉——正確用了 SSOT，尾巴一個 `or {}` 又是 silent-fallback
 - **觸發情境**：一個收窄／解析函式以 `None`（或空）表示「輸入畸形／不符預期」，呼叫端寫成 `narrow(x) or default`（`as_str_keyed(o) or {}`、`parse(s) or []`、`.get(k) or fallback`）。尤其在剛把某個 bug class 改成「一律走 narrowing SSOT」之後——會覺得「用了 SSOT 就安全了」。
 - **該主動檢查**：`narrow` 回 `None` 的**語意**是什麼？若它同時代表「合法的空」與「畸形輸入」兩種情況，`or default` 就把兩者**塌成同一個值、且無聲**——呼叫端從此分不出「addon 回了 list/null」和「場景本來就空」。問：畸形這條路徑有沒有留下**可觀測**的痕跡（log/raise/metric）？
