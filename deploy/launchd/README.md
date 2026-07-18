@@ -75,6 +75,36 @@ lsof -iTCP:19504 -sTCP:LISTEN   # web
 
 A clean diff means the installed plist is faithful to the SSOT.
 
+## MCP endpoint and stdio compatibility
+
+The API owns one shared Blender connection and serves standards-compliant MCP
+Streamable HTTP internally at `http://127.0.0.1:19505/mcp`. Vite forwards the
+Tailnet sub-path without buffering or rewriting MCP headers:
+
+```text
+https://bearmacminimac-mini.tail56c751.ts.net/blender/mcp
+```
+
+The external endpoint is protected by the same Tailnet identity gate as the
+REST API. Hosts that only launch stdio MCP servers can use the transport bridge:
+
+```bash
+$HOME/miniconda3/envs/blender-mcp/bin/python \
+  "$HOME/Desktop/Blender_MCP_drawer/scripts/run_mcp_stdio_proxy.py"
+```
+
+Override the upstream endpoint when needed:
+
+```bash
+BLENDER_MCP_URL=https://another-tailnet-host.example/blender/mcp \
+  $HOME/miniconda3/envs/blender-mcp/bin/python \
+  "$HOME/Desktop/Blender_MCP_drawer/scripts/run_mcp_stdio_proxy.py"
+```
+
+The bridge only converts stdio to Streamable HTTP. It never creates a second
+Blender adapter or addon-socket connection; backend lifecycle remains owned by
+the API LaunchAgent.
+
 ## Uninstall
 
 ```bash

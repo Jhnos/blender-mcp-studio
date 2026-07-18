@@ -16,6 +16,11 @@ export default defineConfig({
         ws: true,
         rewrite: (path: string) => path.replace(/^\/blender/, ''),
       },
+      '/blender/mcp': {
+        target: 'http://localhost:19505',
+        changeOrigin: false,
+        rewrite: (path: string) => path.replace(/^\/blender/, ''),
+      },
       '/blender/api': {
         target: 'http://localhost:19505',
         rewrite: (path: string) => path.replace(/^\/blender/, ''),
