@@ -63,8 +63,9 @@ _run hard "python container-narrowing" "$PY" scripts/check_container_narrowing.p
 
 _tier "T2 · unit + headless dummy run"
 # tests/e2e is hermetic (Mock adapters / TestClient — no real Blender or LLM)
-# and now fully green, so the whole directory is gated. It was previously
-# ungated, which let test_full_pipeline_create_object rot red for a month
+# MCP coverage uses the real registry and protocol framing with a fake Blender port.
+# The whole directory is now fully green and gated. It was previously ungated,
+# which let test_full_pipeline_create_object rot red for a month
 # (create_object vs execute_code — a stale assertion, not a bug; the pipeline
 # correctly rewrites high-level tools to execute_code since 46fe5b3).
 _run hard "python unit + e2e (pytest)" "$PY" -m pytest tests/unit tests/e2e -q --no-header -p no:cacheprovider --no-cov

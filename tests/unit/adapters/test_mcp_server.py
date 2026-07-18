@@ -112,6 +112,10 @@ async def test_catalog_is_exact_and_annotations_match_policy(
     assert {tool.name for tool in tools} == EXPECTED_TOOLS
     by_name = {tool.name: tool for tool in tools}
     for name, expected in POLICY.items():
+        tool = by_name[name]
+        assert len(tool.name) <= 64
+        assert tool.description is not None
+        assert tool.description.strip()
         annotations = by_name[name].annotations
         assert annotations is not None
         assert annotations.title
@@ -121,6 +125,30 @@ async def test_catalog_is_exact_and_annotations_match_policy(
             annotations.idempotentHint,
             annotations.openWorldHint,
         ) == expected
+
+
+@pytest.mark.asyncio
+async def test_scene_result_has_structured_and_text_content(
+    fake_scene_service: FakeSceneService,
+) -> None:
+    async with Client(server_for(fake_scene_service)) as client:
+        result = await client.call_tool("get_scene_info", {})
+
+    assert result.structured_content is not None
+    assert result.structured_content["name"] == "Scene"
+    assert any(block.type == "text" for block in result.content)
+
+
+@pytest.mark.asyncio
+async def test_viewport_result_is_png_image_content(
+    fake_scene_service: FakeSceneService,
+) -> None:
+    async with Client(server_for(fake_scene_service)) as client:
+        result = await client.call_tool("get_viewport_screenshot", {})
+
+    assert len(result.content) == 1
+    assert result.content[0].type == "image"
+    assert result.content[0].mimeType == "image/png"  # type: ignore[union-attr]
 
 
 @pytest.mark.asyncio
@@ -228,3 +256,4 @@ async def test_recoverable_service_error_becomes_actionable_tool_error(
     assert result.is_error is True
     assert "Object not found: Ghost" in result.content[0].text  # type: ignore[union-attr]
     assert "Traceback" not in result.content[0].text  # type: ignore[union-attr]
+    assert "Internal Server Error" not in result.content[0].text  # type: ignore[union-attr]

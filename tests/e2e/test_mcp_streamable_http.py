@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from unittest.mock import MagicMock
 
 from fastapi.testclient import TestClient
@@ -24,6 +25,16 @@ _INITIALIZE_REQUEST = {
         "capabilities": {},
         "clientInfo": {"name": "contract-test", "version": "1"},
     },
+}
+_EXPECTED_TOOLS = {
+    "apply_material",
+    "blender_status",
+    "create_object",
+    "delete_object",
+    "get_object_info",
+    "get_scene_info",
+    "get_viewport_screenshot",
+    "modify_object",
 }
 
 
@@ -87,6 +98,17 @@ def _client(runtime: AppRuntime, *, require_identity: bool = False) -> TestClien
     return TestClient(app, base_url="http://localhost")
 
 
+def _json_rpc_payload(response) -> dict[str, object]:
+    for line in response.text.splitlines():
+        if line.startswith("data: "):
+            payload = json.loads(line.removeprefix("data: "))
+            assert isinstance(payload, dict)
+            return payload
+    payload = response.json()
+    assert isinstance(payload, dict)
+    return payload
+
+
 def test_rest_and_mcp_share_one_blender_connection() -> None:
     runtime = make_fake_runtime()
 
@@ -140,3 +162,45 @@ def test_mcp_rejects_unsupported_protocol_version() -> None:
         )
 
     assert response.status_code == 400
+
+
+def test_client_name_does_not_change_capabilities_or_catalog() -> None:
+    observations: list[tuple[object, set[str]]] = []
+    client_names = ("codex", "claude-code", "cursor", "Visual Studio Code", "unknown-host")
+
+    for client_name in client_names:
+        initialize = {
+            **_INITIALIZE_REQUEST,
+            "params": {
+                **_INITIALIZE_REQUEST["params"],
+                "clientInfo": {"name": client_name, "version": "1"},
+            },
+        }
+        tools_request = {"jsonrpc": "2.0", "id": 2, "method": "tools/list", "params": {}}
+        with _client(make_fake_runtime()) as client:
+            initialize_response = client.post("/mcp", headers=_MCP_HEADERS, json=initialize)
+            tools_response = client.post(
+                "/mcp",
+                headers=_MCP_HEADERS | {"mcp-protocol-version": "2025-11-25"},
+                json=tools_request,
+            )
+
+        assert initialize_response.status_code == 200
+        assert tools_response.status_code == 200
+        initialize_payload = _json_rpc_payload(initialize_response)
+        tools_payload = _json_rpc_payload(tools_response)
+        initialize_result = initialize_payload["result"]
+        tools_result = tools_payload["result"]
+        assert isinstance(initialize_result, dict)
+        assert isinstance(tools_result, dict)
+        tool_items = tools_result["tools"]
+        assert isinstance(tool_items, list)
+        names = {
+            item["name"]
+            for item in tool_items
+            if isinstance(item, dict) and isinstance(item.get("name"), str)
+        }
+        observations.append((initialize_result["capabilities"], names))
+
+    assert all(observation == observations[0] for observation in observations)
+    assert observations[0][1] == _EXPECTED_TOOLS
