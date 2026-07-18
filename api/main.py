@@ -92,9 +92,12 @@ def create_app(
     """
     origins = cors_origins or [
         o.strip()
+        # Access is unified through Tailnet — no local/localhost origin. The
+        # frontend is served same-origin under /blender, so CORS only needs the
+        # Tailscale host. (CORS_ORIGINS env can still override for other hosts.)
         for o in os.environ.get(
             "CORS_ORIGINS",
-            "https://bearmacminimac-mini.tail56c751.ts.net,http://localhost:19504",
+            "https://bearmacminimac-mini.tail56c751.ts.net",
         ).split(",")
         if o.strip()
     ]
