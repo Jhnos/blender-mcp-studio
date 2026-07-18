@@ -162,6 +162,10 @@ python scripts/verify/mcp_verify_chat.py   # chat 端對端（需 Blender + LLM�
 |---|---|
 | [docs/PROJECT.md](docs/PROJECT.md) | 專案目的與願景 |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | 架構決策（Hexagonal Architecture）|
+| [docs/development/README.md](docs/development/README.md) | Client-neutral MCP 開發文件導覽與 SSOT 分工 |
+| [docs/development/MCP_LAYER_DEVELOPMENT.md](docs/development/MCP_LAYER_DEVELOPMENT.md) | Client-neutral MCP 目標架構、DDD/SOLID 與安全契約 |
+| [docs/development/MCP_LAYER_TDD.md](docs/development/MCP_LAYER_TDD.md) | MCP layer 的 RED→GREEN→REFACTOR 與可證偽 gate |
+| [docs/development/MCP_LAYER_ADR.md](docs/development/MCP_LAYER_ADR.md) | MCP inbound adapter 的決策理由與替代方案 |
 | [docs/TECH_SPEC.md](docs/TECH_SPEC.md) | 技術規格 |
 | [docs/CODING_STYLE.md](docs/CODING_STYLE.md) | 程式設計風格 |
 | [docs/PROGRESS.md](docs/PROGRESS.md) | 進度追蹤 |

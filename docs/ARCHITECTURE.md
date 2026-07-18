@@ -1,5 +1,7 @@
 # 架構決策（Architecture）
 
+> 本文件描述目前已落地架構。尚未落地的 client-neutral MCP target design、DDD/SOLID 邊界與 TDD gate，見 [`development/README.md`](development/README.md)。
+
 ## 整體架構圖
 
 ```
