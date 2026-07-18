@@ -28,10 +28,11 @@ class _RecordingMCP:
 
     def __init__(self) -> None:
         self.calls: list[tuple[str, dict[str, object]]] = []
+        self.output: object = "ok"
 
     async def call_tool(self, tool_name: str, arguments: dict[str, object]) -> ToolResult:
         self.calls.append((tool_name, arguments))
-        return ToolResult(success=True, output="ok", error=None)
+        return ToolResult(success=True, output=self.output, error=None)
 
 
 def _adapter_with_recording_mcp() -> tuple[BlenderMCPAdapter, _RecordingMCP]:
@@ -69,6 +70,19 @@ async def test_call_tool_path_also_translates() -> None:
     assert len(mcp.calls) == 1
     sent_tool, _ = mcp.calls[0]
     assert sent_tool == "execute_code"
+
+
+@pytest.mark.asyncio
+async def test_translated_tool_unwraps_addon_execute_code_message() -> None:
+    """Domain operations receive the addon's message, not its transport envelope."""
+    adapter, mcp = _adapter_with_recording_mcp()
+    mcp.output = {"result": "created Cube", "logs": []}
+
+    result = await adapter.execute(
+        Command(tool_name="create_object", arguments={"type": "MESH", "name": "Cube"})
+    )
+
+    assert result == ToolResult(success=True, output="created Cube", error=None)
 
 
 @pytest.mark.asyncio

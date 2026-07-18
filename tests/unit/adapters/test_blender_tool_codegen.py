@@ -67,3 +67,11 @@ def test_apply_material_pads_rgb_to_rgba():
         )
     )
     assert "[1.0, 0.0, 0.0, 1.0]" in out.arguments["code"]
+
+
+def test_delete_captures_name_before_removing_blender_object():
+    out = translate(Command(tool_name="delete_object", arguments={"name": "Cube"}))
+    code = out.arguments["code"]
+
+    assert code.index("deleted_name = o.name") < code.index("bpy.data.objects.remove")
+    assert "print('deleted', deleted_name)" in code

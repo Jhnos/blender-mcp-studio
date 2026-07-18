@@ -130,6 +130,21 @@ def test_rest_and_mcp_share_one_blender_connection() -> None:
     assert blender.disconnect_calls == 1
 
 
+def test_mcp_endpoint_without_trailing_slash_does_not_redirect() -> None:
+    """Proxy clients must not be redirected to an internal localhost authority."""
+    app = create_app(
+        runtime=make_fake_runtime(),
+        require_identity=False,
+        cors_origins=["https://bearmacminimac-mini.tail56c751.ts.net"],
+    )
+
+    with TestClient(app, base_url="http://localhost", follow_redirects=False) as client:
+        response = client.post("/mcp", headers=_MCP_HEADERS, json=_INITIALIZE_REQUEST)
+
+    assert response.status_code == 200
+    assert "location" not in response.headers
+
+
 def test_mcp_requires_tailnet_identity() -> None:
     with _client(make_fake_runtime(), require_identity=True) as client:
         assert client.post("/mcp", json=_INITIALIZE_REQUEST).status_code == 401

@@ -68,7 +68,10 @@ def _delete_object(a: dict[str, object]) -> str:
         [
             "import bpy",
             f"o = bpy.data.objects.get({_lit(a.get('name'))})",
-            "if o: bpy.data.objects.remove(o, do_unlink=True); print('deleted', o.name)",
+            "if o:",
+            "    deleted_name = o.name",
+            "    bpy.data.objects.remove(o, do_unlink=True)",
+            "    print('deleted', deleted_name)",
             "else: print('not found')",
         ]
     )

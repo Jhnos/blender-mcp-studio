@@ -14,6 +14,7 @@ from urllib.parse import urlparse
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastmcp.utilities.lifespan import combine_lifespans
+from starlette.types import ASGIApp, Receive, Scope, Send
 
 from api.routers import chat, scene
 from api.routers.ws_manager import ConnectionManager, viewport_broadcast_loop
@@ -22,6 +23,18 @@ from src.adapters.mcp_server import create_mcp_server
 from src.core.domain.exceptions import BlenderConnectionError
 
 logger = logging.getLogger(__name__)
+
+
+class _NormalizeMcpPath:
+    """Serve the canonical no-slash MCP URL without an authority-changing redirect."""
+
+    def __init__(self, app: ASGIApp) -> None:
+        self._app = app
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] == "http" and scope["path"] == "/mcp":
+            scope = {**scope, "path": "/mcp/", "raw_path": b"/mcp/"}
+        await self._app(scope, receive, send)
 
 
 @asynccontextmanager
@@ -129,6 +142,7 @@ def create_app(
         allow_methods=["*"],
         allow_headers=["*"],
     )
+    app.add_middleware(_NormalizeMcpPath)
     if _identity_required(require_identity):
         from api.require_identity import RequireTailnetIdentity
 
