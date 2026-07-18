@@ -17,17 +17,14 @@ from pydantic import BaseModel, Field
 
 from api.schemas import ExportRequest, SceneInfoResponse
 from src.core.domain.command import Command
+from src.core.domain.exceptions import BlenderConnectionError, SceneOperationError
+from src.core.domain.scene_operations import ModifyObjectSpec
 from src.core.ports.blender_port import BlenderPort
-from src.core.use_cases.get_scene_preview import GetScenePreviewUseCase
 from src.core.use_cases.iterative_refinement import IterativeRefinementUseCase
 from src.core.use_cases.modeling_pipeline import ModelingPipelineUseCase
 
 router = APIRouter(prefix="/api")
 logger = logging.getLogger(__name__)
-
-_PLACEHOLDER_PNG = base64.b64decode(
-    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="
-)
 
 
 class RefineRequest(BaseModel):
@@ -43,26 +40,35 @@ class PipelineRequest(BaseModel):
 
 @router.get("/scene", response_model=SceneInfoResponse)
 async def get_scene(request: Request) -> SceneInfoResponse:
-    blender = request.app.state.blender
     try:
-        info = await blender.get_scene_info()
-    except Exception:
-        info = {}
+        scene = await request.app.state.scene_operations.get_scene_info()
+    except BlenderConnectionError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except SceneOperationError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
     return SceneInfoResponse(
-        objects=info.get("objects", []),
-        description=str(info.get("description", "")),
+        objects=[
+            {
+                "name": obj.name,
+                "type": obj.object_type,
+                "location": obj.location.as_list(),
+            }
+            for obj in scene.objects
+        ],
+        description=scene.name,
     )
 
 
 @router.get("/preview")
 async def get_preview(request: Request) -> Response:
     """Return a viewport screenshot from Blender as PNG image."""
-    use_case = GetScenePreviewUseCase(blender=request.app.state.blender)
-    image_bytes = await use_case.execute()
-    return Response(
-        content=image_bytes or _PLACEHOLDER_PNG,
-        media_type="image/png",
-    )
+    try:
+        screenshot = await request.app.state.scene_operations.get_viewport_screenshot()
+    except BlenderConnectionError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except SceneOperationError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    return Response(content=screenshot.png_bytes, media_type="image/png")
 
 
 @router.post("/refine")
@@ -625,27 +631,37 @@ async def update_object(
 ) -> dict[str, object]:
     """Rename, show/hide, or select a Blender scene object by name."""
     blender = request.app.state.blender
+
+    if body.visible is not None:
+        try:
+            await request.app.state.scene_operations.modify_object(
+                ModifyObjectSpec(name=name, visible=body.visible)
+            )
+        except BlenderConnectionError as exc:
+            raise HTTPException(status_code=503, detail=str(exc)) from exc
+        except SceneOperationError as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+    new_name = body.new_name or name
+    if body.selected is None and body.new_name is None:
+        return {"updated": True, "name": new_name, "original_name": name}
+
     ops: list[str] = ["import bpy"]
 
     safe_name = name.replace("'", "\\'")
     ops.append(f"obj = bpy.data.objects.get('{safe_name}')")
     ops.append("if obj is None: raise ValueError(f'Object not found: {repr(obj)}')")
 
-    if body.visible is not None:
-        ops.append(f"obj.hide_viewport = {not body.visible}")
-        ops.append(f"obj.hide_render = {not body.visible}")
-
     if body.selected is not None:
-        ops.append("bpy.ops.object.select_all(action='DESELECT')" if not body.selected else "")
+        if not body.selected:
+            ops.append("bpy.ops.object.select_all(action='DESELECT')")
         ops.append(f"obj.select_set({body.selected})")
         if body.selected:
             ops.append("bpy.context.view_layer.objects.active = obj")
 
-    new_name = name
     if body.new_name:
         safe_new = body.new_name.replace("'", "\\'")
         ops.append(f"obj.name = '{safe_new}'")
-        new_name = body.new_name
 
     ops.append("print('updated')")
     result = await _exec(blender, "\n".join(ops))
@@ -658,20 +674,17 @@ async def update_object(
 @router.delete("/object/{name}")
 async def delete_object(name: str, request: Request) -> dict[str, object]:
     """Delete a Blender scene object by name."""
-    blender = request.app.state.blender
-    safe = name.replace("'", "\\'")
-    code = f"""\
-import bpy
-obj = bpy.data.objects.get('{safe}')
-if obj is None:
-    raise ValueError('Object not found: {safe}')
-bpy.data.objects.remove(obj, do_unlink=True)
-print('deleted')
-"""
-    result = await _exec(blender, code)
-    if not result["success"]:
-        raise HTTPException(status_code=500, detail=result["error"] or "Delete failed")
-    return {"deleted": True, "name": name}
+    try:
+        receipt = await request.app.state.scene_operations.delete_object(name)
+    except BlenderConnectionError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except SceneOperationError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    return {
+        "deleted": True,
+        "name": receipt.object_name,
+        "message": receipt.message,
+    }
 
 
 @router.post("/object/{name}/select")
