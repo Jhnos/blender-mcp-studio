@@ -16,7 +16,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastmcp.utilities.lifespan import combine_lifespans
 from starlette.types import ASGIApp, Receive, Scope, Send
 
-from api.routers import chat, print_readiness, scene, scene_export
+from api.routers import batch_transform, chat, print_readiness, scene, scene_export
 from api.routers.ws_manager import ConnectionManager, viewport_broadcast_loop
 from api.runtime import AppRuntime, build_runtime
 from src.adapters.mcp_server import create_mcp_server
@@ -85,6 +85,7 @@ def _publish_runtime_state(app: FastAPI, runtime: AppRuntime) -> None:
     app.state.runtime = runtime
     app.state.blender = runtime.blender
     app.state.scene_operations = runtime.scene_operations
+    app.state.batch_transform = runtime.batch_transform
     app.state.scene_export = runtime.scene_export
     app.state.print_readiness = runtime.print_readiness
     app.state.event_bus = runtime.event_bus
@@ -153,6 +154,7 @@ def create_app(
 
     app.include_router(chat.router)
     app.include_router(scene.router)
+    app.include_router(batch_transform.router)
     app.include_router(scene_export.router)
     app.include_router(print_readiness.router)
 

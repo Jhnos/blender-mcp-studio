@@ -12,6 +12,7 @@ from api.runtime import AppRuntime
 from src.core.domain.command import Command
 from src.core.ports.blender_port import BlenderPort
 from src.core.ports.mcp_port import ToolResult
+from src.core.use_cases.batch_transform import BatchTransformService
 from src.core.use_cases.scene_operations import SceneOperationsService
 
 _IDENTITY = {"x-mes-identity": "tester@example.com"}
@@ -77,6 +78,7 @@ def make_fake_runtime() -> AppRuntime:
     return AppRuntime(
         blender=blender,
         scene_operations=SceneOperationsService(blender),
+        batch_transform=BatchTransformService(marker),
         scene_export=marker,
         print_readiness=marker,
         event_bus=marker,

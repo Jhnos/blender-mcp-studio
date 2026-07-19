@@ -5,8 +5,8 @@ from __future__ import annotations
 import json
 import math
 import textwrap
-from collections.abc import Mapping, Sequence
 
+from src.adapters.blender_response import execute_code_output, mapping, sequence, text
 from src.core.domain.command import Command
 from src.core.domain.exceptions import PrintReadinessError
 from src.core.domain.print_readiness import (
@@ -278,23 +278,6 @@ print('{_MARKER}' + json.dumps(report, separators=(',', ':')))
 """
 
 
-def _mapping(value: object, context: str) -> dict[str, object]:
-    if not isinstance(value, Mapping):
-        raise PrintReadinessError(f"Blender returned invalid {context}; expected an object")
-    result: dict[str, object] = {}
-    for key, item in value.items():
-        if not isinstance(key, str):
-            raise PrintReadinessError(f"Blender returned invalid {context}; keys must be strings")
-        result[key] = item
-    return result
-
-
-def _sequence(value: object, context: str) -> Sequence[object]:
-    if isinstance(value, (str, bytes)) or not isinstance(value, Sequence):
-        raise PrintReadinessError(f"Blender returned invalid {context}; expected a list")
-    return value
-
-
 def _number(value: object, context: str) -> float:
     if isinstance(value, bool) or not isinstance(value, (int, float)):
         raise PrintReadinessError(f"Blender returned invalid {context}; expected a finite number")
@@ -310,19 +293,6 @@ def _integer(value: object, context: str) -> int:
     return value
 
 
-def _text(value: object, context: str) -> str:
-    if not isinstance(value, str):
-        raise PrintReadinessError(f"Blender returned invalid {context}; expected text")
-    return value
-
-
-def _extract_output(value: object) -> str:
-    if isinstance(value, str):
-        return value
-    envelope = _mapping(value, "execute-code result")
-    return _text(envelope.get("result"), "execute-code output")
-
-
 def _parse_inspection(output: str) -> PrintInspection:
     marker_index = output.rfind(_MARKER)
     if marker_index < 0:
@@ -332,10 +302,10 @@ def _parse_inspection(output: str) -> PrintInspection:
         raw: object = json.loads(encoded)
     except json.JSONDecodeError as exc:
         raise PrintReadinessError("Blender print inspection returned invalid JSON") from exc
-    report = _mapping(raw, "print-readiness report")
+    report = mapping(raw, "print-readiness report", PrintReadinessError)
     if not {"metrics", "issues", "analysis_truncated"}.issubset(report):
         raise PrintReadinessError("Blender print inspection report is missing required fields")
-    metrics = _mapping(report["metrics"], "print metrics")
+    metrics = mapping(report["metrics"], "print metrics", PrintReadinessError)
     required_metrics = {
         "object_count",
         "triangle_count",
@@ -345,7 +315,7 @@ def _parse_inspection(output: str) -> PrintInspection:
     }
     if not required_metrics.issubset(metrics):
         raise PrintReadinessError("Blender print metrics are missing required fields")
-    dimensions = _sequence(metrics["dimensions_mm"], "print dimensions")
+    dimensions = sequence(metrics["dimensions_mm"], "print dimensions", PrintReadinessError)
     if len(dimensions) != 3:
         raise PrintReadinessError("Blender print dimensions must contain three values")
     parsed_metrics = PrintMetrics(
@@ -360,18 +330,22 @@ def _parse_inspection(output: str) -> PrintInspection:
         surface_area_mm2=_number(metrics["surface_area_mm2"], "surface area"),
     )
     issues: list[PrintIssue] = []
-    for raw_issue in _sequence(report["issues"], "print issues"):
-        issue = _mapping(raw_issue, "print issue")
+    for raw_issue in sequence(report["issues"], "print issues", PrintReadinessError):
+        issue = mapping(raw_issue, "print issue", PrintReadinessError)
         if not {"code", "severity", "count", "object_names", "message"}.issubset(issue):
             raise PrintReadinessError("Blender print issue is missing required fields")
-        names = _sequence(issue["object_names"], "issue object names")
+        names = sequence(issue["object_names"], "issue object names", PrintReadinessError)
         issues.append(
             PrintIssue(
-                code=PrintIssueCode(_text(issue["code"], "issue code")),
-                severity=PrintIssueSeverity(_text(issue["severity"], "issue severity")),
+                code=PrintIssueCode(text(issue["code"], "issue code", PrintReadinessError)),
+                severity=PrintIssueSeverity(
+                    text(issue["severity"], "issue severity", PrintReadinessError)
+                ),
                 count=_integer(issue["count"], "issue count"),
-                object_names=tuple(_text(item, "issue object name") for item in names),
-                message=_text(issue["message"], "issue message"),
+                object_names=tuple(
+                    text(item, "issue object name", PrintReadinessError) for item in names
+                ),
+                message=text(issue["message"], "issue message", PrintReadinessError),
             )
         )
     truncated = report["analysis_truncated"]
@@ -395,7 +369,7 @@ class BlenderPrintReadinessAdapter:
                 result.error or "Blender print inspection failed without a reason"
             )
         try:
-            return _parse_inspection(_extract_output(result.output))
+            return _parse_inspection(execute_code_output(result.output, PrintReadinessError))
         except (ValueError, TypeError) as exc:
             if isinstance(exc, PrintReadinessError):
                 raise

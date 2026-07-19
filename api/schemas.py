@@ -39,6 +39,13 @@ class PrintReadinessRequest(BaseModel):
     overhang_angle_deg: float = Field(default=45.0, ge=0.0, le=90.0)
 
 
+class BatchTransformRequest(BaseModel):
+    object_names: list[str]
+    translation_mm: tuple[float, float, float] = (0.0, 0.0, 0.0)
+    rotation_deg: tuple[float, float, float] = (0.0, 0.0, 0.0)
+    scale_percent: tuple[float, float, float] = (0.0, 0.0, 0.0)
+
+
 class UndoRedoResponse(BaseModel):
     success: bool
     action: Literal["undo", "redo"]

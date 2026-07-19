@@ -16,6 +16,7 @@ from src.core.ports.session_store_port import SessionStorePort
 from src.core.ports.snapshot_store_port import SnapshotStorePort
 from src.core.ports.text3d_port import Text3DGenerationPort
 from src.core.ports.vision_port import VisionPort
+from src.core.use_cases.batch_transform import BatchTransformService
 from src.core.use_cases.print_readiness import PrintReadinessService
 from src.core.use_cases.scene_export import SceneExportService
 from src.core.use_cases.scene_operations import SceneOperationsService
@@ -27,6 +28,7 @@ class AppRuntime:
 
     blender: BlenderPort
     scene_operations: SceneOperationsService
+    batch_transform: BatchTransformService
     scene_export: SceneExportService
     print_readiness: PrintReadinessService
     event_bus: EventBusPort
@@ -43,6 +45,7 @@ class AppRuntime:
 
 def build_runtime(env_file: Path | None = None) -> AppRuntime:
     """Build concrete outer adapters at the application's only composition root."""
+    from src.adapters.batch_transform.blender_batch_transform import BlenderBatchTransformAdapter
     from src.adapters.events.in_memory_event_bus import InMemoryEventBus
     from src.adapters.export.blender_scene_exporter import BlenderSceneExportAdapter
     from src.adapters.factory.concrete_adapter_factory import ConcreteAdapterFactory
@@ -64,6 +67,7 @@ def build_runtime(env_file: Path | None = None) -> AppRuntime:
     return AppRuntime(
         blender=blender,
         scene_operations=SceneOperationsService(blender),
+        batch_transform=BatchTransformService(BlenderBatchTransformAdapter(blender)),
         scene_export=SceneExportService(BlenderSceneExportAdapter(blender)),
         print_readiness=PrintReadinessService(BlenderPrintReadinessAdapter(blender)),
         event_bus=InMemoryEventBus(),
