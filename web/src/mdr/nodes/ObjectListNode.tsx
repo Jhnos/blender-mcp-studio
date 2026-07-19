@@ -1,5 +1,7 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { BatchTransformPanel } from '../../components/BatchTransformPanel'
 import { useChatStore } from '../../stores/chatStore'
+import { useBatchSelectionStore } from '../../stores/batchSelectionStore'
 import { Icon, EmptyState, type IconName } from '../../components/ui'
 import type { NodeProps } from '../registry'
 import type { Dispatch } from '../actions'
@@ -16,8 +18,12 @@ const TYPE_ICON: Record<string, IconName> = {
 // discoverability gap — Norman signifier + a11y).
 // ---------------------------------------------------------------------------
 
-function ObjectRow({ obj, dispatch, onChanged }: {
-  obj: SceneObject; dispatch: Dispatch; onChanged: () => void
+function ObjectRow({ obj, dispatch, onChanged, checked, onToggle }: {
+  obj: SceneObject
+  dispatch: Dispatch
+  onChanged: () => void
+  checked: boolean
+  onToggle: () => void
 }) {
   const [editing, setEditing] = useState(false)
   const [name, setName] = useState(obj.name)
@@ -42,6 +48,14 @@ function ObjectRow({ obj, dispatch, onChanged }: {
 
   return (
     <div className="group flex items-center gap-1.5 rounded-md px-2 py-1.5 hover:bg-surface-overlay transition-colors">
+      <input
+        type="checkbox"
+        aria-label={`選取 ${obj.name}`}
+        checked={checked}
+        onChange={onToggle}
+        onClick={(event) => event.stopPropagation()}
+        className="size-3.5 shrink-0 accent-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+      />
       <Icon name={TYPE_ICON[obj.type] ?? 'empty'} size={14} className="shrink-0 text-fg-subtle" />
       {editing ? (
         <input
@@ -82,21 +96,49 @@ function ObjectRow({ obj, dispatch, onChanged }: {
   )
 }
 
+function SelectAllCheckbox({ checked, indeterminate, onChange }: {
+  checked: boolean
+  indeterminate: boolean
+  onChange: () => void
+}) {
+  const ref = useRef<HTMLInputElement>(null)
+  useEffect(() => {
+    if (ref.current) ref.current.indeterminate = indeterminate
+  }, [indeterminate])
+  return (
+    <input
+      ref={ref}
+      type="checkbox"
+      aria-label="全選場景物件"
+      checked={checked}
+      onChange={onChange}
+      className="size-3.5 accent-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+    />
+  )
+}
+
 export function ObjectListNode({ dispatch }: NodeProps) {
   const [objects, setObjects] = useState<SceneObject[]>([])
   const [error, setError] = useState<string | null>(null)
   const sceneRefreshTick = useChatStore((s) => s.sceneRefreshTick)
+  const selectedNames = useBatchSelectionStore((state) => state.selectedNames)
+  const toggle = useBatchSelectionStore((state) => state.toggle)
+  const replace = useBatchSelectionStore((state) => state.replace)
+  const clear = useBatchSelectionStore((state) => state.clear)
+  const prune = useBatchSelectionStore((state) => state.prune)
 
   const refresh = useCallback(async () => {
     try {
       const { objects } = await dispatch('scene.list') as { objects: SceneObject[] }
-      setObjects(objects ?? [])
+      const nextObjects = objects ?? []
+      setObjects(nextObjects)
+      prune(nextObjects.map((object) => object.name))
       setError(null)
     } catch {
       setError('無法連線至 Blender')
       setObjects([])
     }
-  }, [dispatch])
+  }, [dispatch, prune])
 
   // Refresh on mount and whenever a Blender command changes the scene.
   // Async data fetch: setState happens after `await`, not synchronously — this
@@ -110,11 +152,47 @@ export function ObjectListNode({ dispatch }: NodeProps) {
   if (objects.length === 0) {
     return <EmptyState icon="scene" title="場景是空的" hint="用左側對話描述你想建立的物件" />
   }
+  const allSelected = selectedNames.length === objects.length
+  const partiallySelected = selectedNames.length > 0 && !allSelected
   return (
-    <div className="space-y-0.5 px-2">
-      {objects.map((obj) => (
-        <ObjectRow key={obj.name} obj={obj} dispatch={dispatch} onChanged={refresh} />
-      ))}
+    <div className="px-2">
+      <div className="mb-1.5 flex items-center gap-2 border-b border-border px-2 pb-2">
+        <SelectAllCheckbox
+          checked={allSelected}
+          indeterminate={partiallySelected}
+          onChange={() => allSelected ? clear() : replace(objects.map((object) => object.name))}
+        />
+        <span className="text-[10px] font-medium text-fg-muted">批次目標</span>
+        <span className="flex-1" />
+        {selectedNames.length > 0 && (
+          <>
+            <span className="text-[10px] text-accent">已選 {selectedNames.length} 個</span>
+            <button
+              type="button"
+              aria-label="清除批次目標"
+              onClick={clear}
+              className="text-[10px] text-fg-subtle hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+            >
+              清除
+            </button>
+          </>
+        )}
+      </div>
+      <div className="space-y-0.5">
+        {objects.map((obj) => (
+          <ObjectRow
+            key={obj.name}
+            obj={obj}
+            dispatch={dispatch}
+            onChanged={refresh}
+            checked={selectedNames.includes(obj.name)}
+            onToggle={() => toggle(obj.name)}
+          />
+        ))}
+      </div>
+      {selectedNames.length > 0 && (
+        <BatchTransformPanel dispatch={dispatch} selectedNames={selectedNames} />
+      )}
     </div>
   )
 }
