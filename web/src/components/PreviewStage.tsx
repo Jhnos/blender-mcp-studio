@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useChatStore } from '../stores/chatStore'
 import { useDispatch } from '../mdr'
-import { Button, EmptyState, StatusBadge } from './ui'
+import { Button, StatusBadge } from './ui'
 import { ExportPanel, type ExportOptions } from './ExportPanel'
+import { ModelViewport } from './ModelViewport'
 
 // ---------------------------------------------------------------------------
 // PreviewStage — the center focal point (single focal point principle). The
@@ -100,23 +101,8 @@ export function PreviewStage() {
       </div>
 
       {/* Viewport */}
-      <div className="relative flex flex-1 items-center justify-center overflow-hidden p-4">
-        {loading && !displayUrl && <span className="animate-pulse text-xs text-fg-subtle">載入預覽中...</span>}
-        {displayUrl ? (
-          <img
-            src={displayUrl}
-            alt="Blender viewport"
-            className="max-h-full max-w-full rounded-lg border border-border object-contain shadow-lg"
-          />
-        ) : !loading && (
-          <EmptyState icon="camera" title="無法取得預覽" hint="請確認 Blender 正在運行" />
-        )}
-        {toast && (
-          <div className="absolute bottom-3 left-1/2 -translate-x-1/2 rounded-md bg-surface-overlay
-                          px-3 py-1.5 text-xs text-fg-muted shadow-lg">
-            {toast}
-          </div>
-        )}
+      <div className="min-h-0 flex-1 p-3">
+        <ModelViewport imageUrl={displayUrl} loading={loading} toast={toast} />
       </div>
     </div>
   )

@@ -3,7 +3,8 @@ import {
   Camera, RotateCcw, Play, Sparkles, ChevronDown, ChevronRight, Lightbulb,
   Box, Boxes, Palette, Sun, History, ScrollText, X, SlidersHorizontal,
   TriangleAlert, CircleCheck, CircleX, Info, Plus, Radio, ImagePlus,
-  MousePointer2, Spline, Bone, Circle, Wifi, WifiOff, type LucideIcon,
+  MousePointer2, Spline, Bone, Circle, Wifi, WifiOff, ZoomIn, ZoomOut,
+  Maximize2, Minimize2, type LucideIcon,
 } from 'lucide-react'
 
 // ---------------------------------------------------------------------------
@@ -28,6 +29,10 @@ export const ICON_MAP = {
   refine: Play,
   ai: Sparkles,
   upload: ImagePlus,
+  'zoom-in': ZoomIn,
+  'zoom-out': ZoomOut,
+  maximize: Maximize2,
+  minimize: Minimize2,
   select: MousePointer2,
   add: Plus,
   close: X,
