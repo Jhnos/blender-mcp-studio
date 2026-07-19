@@ -17,6 +17,10 @@ class SceneExportError(DomainError):
     """A requested scene export could not produce a valid artifact."""
 
 
+class PrintReadinessError(DomainError):
+    """A print-readiness inspection could not produce a trustworthy report."""
+
+
 class LLMConnectionError(DomainError):
     """Raised when the LLM is unreachable."""
 
