@@ -6,6 +6,18 @@
 
 ## 2026-07-19
 
+### 關閉 HMR server 不等於 production page 不會載入 dev client
+- **觸發情境**：長期運行的 WebUI 直接由 Vite dev server 提供，反向代理又不轉送 Vite HMR 的 WebSocket subprotocol；為了消除瀏覽器 console error，只設定 `server.hmr=false`。
+- **該主動檢查**：用真瀏覽器讀取正式 URL 的 script `src` 與 console。頁面是否仍載入 `/@vite/client`？console 是否仍嘗試 HMR WebSocket？只看設定檔或「畫面能開」都無法證明 production runtime 已移除 dev client。
+- **為什麼沒抓到**：`hmr=false` 關掉 server 端 HMR，卻不保證 HTML 不注入 dev client；設定測試與頁面 smoke 都會綠，只有瀏覽器 runtime 證據能分辨。
+- **如何預防**：長期部署先 `vite build`，再用 `vite preview`（或正式靜態伺服器）；dev 與 preview 共用 API/WS/MCP proxy SSOT。部署 sentinel 需同時檢查 plist 使用 preview、installer 先 build，並以瀏覽器確認只載入 hashed assets、console 無錯誤。
+
+### `launchctl bootout` 返回不等於 job 已完全離開 registry
+- **觸發情境**：安裝腳本緊接著執行 `bootout` 與 `bootstrap`；舊程序仍在終止期間，`bootstrap` 偶發回 I/O error。若只因當下 `launchctl print` 尚看得到 job 就當作成功，稍後 job 消失而服務沒有重建。
+- **該主動檢查**：卸載後是否有 bounded wait，確認 label 真正不可查才 bootstrap？bootstrap 失敗是否 bounded retry？完成後是否同時驗證 launchd state、PID listening port 與 health，而非只信其中一個訊號？
+- **為什麼沒抓到**：把非同步 lifecycle 當同步操作，也把「舊 job 還存在」誤判為「新 job 已載入」。兩個瞬間狀態都不能證明最終服務存活。
+- **如何預防**：installer 封裝 wait-for-unload 與 bounded bootstrap retry；最後以 label、port、health 三個獨立訊號驗證。部署測試鎖定 wait/retry helper，避免後續簡化腳本時復發。
+
 ### Operator 宣告 `UNDO` 不等於程式化呼叫真的推入可復原 transaction
 - **觸發情境**：用 Python 自訂 Blender operator，`bl_options` 已含 `UNDO`，再由另一段 Python／socket 腳本呼叫它，便宣稱「一次呼叫＝一筆 Undo」。
 - **該主動檢查**：operator 的**呼叫端**有沒有明確啟用 undo 執行參數？官方 `bpy.ops` 呼叫契約把 `execution_context` 與 `undo: bool` 列為獨立 positional arguments；遠端程式化呼叫要用 `bpy.ops.x.y('EXEC_DEFAULT', True)`，不能只讀 class metadata 推論 runtime stack。測試必須建立兩個 nonce 物件、一次變形、一次 Undo，再由獨立 oracle 確認兩者保留且 transform 全復原。
@@ -26,7 +38,7 @@
 - **觸發情境**：改了 launchd plist 的環境變數（CORS、feature flag、port…）然後「重啟服務」想讓它生效。
 - **該主動檢查**：你的「重啟」真的 **reload 了 plist** 嗎？`launchctl kickstart -k` 只重啟**進程**、不重讀 plist；而且**載入中的 plist 往往是 `~/Library/LaunchAgents/` 的另一份拷貝**，不是你剛編輯的 repo/deploy 那份。驗證要讀「載入中進程的實際 env」——`launchctl print <domain>/<label>`，不是讀你剛改的檔。
 - **為什麼沒抓到**：本輪我改了 `deploy/launchd/*.plist` + `kickstart`，宣稱「已部署＋已驗證」。但 kickstart 沒 reload、載入的是舊拷貝，env 根本沒變。更糟的是驗證**不夠鑑別**：我只測了一個「新舊設定都會擋」的 case（CORS Origin=19504，在舊的 [tailscale,19147] 與新的 [tailscale-only] 下**都**被擋），於是假綠，直到下一輪查別的才撞見。同族：本 session 一路的「表面訊號≠真實、驗證要鑑別性」。
-- **如何預防**：① env 變更要用**會 reload** 的機制（本專案 = `bash deploy/launchd/install.sh <svc>`，做 bootout→bootstrap→kickstart；EIO on bootstrap 良性、等 3s 補 bootstrap）；② 驗證讀 `launchctl print <label>` 的**實際載入 env**，或送一個「**只有新設定會通過、舊設定會擋**」的鑑別性請求（例：直打服務、帶/不帶新 header 各一次看 401 vs 200）；③ 別把「編輯了 repo 裡的 plist」當成「載入中的服務變了」——那是兩份不同的檔。
+- **如何預防**：① env 變更要用**會 reload** 的機制（本專案 = `bash deploy/launchd/install.sh <svc>`，做 bootout→等待 label 消失→bounded bootstrap retry→kickstart）；② 驗證讀 `launchctl print <label>` 的**實際載入 env**，或送一個「**只有新設定會通過、舊設定會擋**」的鑑別性請求（例：直打服務、帶/不帶新 header 各一次看 401 vs 200）；③ 別把「編輯了 repo 裡的 plist」當成「載入中的服務變了」——那是兩份不同的檔。
 
 ### `narrow(x) or default` 把「畸形」訊號連同「空」一起塌掉——正確用了 SSOT，尾巴一個 `or {}` 又是 silent-fallback
 - **觸發情境**：一個收窄／解析函式以 `None`（或空）表示「輸入畸形／不符預期」，呼叫端寫成 `narrow(x) or default`（`as_str_keyed(o) or {}`、`parse(s) or []`、`.get(k) or fallback`）。尤其在剛把某個 bug class 改成「一律走 narrowing SSOT」之後——會覺得「用了 SSOT 就安全了」。

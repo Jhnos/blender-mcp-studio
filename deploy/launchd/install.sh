@@ -25,7 +25,12 @@ DOMAIN="gui/${UID_NUM}"
 
 CONDA_PYTHON="${CONDA_PYTHON:-${HOME}/miniconda3/envs/blender-mcp/bin/python}"
 NODE_BIN="${NODE_BIN:-/opt/homebrew/opt/node/bin/node}"
+NPM_BIN="${NPM_BIN:-$(dirname "${NODE_BIN}")/npm}"
 BLENDER_BIN="${BLENDER_BIN:-/Applications/Blender.app/Contents/MacOS/Blender}"
+
+_build_web_assets() {
+  "${NPM_BIN}" --prefix "${PROJECT_ROOT}/web" run build
+}
 
 # launchctl bootout returns non-zero / noisy errors when the service isn't
 # loaded. Treat the following as success: not loaded (5 / 113), EIO (5),
@@ -48,6 +53,38 @@ _safe_bootout() {
     esac
   fi
   return 0
+}
+
+_wait_for_unload() {
+  local service="$1" attempt
+  for attempt in {1..20}; do
+    if ! launchctl print "${service}" >/dev/null 2>&1; then
+      return 0
+    fi
+    sleep 0.25
+  done
+  echo "error: launchd service did not unload in time: ${service}" >&2
+  return 1
+}
+
+# launchd can keep a just-booted-out service in its internal deregistration
+# window briefly. An immediate bootstrap then returns EIO even though the
+# rendered plist is valid. Retry only that bounded local registration step;
+# fail loudly after five attempts and never hide a genuine invalid plist.
+_bootstrap_with_retry() {
+  local domain="$1" target="$2"
+  local attempt out
+
+  for attempt in 1 2 3 4 5; do
+    if out="$(launchctl bootstrap "${domain}" "${target}" 2>&1)"; then
+      return 0
+    fi
+    if [[ "${attempt}" -eq 5 ]]; then
+      echo "${out}" >&2
+      return 1
+    fi
+    sleep 0.5
+  done
 }
 
 _install_one() {
@@ -80,11 +117,12 @@ _install_one() {
   fi
 
   _safe_bootout "${service}"
+  _wait_for_unload "${service}"
 
   mv "${tmp}" "${target}"
   trap - RETURN
 
-  launchctl bootstrap "${DOMAIN}" "${target}"
+  _bootstrap_with_retry "${DOMAIN}" "${target}"
   launchctl enable "${service}" 2>/dev/null || true
   launchctl kickstart -k "${service}" 2>/dev/null || true
 
@@ -96,6 +134,7 @@ main() {
   local which="${1:-all}"
   case "${which}" in
     all)
+      _build_web_assets
       _install_one com.blender-mcp.blender
       _install_one com.blender-mcp.api
       _install_one com.blender-mcp.web
@@ -107,6 +146,7 @@ main() {
       _install_one com.blender-mcp.api
       ;;
     web)
+      _build_web_assets
       _install_one com.blender-mcp.web
       ;;
     *)

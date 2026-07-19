@@ -17,6 +17,7 @@
 	<array>
 		<string>__NODE_BIN__</string>
 		<string>node_modules/.bin/vite</string>
+		<string>preview</string>
 		<string>--port</string>
 		<string>19504</string>
 		<string>--logLevel</string>
