@@ -13,6 +13,10 @@ class SceneOperationError(DomainError):
     """A scene operation failed with a recoverable, user-facing reason."""
 
 
+class SceneExportError(DomainError):
+    """A requested scene export could not produce a valid artifact."""
+
+
 class LLMConnectionError(DomainError):
     """Raised when the LLM is unreachable."""
 

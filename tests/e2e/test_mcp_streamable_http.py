@@ -76,6 +76,7 @@ def make_fake_runtime() -> AppRuntime:
     return AppRuntime(
         blender=blender,
         scene_operations=SceneOperationsService(blender),
+        scene_export=marker,
         event_bus=marker,
         adapter_factory=marker,
         sandbox=marker,

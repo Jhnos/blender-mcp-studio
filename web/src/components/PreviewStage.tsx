@@ -2,48 +2,13 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useChatStore } from '../stores/chatStore'
 import { useDispatch } from '../mdr'
 import { Button, EmptyState, StatusBadge } from './ui'
+import { ExportPanel, type ExportOptions } from './ExportPanel'
 
 // ---------------------------------------------------------------------------
 // PreviewStage — the center focal point (single focal point principle). The
 // live Blender viewport is persistent here, not one tab among six. Toolbar
 // actions (refresh / export / undo / redo) all go through the dispatcher.
 // ---------------------------------------------------------------------------
-
-const EXPORT_FORMATS = [
-  { fmt: 'stl', label: 'STL（3D 列印）' },
-  { fmt: 'obj', label: 'OBJ' },
-  { fmt: 'fbx', label: 'FBX' },
-  { fmt: 'glb', label: 'GLB' },
-] as const
-
-function ExportMenu({ onExport, busy }: { onExport: (fmt: string) => void; busy: boolean }) {
-  const [open, setOpen] = useState(false)
-  return (
-    <div className="relative">
-      <Button variant="subtle" icon="export" onClick={() => setOpen((o) => !o)} disabled={busy}>
-        {busy ? '匯出中' : '匯出'}
-      </Button>
-      {open && (
-        <>
-          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 z-50 mt-1 min-w-[160px] rounded-lg border border-border
-                          bg-surface-overlay py-1 shadow-xl">
-            {EXPORT_FORMATS.map(({ fmt, label }) => (
-              <button
-                key={fmt}
-                onClick={() => { setOpen(false); onExport(fmt) }}
-                className="block w-full px-3 py-1.5 text-left text-xs text-fg-muted
-                           hover:bg-surface-raised hover:text-fg transition-colors"
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-        </>
-      )}
-    </div>
-  )
-}
 
 export function PreviewStage() {
   const dispatch = useDispatch()
@@ -93,14 +58,15 @@ export function PreviewStage() {
     } catch (e) { showToast(`${action} 失敗：${String(e)}`) }
   }
 
-  const doExport = async (format: string) => {
+  const doExport = async (options: ExportOptions) => {
     setExporting(true)
     try {
-      const blob = await dispatch('export.scene', { format }) as Blob
+      const blob = await dispatch('export.scene', options) as Blob
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
-      a.href = url; a.download = `blender_scene.${format}`; a.click()
+      a.href = url; a.download = `blender-scene.${options.format}`; a.click()
       URL.revokeObjectURL(url)
+      showToast(`${options.format.toUpperCase()} 已產生，可交給切片器處理`)
     } catch (e) { showToast(`匯出失敗：${String(e)}`) }
     finally { setExporting(false) }
   }
@@ -130,7 +96,7 @@ export function PreviewStage() {
         <Button variant="ghost" icon="undo" iconOnly title="復原 (⌘Z)" onClick={() => void runHistory('undo')} />
         <Button variant="ghost" icon="redo" iconOnly title="重做 (⌘⇧Z)" onClick={() => void runHistory('redo')} />
         <Button variant="ghost" icon="refresh" iconOnly title="刷新預覽" onClick={() => void refreshPreview()} />
-        <ExportMenu onExport={(f) => void doExport(f)} busy={exporting} />
+        <ExportPanel onExport={(options) => void doExport(options)} busy={exporting} />
       </div>
 
       {/* Viewport */}

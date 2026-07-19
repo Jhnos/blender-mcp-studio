@@ -89,6 +89,19 @@ https://bearmacminimac-mini.tail56c751.ts.net/blender/mcp
 完整 client 設定、八項工具與安全邊界見
 [docs/MCP_CLIENTS.md](docs/MCP_CLIENTS.md)。MCP server 不辨識或特判 host 名稱。
 
+### 匯出 3D 列印模型
+
+WebUI 預覽區的「準備切片」可匯出：
+
+| 用途 | 格式 | 單位契約 |
+|---|---|---|
+| 切片／3D 列印 | STL、OBJ、PLY | Blender 公尺自動轉為毫米，可匯入 Cura、PrusaSlicer、OrcaSlicer |
+| DCC 交換／網頁預覽 | FBX、GLB | 保留 Blender 場景單位 |
+
+匯出面板支援「僅選取物件」、「套用修改器」與「三角化網格」。HTTP client 也可直接呼叫
+`POST /api/export`；匯出由 application service 與 Blender adapter 負責，WebUI 不依賴 Blender
+operator 細節。
+
 ---
 
 ## LLM 設定

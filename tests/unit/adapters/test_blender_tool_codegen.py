@@ -69,6 +69,20 @@ def test_apply_material_pads_rgb_to_rgba():
     assert "[1.0, 0.0, 0.0, 1.0]" in out.arguments["code"]
 
 
+def test_apply_material_uses_stable_node_type_and_viewport_color():
+    out = translate(
+        Command(
+            tool_name="apply_material",
+            arguments={"object_name": "Cat", "material_name": "Black", "color": [0, 0, 0, 1]},
+        )
+    )
+    code = out.arguments["code"]
+
+    assert "node.type == 'BSDF_PRINCIPLED'" in code
+    assert "mat.diffuse_color =" in code
+    assert "nodes.get('Principled BSDF')" not in code
+
+
 def test_delete_captures_name_before_removing_blender_object():
     out = translate(Command(tool_name="delete_object", arguments={"name": "Cube"}))
     code = out.arguments["code"]

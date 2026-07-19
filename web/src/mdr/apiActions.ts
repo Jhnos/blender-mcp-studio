@@ -106,8 +106,18 @@ export function registerApiActions(): void {
     return res.blob()
   })
   registerAction('export.scene', async (p, { base }) => {
-    const { format } = p as { format: string }
-    const res = await http('POST', `${base}/api/export`, { format, selection_only: false })
+    const { format, selectionOnly, applyModifiers, triangulate } = p as {
+      format: string
+      selectionOnly: boolean
+      applyModifiers: boolean
+      triangulate: boolean
+    }
+    const res = await http('POST', `${base}/api/export`, {
+      format,
+      selection_only: selectionOnly,
+      apply_modifiers: applyModifiers,
+      triangulate,
+    })
     return res.blob()
   })
   registerAction('undo', async (_p, { base }) =>

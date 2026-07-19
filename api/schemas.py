@@ -26,8 +26,10 @@ class SceneInfoResponse(BaseModel):
 
 
 class ExportRequest(BaseModel):
-    format: Literal["stl", "obj", "fbx", "glb"] = "stl"
+    format: Literal["stl", "obj", "ply", "fbx", "glb"] = "stl"
     selection_only: bool = False
+    apply_modifiers: bool = True
+    triangulate: bool = True
 
 
 class UndoRedoResponse(BaseModel):

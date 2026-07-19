@@ -23,13 +23,12 @@
 | f1 | GitHub Actions CI | ✅ |
 | f2 | E2E 測試（MockBlender + MockVision）| ✅ |
 
-## V3（規劃中）
+## V3（進行中）
 
 | ID | 功能 | 優先 |
 |---|---|---|
 | v3-streaming | LLM 串流輸出（token-by-token WS push）| ⭐⭐⭐ |
-| v3-export | 3D 列印匯出（STL/OBJ download）| ⭐⭐⭐ |
+| v3-export | 3D 列印匯出（STL/OBJ/PLY）與 GLB/FBX 交換格式 | ✅ |
 | v3-undo | 對話式 Undo/Redo（Cmd+Z）| ⭐⭐ |
 | v3-polyhaven | Poly Haven 材質庫整合 | ⭐⭐ |
 | v3-history | 場景快照歷史（可回溯）| ⭐⭐ |
-

@@ -16,6 +16,7 @@ from src.core.ports.session_store_port import SessionStorePort
 from src.core.ports.snapshot_store_port import SnapshotStorePort
 from src.core.ports.text3d_port import Text3DGenerationPort
 from src.core.ports.vision_port import VisionPort
+from src.core.use_cases.scene_export import SceneExportService
 from src.core.use_cases.scene_operations import SceneOperationsService
 
 
@@ -25,6 +26,7 @@ class AppRuntime:
 
     blender: BlenderPort
     scene_operations: SceneOperationsService
+    scene_export: SceneExportService
     event_bus: EventBusPort
     adapter_factory: AdapterFactoryPort
     sandbox: CodeSandboxPort
@@ -40,6 +42,7 @@ class AppRuntime:
 def build_runtime(env_file: Path | None = None) -> AppRuntime:
     """Build concrete outer adapters at the application's only composition root."""
     from src.adapters.events.in_memory_event_bus import InMemoryEventBus
+    from src.adapters.export.blender_scene_exporter import BlenderSceneExportAdapter
     from src.adapters.factory.concrete_adapter_factory import ConcreteAdapterFactory
     from src.adapters.mcp.factory import build_blender_adapter
     from src.adapters.polyhaven.polyhaven_adapter import PolyHavenAdapter
@@ -58,6 +61,7 @@ def build_runtime(env_file: Path | None = None) -> AppRuntime:
     return AppRuntime(
         blender=blender,
         scene_operations=SceneOperationsService(blender),
+        scene_export=SceneExportService(BlenderSceneExportAdapter(blender)),
         event_bus=InMemoryEventBus(),
         adapter_factory=ConcreteAdapterFactory(),
         sandbox=sandbox,

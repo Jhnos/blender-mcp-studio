@@ -101,17 +101,18 @@ def _apply_material(a: dict[str, object]) -> str:
         f"    name = {_lit(a.get('material_name', 'Material'))}",
         "    mat = bpy.data.materials.get(name) or bpy.data.materials.new(name)",
         "    mat.use_nodes = True",
-        "    b = mat.node_tree.nodes.get('Principled BSDF')",
-        "    if b:",
+        "    b = next((node for node in mat.node_tree.nodes if node.type == 'BSDF_PRINCIPLED'), None)",
+        "    if b is None: raise RuntimeError('Principled BSDF node not found')",
     ]
     if isinstance(color, (list, tuple)) and color:  # narrow-ok: elements coerced by float()
         c = [float(x) for x in color]
         rgba = c + [1.0] * (4 - len(c)) if len(c) < 4 else c[:4]
-        lines.append(f"        b.inputs['Base Color'].default_value = tuple({_lit(rgba)})")
+        lines.append(f"    mat.diffuse_color = tuple({_lit(rgba)})")
+        lines.append(f"    b.inputs['Base Color'].default_value = tuple({_lit(rgba)})")
     if a.get("metallic") is not None:
-        lines.append(f"        b.inputs['Metallic'].default_value = {_lit(a['metallic'])}")
+        lines.append(f"    b.inputs['Metallic'].default_value = {_lit(a['metallic'])}")
     if a.get("roughness") is not None:
-        lines.append(f"        b.inputs['Roughness'].default_value = {_lit(a['roughness'])}")
+        lines.append(f"    b.inputs['Roughness'].default_value = {_lit(a['roughness'])}")
     lines += [
         "    if o.data.materials: o.data.materials[0] = mat",
         "    else: o.data.materials.append(mat)",

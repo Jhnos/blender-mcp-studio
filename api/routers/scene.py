@@ -15,7 +15,7 @@ from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import Response
 from pydantic import BaseModel, Field
 
-from api.schemas import ExportRequest, SceneInfoResponse
+from api.schemas import SceneInfoResponse
 from src.core.domain.command import Command
 from src.core.domain.exceptions import BlenderConnectionError, SceneOperationError
 from src.core.domain.scene_operations import ModifyObjectSpec
@@ -185,85 +185,6 @@ async def list_pipelines() -> dict[str, object]:
 
     loader = PipelineLoader()
     return {"pipelines": loader.list_pipelines()}
-
-
-# ---------------------------------------------------------------------------
-# V3: Export endpoint — download Blender scene as 3D file
-# ---------------------------------------------------------------------------
-
-_EXPORT_MIME = {
-    "stl": "model/stl",
-    "obj": "text/plain",
-    "fbx": "application/octet-stream",
-    "glb": "model/gltf-binary",
-}
-
-_EXPORT_CODE = {
-    "stl": """\
-import bpy, tempfile, os
-tmp = tempfile.mktemp(suffix='.stl')
-bpy.ops.export_mesh.stl(filepath=tmp, use_selection={selection_only})
-print(tmp)
-""",
-    "obj": """\
-import bpy, tempfile
-tmp = tempfile.mktemp(suffix='.obj')
-bpy.ops.wm.obj_export(filepath=tmp, export_selected_objects={selection_only})
-print(tmp)
-""",
-    "fbx": """\
-import bpy, tempfile
-tmp = tempfile.mktemp(suffix='.fbx')
-bpy.ops.export_scene.fbx(filepath=tmp, use_selection={selection_only})
-print(tmp)
-""",
-    "glb": """\
-import bpy, tempfile
-tmp = tempfile.mktemp(suffix='.glb')
-bpy.ops.export_scene.gltf(filepath=tmp, use_selection={selection_only}, export_format='GLB')
-print(tmp)
-""",
-}
-
-
-@router.post("/export")
-async def export_scene(body: ExportRequest, request: Request) -> Response:
-    """Export the Blender scene as STL, OBJ, FBX, or GLB for download.
-
-    The file is generated inside Blender's Python environment, read back,
-    and returned as a binary HTTP response. No temp files are left on disk.
-    """
-    fmt = body.format
-    code = _EXPORT_CODE.get(fmt)
-    if code is None:
-        raise HTTPException(status_code=400, detail=f"Unsupported format: {fmt}")
-
-    code = code.format(selection_only=str(body.selection_only))
-    blender = request.app.state.blender
-
-    cmd = Command(tool_name="execute_code", arguments={"code": code})
-    try:
-        result = await blender.execute(cmd)
-    except Exception as e:
-        raise HTTPException(status_code=503, detail=f"Blender unreachable: {e}") from e
-
-    if not result.success:
-        raise HTTPException(status_code=500, detail=f"Export failed: {result.error}")
-
-    filepath = (result.output or "").strip().splitlines()[-1] if result.output else ""
-    if not filepath or not os.path.exists(filepath):
-        raise HTTPException(status_code=500, detail="Export file not found on disk")
-
-    with open(filepath, "rb") as f:
-        file_bytes = f.read()
-    os.unlink(filepath)
-
-    filename = f"blender_scene.{fmt}"
-    return Response(
-        content=file_bytes,
-        media_type=_EXPORT_MIME[fmt],
-        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
-    )
 
 
 # ---------------------------------------------------------------------------
