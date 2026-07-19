@@ -108,7 +108,9 @@ scripts/ci.sh --real
 ```
 
 It invokes both REST and MCP through the Tailnet URL, then independently reads
-Blender truth through socket `9876`. When the addon is offline the tier prints
+Blender truth through socket `9876`. The print-readiness gate additionally seeds
+watertight/open/zero-volume/intersecting/thin/overhang/oversized fixtures, compares
+REST with MCP, and verifies teardown. When the addon is offline the tier prints
 `SKIP`; do not report that as a real-machine pass.
 
 ## Troubleshooting

@@ -86,7 +86,7 @@ https://bearmacminimac-mini.tail56c751.ts.net/blender/mcp
 ~/miniconda3/envs/blender-mcp/bin/python scripts/run_mcp_stdio_proxy.py
 ```
 
-完整 client 設定、八項工具與安全邊界見
+完整 client 設定、九項工具與安全邊界見
 [docs/MCP_CLIENTS.md](docs/MCP_CLIENTS.md)。MCP server 不辨識或特判 host 名稱。
 
 ### 匯出 3D 列印模型
@@ -98,9 +98,13 @@ WebUI 預覽區的「準備切片」可匯出：
 | 切片／3D 列印 | STL、OBJ、PLY | Blender 公尺自動轉為毫米，可匯入 Cura、PrusaSlicer、OrcaSlicer |
 | DCC 交換／網頁預覽 | FBX、GLB | 保留 Blender 場景單位 |
 
-匯出面板支援「僅選取物件」、「套用修改器」與「三角化網格」。HTTP client 也可直接呼叫
-`POST /api/export`；匯出由 application service 與 Blender adapter 負責，WebUI 不依賴 Blender
-operator 細節。
+點「準備切片」會先執行唯讀健檢，顯示毫米尺寸、三角面數、估算體積、表面積，以及非流形、
+退化面、交疊、薄壁與懸空等問題。`ready` 可直接下載；`review` 需明確確認；沒有可分析網格的
+`invalid` 會停用下載。修改門檻或場景後只標記「需要重新檢查」，不持續占用 Blender socket。
+
+匯出面板支援「僅選取物件」、「套用修改器」與「三角化網格」。HTTP client 可呼叫
+`POST /api/print-readiness` 與 `POST /api/export`；兩者由 application service 與 Blender adapter
+負責，WebUI 不依賴 Blender operator 細節，也不會自動修補使用者模型。
 
 ---
 
@@ -154,7 +158,7 @@ OLLAMA_BASE_URL=http://localhost:11434
 |---|---|---|
 | T1 靜態 | web build、eslint、ruff、strict mypy、container narrowing | ✅ |
 | T2 單元 | pytest unit/e2e（含真 MCP framing + fake Blender）；vitest dummy run | ✅ |
-| T3 真機 | REST 與 MCP 各自用 nonce mutation + addon socket 獨立 oracle | ✅（Blender 沒開＝顯式 SKIP，不當 pass）|
+| T3 真機 | REST/MCP nonce mutation + 列印健檢 fixtures；addon socket 獨立 oracle | ✅（Blender 沒開＝顯式 SKIP，不當 pass）|
 
 **pre-push hook**（擋掉壞掉的 push）：
 

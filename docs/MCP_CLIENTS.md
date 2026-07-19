@@ -38,6 +38,7 @@ examples, not server requirements.
 | `get_scene_info` | Read | Return scene counts and object summaries |
 | `get_object_info` | Read | Return transforms, visibility, and materials for one object |
 | `get_viewport_screenshot` | Read | Return a bounded PNG viewport capture |
+| `check_print_readiness` | Read | Inspect visible meshes for slicing risks and millimetre metrics without changing the scene |
 | `create_object` | Write | Create a mesh cube, curve, light, or camera |
 | `modify_object` | Destructive write | Change transforms or visibility |
 | `delete_object` | Destructive write | Permanently remove one object |
@@ -140,7 +141,7 @@ because GUI-launched clients do not reliably inherit the shell working directory
 ## Verification
 
 An HTTP 200 from the URL is not sufficient evidence: a frontend fallback can
-also return 200. The hermetic tests initialize MCP, list the exact eight tools,
+also return 200. The hermetic tests initialize MCP, list the exact nine tools,
 exercise content framing, and compare five client names. On the real machine:
 
 ```bash
@@ -151,3 +152,8 @@ The MCP verifier creates, moves, and deletes a nonce object through the public
 MCP URL, while an independent raw addon-socket oracle verifies eight cube
 vertices, coordinates, and final deletion. If Blender is offline, the tier prints
 an explicit `SKIP`; that is not a real-machine pass.
+
+The same tier also creates nonce-isolated Blender fixtures for a watertight cube,
+open and zero-volume meshes, intersecting cubes, a 0.4 mm plate, configurable
+overhangs, and an oversized mesh. It proves REST and MCP return the same
+`PrintReadinessReport`, verifies truncation is explicit, and removes every fixture.

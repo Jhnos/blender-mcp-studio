@@ -9,7 +9,7 @@
 | Pydantic | `>=2.0` | Strict MCP input schemas |
 | FastAPI | installed env | REST、WebSocket、ASGI mount |
 | Node.js | 20+ | Vite/React frontend |
-| Blender | 4.0+ | addon execution engine |
+| Blender | 5.1 | validated addon execution engine |
 
 Dependency declarations are `pyproject.toml` and `environment.yml`. The only CI
 entry point is `scripts/ci.sh`.
@@ -45,6 +45,7 @@ to the API's internal `/api`, `/ws`, and `/mcp` paths.
 | `get_scene_info` | yes | no | yes | 10 s |
 | `get_object_info` | yes | no | yes | 10 s |
 | `get_viewport_screenshot` | yes | no | yes | 30 s |
+| `check_print_readiness` | yes | no | yes | 30 s |
 | `create_object` | no | no | no | 30 s |
 | `modify_object` | no | yes | yes | 30 s |
 | `delete_object` | no | yes | no | 30 s |
@@ -75,12 +76,18 @@ and the registry enforce the actual boundary.
 `BlenderPort`. Domain records are frozen/slot dataclasses. External Blender JSON
 is narrowed field-by-field without silent `str`, `int`, or `bool` coercion.
 
+`PrintReadinessQueryPort.check(spec)` is implemented by the shared
+`PrintReadinessService`; its independent outgoing `PrintReadinessPort.inspect`
+is implemented by `BlenderPrintReadinessAdapter`. Reports use millimetres and
+bounded 20,000-triangle / 5,000-intersection analysis.
+
 ## Shared runtime
 
 `api/runtime.py` is the composition root. `AppRuntime` contains one:
 
 - `BlenderPort`
 - `SceneOperationsService`
+- `PrintReadinessService`
 - event bus and adapter factory
 - security, prompt, persistence, vision, asset, and text-3D ports
 
@@ -95,7 +102,7 @@ the combined FastMCP lifespan only owns MCP protocol resources.
 | Tailnet identity | All HTTP except `/api/health`; `/mcp` missing identity → 401 |
 | Host/Origin guard | Strict allowlist derived from loopback and `CORS_ORIGINS` |
 | Protocol version | Unsupported `MCP-Protocol-Version` → HTTP 400 |
-| Tool surface | Exact eight-tool equality; `execute_code` absent |
+| Tool surface | Exact nine-tool equality; `execute_code` absent |
 | Error mapping | Recoverable domain errors become actionable `ToolError`/HTTP 422 |
 | Error masking | Unexpected MCP internals do not expose tracebacks to clients |
 | Socket serialization | One `asyncio.Lock` in `BlenderSocketClient` |
@@ -126,7 +133,7 @@ the API runtime's Blender adapter or socket endpoint.
 | Unit | Domain, service, tool registry | Fake Blender port | validation, routing, error semantics |
 | ASGI e2e | FastAPI, FastMCP framing, middleware | Fake Blender port | mount, identity, Origin, protocol, client neutrality |
 | Headless UI | React/MDR/Vite tests | Mock HTTP backend | frontend behavior |
-| Real machine | Public Tailnet MCP + API + Blender | none | nonce mutation with independent socket oracle |
+| Real machine | Public Tailnet MCP + API + Blender | none | nonce mutation and print fixtures with independent socket oracle |
 
 Run `scripts/ci.sh` for hermetic gates and `scripts/ci.sh --real` only when addon
 `9876` is available. A real tier `SKIP` is not evidence of Blender mutation.

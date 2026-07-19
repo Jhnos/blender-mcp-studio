@@ -40,7 +40,7 @@ NO PRODUCTION CODE WITHOUT A FAILING TEST FIRST
 | Boundary | Preferred double | 理由 |
 |---|---|---|
 | `BlenderPort` in application unit tests | hand-written fake | 外部 socket昂貴；fake保留完整 Port behavior與recording |
-| `SceneQueryPort` / `SceneCommandPort` in MCP registry tests | hand-written fake implementing both contracts | 只隔離 application；FastMCP與tool function保持真實 |
+| Scene/print incoming ports in MCP registry tests | hand-written fake implementing the contracts | 只隔離 application；FastMCP與tool function保持真實 |
 | External identity in ASGI tests | explicit trusted header fixture | 測 middleware contract，不 mock middleware |
 | Time/random nonce | injected deterministic value | 讓 failure可重現 |
 | Real Blender gate cleanup | test utility/function | cleanup不污染 production API |
@@ -146,7 +146,7 @@ Mechanical claim protected: <test/sentinel name>
 
 ### Slice 4: Exact MCP catalog
 
-**Behavior:** 真 FastMCP `tools/list`只回八個 tools，metadata正確。
+**Behavior:** 真 FastMCP `tools/list`只回九個 tools，metadata正確。
 
 **RED test:** server尚未註冊或catalog不相等；failure diff應顯示 missing/extra names。
 
@@ -292,7 +292,7 @@ Transport可以在latency與connection lifecycle不同，但public contract不�
 | 新MCP domain values是stdlib-only | AST domain-purity sentinel | fixture加入 `from pydantic import BaseModel`，sentinel FAIL |
 | MCP adapter不碰socket | AST forbidden constructor/import | fixture呼叫 `BlenderSocketClient(...)`，sentinel FAIL |
 | MCP adapter不生成bpy | scoped AST/string sentinel | fixture literal含 `import bpy`，sentinel FAIL |
-| catalog只有八個tools | exact set equality | 暫時註冊 `execute_code`，test FAIL |
+| catalog只有九個tools | exact set equality | 暫時註冊 `execute_code`，test FAIL |
 | 每個tool有正確annotations | exact policy table | flip `delete_object.destructiveHint`，test FAIL |
 | schema拒絕extra fields | protocol call test | 加入 `code` param，call error且service calls=0 |
 | runtime只connect一次 | assembly counter | 建第二個adapter，counter變2，test FAIL |

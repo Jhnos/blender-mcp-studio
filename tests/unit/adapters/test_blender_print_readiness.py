@@ -63,6 +63,12 @@ def test_generated_analysis_script_is_valid_python(apply_modifiers: bool) -> Non
     compile(code, "<print-readiness>", "exec")
 
 
+def test_overhang_threshold_is_measured_from_a_vertical_wall() -> None:
+    code = _analysis_code(PrintReadinessSpec(overhang_angle_deg=90.0))
+
+    assert "overhang_z = -math.sin(math.radians(OVERHANG_DEG))" in code
+
+
 @pytest.mark.asyncio
 async def test_adapter_generates_read_only_blender_51_analysis_code() -> None:
     blender = InspectingBlender()

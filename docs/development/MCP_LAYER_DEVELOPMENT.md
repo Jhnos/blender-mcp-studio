@@ -1,6 +1,6 @@
 # Client-neutral MCP layer 開發規範
 
-> 狀態：Target design，尚未部署。完成條件見本文「Definition of Done」與 [MCP_LAYER_TDD.md](MCP_LAYER_TDD.md)。
+> 狀態：Deployed；2026-07-19 擴充第九項唯讀列印健檢工具。完成條件見本文「Definition of Done」與 [MCP_LAYER_TDD.md](MCP_LAYER_TDD.md)。
 
 ## 1. 目的
 Blender MCP Studio 需要一個真正符合 Model Context Protocol 的入口，讓任何相容 MCP host 都能控制 Blender，而不是只讓 Codex 使用，也不是把既有 REST API 換個名字叫 MCP。
@@ -20,7 +20,7 @@ Blender MCP Studio 需要一個真正符合 Model Context Protocol 的入口，�
 ## 3. Scope
 
 ### 3.1 Version-one capability
-公開工具固定為八個：
+公開工具固定為九個：
 
 1. `blender_status`
 2. `get_scene_info`
@@ -30,6 +30,7 @@ Blender MCP Studio 需要一個真正符合 Model Context Protocol 的入口，�
 6. `modify_object`
 7. `delete_object`
 8. `apply_material`
+9. `check_print_readiness`
 
 主要 transport 是 Streamable HTTP：
 
@@ -46,7 +47,7 @@ Version one 不包含：
 - legacy HTTP+SSE endpoint。
 - 公網匿名服務、OAuth 2.1、公開 connector directory、多租戶授權。
 - MCP resources、prompts、sampling、elicitation 或 MCP App widgets。
-- Hunyuan3D、Poly Haven、snapshot、export、pipeline、undo/redo。
+- Hunyuan3D、Poly Haven、snapshot、export、pipeline、undo/redo 的 MCP tools。
 - 依據 `clientInfo.name` 改變工具、schema、權限或回傳。
 
 這些不是預留的空殼。出現第二個真實需求前不得先建抽象；這是 YAGNI gate。
@@ -245,7 +246,17 @@ class SceneCommandPort(Protocol):
 
 Query/command 分開是 ISP 與 CQS 的結構性保證：read-only consumer 不依賴 mutation methods；MCP annotations 能直接對應 port 類型。
 
-### 8.3 LSP contract
+### 8.3 `PrintReadinessQueryPort`
+
+```python
+class PrintReadinessQueryPort(Protocol):
+    async def check(self, spec: PrintReadinessSpec) -> PrintReadinessReport: ...
+```
+
+REST 與 MCP 共用同一 `PrintReadinessService`，而 Blender inspection 由獨立 outgoing
+`PrintReadinessPort.inspect(spec)` 實作；不把健檢塞入 scene command/query port。
+
+### 8.4 LSP contract
 
 任何 `SceneQueryPort` 或 `SceneCommandPort` substitute 必須跑同一組 contract tests。Fake 不可強化 precondition、改變 missing-object error 或回傳不同 shape。
 
@@ -261,6 +272,7 @@ Query/command 分開是 ISP 與 CQS 的結構性保證：read-only consumer 不�
 | `get_scene_info` | Query | 10s | true | false | true | false |
 | `get_object_info` | Query | 10s | true | false | true | false |
 | `get_viewport_screenshot` | Query | 30s | true | false | true | false |
+| `check_print_readiness` | Print query | 30s | true | false | true | false |
 | `create_object` | Command | 30s | false | false | false | false |
 | `modify_object` | Command | 30s | false | true | true | false |
 | `delete_object` | Command | 30s | false | true | false | false |
@@ -278,6 +290,8 @@ Annotations 是 host UX hint，不是 security boundary；每個 command 仍必�
 | color | exactly four numbers in `[0, 1]` |
 | metallic/roughness | number in `[0, 1]` |
 | viewport max size | integer in `[200, 1600]` |
+| minimum wall thickness | finite number in `(0, 10]` mm |
+| overhang angle | finite number in `[0, 90]` degrees |
 | unknown fields | rejected, not silently ignored |
 
 Schema validation 在 MCP adapter boundary 使用 Pydantic/FastMCP；domain value objects 不承擔 transport coercion。
@@ -447,7 +461,7 @@ Files over 350 lines進入 review zone；超過 550 lines 必須因 responsibili
 
 ### 15.2 OCP
 
-Version one 僅八個 tools，直接註冊比 action framework 更簡單。出現第九個 tool 時仍可直接新增 dedicated registration；只有 tool family 出現第二個真實 plugin/provider 時才引入 registry。
+目前九個 tools 仍以 dedicated registration 維持精確 schema 與 policy；只有 tool family 出現第二個真實 plugin/provider 時才引入 registry。
 
 禁止以一個 `execute_action(action_id, params)` 取代窄工具來假裝 OCP，因為它破壞 schema、安全 annotation 與 read/write separation。
 
@@ -459,11 +473,11 @@ Version one 僅八個 tools，直接註冊比 action framework 更簡單。出�
 
 ### 15.4 ISP
 
-`SceneQueryPort` 與 `SceneCommandPort` 分開。Screenshot consumer 不依賴 delete；read-only policy test只需 query port。
+`SceneQueryPort`、`SceneCommandPort` 與 `PrintReadinessQueryPort` 分開。Screenshot consumer 不依賴 delete；列印健檢 consumer 不依賴 scene mutation。
 
 ### 15.5 DIP
 
-- MCP server factory接收 Protocol，不 import concrete scene service。
+- MCP server factory接收 Protocol，不 import concrete scene/print service。
 - Scene service接收 `BlenderPort`，不 build socket。
 - Concrete construction只在 `api/runtime.py`。
 
@@ -528,7 +542,7 @@ Rules：
 
 永久決策、替代方案與status transition由 [MCP_LAYER_ADR.md](MCP_LAYER_ADR.md) 負責。只有下列全部成立，ADR-005 才能改為 Accepted：
 
-- [ ] Exact eight-tool catalog與 annotations contract通過。
+- [x] Exact nine-tool catalog與 annotations contract通過。
 - [ ] Domain/application layer-direction sentinel通過且曾用 negative fixture證明會紅。
 - [ ] Assembly test證明 REST/MCP共用 instance且 connect/disconnect各一次。
 - [ ] Identity、Origin、protocol version、masked error tests通過。

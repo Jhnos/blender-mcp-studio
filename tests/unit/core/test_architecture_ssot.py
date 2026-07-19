@@ -20,10 +20,20 @@ CODE_ANCHORS = {
         "class",
         "SceneOperationsService",
     ),
+    "print_service": (
+        "src/core/use_cases/print_readiness.py",
+        "class",
+        "PrintReadinessService",
+    ),
     "blender_adapter": (
         "src/adapters/mcp/blender_mcp_adapter.py",
         "class",
         "BlenderMCPAdapter",
+    ),
+    "print_adapter": (
+        "src/adapters/print_readiness/blender_print_readiness.py",
+        "class",
+        "BlenderPrintReadinessAdapter",
     ),
     "socket_client": (
         "src/adapters/mcp/blender_mcp_adapter.py",

@@ -7,8 +7,8 @@
 {
   "meta": {
     "name": "Blender MCP Studio",
-    "version": "client-neutral-mcp-v1",
-    "updated": "2026-07-18",
+    "version": "print-readiness-v1",
+    "updated": "2026-07-19",
     "invariant": "All inbound transports converge on one AppRuntime and one Blender addon socket."
   },
   "levels": ["clients", "gateway", "proxy", "process", "inbound", "application", "adapter", "engine"],
@@ -61,14 +61,14 @@
       "id": "rest_ws", "level": "inbound", "label": "REST + WebSocket adapters",
       "responsibility": "Serve Web UI workflows through presentation-specific routes",
       "inputs": ["REST DTO", "chat frames"], "outputs": ["application calls"],
-      "invariants": ["overlapping scene operations use shared service"], "dependsOn": ["scene_service"],
+      "invariants": ["overlapping use cases share application services"], "dependsOn": ["scene_service", "print_service"],
       "adr": "MCP_LAYER_ADR §A", "status": "confirmed"
     },
     {
       "id": "mcp_adapter", "level": "inbound", "label": "Curated FastMCP adapter",
-      "responsibility": "Expose eight strict client-neutral tools through incoming ports",
+      "responsibility": "Expose nine strict client-neutral tools through incoming ports",
       "inputs": ["validated tool arguments"], "outputs": ["structured content", "image content", "ToolError"],
-      "invariants": ["exactly eight tools", "execute_code absent", "legacy SSE absent"], "dependsOn": ["scene_service"],
+      "invariants": ["exactly nine tools", "execute_code absent", "legacy SSE absent"], "dependsOn": ["scene_service", "print_service"],
       "adr": "MCP_LAYER_ADR §A", "status": "confirmed",
       "anchor": {"path": "src/adapters/mcp_server/server.py", "kind": "function", "symbol": "create_mcp_server"}
     },
@@ -76,7 +76,7 @@
       "id": "app_runtime", "level": "application", "label": "AppRuntime",
       "responsibility": "Own one composed dependency graph and one Blender connection lifecycle",
       "inputs": ["startup", "shutdown"], "outputs": ["shared ports and adapters"],
-      "invariants": ["connect once", "disconnect once", "same object identity for REST and MCP"], "dependsOn": ["scene_service", "blender_adapter"],
+      "invariants": ["connect once", "disconnect once", "same object identity for REST and MCP"], "dependsOn": ["scene_service", "print_service", "blender_adapter"],
       "adr": "MCP_LAYER_ADR §A", "status": "confirmed",
       "anchor": {"path": "api/runtime.py", "kind": "class", "symbol": "AppRuntime"}
     },
@@ -89,12 +89,28 @@
       "anchor": {"path": "src/core/use_cases/scene_operations.py", "kind": "class", "symbol": "SceneOperationsService"}
     },
     {
+      "id": "print_service", "level": "application", "label": "PrintReadinessService",
+      "responsibility": "Validate FDM thresholds and aggregate one client-neutral readiness report",
+      "inputs": ["PrintReadinessSpec"], "outputs": ["PrintReadinessReport"],
+      "invariants": ["invalid only when no mesh", "REST and MCP share this instance"], "dependsOn": ["print_adapter"],
+      "adr": "Print readiness plan §Domain", "status": "confirmed",
+      "anchor": {"path": "src/core/use_cases/print_readiness.py", "kind": "class", "symbol": "PrintReadinessService"}
+    },
+    {
       "id": "blender_adapter", "level": "adapter", "label": "BlenderMCPAdapter",
       "responsibility": "Translate client-neutral commands to the addon dialect at one chokepoint",
       "inputs": ["BlenderPort commands"], "outputs": ["execute_code addon calls"],
       "invariants": ["sandbox applied", "high-level tools never reach socket untranslated"], "dependsOn": ["socket_client"],
       "adr": "MCP_LAYER_ADR §Ownership", "status": "confirmed",
       "anchor": {"path": "src/adapters/mcp/blender_mcp_adapter.py", "kind": "class", "symbol": "BlenderMCPAdapter"}
+    },
+    {
+      "id": "print_adapter", "level": "adapter", "label": "BlenderPrintReadinessAdapter",
+      "responsibility": "Inspect evaluated meshes read-only with BMesh, BVH, and bounded sampling",
+      "inputs": ["PrintReadinessSpec"], "outputs": ["PrintInspection"],
+      "invariants": ["no bpy.ops", "millimetre report", "20000 triangle sample cap"], "dependsOn": ["blender_adapter"],
+      "adr": "Print readiness plan §Adapter", "status": "confirmed",
+      "anchor": {"path": "src/adapters/print_readiness/blender_print_readiness.py", "kind": "class", "symbol": "BlenderPrintReadinessAdapter"}
     },
     {
       "id": "socket_client", "level": "adapter", "label": "BlenderSocketClient",
@@ -122,9 +138,14 @@
     {"from": "fastapi", "to": "mcp_adapter", "contract": "mounted ASGI app", "data": "MCP"},
     {"from": "fastapi", "to": "app_runtime", "contract": "shared state and lifespan", "data": "one runtime", "critical": true},
     {"from": "rest_ws", "to": "scene_service", "contract": "application calls", "data": "domain specs"},
+    {"from": "rest_ws", "to": "print_service", "contract": "PrintReadinessQueryPort", "data": "PrintReadinessSpec"},
     {"from": "mcp_adapter", "to": "scene_service", "contract": "SceneQueryPort + SceneCommandPort", "data": "domain specs"},
+    {"from": "mcp_adapter", "to": "print_service", "contract": "PrintReadinessQueryPort", "data": "PrintReadinessSpec"},
     {"from": "app_runtime", "to": "scene_service", "contract": "constructs once", "data": "same service", "critical": true},
+    {"from": "app_runtime", "to": "print_service", "contract": "constructs once", "data": "same service", "critical": true},
     {"from": "scene_service", "to": "blender_adapter", "contract": "BlenderPort", "data": "Command / ToolResult", "critical": true},
+    {"from": "print_service", "to": "print_adapter", "contract": "PrintReadinessPort", "data": "inspection spec/result", "critical": true},
+    {"from": "print_adapter", "to": "blender_adapter", "contract": "BlenderPort", "data": "bounded read-only execute_code", "critical": true},
     {"from": "blender_adapter", "to": "socket_client", "contract": "translated addon dialect", "data": "execute_code", "critical": true},
     {"from": "socket_client", "to": "blender_addon", "contract": "locked TCP request-response", "data": ":9876", "critical": true}
   ]

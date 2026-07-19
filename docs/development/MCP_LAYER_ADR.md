@@ -1,6 +1,6 @@
 # ADR-005: Client-neutral MCP is an inbound adapter
 
-**Status:** Proposed
+**Status:** Accepted
 
 **Date:** 2026-07-18
 
@@ -22,7 +22,7 @@
 
 MCP被定義為新的 inbound adapter，不是新的 Blender backend。
 
-在既有 FastAPI process mount curated FastMCP Streamable HTTP server。MCP adapter只依賴 `SceneQueryPort`與`SceneCommandPort`，兩者由shared `SceneOperationsService`實作；service再依賴既有 `BlenderPort`。
+在既有 FastAPI process mount curated FastMCP Streamable HTTP server。MCP adapter只依賴窄 incoming ports；scene ports由shared `SceneOperationsService`實作，列印健檢 port由 REST/MCP 共用的 `PrintReadinessService` 實作，services再依賴 outgoing ports。
 
 stdio-only host使用local HTTP-to-stdio proxy，proxy轉送到同一 Streamable HTTP endpoint，不import scene service、不連socket `9876`。
 
@@ -38,7 +38,7 @@ flowchart LR
 
 ## Decision constraints
 
-- Public catalog固定為規範中的八個dedicated tools。
+- Public catalog固定為規範中的九個dedicated tools。
 - 不公開 `execute_code`、generic dispatcher或arbitrary REST path。
 - Primary transport是Streamable HTTP；不新增legacy SSE。
 - Production code不得依`clientInfo.name`分支。

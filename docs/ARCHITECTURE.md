@@ -8,11 +8,12 @@
 
 所有 inbound transport 都匯入同一個 `AppRuntime`：
 
-`HTTP MCP / stdio proxy / REST / WebSocket → SceneOperationsService → BlenderMCPAdapter → BlenderSocketClient → addon :9876`
+`HTTP MCP / stdio proxy / REST / WebSocket → application services → Blender adapters → BlenderSocketClient → addon :9876`
 
 - FastAPI、REST、WebSocket 與 MCP 共用同一 `BlenderPort` instance。
 - API lifespan 只 connect/disconnect 一次；stdio proxy 不擁有 backend。
-- MCP 是 inbound adapter，只依賴 `SceneQueryPort` / `SceneCommandPort`。
+- MCP 是 inbound adapter，只依賴 `SceneQueryPort` / `SceneCommandPort` / `PrintReadinessQueryPort`。
+- REST 與 MCP 注入同一個 `PrintReadinessService`；它依賴窄化的 `PrintReadinessPort`，不併入 scene commands。
 - `SceneOperationsService` 使用不可變 domain value，並在 Blender JSON 邊界嚴格 narrowing。
 - `BlenderMCPAdapter` 是高階操作到 addon dialect 的唯一翻譯 chokepoint。
 - 共享 `BlenderSocketClient._lock` 序列化 socket request/response；MCP 不建立第二把 transport lock。
@@ -22,9 +23,9 @@
 | 層 | 主要構件 | 責任 |
 |---|---|---|
 | Presentation | FastAPI routers、FastMCP server | HTTP/WS/MCP framing、schema、error mapping |
-| Application | `AppRuntime`、`SceneOperationsService` | composition、lifecycle、use-case orchestration |
-| Domain | `scene_operations.py` value objects、ports | Client-neutral language 與 inward dependency contract |
-| Adapter | `BlenderMCPAdapter`、`BlenderSocketClient` | addon translation、sandbox、locking、TCP |
+| Application | `AppRuntime`、`SceneOperationsService`、`PrintReadinessService` | composition、lifecycle、use-case orchestration |
+| Domain | scene/print-readiness immutable values、窄 ports | Client-neutral language 與 inward dependency contract |
+| Adapter | `BlenderMCPAdapter`、`BlenderPrintReadinessAdapter`、`BlenderSocketClient` | addon translation、read-only mesh inspection、locking、TCP |
 | Engine | Blender + addon | 執行 `bpy` 並保存 3D scene state |
 
 Dependency rule：外層依賴內層；domain/application 不 import FastAPI、FastMCP 或 `bpy`。
@@ -69,7 +70,8 @@ Dependency rule：外層依賴內層；domain/application 不 import FastAPI、F
 ## 安全邊界
 
 - `/mcp` 受 Tailnet identity middleware 保護，唯一 exemption 是 `/api/health`。
-- MCP public catalog 固定八項 curated tools，刻意不含 `execute_code`。
+- MCP public catalog 固定九項 curated tools，刻意不含 `execute_code`；第九項
+  `check_print_readiness` 是唯讀、冪等且 30 秒 timeout。
 - annotations 是 host UX hint，不是 authorization。
 - `clientInfo.name` 不參與 authorization、catalog 或 capability branching。
 - 公網 multi-user connector 不在本版範圍；需要獨立 OAuth 2.1/CIMD、audit、rate limit 與 privacy design。

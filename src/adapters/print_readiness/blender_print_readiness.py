@@ -212,7 +212,7 @@ else:
     overhang_count = 0
     overhang_names = []
     max_wall_m = MIN_WALL_MM / MM
-    overhang_z = -math.cos(math.radians(OVERHANG_DEG))
+    overhang_z = -math.sin(math.radians(OVERHANG_DEG))
     ray_offset = min(1e-7, max_wall_m / 100.0)
 
     for record in records:
