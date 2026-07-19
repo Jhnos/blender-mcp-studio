@@ -8,6 +8,7 @@ import {
 } from '../domain/batchTransform'
 import type { Dispatch } from '../mdr/actions'
 import { useChatStore } from '../stores/chatStore'
+import { useOperationStore } from '../stores/operationStore'
 import { Button, SegmentedControl } from './ui'
 
 type TransformMode = 'move' | 'rotate' | 'scale'
@@ -93,6 +94,7 @@ export function BatchTransformPanel({ dispatch, selectedNames }: BatchTransformP
 
   const apply = async () => {
     if (!validation.valid || selectedNames.length === 0 || busy) return
+    const operationId = useOperationStore.getState().begin('批次變形')
     setBusy(true)
     setError(null)
     setSuccess(null)
@@ -103,9 +105,12 @@ export function BatchTransformPanel({ dispatch, selectedNames }: BatchTransformP
       ) as BatchTransformReceipt
       setDraft(emptyTextDraft())
       setSuccess(receipt.message)
+      useOperationStore.getState().succeed(operationId, receipt.message)
       triggerSceneRefresh()
     } catch (reason) {
-      setError(errorMessage(reason))
+      const message = errorMessage(reason)
+      setError(message)
+      useOperationStore.getState().fail(operationId, message)
     } finally {
       setBusy(false)
     }
@@ -116,6 +121,7 @@ export function BatchTransformPanel({ dispatch, selectedNames }: BatchTransformP
   return (
     <section
       id="batch-transform-panel"
+      tabIndex={-1}
       aria-label="批次變形"
       className="mt-2 space-y-3 rounded-xl border border-border bg-surface-sunken/70 p-3"
     >

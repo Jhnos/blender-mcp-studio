@@ -4,6 +4,8 @@ import { useDispatch } from '../mdr'
 import { Button, StatusBadge } from './ui'
 import { ExportPanel, type ExportOptions } from './ExportPanel'
 import { ModelViewport } from './ModelViewport'
+import { OperationStatusCenter } from './OperationStatusCenter'
+import { useOperationStore } from '../stores/operationStore'
 import type {
   PrintReadinessOptions,
   PrintReadinessReport,
@@ -19,17 +21,18 @@ export function PreviewStage() {
   const dispatch = useDispatch()
   const liveScreenshot = useChatStore((s) => s.liveScreenshot)
   const sceneRefreshTick = useChatStore((s) => s.sceneRefreshTick)
+  const triggerSceneRefresh = useChatStore((s) => s.triggerSceneRefresh)
 
   const [polledUrl, setPolledUrl] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [exporting, setExporting] = useState(false)
   const [lastUpdate, setLastUpdate] = useState<string | null>(null)
-  const [toast, setToast] = useState<string | null>(null)
   const objectUrlRef = useRef<string | null>(null)
 
-  const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(null), 2500) }
-
-  const refreshPreview = useCallback(async () => {
+  const refreshPreview = useCallback(async (announce = false) => {
+    const operationId = announce
+      ? useOperationStore.getState().begin('刷新預覽', () => refreshPreview(true))
+      : null
     setLoading(true)
     try {
       const blob = await dispatch('preview.get', { t: Date.now() }) as Blob
@@ -37,8 +40,15 @@ export function PreviewStage() {
       if (objectUrlRef.current) URL.revokeObjectURL(objectUrlRef.current)
       objectUrlRef.current = url
       setPolledUrl(url)
-    } catch {
+      if (operationId) useOperationStore.getState().succeed(operationId, '預覽已更新')
+    } catch (error) {
       setPolledUrl(null)
+      if (operationId) {
+        useOperationStore.getState().fail(
+          operationId,
+          error instanceof Error ? error.message : String(error),
+        )
+      }
     } finally {
       setLoading(false)
     }
@@ -56,14 +66,28 @@ export function PreviewStage() {
   const isLive = liveScreenshot !== null
   const displayUrl = isLive ? `data:image/png;base64,${liveScreenshot}` : polledUrl
 
-  const runHistory = async (action: 'undo' | 'redo') => {
+  const runHistory = useCallback(async (action: 'undo' | 'redo') => {
+    const label = action === 'undo' ? '復原' : '重做'
+    const operationId = useOperationStore.getState().begin(label)
     try {
       const r = await dispatch(action) as { success: boolean; message: string }
-      showToast(`${action === 'undo' ? '↩ 復原' : '↪ 重做'}：${r.success ? '✓' : '✗'} ${r.message}`)
-    } catch (e) { showToast(`${action} 失敗：${String(e)}`) }
-  }
+      if (r.success) {
+        useOperationStore.getState().succeed(operationId, r.message)
+        triggerSceneRefresh()
+      } else {
+        useOperationStore.getState().fail(operationId, r.message)
+      }
+    } catch (error) {
+      useOperationStore.getState().fail(
+        operationId,
+        error instanceof Error ? error.message : String(error),
+      )
+    }
+  }, [dispatch, triggerSceneRefresh])
 
   const doExport = async (options: ExportOptions) => {
+    const format = options.format.toUpperCase()
+    const operationId = useOperationStore.getState().begin(`匯出 ${format}`)
     setExporting(true)
     try {
       const blob = await dispatch('export.scene', options) as Blob
@@ -71,8 +95,13 @@ export function PreviewStage() {
       const a = document.createElement('a')
       a.href = url; a.download = `blender-scene.${options.format}`; a.click()
       URL.revokeObjectURL(url)
-      showToast(`${options.format.toUpperCase()} 已產生，可交給切片器處理`)
-    } catch (e) { showToast(`匯出失敗：${String(e)}`) }
+      useOperationStore.getState().succeed(operationId, `${format} 已產生，可交給切片器處理`)
+    } catch (error) {
+      useOperationStore.getState().fail(
+        operationId,
+        error instanceof Error ? error.message : String(error),
+      )
+    }
     finally { setExporting(false) }
   }
 
@@ -92,8 +121,7 @@ export function PreviewStage() {
     }
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [runHistory])
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden bg-surface">
@@ -104,9 +132,10 @@ export function PreviewStage() {
           : <span className="text-xs font-medium text-fg-subtle">預覽</span>}
         {lastUpdate && <span className="text-xs text-fg-subtle">{lastUpdate}</span>}
         <div className="flex-1" />
+        <OperationStatusCenter />
         <Button variant="ghost" icon="undo" iconOnly title="復原 (⌘Z)" onClick={() => void runHistory('undo')} />
         <Button variant="ghost" icon="redo" iconOnly title="重做 (⌘⇧Z)" onClick={() => void runHistory('redo')} />
-        <Button variant="ghost" icon="refresh" iconOnly title="刷新預覽" onClick={() => void refreshPreview()} />
+        <Button variant="ghost" icon="refresh" iconOnly title="刷新預覽" onClick={() => void refreshPreview(true)} />
         <ExportPanel
           onExport={(options) => void doExport(options)}
           onInspect={inspectPrintReadiness}
@@ -117,7 +146,7 @@ export function PreviewStage() {
 
       {/* Viewport */}
       <div className="min-h-0 flex-1 p-3">
-        <ModelViewport imageUrl={displayUrl} loading={loading} toast={toast} />
+        <ModelViewport imageUrl={displayUrl} loading={loading} />
       </div>
     </div>
   )

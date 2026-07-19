@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { BatchTransformPanel } from './BatchTransformPanel'
 import { useChatStore } from '../stores/chatStore'
+import { useOperationStore } from '../stores/operationStore'
 import type { Dispatch } from '../mdr/actions'
 
 const receipt = {
@@ -12,6 +13,7 @@ const receipt = {
 
 beforeEach(() => {
   useChatStore.setState({ sceneRefreshTick: 0 })
+  useOperationStore.getState().clear()
 })
 
 describe('BatchTransformPanel', () => {
@@ -39,6 +41,11 @@ describe('BatchTransformPanel', () => {
     })
     expect(await screen.findByRole('status')).toHaveTextContent('Updated 2 objects')
     expect(useChatStore.getState().sceneRefreshTick).toBe(1)
+    expect(useOperationStore.getState().operations[0]).toMatchObject({
+      label: '批次變形',
+      status: 'success',
+      message: 'Updated 2 objects',
+    })
 
     fireEvent.click(screen.getByRole('radio', { name: '移動 mm' }))
     expect(screen.getByLabelText('移動 X（mm）')).toHaveValue(0)
@@ -55,6 +62,12 @@ describe('BatchTransformPanel', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('Blender is offline')
     expect(moveX).toHaveValue(10)
     expect(useChatStore.getState().sceneRefreshTick).toBe(0)
+    expect(useOperationStore.getState().operations[0]).toMatchObject({
+      label: '批次變形',
+      status: 'error',
+      message: 'Blender is offline',
+    })
+    expect(useOperationStore.getState().operations[0].retry).toBeUndefined()
   })
 
   it('disables apply for zero and invalid scale deltas', async () => {
