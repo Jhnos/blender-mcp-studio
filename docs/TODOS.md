@@ -33,6 +33,9 @@
 | v3-undo | 對話式 Undo/Redo（Cmd+Z）| ✅ |
 | v3-polyhaven | Poly Haven 材質庫整合 | ✅ |
 | v3-history | 場景快照歷史（可回溯）| ✅ |
+| v3-batch-transform | checkbox 多選與一次 Undo 的批次移動／旋轉／縮放 | ✅ |
+| v3-operation-status | 共用操作狀態中心與安全重試規則 | 🔄 |
+| v3-command-palette | Cmd/Ctrl+K curated command palette | 🔄 |
 
 ## 下一階段
 

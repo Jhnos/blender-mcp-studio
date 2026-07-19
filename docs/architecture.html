@@ -7,7 +7,7 @@
 {
   "meta": {
     "name": "Blender MCP Studio",
-    "version": "print-readiness-v1",
+    "version": "batch-transform-v1",
     "updated": "2026-07-19",
     "invariant": "All inbound transports converge on one AppRuntime and one Blender addon socket."
   },
@@ -61,7 +61,7 @@
       "id": "rest_ws", "level": "inbound", "label": "REST + WebSocket adapters",
       "responsibility": "Serve Web UI workflows through presentation-specific routes",
       "inputs": ["REST DTO", "chat frames"], "outputs": ["application calls"],
-      "invariants": ["overlapping use cases share application services"], "dependsOn": ["scene_service", "print_service"],
+      "invariants": ["overlapping use cases share application services"], "dependsOn": ["scene_service", "print_service", "batch_service"],
       "adr": "MCP_LAYER_ADR §A", "status": "confirmed"
     },
     {
@@ -76,7 +76,7 @@
       "id": "app_runtime", "level": "application", "label": "AppRuntime",
       "responsibility": "Own one composed dependency graph and one Blender connection lifecycle",
       "inputs": ["startup", "shutdown"], "outputs": ["shared ports and adapters"],
-      "invariants": ["connect once", "disconnect once", "same object identity for REST and MCP"], "dependsOn": ["scene_service", "print_service", "blender_adapter"],
+      "invariants": ["connect once", "disconnect once", "same object identity for REST and MCP"], "dependsOn": ["scene_service", "print_service", "batch_service", "blender_adapter"],
       "adr": "MCP_LAYER_ADR §A", "status": "confirmed",
       "anchor": {"path": "api/runtime.py", "kind": "class", "symbol": "AppRuntime"}
     },
@@ -97,6 +97,14 @@
       "anchor": {"path": "src/core/use_cases/print_readiness.py", "kind": "class", "symbol": "PrintReadinessService"}
     },
     {
+      "id": "batch_service", "level": "application", "label": "BatchTransformService",
+      "responsibility": "Apply one client-neutral incremental transform transaction to a complete target set",
+      "inputs": ["BatchTransformSpec"], "outputs": ["BatchTransformReceipt"],
+      "invariants": ["immutable domain values", "one request is one transaction"], "dependsOn": ["batch_adapter"],
+      "adr": "Batch transform design §Architecture", "status": "confirmed",
+      "anchor": {"path": "src/core/use_cases/batch_transform.py", "kind": "class", "symbol": "BatchTransformService"}
+    },
+    {
       "id": "blender_adapter", "level": "adapter", "label": "BlenderMCPAdapter",
       "responsibility": "Translate client-neutral commands to the addon dialect at one chokepoint",
       "inputs": ["BlenderPort commands"], "outputs": ["execute_code addon calls"],
@@ -111,6 +119,14 @@
       "invariants": ["no bpy.ops", "millimetre report", "20000 triangle sample cap"], "dependsOn": ["blender_adapter"],
       "adr": "Print readiness plan §Adapter", "status": "confirmed",
       "anchor": {"path": "src/adapters/print_readiness/blender_print_readiness.py", "kind": "class", "symbol": "BlenderPrintReadinessAdapter"}
+    },
+    {
+      "id": "batch_adapter", "level": "adapter", "label": "BlenderBatchTransformAdapter",
+      "responsibility": "Translate one batch spec into one preflighted Blender UNDO operator",
+      "inputs": ["BatchTransformSpec"], "outputs": ["BatchTransformReceipt"],
+      "invariants": ["Base64 data payload", "preflight before mutation", "single Undo entry"], "dependsOn": ["blender_adapter"],
+      "adr": "Batch transform design §Blender Adapter", "status": "confirmed",
+      "anchor": {"path": "src/adapters/batch_transform/blender_batch_transform.py", "kind": "class", "symbol": "BlenderBatchTransformAdapter"}
     },
     {
       "id": "socket_client", "level": "adapter", "label": "BlenderSocketClient",
@@ -139,13 +155,17 @@
     {"from": "fastapi", "to": "app_runtime", "contract": "shared state and lifespan", "data": "one runtime", "critical": true},
     {"from": "rest_ws", "to": "scene_service", "contract": "application calls", "data": "domain specs"},
     {"from": "rest_ws", "to": "print_service", "contract": "PrintReadinessQueryPort", "data": "PrintReadinessSpec"},
+    {"from": "rest_ws", "to": "batch_service", "contract": "application call", "data": "BatchTransformSpec"},
     {"from": "mcp_adapter", "to": "scene_service", "contract": "SceneQueryPort + SceneCommandPort", "data": "domain specs"},
     {"from": "mcp_adapter", "to": "print_service", "contract": "PrintReadinessQueryPort", "data": "PrintReadinessSpec"},
     {"from": "app_runtime", "to": "scene_service", "contract": "constructs once", "data": "same service", "critical": true},
     {"from": "app_runtime", "to": "print_service", "contract": "constructs once", "data": "same service", "critical": true},
+    {"from": "app_runtime", "to": "batch_service", "contract": "constructs once", "data": "same service", "critical": true},
     {"from": "scene_service", "to": "blender_adapter", "contract": "BlenderPort", "data": "Command / ToolResult", "critical": true},
     {"from": "print_service", "to": "print_adapter", "contract": "PrintReadinessPort", "data": "inspection spec/result", "critical": true},
     {"from": "print_adapter", "to": "blender_adapter", "contract": "BlenderPort", "data": "bounded read-only execute_code", "critical": true},
+    {"from": "batch_service", "to": "batch_adapter", "contract": "SceneBatchCommandPort", "data": "incremental transaction", "critical": true},
+    {"from": "batch_adapter", "to": "blender_adapter", "contract": "BlenderPort", "data": "one UNDO operator", "critical": true},
     {"from": "blender_adapter", "to": "socket_client", "contract": "translated addon dialect", "data": "execute_code", "critical": true},
     {"from": "socket_client", "to": "blender_addon", "contract": "locked TCP request-response", "data": ":9876", "critical": true}
   ]

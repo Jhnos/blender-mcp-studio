@@ -64,7 +64,7 @@ class BLENDER_MCP_OT_batch_transform(bpy.types.Operator):
 
 bpy.utils.register_class(BLENDER_MCP_OT_batch_transform)
 try:
-    operator_result = bpy.ops.blender_mcp.batch_transform()
+    operator_result = bpy.ops.blender_mcp.batch_transform('EXEC_DEFAULT', True)
     if 'FINISHED' not in operator_result:
         raise RuntimeError("Batch transform was cancelled")
     receipt = {{

@@ -56,7 +56,7 @@ def test_generated_batch_script_is_valid_python() -> None:
 def test_generated_batch_script_uses_one_undo_operator_and_preflight() -> None:
     code = _batch_transform_code(mixed_spec("A", "B"))
 
-    assert code.count("bpy.ops.blender_mcp.batch_transform()") == 1
+    assert code.count("bpy.ops.blender_mcp.batch_transform('EXEC_DEFAULT', True)") == 1
     assert "bl_options = {'REGISTER', 'UNDO', 'INTERNAL'}" in code
     assert code.index("missing =") < code.index("for name in object_names:")
     assert "obj.location[axis] += translation_mm[axis] / 1000.0" in code

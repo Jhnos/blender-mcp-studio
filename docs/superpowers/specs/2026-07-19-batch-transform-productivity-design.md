@@ -93,8 +93,10 @@ world/local switching, keyframes, or absolute transforms.
 The adapter sends one generated, data-only payload to Blender. Object names are
 serialized as data and never interpolated as executable source fragments.
 
-The generated code registers and invokes one internal Blender operator with
-`bl_options = {'REGISTER', 'UNDO', 'INTERNAL'}`. Its execute method performs a
+The generated code registers one internal Blender operator with
+`bl_options = {'REGISTER', 'UNDO', 'INTERNAL'}` and invokes it with
+`('EXEC_DEFAULT', True)` so the programmatic call explicitly enables its undo
+transaction. Its execute method performs a
 preflight over every object and scale factor before changing any transform. A
 successful invocation therefore adds one Undo entry for the entire request.
 

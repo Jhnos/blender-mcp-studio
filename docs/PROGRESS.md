@@ -2,7 +2,7 @@
 
 ## 當前 Phase
 
-**V3 進行中 — client-neutral MCP、通用匯出與 3D 列印就緒檢查已完成（2026-07-19）**
+**V3 進行中 — client-neutral MCP、切片健檢與批次場景變形已完成（2026-07-19）**
 
 ---
 
@@ -109,6 +109,8 @@
 | `PrintReadinessService`、REST `/api/print-readiness`、MCP `check_print_readiness` | ✅ |
 | WebUI 自動健檢、stale state、review 確認、invalid 阻擋 | ✅ |
 | 真 Blender nonce fixtures 與 addon socket 獨立 oracle | ✅ 9/9 |
+| checkbox 多選目標與批次移動 mm／旋轉 °／縮放 % | ✅ |
+| `BatchTransformService`、REST `/api/scene/batch-transform`、單一 Undo operator | ✅ |
 
 ---
 
@@ -116,9 +118,10 @@
 
 | 類型 | 數量 | 狀態 |
 |---|---|---|
-| Python unit + e2e | 318 | ✅ 全通過 |
-| Web unit + dummy run | 34 | ✅ 全通過 |
+| Python unit + e2e | 350 | ✅ 全通過 |
+| Web unit + dummy run | 54 | ✅ 全通過 |
 | 真 Blender print-readiness evidence | 9 | ✅ 9/9 |
+| 真 Blender batch-transform evidence | 2 | ✅ 2/2；一次 Undo 復原兩物件 |
 | 靜態 gate | web build/eslint、ruff、strict mypy、container narrowing | ✅ |
 
 ---
@@ -144,6 +147,7 @@
 | GET | `/api/scene` | 場景物件列表 |
 | GET | `/api/preview` | Viewport 截圖（輪詢）|
 | POST | `/api/print-readiness` | 唯讀 3D 列印就緒檢查 |
+| POST | `/api/scene/batch-transform` | 多物件增量變形；單一 Undo transaction |
 | POST | `/api/export` | STL/OBJ/PLY/GLB/FBX 匯出 |
 | POST | `/api/refine` | Vision 迭代精煉 |
 | POST | `/api/pipeline` | 執行 YAML pipeline |

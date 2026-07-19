@@ -14,6 +14,7 @@
 - API lifespan 只 connect/disconnect 一次；stdio proxy 不擁有 backend。
 - MCP 是 inbound adapter，只依賴 `SceneQueryPort` / `SceneCommandPort` / `PrintReadinessQueryPort`。
 - REST 與 MCP 注入同一個 `PrintReadinessService`；它依賴窄化的 `PrintReadinessPort`，不併入 scene commands。
+- WebUI 的批次變形經獨立 `BatchTransformService` 與 `SceneBatchCommandPort`；REST 只是 delivery adapter，沒有把 HTTP 概念放進 use case。
 - `SceneOperationsService` 使用不可變 domain value，並在 Blender JSON 邊界嚴格 narrowing。
 - `BlenderMCPAdapter` 是高階操作到 addon dialect 的唯一翻譯 chokepoint。
 - 共享 `BlenderSocketClient._lock` 序列化 socket request/response；MCP 不建立第二把 transport lock。
@@ -23,9 +24,9 @@
 | 層 | 主要構件 | 責任 |
 |---|---|---|
 | Presentation | FastAPI routers、FastMCP server | HTTP/WS/MCP framing、schema、error mapping |
-| Application | `AppRuntime`、`SceneOperationsService`、`PrintReadinessService` | composition、lifecycle、use-case orchestration |
-| Domain | scene/print-readiness immutable values、窄 ports | Client-neutral language 與 inward dependency contract |
-| Adapter | `BlenderMCPAdapter`、`BlenderPrintReadinessAdapter`、`BlenderSocketClient` | addon translation、read-only mesh inspection、locking、TCP |
+| Application | `AppRuntime`、`SceneOperationsService`、`PrintReadinessService`、`BatchTransformService` | composition、lifecycle、use-case orchestration |
+| Domain | scene/print-readiness/batch-transform immutable values、窄 ports | Client-neutral language 與 inward dependency contract |
+| Adapter | `BlenderMCPAdapter`、`BlenderPrintReadinessAdapter`、`BlenderBatchTransformAdapter`、`BlenderSocketClient` | addon translation、inspection、single-Undo batch mutation、locking、TCP |
 | Engine | Blender + addon | 執行 `bpy` 並保存 3D scene state |
 
 Dependency rule：外層依賴內層；domain/application 不 import FastAPI、FastMCP 或 `bpy`。
@@ -63,6 +64,12 @@ Dependency rule：外層依賴內層；domain/application 不 import FastAPI、F
 
 - 決策：不公開 legacy SSE；不建立 stdio-only Blender server。
 - 理由：不同 host 共用同一 remote endpoint，避免每個 client 各開一條 9876 connection。
+
+### ADR-005：批次變形是獨立 transaction boundary
+
+- 決策：`POST /api/scene/batch-transform` 呼叫 `BatchTransformService`，再透過窄 `SceneBatchCommandPort` 進入一個帶 `UNDO`、並以 `('EXEC_DEFAULT', True)` 明確啟用 undo 的 Blender operator。
+- 理由：逐物件 fan-out 會產生部分成功與多筆 Undo；任意 Python endpoint 則破壞 typed client-neutral boundary。
+- 後果：最多 100 個目標先完整 preflight，再一次套用；一次 `/api/undo` 必須復原全部目標，並由真 Blender nonce fixture 證明。
 
 完整決策脈絡與 rejected alternatives 見
 [development/MCP_LAYER_ADR.md](development/MCP_LAYER_ADR.md)。

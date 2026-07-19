@@ -25,6 +25,11 @@ CODE_ANCHORS = {
         "class",
         "PrintReadinessService",
     ),
+    "batch_service": (
+        "src/core/use_cases/batch_transform.py",
+        "class",
+        "BatchTransformService",
+    ),
     "blender_adapter": (
         "src/adapters/mcp/blender_mcp_adapter.py",
         "class",
@@ -34,6 +39,11 @@ CODE_ANCHORS = {
         "src/adapters/print_readiness/blender_print_readiness.py",
         "class",
         "BlenderPrintReadinessAdapter",
+    ),
+    "batch_adapter": (
+        "src/adapters/batch_transform/blender_batch_transform.py",
+        "class",
+        "BlenderBatchTransformAdapter",
     ),
     "socket_client": (
         "src/adapters/mcp/blender_mcp_adapter.py",
@@ -137,3 +147,9 @@ def test_artifact_is_self_contained_and_model_driven() -> None:
     assert 'type="module"' not in source
     assert "fetch(" not in source
     assert "createElementNS" in source
+
+
+def test_real_ci_gates_batch_transform_single_undo() -> None:
+    ci = (PROJECT_ROOT / "scripts" / "ci.sh").read_text()
+
+    assert "scripts/verify/batch_transform_verify_real.py" in ci

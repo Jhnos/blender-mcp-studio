@@ -4,6 +4,16 @@
 
 ---
 
+## 2026-07-19
+
+### Operator 宣告 `UNDO` 不等於程式化呼叫真的推入可復原 transaction
+- **觸發情境**：用 Python 自訂 Blender operator，`bl_options` 已含 `UNDO`，再由另一段 Python／socket 腳本呼叫它，便宣稱「一次呼叫＝一筆 Undo」。
+- **該主動檢查**：operator 的**呼叫端**有沒有明確啟用 undo 執行參數？官方 `bpy.ops` 呼叫契約把 `execution_context` 與 `undo: bool` 列為獨立 positional arguments；遠端程式化呼叫要用 `bpy.ops.x.y('EXEC_DEFAULT', True)`，不能只讀 class metadata 推論 runtime stack。測試必須建立兩個 nonce 物件、一次變形、一次 Undo，再由獨立 oracle 確認兩者保留且 transform 全復原。
+- **為什麼沒抓到**：單元測試只檢查 generated code 含 `bl_options={'UNDO'}`，變形結果也正確；表面證據同時相容於「有推 stack」與「沒有推 stack」。真機第一次 Undo 直接退回上一個 seed transaction、把 fixture 物件刪掉，才揭露呼叫預設未建立 batch undo step。
+- **如何預防**：① 對程式化 Blender mutation 同時檢查 operator 宣告與呼叫參數；② 把 `('EXEC_DEFAULT', True)` 做成 codegen 單元 sentinel；③ 真機 gate 用「一次 Undo 復原多個既存物件」的鑑別性斷言，不能只看 `/api/undo` 回 success。
+
+---
+
 ## 2026-07-18
 
 ### 傳入 allowlist 不等於 guard 已啟用；安全選項的「資料」與「機制開關」要分開驗
