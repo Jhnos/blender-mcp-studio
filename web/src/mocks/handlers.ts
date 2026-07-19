@@ -1,5 +1,11 @@
 import { http, HttpResponse, ws } from 'msw'
-import { MOCK_MATERIALS, MOCK_OBJECTS, MOCK_PREVIEW_SVG, MOCK_SNAPSHOTS } from './fixtures'
+import {
+  MOCK_MATERIALS,
+  MOCK_OBJECTS,
+  MOCK_PREVIEW_SVG,
+  MOCK_PRINT_READINESS,
+  MOCK_SNAPSHOTS,
+} from './fixtures'
 
 // Mutable dummy state so delete/rename/save reflect in the UI during the run.
 let objects = [...MOCK_OBJECTS]
@@ -22,6 +28,14 @@ export const handlers = [
   http.delete(`${B}/api/object/:name`, ({ params }) => {
     objects = objects.filter((o) => o.name !== params.name)
     return ok()
+  }),
+  http.post(`${B}/api/scene/batch-transform`, async ({ request }) => {
+    const body = await request.json() as { object_names: string[] }
+    return HttpResponse.json({
+      object_names: body.object_names,
+      affected_count: body.object_names.length,
+      message: `Updated ${body.object_names.length} objects`,
+    })
   }),
 
   // Snapshots
@@ -49,6 +63,7 @@ export const handlers = [
     new HttpResponse(MOCK_PREVIEW_SVG, { headers: { 'Content-Type': 'image/svg+xml' } })),
   http.post(`${B}/api/export`, () =>
     new HttpResponse(MOCK_PREVIEW_SVG, { headers: { 'Content-Type': 'model/stl' } })),
+  http.post(`${B}/api/print-readiness`, () => HttpResponse.json(MOCK_PRINT_READINESS)),
 
   // History
   http.post(`${B}/api/undo`, () => HttpResponse.json({ success: true, message: '已復原上一步' })),

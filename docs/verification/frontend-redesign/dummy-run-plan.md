@@ -18,10 +18,11 @@
 ## 2. 怎麼跑
 
 ```bash
-cd web && npm run dev        # 或用已部署的 vite dev（launchd com.blender-mcp.web:19504）
-# 瀏覽器開： http://localhost:19504/blender/?mock     ← ?mock 啟用 dummy 後端
+cd web && npm run dev -- --port 5173
+# 瀏覽器開： http://localhost:5173/blender/?mock     ← ?mock 啟用 dummy 後端
 ```
 - `?mock` 僅 DEV 生效（`main.tsx` 的 `import.meta.env.DEV` gate），**動態 import，不進 production bundle**。
+- launchd 的 19504 服務是 production preview，刻意不啟用 `?mock` 或 Vite HMR。
 - Harness：`web/src/mocks/`（`handlers.ts` HTTP+WS handlers、`fixtures.ts` dummy 資料、`browser.ts` worker）＋ `web/public/mockServiceWorker.js`。
 
 ## 3. 🔴 隔離自檢（第一步，不可跳過）
@@ -52,6 +53,20 @@ cd web && npm run dev        # 或用已部署的 vite dev（launchd com.blender
 | Refine overlay 開啟→執行→迭代卡（含可解釋理由）| tab→action 改造失效 |
 | 互動元件皆有可及名稱；改名/刪除鍵盤可達 | a11y/可發現性回歸 |
 | 破壞性動作有確認 | 容錯缺失 |
+| Cmd/Ctrl+K 開啟 `role=dialog` 指令面板；搜尋框、listbox、option 與 active descendant 完整 | 鍵盤生產力與 screen reader 語意回歸 |
+| 指令「全選批次目標」→ 輸入 mm 增量 → 單一 batch request → `Updated N objects` | registry→selection store→MDR→HTTP→operation store 接縫失效 |
+| 最近操作最多五筆；只有明確附 callback 的 idempotent 操作顯示重試 | 非冪等場景 mutation 被重複執行 |
+
+### 鍵盤生產力路徑
+
+1. 按 `Cmd/Ctrl+K`，搜尋 `select all` 並按 Enter。
+2. 在「批次變形」輸入 X 移動毫米值，套用至 fixture 物件。
+3. 開啟「最近操作」，確認成功訊息與最多五筆標示。
+4. 焦點位於 input、textarea、select 或 contenteditable 時，`Cmd/Ctrl+K` 與 Undo/Redo shortcut 必須保持文字編輯語意，不觸發 Studio action。
+
+Headless gate 位於 `web/src/mdr/inspector.dummyrun.test.tsx`，使用真
+`PreviewStage`、`InspectorShell`、MDR registry/dispatcher、Zustand stores 與
+HTTP action；只把 scene/preview/batch response 換成 MSW fixture。
 
 ## 5. 誠實宣告（收尾必附）
 

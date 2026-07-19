@@ -47,7 +47,7 @@
 - Consumes: labels/messages from callers; no REST shapes.
 - Produces: `beginOperation`, `succeedOperation`, `failOperation`, `clearOperations`, and `OperationStatusCenter`.
 
-- [ ] **Step 1: Write failing store tests**
+- [x] **Step 1: Write failing store tests**
 
 ```typescript
 it('tracks lifecycle and caps newest-first history at five', () => {
@@ -68,12 +68,12 @@ it('stores retry only when the caller supplies one', () => {
 })
 ```
 
-- [ ] **Step 2: Run store tests and verify RED**
+- [x] **Step 2: Run store tests and verify RED**
 
 Run: `cd web && npx vitest run src/stores/operationStore.test.ts`  
 Expected: import fails because `operationStore` does not exist.
 
-- [ ] **Step 3: Implement the focused store**
+- [x] **Step 3: Implement the focused store**
 
 ```typescript
 export type OperationStatus = 'running' | 'success' | 'error'
@@ -94,7 +94,7 @@ export const useOperationStore = create<OperationState>((set) => ({
 Use a module-local monotonic suffix with `Date.now()` so ids are stable without a
 browser crypto dependency in tests.
 
-- [ ] **Step 4: Write failing status-center tests**
+- [x] **Step 4: Write failing status-center tests**
 
 ```typescript
 it('renders current status and only explicit retries', async () => {
@@ -105,19 +105,19 @@ it('renders current status and only explicit retries', async () => {
 })
 ```
 
-- [ ] **Step 5: Implement status center and migrate local toasts**
+- [x] **Step 5: Implement status center and migrate local toasts**
 
 Render a polite live region for the newest completion, a toolbar button with the
 current status, and a five-row popover. Replace PreviewStage's local toast timer
 with lifecycle calls for preview, undo, redo, and export. Batch transform records
 no retry callback.
 
-- [ ] **Step 6: Run focused tests GREEN**
+- [x] **Step 6: Run focused tests GREEN**
 
 Run: `cd web && npx vitest run src/stores/operationStore.test.ts src/components/OperationStatusCenter.test.tsx src/components/PreviewStage.test.tsx src/components/BatchTransformPanel.test.tsx`  
 Expected: all tests pass without act or accessibility warnings.
 
-- [ ] **Step 7: Commit operation feedback**
+- [x] **Step 7: Commit operation feedback**
 
 ```bash
 git add web/src/stores/operationStore.ts web/src/stores/operationStore.test.ts web/src/components/OperationStatusCenter.tsx web/src/components/OperationStatusCenter.test.tsx web/src/components/PreviewStage.tsx web/src/components/PreviewStage.test.tsx web/src/components/BatchTransformPanel.tsx
@@ -145,7 +145,7 @@ git commit -m "feat(web): centralize operation feedback"
 - Consumes: explicit Studio callbacks for refresh, undo, redo, selection, panel focus, and readiness.
 - Produces: registry `register/list/search`, `createStudioCommands`, guarded global shortcuts, and accessible palette dialog.
 
-- [ ] **Step 1: Write failing registry tests**
+- [x] **Step 1: Write failing registry tests**
 
 ```typescript
 it('registers unique commands and searches title plus keywords', () => {
@@ -165,12 +165,12 @@ it('excludes unavailable commands from search', () => {
 })
 ```
 
-- [ ] **Step 2: Run registry tests and verify RED**
+- [x] **Step 2: Run registry tests and verify RED**
 
 Run: `cd web && npx vitest run src/commands/registry.test.ts`  
 Expected: import fails because the registry does not exist.
 
-- [ ] **Step 3: Implement OCP-style command registry**
+- [x] **Step 3: Implement OCP-style command registry**
 
 ```typescript
 export interface CommandDefinition {
@@ -190,7 +190,7 @@ export function createCommandRegistry(): CommandRegistry {
 Normalize text with `toLocaleLowerCase()` and rank title prefix before title
 contains before keyword contains. The palette component must not branch on ids.
 
-- [ ] **Step 4: Write failing shortcut and palette tests**
+- [x] **Step 4: Write failing shortcut and palette tests**
 
 ```typescript
 it('opens with mod-k but ignores editable targets', async () => {
@@ -215,7 +215,7 @@ it('supports filtering, arrows, enter, and escape', async () => {
 })
 ```
 
-- [ ] **Step 5: Implement guarded shortcuts and accessible palette**
+- [x] **Step 5: Implement guarded shortcuts and accessible palette**
 
 `isEditableTarget(event.target)` returns true for input, textarea, select, and
 contenteditable ancestry. The dialog uses `role="dialog"`, an labelled searchbox,
@@ -223,7 +223,7 @@ contenteditable ancestry. The dialog uses `role="dialog"`, an labelled searchbox
 Escape closure. Respect reduced motion and keep animation to one short opening
 transition.
 
-- [ ] **Step 6: Compose the initial Studio commands**
+- [x] **Step 6: Compose the initial Studio commands**
 
 ```typescript
 export interface StudioCommandActions {
@@ -243,12 +243,12 @@ Return nine `CommandDefinition` values with concrete Chinese titles and English
 keyword aliases. Each callback is injected; the registry imports no Zustand store
 or React component.
 
-- [ ] **Step 7: Integrate with PreviewStage and run GREEN tests**
+- [x] **Step 7: Integrate with PreviewStage and run GREEN tests**
 
 Run: `cd web && npx vitest run src/commands src/hooks/useGlobalShortcuts.test.tsx src/components/CommandPalette.test.tsx src/components/PreviewStage.test.tsx`  
 Expected: all tests pass and existing Cmd/Ctrl+Z behavior remains green while editable targets are protected.
 
-- [ ] **Step 8: Commit the command palette**
+- [x] **Step 8: Commit the command palette**
 
 ```bash
 git add web/src/commands web/src/hooks/useGlobalShortcuts.ts web/src/hooks/useGlobalShortcuts.test.tsx web/src/components/CommandPalette.tsx web/src/components/CommandPalette.test.tsx web/src/components/PreviewStage.tsx web/src/components/ui/icon-map.ts
@@ -271,7 +271,7 @@ git commit -m "feat(web): add Studio command palette"
 - Consumes: completed batch selection, operation status center, and command palette.
 - Produces: regression evidence and synchronized architecture/product status.
 
-- [ ] **Step 1: Add failing dummy-run assertions**
+- [x] **Step 1: Add failing dummy-run assertions**
 
 ```typescript
 it('completes the keyboard productivity path', async () => {
@@ -289,14 +289,14 @@ it('completes the keyboard productivity path', async () => {
 Run: `cd web && npx vitest run src/mdr/inspector.dummyrun.test.tsx`  
 Expected: the new path fails before test fixtures and shell wiring are completed.
 
-- [ ] **Step 2: Complete dummy fixtures and docs**
+- [x] **Step 2: Complete dummy fixtures and docs**
 
 Update MSW fixtures only with the stable batch endpoint response. Document the
 keyboard path, accessible roles, five-item operation history, and explicit
 non-idempotent retry rule. Update architecture and progress SSOT, and remove stale
 entries that name command palette or operation feedback as unfinished.
 
-- [ ] **Step 3: Run complete Web and project gates**
+- [x] **Step 3: Run complete Web and project gates**
 
 Run: `cd web && npm run lint && npm run build && npm test`  
 Expected: lint, TypeScript/Vite build, and all Vitest suites pass.
@@ -307,7 +307,7 @@ Expected: all T1 and T2 hard gates pass.
 Run: `scripts/ci.sh --real`  
 Expected: every real Blender hard gate, including batch single-Undo proof, passes.
 
-- [ ] **Step 4: Commit the final audit**
+- [x] **Step 4: Commit the final audit**
 
 ```bash
 git add web/src/mdr/inspector.dummyrun.test.tsx web/src/mocks docs/ARCHITECTURE.md docs/PROGRESS.md docs/TODOS.md docs/verification/frontend-redesign/dummy-run-plan.md tests/unit/core/test_architecture_ssot.py

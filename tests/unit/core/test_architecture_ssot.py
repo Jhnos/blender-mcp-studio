@@ -9,6 +9,7 @@ from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).parents[3]
 ARTIFACT = PROJECT_ROOT / "docs" / "architecture.html"
+ARCHITECTURE_DOC = PROJECT_ROOT / "docs" / "ARCHITECTURE.md"
 
 CODE_ANCHORS = {
     "fastapi": ("api/main.py", "function", "create_app"),
@@ -153,3 +154,18 @@ def test_real_ci_gates_batch_transform_single_undo() -> None:
     ci = (PROJECT_ROOT / "scripts" / "ci.sh").read_text()
 
     assert "scripts/verify/batch_transform_verify_real.py" in ci
+
+
+def test_frontend_productivity_boundaries_are_documented_and_exist() -> None:
+    source = ARCHITECTURE_DOC.read_text()
+    anchors = {
+        "web/src/commands/registry.ts": "CommandRegistry",
+        "web/src/commands/studioCommands.ts": "StudioCommandActions",
+        "web/src/hooks/useGlobalShortcuts.ts": "useGlobalShortcuts",
+        "web/src/stores/operationStore.ts": "OperationStore",
+        "web/src/stores/batchSelectionStore.ts": "BatchSelectionStore",
+    }
+
+    for path, documented_name in anchors.items():
+        assert (PROJECT_ROOT / path).is_file(), f"missing frontend architecture anchor: {path}"
+        assert documented_name in source, f"ARCHITECTURE.md must document {documented_name}"

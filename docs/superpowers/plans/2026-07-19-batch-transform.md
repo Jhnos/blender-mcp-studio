@@ -48,7 +48,7 @@
 - Consumes: no outer-layer types.
 - Produces: `TransformDelta`, `BatchTransformSpec`, `BatchTransformReceipt`, `SceneBatchCommandPort.apply_transform()`, and `BatchTransformService.apply()`.
 
-- [ ] **Step 1: Write failing frozen-value and invariant tests**
+- [x] **Step 1: Write failing frozen-value and invariant tests**
 
 ```python
 def test_batch_transform_values_are_frozen_and_incremental_request_is_valid():
@@ -70,12 +70,12 @@ def test_batch_transform_rejects_zero_and_invalid_scale():
         TransformDelta(scale_percent=Vector3(-100, 0, 0))
 ```
 
-- [ ] **Step 2: Run tests and verify RED**
+- [x] **Step 2: Run tests and verify RED**
 
 Run: `$HOME/miniconda3/envs/blender-mcp/bin/python -m pytest tests/unit/core/test_batch_transform.py -q`  
 Expected: collection fails because `src.core.domain.batch_transform` does not exist.
 
-- [ ] **Step 3: Implement immutable values, protocol, and service**
+- [x] **Step 3: Implement immutable values, protocol, and service**
 
 ```python
 @dataclass(frozen=True, slots=True)
@@ -103,12 +103,12 @@ class BatchTransformService:
 
 Implement `__post_init__` checks for the exact limits in the design SSOT and add `BatchTransformError(SceneOperationError)`.
 
-- [ ] **Step 4: Run focused and contract tests GREEN**
+- [x] **Step 4: Run focused and contract tests GREEN**
 
 Run: `$HOME/miniconda3/envs/blender-mcp/bin/python -m pytest tests/unit/core/test_batch_transform.py tests/unit/core/test_scene_operation_contracts.py -q`  
 Expected: all tests pass.
 
-- [ ] **Step 5: Commit the application slice**
+- [x] **Step 5: Commit the application slice**
 
 ```bash
 git add src/core/domain/batch_transform.py src/core/domain/exceptions.py src/core/ports/batch_transform_port.py src/core/use_cases/batch_transform.py tests/unit/core/test_batch_transform.py
@@ -134,7 +134,7 @@ git commit -m "feat(core): define batch transform use case"
 - Consumes: `SceneBatchCommandPort`, `BatchTransformSpec`, `BlenderPort.execute(Command)`.
 - Produces: `BlenderBatchTransformAdapter.apply_transform()` and `POST /api/scene/batch-transform`.
 
-- [ ] **Step 1: Write failing adapter tests**
+- [x] **Step 1: Write failing adapter tests**
 
 ```python
 @pytest.mark.asyncio
@@ -166,12 +166,12 @@ async def test_adapter_keeps_hostile_object_name_in_json_payload():
     assert "base64.b64decode" in code
 ```
 
-- [ ] **Step 2: Run adapter tests and verify RED**
+- [x] **Step 2: Run adapter tests and verify RED**
 
 Run: `$HOME/miniconda3/envs/blender-mcp/bin/python -m pytest tests/unit/adapters/test_blender_batch_transform.py -q`  
 Expected: collection fails because the adapter module does not exist.
 
-- [ ] **Step 3: Implement the adapter**
+- [x] **Step 3: Implement the adapter**
 
 Generate one `execute_code` command. The operator must preflight all objects and
 scale factors before its mutation loop, then print JSON with `affected_count` and
@@ -196,7 +196,7 @@ class BlenderBatchTransformAdapter:
         )
 ```
 
-- [ ] **Step 4: Write failing REST mapping tests**
+- [x] **Step 4: Write failing REST mapping tests**
 
 ```python
 def test_batch_transform_endpoint_maps_units_to_shared_service():
@@ -214,12 +214,12 @@ def test_batch_transform_endpoint_maps_domain_and_connection_errors():
     assert connection_response.status_code == 503
 ```
 
-- [ ] **Step 5: Run REST tests and verify RED**
+- [x] **Step 5: Run REST tests and verify RED**
 
 Run: `$HOME/miniconda3/envs/blender-mcp/bin/python -m pytest tests/e2e/test_batch_transform_http.py -q`  
 Expected: requests return 404 because the router is not registered.
 
-- [ ] **Step 6: Implement schema, router, and composition wiring**
+- [x] **Step 6: Implement schema, router, and composition wiring**
 
 ```python
 class BatchTransformRequest(BaseModel):
@@ -237,12 +237,12 @@ async def apply_batch_transform(body: BatchTransformRequest, request: Request) -
 Wire one adapter/service instance into frozen `AppRuntime`, `_publish_runtime_state`,
 `create_app`, and the fake runtime factory. Do not alter the MCP catalog.
 
-- [ ] **Step 7: Run focused Python tests GREEN**
+- [x] **Step 7: Run focused Python tests GREEN**
 
 Run: `$HOME/miniconda3/envs/blender-mcp/bin/python -m pytest tests/unit/core/test_batch_transform.py tests/unit/adapters/test_blender_batch_transform.py tests/e2e/test_batch_transform_http.py tests/e2e/test_mcp_streamable_http.py -q`  
 Expected: all tests pass and MCP still advertises nine tools.
 
-- [ ] **Step 8: Commit adapter and delivery**
+- [x] **Step 8: Commit adapter and delivery**
 
 ```bash
 git add src/adapters/batch_transform api src/core tests/unit/adapters/test_blender_batch_transform.py tests/e2e/test_batch_transform_http.py tests/e2e/test_mcp_streamable_http.py
@@ -265,7 +265,7 @@ git commit -m "feat(api): apply batch transforms with one undo"
 - Consumes: MDR `dispatch` and the scene object names.
 - Produces: `BatchTransformDraft`, `validateBatchTransform`, `toBatchTransformRequest`, and `useBatchSelectionStore`.
 
-- [ ] **Step 1: Write failing domain and store tests**
+- [x] **Step 1: Write failing domain and store tests**
 
 ```typescript
 it('maps retained drafts to one incremental request', () => {
@@ -284,12 +284,12 @@ it('prunes targets absent from the refreshed scene', () => {
 })
 ```
 
-- [ ] **Step 2: Run tests and verify RED**
+- [x] **Step 2: Run tests and verify RED**
 
 Run: `cd web && npx vitest run src/domain/batchTransform.test.ts src/stores/batchSelectionStore.test.ts`  
 Expected: imports fail because both modules are absent.
 
-- [ ] **Step 3: Implement request validation and selection SSOT**
+- [x] **Step 3: Implement request validation and selection SSOT**
 
 ```typescript
 export type Vector3Tuple = [number, number, number]
@@ -310,7 +310,7 @@ export const useBatchSelectionStore = create<BatchSelectionState>((set) => ({
 
 Keep the store independent of fetch, React components, and Blender state.
 
-- [ ] **Step 4: Register and test the MDR action**
+- [x] **Step 4: Register and test the MDR action**
 
 ```typescript
 registerAction('scene.batch-transform', async (params, { base }) =>
@@ -323,7 +323,7 @@ registerAction('scene.batch-transform', async (params, { base }) =>
 Run: `cd web && npx vitest run src/domain/batchTransform.test.ts src/stores/batchSelectionStore.test.ts src/mdr/apiActions.test.ts`  
 Expected: all tests pass.
 
-- [ ] **Step 5: Commit the frontend model**
+- [x] **Step 5: Commit the frontend model**
 
 ```bash
 git add web/src/domain/batchTransform.ts web/src/domain/batchTransform.test.ts web/src/stores/batchSelectionStore.ts web/src/stores/batchSelectionStore.test.ts web/src/mdr/apiActions.ts web/src/mdr/apiActions.test.ts
@@ -345,7 +345,7 @@ git commit -m "feat(web): model batch transform targets"
 - Consumes: `useBatchSelectionStore`, `toBatchTransformRequest`, MDR `dispatch`, and `triggerSceneRefresh`.
 - Produces: accessible checkbox selection and the segmented incremental-transform workbar.
 
-- [ ] **Step 1: Write failing list interaction tests**
+- [x] **Step 1: Write failing list interaction tests**
 
 ```typescript
 it('supports select all, partial indeterminate state, and clear', async () => {
@@ -358,18 +358,18 @@ it('supports select all, partial indeterminate state, and clear', async () => {
 })
 ```
 
-- [ ] **Step 2: Run list test and verify RED**
+- [x] **Step 2: Run list test and verify RED**
 
 Run: `cd web && npx vitest run src/mdr/nodes/ObjectListNode.test.tsx`  
 Expected: no target checkboxes are found.
 
-- [ ] **Step 3: Add labelled row and select-all checkboxes**
+- [x] **Step 3: Add labelled row and select-all checkboxes**
 
 Use a checkbox ref to set `indeterminate`, stop row-click propagation, prune names
 after each successful scene refresh, and render `BatchTransformPanel` when the
 target count is non-zero.
 
-- [ ] **Step 4: Write failing workbar tests**
+- [x] **Step 4: Write failing workbar tests**
 
 ```typescript
 it('sends all retained modes once and refreshes once', async () => {
@@ -395,23 +395,23 @@ it('preserves the draft when the request fails', async () => {
 })
 ```
 
-- [ ] **Step 5: Run workbar tests and verify RED**
+- [x] **Step 5: Run workbar tests and verify RED**
 
 Run: `cd web && npx vitest run src/components/BatchTransformPanel.test.tsx`  
 Expected: component import fails because it does not exist.
 
-- [ ] **Step 6: Implement the responsive workbar**
+- [x] **Step 6: Implement the responsive workbar**
 
 Build controlled drafts for move/rotate/scale, use the shared domain validator,
 retain drafts across segmented modes, reset only after success, expose axis text
 and axis color, and connect errors through `aria-describedby`.
 
-- [ ] **Step 7: Run frontend tests GREEN**
+- [x] **Step 7: Run frontend tests GREEN**
 
 Run: `cd web && npx vitest run src/domain/batchTransform.test.ts src/stores/batchSelectionStore.test.ts src/mdr/nodes/ObjectListNode.test.tsx src/components/BatchTransformPanel.test.tsx src/mdr/inspector.dummyrun.test.tsx`  
 Expected: all tests pass without console warnings.
 
-- [ ] **Step 8: Commit the WebUI feature**
+- [x] **Step 8: Commit the WebUI feature**
 
 ```bash
 git add web/src/components/BatchTransformPanel.tsx web/src/components/BatchTransformPanel.test.tsx web/src/mdr/nodes/ObjectListNode.tsx web/src/mdr/nodes/ObjectListNode.test.tsx web/src/components/ui/icon-map.ts
@@ -434,7 +434,7 @@ git commit -m "feat(web): batch edit selected scene objects"
 - Consumes: public REST batch endpoint, `/api/undo`, and addon socket oracle at 9876.
 - Produces: discriminating single-Undo evidence in `scripts/ci.sh --real`.
 
-- [ ] **Step 1: Add a failing architecture/CI gate test**
+- [x] **Step 1: Add a failing architecture/CI gate test**
 
 ```python
 def test_architecture_names_batch_transform_service_and_port():
@@ -448,7 +448,7 @@ def test_architecture_names_batch_transform_service_and_port():
 Run: `$HOME/miniconda3/envs/blender-mcp/bin/python -m pytest tests/unit/core/test_architecture_ssot.py -q`  
 Expected: assertion fails because the architecture and gate are not updated.
 
-- [ ] **Step 2: Implement nonce-based real verification**
+- [x] **Step 2: Implement nonce-based real verification**
 
 The script must create two objects with a unique prefix, capture their exact
 location/rotation/scale through the addon oracle, POST one mixed batch transform,
@@ -456,14 +456,14 @@ verify both changed by expected increments, POST one `/api/undo`, verify both
 equal their original values within tolerance, and delete every prefixed object in
 `finally`. Any failed hypothesis exits non-zero.
 
-- [ ] **Step 3: Wire the real gate and update SSOT documents**
+- [x] **Step 3: Wire the real gate and update SSOT documents**
 
 Add a hard `_run` entry after print readiness. Document the new application slice,
 REST endpoint, frontend flow, and completed status. Remove any stale entry that
 claims multi-select or batch transforms remain outstanding; do not add speculative
 work items.
 
-- [ ] **Step 4: Run all gates**
+- [x] **Step 4: Run all gates**
 
 Run: `scripts/ci.sh`  
 Expected: every T1 and T2 hard gate passes.
@@ -471,7 +471,7 @@ Expected: every T1 and T2 hard gate passes.
 Run: `scripts/ci.sh --real`  
 Expected: REST, MCP, print readiness, and batch transform real gates pass; one Undo restores both nonce objects.
 
-- [ ] **Step 5: Commit verification and docs**
+- [x] **Step 5: Commit verification and docs**
 
 ```bash
 git add scripts/verify/batch_transform_verify_real.py scripts/ci.sh docs/ARCHITECTURE.md docs/PROGRESS.md docs/TODOS.md tests/unit/core/test_architecture_ssot.py

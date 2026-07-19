@@ -23,7 +23,7 @@
 | f1 | 本機唯一 CI `scripts/ci.sh`（GitHub Actions 已移除）| ✅ |
 | f2 | E2E 測試（MockBlender + MockVision）| ✅ |
 
-## V3（進行中）
+## V3（本輪里程碑已完成）
 
 | ID | 功能 | 優先 |
 |---|---|---|
@@ -34,13 +34,13 @@
 | v3-polyhaven | Poly Haven 材質庫整合 | ✅ |
 | v3-history | 場景快照歷史（可回溯）| ✅ |
 | v3-batch-transform | checkbox 多選與一次 Undo 的批次移動／旋轉／縮放 | ✅ |
-| v3-operation-status | 共用操作狀態中心與安全重試規則 | 🔄 |
-| v3-command-palette | Cmd/Ctrl+K curated command palette | 🔄 |
+| v3-operation-status | 共用操作狀態中心、五筆歷史與明確安全重試規則 | ✅ |
+| v3-command-palette | Cmd/Ctrl+K curated command palette（九項白名單指令）| ✅ |
 
-## 下一階段
+## 明確延後的產品決策（不是本輪未完成待辦）
 
 | ID | 功能 | 狀態 |
 |---|---|---|
-| v3-3mf | 3MF 匯出（明確單位、多物件、製造 metadata）| ⏳ 獨立階段 |
-| v3-repair | 網格自動修復（補洞、布林、法線）| ⏳ 不納入健檢；需獨立破壞性 UX |
-| v3-mcp-tasks | MCP Tasks 長任務 | ⏳ 等 host 能力協商與穩定 wire format |
+| v3-3mf | 3MF 匯出（明確單位、多物件、製造 metadata）| Deferred：需獨立立項 |
+| v3-repair | 網格自動修復（補洞、布林、法線）| Deferred：需獨立破壞性 UX 決策 |
+| v3-mcp-tasks | MCP Tasks 長任務 | Deferred：等 host 能力協商與穩定 wire format |

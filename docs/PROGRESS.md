@@ -2,7 +2,7 @@
 
 ## 當前 Phase
 
-**V3 進行中 — client-neutral MCP、切片健檢與批次場景變形已完成（2026-07-19）**
+**V3 本輪完成 — client-neutral MCP、切片健檢、批次場景變形與前端生產力工具已完成（2026-07-19）**
 
 ---
 
@@ -111,6 +111,9 @@
 | 真 Blender nonce fixtures 與 addon socket 獨立 oracle | ✅ 9/9 |
 | checkbox 多選目標與批次移動 mm／旋轉 °／縮放 % | ✅ |
 | `BatchTransformService`、REST `/api/scene/batch-transform`、單一 Undo operator | ✅ |
+| 五筆操作狀態中心；刷新可安全重試，Undo/Redo/批次變形不提供重試 | ✅ |
+| 純 registry 的九項 curated 指令面板、Cmd/Ctrl+K 與 editable-target guard | ✅ |
+| 鍵盤全選目標 → 批次變形 → 操作歷史的真元件 dummy-run | ✅ |
 
 ---
 
@@ -118,8 +121,8 @@
 
 | 類型 | 數量 | 狀態 |
 |---|---|---|
-| Python unit + e2e | 350 | ✅ 全通過 |
-| Web unit + dummy run | 54 | ✅ 全通過 |
+| Python unit + e2e | 358 | ✅ 全通過 |
+| Web unit + dummy run | 83 | ✅ 全通過 |
 | 真 Blender print-readiness evidence | 9 | ✅ 9/9 |
 | 真 Blender batch-transform evidence | 2 | ✅ 2/2；一次 Undo 復原兩物件 |
 | 靜態 gate | web build/eslint、ruff、strict mypy、container narrowing | ✅ |
@@ -159,5 +162,5 @@
 ## 圖例
 - ✅ 完成
 - 🔄 進行中
-- ⏳ 待辦
+- Deferred 延後產品決策（不屬於目前里程碑）
 - ❌ 阻塞

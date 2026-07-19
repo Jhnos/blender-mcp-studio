@@ -15,6 +15,8 @@
 - MCP 是 inbound adapter，只依賴 `SceneQueryPort` / `SceneCommandPort` / `PrintReadinessQueryPort`。
 - REST 與 MCP 注入同一個 `PrintReadinessService`；它依賴窄化的 `PrintReadinessPort`，不併入 scene commands。
 - WebUI 的批次變形經獨立 `BatchTransformService` 與 `SceneBatchCommandPort`；REST 只是 delivery adapter，沒有把 HTTP 概念放進 use case。
+- WebUI 指令面板只依賴純 `CommandDefinition` registry 與注入 callbacks；它不 import REST action、Zustand store 或 Blender 名稱。
+- `operationStore` 是 UI 操作 lifecycle SSOT，最多保留五筆；retry callback 只有來源明確宣告安全時才存在，批次變形與 Undo/Redo 永不自動重試。
 - `SceneOperationsService` 使用不可變 domain value，並在 Blender JSON 邊界嚴格 narrowing。
 - `BlenderMCPAdapter` 是高階操作到 addon dialect 的唯一翻譯 chokepoint。
 - 共享 `BlenderSocketClient._lock` 序列化 socket request/response；MCP 不建立第二把 transport lock。
@@ -28,6 +30,24 @@
 | Domain | scene/print-readiness/batch-transform immutable values、窄 ports | Client-neutral language 與 inward dependency contract |
 | Adapter | `BlenderMCPAdapter`、`BlenderPrintReadinessAdapter`、`BlenderBatchTransformAdapter`、`BlenderSocketClient` | addon translation、inspection、single-Undo batch mutation、locking、TCP |
 | Engine | Blender + addon | 執行 `bpy` 並保存 3D scene state |
+
+### Web frontend 模組邊界
+
+```text
+CommandPalette -> CommandRegistry -> injected Studio callbacks
+                                      |-> PreviewStage actions
+                                      |-> ExportPanel readiness handle
+                                      `-> BatchSelectionStore
+
+Preview / history / export / batch -> OperationStore -> OperationStatusCenter
+ObjectList -> MDR dispatch -> REST batch endpoint -> BatchTransformService
+```
+
+- `web/src/commands/registry.ts` 是純 TypeScript registry，負責唯一 id、availability 與搜尋排序；新增指令以註冊擴充，不修改 palette conditional。
+- `web/src/commands/studioCommands.ts` 只組合九個 curated 前端指令，所有副作用都由 `StudioCommandActions` 注入。
+- `web/src/hooks/useGlobalShortcuts.ts` 是鍵盤入口，`input`、`textarea`、`select` 與 `contenteditable` 一律 fail closed，不攔截文字編輯。
+- `web/src/stores/batchSelectionStore.ts` 保存前端批次目標與最後已知物件名；勾選不改 Blender active selection。
+- `ExportPanelHandle` 只暴露 `open()` 與 `rerunInspection()` 兩個意圖，不讓指令層讀寫元件內部 report state。
 
 Dependency rule：外層依賴內層；domain/application 不 import FastAPI、FastMCP 或 `bpy`。
 
@@ -70,6 +90,12 @@ Dependency rule：外層依賴內層；domain/application 不 import FastAPI、F
 - 決策：`POST /api/scene/batch-transform` 呼叫 `BatchTransformService`，再透過窄 `SceneBatchCommandPort` 進入一個帶 `UNDO`、並以 `('EXEC_DEFAULT', True)` 明確啟用 undo 的 Blender operator。
 - 理由：逐物件 fan-out 會產生部分成功與多筆 Undo；任意 Python endpoint 則破壞 typed client-neutral boundary。
 - 後果：最多 100 個目標先完整 preflight，再一次套用；一次 `/api/undo` 必須復原全部目標，並由真 Blender nonce fixture 證明。
+
+### ADR-006：前端生產力工具採 registry + lifecycle store
+
+- 決策：快捷指令由純 registry 排序與過濾；最近操作由專用 Zustand store 管理，不由每個 component 建立 toast timer。
+- 理由：palette 不應成為任意 backend action console；操作結果也不應散落為互不一致、無法追溯的區域提示。
+- 後果：公開指令固定為九個 curated callbacks；操作記錄上限五筆，只有明確 idempotent 的刷新可顯示重試。
 
 完整決策脈絡與 rejected alternatives 見
 [development/MCP_LAYER_ADR.md](development/MCP_LAYER_ADR.md)。
