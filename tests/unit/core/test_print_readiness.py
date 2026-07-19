@@ -63,9 +63,7 @@ async def test_any_mesh_issue_requires_review_without_blocking_report() -> None:
         object_names=("OpenCube",),
         message="4 non-manifold edges",
     )
-    service = PrintReadinessService(
-        RecordingInspector(PrintInspection(metrics(), (issue,), False))
-    )
+    service = PrintReadinessService(RecordingInspector(PrintInspection(metrics(), (issue,), False)))
 
     report = await service.check(PrintReadinessSpec())
 
@@ -83,9 +81,7 @@ async def test_no_mesh_is_the_only_invalid_report() -> None:
         message="No visible mesh objects",
     )
     empty = PrintMetrics(0, 0, (0.0, 0.0, 0.0), 0.0, 0.0)
-    service = PrintReadinessService(
-        RecordingInspector(PrintInspection(empty, (issue,), False))
-    )
+    service = PrintReadinessService(RecordingInspector(PrintInspection(empty, (issue,), False)))
 
     report = await service.check(PrintReadinessSpec())
 
