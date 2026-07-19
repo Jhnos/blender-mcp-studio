@@ -13,6 +13,10 @@ class SceneOperationError(DomainError):
     """A scene operation failed with a recoverable, user-facing reason."""
 
 
+class BatchTransformError(SceneOperationError):
+    """A batch transform request or execution could not be completed safely."""
+
+
 class SceneExportError(DomainError):
     """A requested scene export could not produce a valid artifact."""
 
