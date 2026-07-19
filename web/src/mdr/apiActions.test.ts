@@ -35,3 +35,34 @@ describe('export.scene action', () => {
     }))
   })
 })
+
+describe('print.readiness action', () => {
+  it('maps client-neutral options to the REST contract', async () => {
+    const report = { status: 'ready', metrics: {}, issues: [], analysis_truncated: false }
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(JSON.stringify(report), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    )
+    const dispatch = createDispatch({ base: '/blender' })
+
+    const result = await dispatch('print.readiness', {
+      selectionOnly: true,
+      applyModifiers: false,
+      minWallThicknessMm: 1.2,
+      overhangAngleDeg: 50,
+    })
+
+    expect(result).toEqual(report)
+    expect(fetchMock).toHaveBeenCalledWith('/blender/api/print-readiness', expect.objectContaining({
+      method: 'POST',
+      body: JSON.stringify({
+        selection_only: true,
+        apply_modifiers: false,
+        min_wall_thickness_mm: 1.2,
+        overhang_angle_deg: 50,
+      }),
+    }))
+  })
+})

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import math
+import textwrap
 from collections.abc import Mapping, Sequence
 
 from src.core.domain.command import Command
@@ -23,14 +24,20 @@ _MARKER = "PRINT_READINESS_JSON:"
 
 def _analysis_code(spec: PrintReadinessSpec) -> str:
     object_filter = "obj.select_get()" if spec.selection_only else "True"
-    mesh_source = (
-        "source = obj.evaluated_get(depsgraph)\n"
-        "    mesh = source.to_mesh(preserve_all_data_layers=False, depsgraph=depsgraph)\n"
-        "    matrix = source.matrix_world"
-        if spec.apply_modifiers
-        else "mesh = obj.data\n    matrix = obj.matrix_world"
+    mesh_source = textwrap.indent(
+        (
+            "source = obj.evaluated_get(depsgraph)\n"
+            "mesh = source.to_mesh(preserve_all_data_layers=False, depsgraph=depsgraph)\n"
+            "matrix = source.matrix_world"
+            if spec.apply_modifiers
+            else "mesh = obj.data\nmatrix = obj.matrix_world"
+        ),
+        "        ",
     )
-    mesh_cleanup = "source.to_mesh_clear()" if spec.apply_modifiers else "pass"
+    mesh_cleanup = textwrap.indent(
+        "source.to_mesh_clear()" if spec.apply_modifiers else "pass",
+        "            ",
+    )
     return f"""import bpy
 import bmesh
 import json
@@ -102,12 +109,12 @@ else:
     negative_scale_names = []
 
     for obj in objects:
-        {mesh_source}
+{mesh_source}
         bm = bmesh.new()
         try:
             bm.from_mesh(mesh)
         finally:
-            {mesh_cleanup}
+{mesh_cleanup}
         bm.transform(matrix)
         bm.normal_update()
         bmesh.ops.triangulate(bm, faces=list(bm.faces))

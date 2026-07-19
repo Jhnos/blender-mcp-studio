@@ -1,4 +1,9 @@
 import { useState } from 'react'
+import type {
+  PrintReadinessOptions,
+  PrintReadinessReport,
+} from '../domain/printReadiness'
+import { PrintReadinessPanel } from './PrintReadinessPanel'
 import { Button } from './ui'
 
 export type ExportFormat = 'stl' | 'obj' | 'ply' | 'glb' | 'fbx'
@@ -12,6 +17,8 @@ export interface ExportOptions {
 
 interface ExportPanelProps {
   busy: boolean
+  sceneRevision: number
+  onInspect: (options: PrintReadinessOptions) => Promise<PrintReadinessReport>
   onExport: (options: ExportOptions) => void
 }
 
@@ -26,12 +33,69 @@ const INTERCHANGE_FORMATS = [
   { format: 'fbx', label: 'FBX', hint: 'DCC 軟體交換' },
 ] as const
 
-export function ExportPanel({ busy, onExport }: ExportPanelProps) {
+export function ExportPanel({
+  busy,
+  sceneRevision,
+  onInspect,
+  onExport,
+}: ExportPanelProps) {
   const [open, setOpen] = useState(false)
   const [format, setFormat] = useState<ExportFormat>('stl')
   const [selectionOnly, setSelectionOnly] = useState(false)
   const [applyModifiers, setApplyModifiers] = useState(true)
   const [triangulate, setTriangulate] = useState(true)
+  const [minWallThicknessMm, setMinWallThicknessMm] = useState(0.8)
+  const [overhangAngleDeg, setOverhangAngleDeg] = useState(45)
+  const [report, setReport] = useState<PrintReadinessReport | null>(null)
+  const [checkedOptions, setCheckedOptions] = useState<string | null>(null)
+  const [checkedSceneRevision, setCheckedSceneRevision] = useState<number | null>(null)
+  const [inspectionBusy, setInspectionBusy] = useState(false)
+  const [inspectionError, setInspectionError] = useState<string | null>(null)
+
+  const readinessOptions: PrintReadinessOptions = {
+    selectionOnly,
+    applyModifiers,
+    minWallThicknessMm,
+    overhangAngleDeg,
+  }
+  const optionsKey = JSON.stringify(readinessOptions)
+  const stale = report !== null && (
+    checkedOptions !== optionsKey || checkedSceneRevision !== sceneRevision
+  )
+
+  const runInspection = async () => {
+    const inspectedOptions = readinessOptions
+    const inspectedKey = optionsKey
+    const inspectedRevision = sceneRevision
+    setInspectionBusy(true)
+    setInspectionError(null)
+    try {
+      const nextReport = await onInspect(inspectedOptions)
+      setReport(nextReport)
+      setCheckedOptions(inspectedKey)
+      setCheckedSceneRevision(inspectedRevision)
+    } catch (error) {
+      setInspectionError(error instanceof Error ? error.message : String(error))
+    } finally {
+      setInspectionBusy(false)
+    }
+  }
+
+  const togglePanel = () => {
+    if (open) {
+      setOpen(false)
+      return
+    }
+    setOpen(true)
+    if (report === null || stale) void runInspection()
+  }
+
+  const exportOptions = (): ExportOptions => ({
+    format,
+    selectionOnly,
+    applyModifiers,
+    triangulate,
+  })
 
   const formatGroup = (
     title: string,
@@ -68,17 +132,22 @@ export function ExportPanel({ busy, onExport }: ExportPanelProps) {
     </fieldset>
   )
 
+  const downloadDisabled = busy || inspectionBusy || stale || report?.status === 'invalid' || !report
+  const downloadLabel = report?.status === 'review'
+    ? `仍要下載 ${format.toUpperCase()}`
+    : `下載 ${format.toUpperCase()}`
+
   return (
     <div className="relative">
-      <Button variant="subtle" icon="export" onClick={() => setOpen((value) => !value)} disabled={busy}>
+      <Button variant="subtle" icon="export" onClick={togglePanel} disabled={busy}>
         {busy ? '產生檔案中' : '準備切片'}
       </Button>
       {open && (
         <div
           role="dialog"
           aria-label="3D 模型匯出"
-          className="absolute right-0 z-50 mt-2 w-[360px] space-y-4 rounded-xl border border-border
-                     bg-surface-overlay p-4 shadow-2xl"
+          className="absolute right-0 z-50 mt-2 max-h-[calc(100vh-72px)] w-[min(440px,calc(100vw-24px))]
+                     space-y-4 overflow-y-auto rounded-xl border border-border bg-surface-overlay p-4 shadow-2xl"
         >
           <div>
             <p className="text-sm font-semibold text-fg">匯出 3D 模型</p>
@@ -117,15 +186,27 @@ export function ExportPanel({ busy, onExport }: ExportPanelProps) {
             </label>
           </div>
 
+          <PrintReadinessPanel
+            report={report}
+            loading={inspectionBusy}
+            stale={stale}
+            error={inspectionError}
+            minWallThicknessMm={minWallThicknessMm}
+            overhangAngleDeg={overhangAngleDeg}
+            onMinWallThicknessChange={setMinWallThicknessMm}
+            onOverhangAngleChange={setOverhangAngleDeg}
+            onCheck={() => void runInspection()}
+          />
+
           <div className="flex justify-end gap-2">
             <Button variant="ghost" onClick={() => setOpen(false)}>取消</Button>
             <Button
-              variant="subtle"
+              variant={report?.status === 'review' ? 'primary' : 'subtle'}
               icon="export"
-              disabled={busy}
-              onClick={() => onExport({ format, selectionOnly, applyModifiers, triangulate })}
+              disabled={downloadDisabled}
+              onClick={() => onExport(exportOptions())}
             >
-              下載 {format.toUpperCase()}
+              {downloadLabel}
             </Button>
           </div>
         </div>

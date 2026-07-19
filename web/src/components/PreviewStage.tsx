@@ -4,6 +4,10 @@ import { useDispatch } from '../mdr'
 import { Button, StatusBadge } from './ui'
 import { ExportPanel, type ExportOptions } from './ExportPanel'
 import { ModelViewport } from './ModelViewport'
+import type {
+  PrintReadinessOptions,
+  PrintReadinessReport,
+} from '../domain/printReadiness'
 
 // ---------------------------------------------------------------------------
 // PreviewStage — the center focal point (single focal point principle). The
@@ -72,6 +76,12 @@ export function PreviewStage() {
     finally { setExporting(false) }
   }
 
+  const inspectPrintReadiness = async (
+    options: PrintReadinessOptions,
+  ): Promise<PrintReadinessReport> => (
+    await dispatch('print.readiness', options) as PrintReadinessReport
+  )
+
   // Keyboard: Cmd/Ctrl+Z = undo, +Shift = redo
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -97,7 +107,12 @@ export function PreviewStage() {
         <Button variant="ghost" icon="undo" iconOnly title="復原 (⌘Z)" onClick={() => void runHistory('undo')} />
         <Button variant="ghost" icon="redo" iconOnly title="重做 (⌘⇧Z)" onClick={() => void runHistory('redo')} />
         <Button variant="ghost" icon="refresh" iconOnly title="刷新預覽" onClick={() => void refreshPreview()} />
-        <ExportPanel onExport={(options) => void doExport(options)} busy={exporting} />
+        <ExportPanel
+          onExport={(options) => void doExport(options)}
+          onInspect={inspectPrintReadiness}
+          sceneRevision={sceneRefreshTick}
+          busy={exporting}
+        />
       </div>
 
       {/* Viewport */}

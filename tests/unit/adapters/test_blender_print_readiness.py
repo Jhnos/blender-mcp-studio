@@ -4,7 +4,10 @@ import json
 
 import pytest
 
-from src.adapters.print_readiness.blender_print_readiness import BlenderPrintReadinessAdapter
+from src.adapters.print_readiness.blender_print_readiness import (
+    BlenderPrintReadinessAdapter,
+    _analysis_code,
+)
 from src.core.domain.command import Command
 from src.core.domain.exceptions import PrintReadinessError
 from src.core.domain.print_readiness import (
@@ -51,6 +54,13 @@ class InspectingBlender:
         if payload is None:
             payload = {"result": "PRINT_READINESS_JSON:" + json.dumps(raw_report())}
         return ToolResult(True, payload)
+
+
+@pytest.mark.parametrize("apply_modifiers", [True, False])
+def test_generated_analysis_script_is_valid_python(apply_modifiers: bool) -> None:
+    code = _analysis_code(PrintReadinessSpec(apply_modifiers=apply_modifiers))
+
+    compile(code, "<print-readiness>", "exec")
 
 
 @pytest.mark.asyncio
