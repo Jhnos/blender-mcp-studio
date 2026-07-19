@@ -314,7 +314,7 @@ git add web/src/mdr/inspector.dummyrun.test.tsx web/src/mocks docs/ARCHITECTURE.
 git commit -m "docs: close frontend productivity milestone"
 ```
 
-- [ ] **Step 5: Version-control completion check**
+- [x] **Step 5: Version-control completion check**
 
 Run: `git status --short --branch && git log --oneline --decorate -12`  
 Expected: clean worktree on `codex/client-neutral-mcp`; commits are ordered design, batch core/API/Web/real proof, operation status, command palette, and final audit.
