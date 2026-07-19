@@ -18,3 +18,5 @@ RGBA = tuple[
 ObjectTypeInput = Literal["MESH", "CURVE", "LIGHT", "CAMERA"]
 UnitFloat = Annotated[float, Field(ge=0.0, le=1.0, allow_inf_nan=False)]
 MaxViewportSize = Annotated[int, Field(strict=True, ge=200, le=1600)]
+WallThickness = Annotated[float, Field(gt=0.0, le=10.0, allow_inf_nan=False)]
+OverhangAngle = Annotated[float, Field(ge=0.0, le=90.0, allow_inf_nan=False)]

@@ -112,6 +112,7 @@ def create_app(
     mcp = create_mcp_server(
         shared_runtime.scene_operations,
         shared_runtime.scene_operations,
+        shared_runtime.print_readiness,
     )
 
     allowed_hosts = {"127.0.0.1", "localhost"}

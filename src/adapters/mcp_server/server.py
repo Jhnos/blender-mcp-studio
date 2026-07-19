@@ -12,10 +12,17 @@ from src.adapters.mcp_server.schemas import (
     MaxViewportSize,
     Name,
     ObjectTypeInput,
+    OverhangAngle,
     UnitFloat,
     Vec3,
+    WallThickness,
 )
-from src.core.domain.exceptions import BlenderConnectionError, SceneOperationError
+from src.core.domain.exceptions import (
+    BlenderConnectionError,
+    PrintReadinessError,
+    SceneOperationError,
+)
+from src.core.domain.print_readiness import PrintReadinessReport, PrintReadinessSpec
 from src.core.domain.scene_operations import (
     BlenderStatus,
     ColorRGBA,
@@ -28,6 +35,7 @@ from src.core.domain.scene_operations import (
     SceneSummary,
     Vector3,
 )
+from src.core.ports.print_readiness_port import PrintReadinessQueryPort
 from src.core.ports.scene_operations_port import SceneCommandPort, SceneQueryPort
 
 
@@ -41,7 +49,11 @@ def _tool_error(exc: Exception) -> ToolError:
     return ToolError(str(exc))
 
 
-def create_mcp_server(queries: SceneQueryPort, commands: SceneCommandPort) -> FastMCP:
+def create_mcp_server(
+    queries: SceneQueryPort,
+    commands: SceneCommandPort,
+    print_readiness: PrintReadinessQueryPort,
+) -> FastMCP:
     """Create the public MCP registry using only incoming application ports."""
 
     mcp = FastMCP(
@@ -120,6 +132,35 @@ def create_mcp_server(queries: SceneQueryPort, commands: SceneCommandPort) -> Fa
             shot = await queries.get_viewport_screenshot(max_size)
             return Image(data=shot.png_bytes, format="png")
         except (SceneOperationError, BlenderConnectionError) as exc:
+            raise _tool_error(exc) from exc
+
+    @mcp.tool(
+        timeout=30.0,
+        annotations=ToolAnnotations(
+            title="Check 3D print readiness",
+            readOnlyHint=True,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=False,
+        ),
+    )
+    async def check_print_readiness(
+        selection_only: bool = False,
+        apply_modifiers: bool = True,
+        min_wall_thickness_mm: WallThickness = 0.8,
+        overhang_angle_deg: OverhangAngle = 45.0,
+    ) -> PrintReadinessReport:
+        """Inspect visible meshes for common slicing risks without changing the scene."""
+        try:
+            return await print_readiness.check(
+                PrintReadinessSpec(
+                    selection_only=selection_only,
+                    apply_modifiers=apply_modifiers,
+                    min_wall_thickness_mm=min_wall_thickness_mm,
+                    overhang_angle_deg=overhang_angle_deg,
+                )
+            )
+        except (PrintReadinessError, BlenderConnectionError) as exc:
             raise _tool_error(exc) from exc
 
     @mcp.tool(

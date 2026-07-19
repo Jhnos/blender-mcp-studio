@@ -29,6 +29,7 @@ _INITIALIZE_REQUEST = {
 _EXPECTED_TOOLS = {
     "apply_material",
     "blender_status",
+    "check_print_readiness",
     "create_object",
     "delete_object",
     "get_object_info",

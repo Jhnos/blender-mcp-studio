@@ -7,7 +7,13 @@ from typing import Any
 import pytest
 from fastmcp import Client, FastMCP
 
-from src.core.domain.exceptions import SceneOperationError
+from src.core.domain.exceptions import PrintReadinessError, SceneOperationError
+from src.core.domain.print_readiness import (
+    PrintMetrics,
+    PrintReadinessReport,
+    PrintReadinessSpec,
+    PrintReadinessStatus,
+)
 from src.core.domain.scene_operations import (
     BlenderStatus,
     ColorRGBA,
@@ -25,6 +31,7 @@ from src.core.domain.scene_operations import (
 EXPECTED_TOOLS = {
     "apply_material",
     "blender_status",
+    "check_print_readiness",
     "create_object",
     "delete_object",
     "get_object_info",
@@ -42,6 +49,7 @@ POLICY = {
     "modify_object": (False, True, True, False),
     "delete_object": (False, True, False, False),
     "apply_material": (False, True, False, False),
+    "check_print_readiness": (True, False, True, False),
 }
 
 
@@ -50,7 +58,7 @@ class FakeSceneService:
 
     def __init__(self) -> None:
         self.calls: list[tuple[str, object]] = []
-        self.error: SceneOperationError | None = None
+        self.error: SceneOperationError | PrintReadinessError | None = None
 
     def _record(self, operation: str, argument: object = None) -> None:
         if self.error is not None:
@@ -90,6 +98,15 @@ class FakeSceneService:
         self._record("apply_material", spec)
         return OperationReceipt("apply_material", spec.object_name, "applied")
 
+    async def check(self, spec: PrintReadinessSpec) -> PrintReadinessReport:
+        self._record("check_print_readiness", spec)
+        return PrintReadinessReport(
+            status=PrintReadinessStatus.READY,
+            metrics=PrintMetrics(1, 12, (20.0, 20.0, 20.0), 8000.0, 2400.0),
+            issues=(),
+            analysis_truncated=False,
+        )
+
 
 @pytest.fixture
 def fake_scene_service() -> FakeSceneService:
@@ -99,7 +116,7 @@ def fake_scene_service() -> FakeSceneService:
 def server_for(fake_scene_service: FakeSceneService) -> FastMCP:
     from src.adapters.mcp_server import create_mcp_server
 
-    return create_mcp_server(fake_scene_service, fake_scene_service)
+    return create_mcp_server(fake_scene_service, fake_scene_service, fake_scene_service)
 
 
 @pytest.mark.asyncio
@@ -137,6 +154,18 @@ async def test_scene_result_has_structured_and_text_content(
     assert result.structured_content is not None
     assert result.structured_content["name"] == "Scene"
     assert any(block.type == "text" for block in result.content)
+
+
+@pytest.mark.asyncio
+async def test_print_readiness_result_is_structured(
+    fake_scene_service: FakeSceneService,
+) -> None:
+    async with Client(server_for(fake_scene_service)) as client:
+        result = await client.call_tool("check_print_readiness", {})
+
+    assert result.structured_content is not None
+    assert result.structured_content["status"] == "ready"
+    assert result.structured_content["metrics"]["dimensions_mm"] == [20.0, 20.0, 20.0]
 
 
 @pytest.mark.asyncio
@@ -189,6 +218,21 @@ async def test_invalid_color_is_rejected_before_service(
     assert fake_scene_service.calls == []
 
 
+@pytest.mark.asyncio
+async def test_invalid_print_threshold_is_rejected_before_service(
+    fake_scene_service: FakeSceneService,
+) -> None:
+    async with Client(server_for(fake_scene_service)) as client:
+        result = await client.call_tool(
+            "check_print_readiness",
+            {"min_wall_thickness_mm": 0.0},
+            raise_on_error=False,
+        )
+
+    assert result.is_error is True
+    assert fake_scene_service.calls == []
+
+
 TOOL_CALLS: list[tuple[str, dict[str, Any], tuple[str, object]]] = [
     ("blender_status", {}, ("status", None)),
     ("get_scene_info", {}, ("get_scene_info", None)),
@@ -226,6 +270,24 @@ TOOL_CALLS: list[tuple[str, dict[str, Any], tuple[str, object]]] = [
             MaterialSpec("Cube", "Red", ColorRGBA(1.0, 0.0, 0.0, 1.0), 0.2, 0.8),
         ),
     ),
+    (
+        "check_print_readiness",
+        {
+            "selection_only": True,
+            "apply_modifiers": False,
+            "min_wall_thickness_mm": 1.2,
+            "overhang_angle_deg": 50.0,
+        },
+        (
+            "check_print_readiness",
+            PrintReadinessSpec(
+                selection_only=True,
+                apply_modifiers=False,
+                min_wall_thickness_mm=1.2,
+                overhang_angle_deg=50.0,
+            ),
+        ),
+    ),
 ]
 
 
@@ -257,3 +319,17 @@ async def test_recoverable_service_error_becomes_actionable_tool_error(
     assert "Object not found: Ghost" in result.content[0].text  # type: ignore[union-attr]
     assert "Traceback" not in result.content[0].text  # type: ignore[union-attr]
     assert "Internal Server Error" not in result.content[0].text  # type: ignore[union-attr]
+
+
+@pytest.mark.asyncio
+async def test_print_readiness_service_error_becomes_actionable_tool_error(
+    fake_scene_service: FakeSceneService,
+) -> None:
+    fake_scene_service.error = PrintReadinessError("Inspection output was incomplete")
+
+    async with Client(server_for(fake_scene_service)) as client:
+        result = await client.call_tool("check_print_readiness", {}, raise_on_error=False)
+
+    assert result.is_error is True
+    assert "Inspection output was incomplete" in result.content[0].text  # type: ignore[union-attr]
+    assert "Traceback" not in result.content[0].text  # type: ignore[union-attr]

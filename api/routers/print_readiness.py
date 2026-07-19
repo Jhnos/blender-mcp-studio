@@ -7,7 +7,7 @@ from fastapi import APIRouter, HTTPException, Request
 from api.schemas import PrintReadinessRequest
 from src.core.domain.exceptions import BlenderConnectionError, PrintReadinessError
 from src.core.domain.print_readiness import PrintReadinessReport, PrintReadinessSpec
-from src.core.use_cases.print_readiness import PrintReadinessService
+from src.core.ports.print_readiness_port import PrintReadinessQueryPort
 
 router = APIRouter(prefix="/api")
 
@@ -23,7 +23,7 @@ async def check_print_readiness(
         min_wall_thickness_mm=body.min_wall_thickness_mm,
         overhang_angle_deg=body.overhang_angle_deg,
     )
-    service: PrintReadinessService = request.app.state.print_readiness
+    service: PrintReadinessQueryPort = request.app.state.print_readiness
     try:
         return await service.check(spec)
     except BlenderConnectionError as exc:
