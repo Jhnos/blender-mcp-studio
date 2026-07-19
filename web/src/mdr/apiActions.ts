@@ -1,5 +1,9 @@
 import { registerAction, type ActionContext } from './actions'
 import type {
+  BatchTransformReceipt,
+  BatchTransformRequest,
+} from '../domain/batchTransform'
+import type {
   PrintReadinessOptions,
   PrintReadinessReport,
 } from '../domain/printReadiness'
@@ -66,6 +70,13 @@ export function registerApiActions(): void {
     await http('DELETE', `${base}/api/object/${enc(name)}`)
     return { ok: true }
   })
+  registerAction('scene.batch-transform', async (p, { base }) =>
+    json<BatchTransformReceipt>(await http(
+      'POST',
+      `${base}/api/scene/batch-transform`,
+      p as BatchTransformRequest,
+    )),
+  )
 
   // --- Snapshots ---
   registerAction('snapshot.list', async (_p, { base }) =>

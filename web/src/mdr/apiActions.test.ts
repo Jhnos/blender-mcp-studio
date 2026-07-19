@@ -66,3 +66,41 @@ describe('print.readiness action', () => {
     }))
   })
 })
+
+describe('scene.batch-transform action', () => {
+  it('sends one client-neutral incremental transform request', async () => {
+    const receipt = {
+      object_names: ['A', 'B'],
+      affected_count: 2,
+      message: 'Updated 2 objects',
+    }
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(JSON.stringify(receipt), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    )
+    const dispatch = createDispatch({ base: '/blender' })
+
+    const result = await dispatch('scene.batch-transform', {
+      object_names: ['A', 'B'],
+      translation_mm: [10, 0, 0],
+      rotation_deg: [0, 0, 15],
+      scale_percent: [5, 5, 5],
+    })
+
+    expect(result).toEqual(receipt)
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/blender/api/scene/batch-transform',
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({
+          object_names: ['A', 'B'],
+          translation_mm: [10, 0, 0],
+          rotation_deg: [0, 0, 15],
+          scale_percent: [5, 5, 5],
+        }),
+      }),
+    )
+  })
+})
