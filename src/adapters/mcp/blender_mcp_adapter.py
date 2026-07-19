@@ -211,7 +211,6 @@ class BlenderMCPAdapter(BlenderPort):
         both entry points funnel here, and BlenderMCPClient rejects any
         translatable tool that still slips through.
         """
-        translated_tool = is_translatable(tool_name)
         command = translate(Command(tool_name=tool_name, arguments=arguments))
         if command.tool_name == _EXECUTE_CODE_TOOL and self._sandbox is not None:
             code = str(command.arguments.get("code", ""))
@@ -224,7 +223,7 @@ class BlenderMCPAdapter(BlenderPort):
                     error=f"Security: blocked code ({'; '.join(sandbox_result.violations)})",
                 )
         result = await self._mcp.call_tool(command.tool_name, dict(command.arguments))
-        if translated_tool and result.success:
+        if command.tool_name == _EXECUTE_CODE_TOOL and result.success:
             envelope = as_str_keyed(result.output, context=f"{tool_name} execute_code result")
             if envelope is not None and isinstance(envelope.get("result"), str):
                 return ToolResult(success=True, output=envelope["result"], error=None)

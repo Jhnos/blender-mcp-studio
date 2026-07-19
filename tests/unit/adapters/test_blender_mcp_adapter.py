@@ -86,8 +86,21 @@ async def test_translated_tool_unwraps_addon_execute_code_message() -> None:
 
 
 @pytest.mark.asyncio
+async def test_direct_execute_code_unwraps_addon_execute_code_message() -> None:
+    """Direct bpy calls receive the payload text, not a transport mapping."""
+    adapter, mcp = _adapter_with_recording_mcp()
+    mcp.output = {"executed": True, "result": "undo ok\n"}
+
+    result = await adapter.execute(
+        Command(tool_name="execute_code", arguments={"code": "import bpy\nbpy.ops.ed.undo()"})
+    )
+
+    assert result == ToolResult(success=True, output="undo ok\n", error=None)
+
+
+@pytest.mark.asyncio
 async def test_read_tools_pass_through_untouched() -> None:
-    """Non-translatable tools (reads, execute_code) must be forwarded unchanged."""
+    """Read tools must be forwarded unchanged."""
     adapter, mcp = _adapter_with_recording_mcp()
 
     await adapter.call_tool("get_viewport_screenshot", {"filepath": "/tmp/x.png"})

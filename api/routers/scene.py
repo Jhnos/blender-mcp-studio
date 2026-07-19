@@ -10,12 +10,13 @@ import base64
 import logging
 import os
 from datetime import UTC
+from typing import Literal
 
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import Response
 from pydantic import BaseModel, Field
 
-from api.schemas import SceneInfoResponse
+from api.schemas import SceneInfoResponse, UndoRedoResponse
 from src.core.domain.command import Command
 from src.core.domain.exceptions import BlenderConnectionError, SceneOperationError
 from src.core.domain.scene_operations import ModifyObjectSpec
@@ -192,19 +193,19 @@ async def list_pipelines() -> dict[str, object]:
 # ---------------------------------------------------------------------------
 
 
-@router.post("/undo")
-async def undo_action(request: Request) -> dict[str, object]:
+@router.post("/undo", response_model=UndoRedoResponse)
+async def undo_action(request: Request) -> UndoRedoResponse:
     """Undo the last operation in Blender (bpy.ops.ed.undo)."""
     return await _run_undo_redo(request, "undo")
 
 
-@router.post("/redo")
-async def redo_action(request: Request) -> dict[str, object]:
+@router.post("/redo", response_model=UndoRedoResponse)
+async def redo_action(request: Request) -> UndoRedoResponse:
     """Redo the last undone operation in Blender (bpy.ops.ed.undo_redo)."""
     return await _run_undo_redo(request, "redo")
 
 
-async def _run_undo_redo(request: Request, action: str) -> dict[str, object]:
+async def _run_undo_redo(request: Request, action: Literal["undo", "redo"]) -> UndoRedoResponse:
     blender = request.app.state.blender
     bpy_call = "bpy.ops.ed.undo()" if action == "undo" else "bpy.ops.ed.undo_redo()"
     code = f"import bpy\n{bpy_call}\nprint('{action} ok')"
@@ -215,11 +216,11 @@ async def _run_undo_redo(request: Request, action: str) -> dict[str, object]:
     except Exception as e:
         raise HTTPException(status_code=503, detail=f"Blender unreachable: {e}") from e
 
-    return {
-        "success": result.success,
-        "action": action,
-        "message": result.output if result.success else (result.error or "Unknown error"),
-    }
+    return UndoRedoResponse(
+        success=result.success,
+        action=action,
+        message=(str(result.output) if result.success else (result.error or "Unknown error")),
+    )
 
 
 # ---------------------------------------------------------------------------

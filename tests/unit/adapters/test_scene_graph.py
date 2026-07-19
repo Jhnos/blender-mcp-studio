@@ -152,6 +152,39 @@ def test_preview_rejects_non_png_blender_output() -> None:
 
 
 # ---------------------------------------------------------------------------
+# POST /api/undo and /api/redo
+# ---------------------------------------------------------------------------
+
+
+def test_undo_response_message_is_always_text() -> None:
+    client = _make_client(blender_response={"success": True, "output": "undo ok\n"})
+
+    response = client.post("/api/undo")
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "success": True,
+        "action": "undo",
+        "message": "undo ok\n",
+    }
+
+
+def test_redo_failure_response_preserves_error_text() -> None:
+    client = _make_client(
+        blender_response={"success": False, "output": None, "error": "nothing to redo"}
+    )
+
+    response = client.post("/api/redo")
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "success": False,
+        "action": "redo",
+        "message": "nothing to redo",
+    }
+
+
+# ---------------------------------------------------------------------------
 # POST /api/object/{name}/select
 # ---------------------------------------------------------------------------
 
