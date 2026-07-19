@@ -1,7 +1,8 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { createRef } from 'react'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import type { PrintReadinessReport } from '../domain/printReadiness'
-import { ExportPanel } from './ExportPanel'
+import { ExportPanel, type ExportPanelHandle } from './ExportPanel'
 
 const READY_REPORT: PrintReadinessReport = {
   status: 'ready',
@@ -75,6 +76,27 @@ const renderPanel = (
 }
 
 describe('ExportPanel', () => {
+  it('exposes focused open and rerun commands without leaking panel state', async () => {
+    const ref = createRef<ExportPanelHandle>()
+    const onInspect = vi.fn().mockResolvedValue(READY_REPORT)
+    render(
+      <ExportPanel
+        ref={ref}
+        busy={false}
+        sceneRevision={0}
+        onInspect={onInspect}
+        onExport={vi.fn()}
+      />,
+    )
+
+    act(() => ref.current?.open())
+    await screen.findByText('可以切片')
+    expect(onInspect).toHaveBeenCalledTimes(1)
+
+    await act(async () => ref.current?.rerunInspection())
+    expect(onInspect).toHaveBeenCalledTimes(2)
+  })
+
   it('automatically inspects with FDM defaults when opened', async () => {
     const { onInspect } = renderPanel()
 

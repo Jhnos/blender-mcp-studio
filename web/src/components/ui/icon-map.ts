@@ -4,7 +4,7 @@ import {
   Box, Boxes, Palette, Sun, History, ScrollText, X, SlidersHorizontal,
   TriangleAlert, CircleCheck, CircleX, Info, Plus, Radio, ImagePlus,
   MousePointer2, Spline, Bone, Circle, Wifi, WifiOff, ZoomIn, ZoomOut,
-  Maximize2, Minimize2, type LucideIcon,
+  Maximize2, Minimize2, Command, type LucideIcon,
 } from 'lucide-react'
 
 // ---------------------------------------------------------------------------
@@ -37,6 +37,7 @@ export const ICON_MAP = {
   add: Plus,
   close: X,
   settings: SlidersHorizontal,
+  command: Command,
   // disclosure
   'chevron-down': ChevronDown,
   'chevron-right': ChevronRight,

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { forwardRef, useCallback, useImperativeHandle, useMemo, useState } from 'react'
 import type {
   PrintReadinessOptions,
   PrintReadinessReport,
@@ -22,6 +22,11 @@ interface ExportPanelProps {
   onExport: (options: ExportOptions) => void
 }
 
+export interface ExportPanelHandle {
+  open: () => void
+  rerunInspection: () => Promise<void>
+}
+
 const PRINT_FORMATS = [
   { format: 'stl', label: 'STL', hint: '最通用的切片格式' },
   { format: 'obj', label: 'OBJ', hint: '保留材質與群組' },
@@ -33,12 +38,12 @@ const INTERCHANGE_FORMATS = [
   { format: 'fbx', label: 'FBX', hint: 'DCC 軟體交換' },
 ] as const
 
-export function ExportPanel({
+export const ExportPanel = forwardRef<ExportPanelHandle, ExportPanelProps>(function ExportPanel({
   busy,
   sceneRevision,
   onInspect,
   onExport,
-}: ExportPanelProps) {
+}, ref) {
   const [open, setOpen] = useState(false)
   const [format, setFormat] = useState<ExportFormat>('stl')
   const [selectionOnly, setSelectionOnly] = useState(false)
@@ -52,18 +57,18 @@ export function ExportPanel({
   const [inspectionBusy, setInspectionBusy] = useState(false)
   const [inspectionError, setInspectionError] = useState<string | null>(null)
 
-  const readinessOptions: PrintReadinessOptions = {
+  const readinessOptions: PrintReadinessOptions = useMemo(() => ({
     selectionOnly,
     applyModifiers,
     minWallThicknessMm,
     overhangAngleDeg,
-  }
+  }), [applyModifiers, minWallThicknessMm, overhangAngleDeg, selectionOnly])
   const optionsKey = JSON.stringify(readinessOptions)
   const stale = report !== null && (
     checkedOptions !== optionsKey || checkedSceneRevision !== sceneRevision
   )
 
-  const runInspection = async () => {
+  const runInspection = useCallback(async () => {
     const inspectedOptions = readinessOptions
     const inspectedKey = optionsKey
     const inspectedRevision = sceneRevision
@@ -79,15 +84,27 @@ export function ExportPanel({
     } finally {
       setInspectionBusy(false)
     }
-  }
+  }, [onInspect, optionsKey, readinessOptions, sceneRevision])
+
+  const openPanel = useCallback(() => {
+    setOpen(true)
+    if (report === null || stale) void runInspection()
+  }, [report, runInspection, stale])
+
+  useImperativeHandle(ref, () => ({
+    open: openPanel,
+    rerunInspection: async () => {
+      setOpen(true)
+      await runInspection()
+    },
+  }), [openPanel, runInspection])
 
   const togglePanel = () => {
     if (open) {
       setOpen(false)
       return
     }
-    setOpen(true)
-    if (report === null || stale) void runInspection()
+    openPanel()
   }
 
   const exportOptions = (): ExportOptions => ({
@@ -213,4 +230,4 @@ export function ExportPanel({
       )}
     </div>
   )
-}
+})

@@ -2,6 +2,7 @@ import { create } from 'zustand'
 
 interface BatchSelectionState {
   selectedNames: string[]
+  availableNames: string[]
   toggle: (name: string) => void
   replace: (names: readonly string[]) => void
   clear: () => void
@@ -19,6 +20,7 @@ const uniqueValidNames = (names: readonly string[]): string[] => {
 
 export const useBatchSelectionStore = create<BatchSelectionState>((set) => ({
   selectedNames: [],
+  availableNames: [],
   toggle: (name) => set((state) => ({
     selectedNames: state.selectedNames.includes(name)
       ? state.selectedNames.filter((selected) => selected !== name)
@@ -27,9 +29,11 @@ export const useBatchSelectionStore = create<BatchSelectionState>((set) => ({
   replace: (names) => set({ selectedNames: uniqueValidNames(names) }),
   clear: () => set({ selectedNames: [] }),
   prune: (availableNames) => {
-    const available = new Set(availableNames)
+    const normalizedAvailableNames = uniqueValidNames(availableNames)
+    const available = new Set(normalizedAvailableNames)
     set((state) => ({
       selectedNames: state.selectedNames.filter((name) => available.has(name)),
+      availableNames: normalizedAvailableNames,
     }))
   },
 }))

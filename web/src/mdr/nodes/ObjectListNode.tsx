@@ -155,7 +155,7 @@ export function ObjectListNode({ dispatch }: NodeProps) {
   const allSelected = selectedNames.length === objects.length
   const partiallySelected = selectedNames.length > 0 && !allSelected
   return (
-    <div className="px-2">
+    <div id="scene-object-list" tabIndex={-1} className="px-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">
       <div className="mb-1.5 flex items-center gap-2 border-b border-border px-2 pb-2">
         <SelectAllCheckbox
           checked={allSelected}

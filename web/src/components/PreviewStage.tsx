@@ -1,11 +1,15 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useChatStore } from '../stores/chatStore'
 import { useDispatch } from '../mdr'
 import { Button, StatusBadge } from './ui'
-import { ExportPanel, type ExportOptions } from './ExportPanel'
+import { ExportPanel, type ExportOptions, type ExportPanelHandle } from './ExportPanel'
 import { ModelViewport } from './ModelViewport'
 import { OperationStatusCenter } from './OperationStatusCenter'
+import { CommandPalette } from './CommandPalette'
 import { useOperationStore } from '../stores/operationStore'
+import { useBatchSelectionStore } from '../stores/batchSelectionStore'
+import { createStudioCommands } from '../commands/studioCommands'
+import { useGlobalShortcuts } from '../hooks/useGlobalShortcuts'
 import type {
   PrintReadinessOptions,
   PrintReadinessReport,
@@ -26,8 +30,10 @@ export function PreviewStage() {
   const [polledUrl, setPolledUrl] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [exporting, setExporting] = useState(false)
+  const [paletteOpen, setPaletteOpen] = useState(false)
   const [lastUpdate, setLastUpdate] = useState<string | null>(null)
   const objectUrlRef = useRef<string | null>(null)
+  const exportPanelRef = useRef<ExportPanelHandle>(null)
 
   const refreshPreview = useCallback(async (announce = false) => {
     const operationId = announce
@@ -111,17 +117,33 @@ export function PreviewStage() {
     await dispatch('print.readiness', options) as PrintReadinessReport
   )
 
-  // Keyboard: Cmd/Ctrl+Z = undo, +Shift = redo
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'z') {
-        e.preventDefault()
-        void runHistory(e.shiftKey ? 'redo' : 'undo')
-      }
-    }
-    window.addEventListener('keydown', handler)
-    return () => window.removeEventListener('keydown', handler)
-  }, [runHistory])
+  const focusElement = useCallback((id: string) => {
+    const element = document.getElementById(id)
+    element?.scrollIntoView?.({ block: 'center', behavior: 'smooth' })
+    element?.focus()
+  }, [])
+
+  const commands = useMemo(() => createStudioCommands({
+    refreshPreview: () => refreshPreview(true),
+    undo: () => runHistory('undo'),
+    redo: () => runHistory('redo'),
+    selectAllTargets: () => {
+      const selection = useBatchSelectionStore.getState()
+      selection.replace(selection.availableNames)
+    },
+    clearTargets: () => useBatchSelectionStore.getState().clear(),
+    focusBatchTransform: () => focusElement('batch-transform-panel'),
+    focusObjectList: () => focusElement('scene-object-list'),
+    openPrintReadiness: () => exportPanelRef.current?.open(),
+    rerunPrintReadiness: () => exportPanelRef.current?.rerunInspection(),
+  }), [focusElement, refreshPreview, runHistory])
+
+  const openPalette = useCallback(() => setPaletteOpen(true), [])
+  useGlobalShortcuts({
+    onPalette: openPalette,
+    onUndo: () => { void runHistory('undo') },
+    onRedo: () => { void runHistory('redo') },
+  })
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden bg-surface">
@@ -133,10 +155,12 @@ export function PreviewStage() {
         {lastUpdate && <span className="text-xs text-fg-subtle">{lastUpdate}</span>}
         <div className="flex-1" />
         <OperationStatusCenter />
+        <Button variant="ghost" icon="command" iconOnly title="指令面板 (⌘K)" onClick={openPalette} />
         <Button variant="ghost" icon="undo" iconOnly title="復原 (⌘Z)" onClick={() => void runHistory('undo')} />
         <Button variant="ghost" icon="redo" iconOnly title="重做 (⌘⇧Z)" onClick={() => void runHistory('redo')} />
         <Button variant="ghost" icon="refresh" iconOnly title="刷新預覽" onClick={() => void refreshPreview(true)} />
         <ExportPanel
+          ref={exportPanelRef}
           onExport={(options) => void doExport(options)}
           onInspect={inspectPrintReadiness}
           sceneRevision={sceneRefreshTick}
@@ -148,6 +172,7 @@ export function PreviewStage() {
       <div className="min-h-0 flex-1 p-3">
         <ModelViewport imageUrl={displayUrl} loading={loading} />
       </div>
+      <CommandPalette commands={commands} open={paletteOpen} onOpenChange={setPaletteOpen} />
     </div>
   )
 }

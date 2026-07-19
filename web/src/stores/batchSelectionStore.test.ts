@@ -1,7 +1,10 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { useBatchSelectionStore } from './batchSelectionStore'
 
-beforeEach(() => useBatchSelectionStore.getState().clear())
+beforeEach(() => {
+  useBatchSelectionStore.getState().clear()
+  useBatchSelectionStore.getState().prune([])
+})
 
 describe('batch selection store', () => {
   it('toggles one target without duplicates', () => {
@@ -24,6 +27,7 @@ describe('batch selection store', () => {
     useBatchSelectionStore.getState().prune(['B', 'C'])
 
     expect(useBatchSelectionStore.getState().selectedNames).toEqual(['B'])
+    expect(useBatchSelectionStore.getState().availableNames).toEqual(['B', 'C'])
   })
 
   it('clears every target', () => {

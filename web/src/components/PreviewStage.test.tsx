@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Dispatch } from '../mdr/actions'
 import { useChatStore } from '../stores/chatStore'
 import { useOperationStore } from '../stores/operationStore'
+import { useBatchSelectionStore } from '../stores/batchSelectionStore'
 import { PreviewStage } from './PreviewStage'
 
 const { dispatch } = vi.hoisted(() => ({ dispatch: vi.fn<Dispatch>() }))
@@ -24,9 +25,25 @@ beforeEach(() => {
   vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => undefined)
   useChatStore.setState({ liveScreenshot: null, sceneRefreshTick: 0 })
   useOperationStore.getState().clear()
+  useBatchSelectionStore.getState().clear()
+  useBatchSelectionStore.getState().prune([])
 })
 
 describe('PreviewStage operation status', () => {
+  it('opens the curated palette with mod-k and selects all known batch targets', async () => {
+    useBatchSelectionStore.getState().prune(['CatBody', 'CatTail'])
+    render(<PreviewStage />)
+    await screen.findByAltText('Blender 模型預覽')
+
+    fireEvent.keyDown(window, { key: 'k', metaKey: true })
+    const search = screen.getByRole('searchbox', { name: '搜尋指令' })
+    fireEvent.change(search, { target: { value: 'select all' } })
+    fireEvent.keyDown(search, { key: 'Enter' })
+
+    expect(useBatchSelectionStore.getState().selectedNames).toEqual(['CatBody', 'CatTail'])
+    expect(screen.queryByRole('dialog', { name: 'Studio 指令面板' })).not.toBeInTheDocument()
+  })
+
   it('records manual preview refresh and offers an explicit retry path', async () => {
     render(<PreviewStage />)
     await screen.findByAltText('Blender 模型預覽')
