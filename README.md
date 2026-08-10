@@ -1,20 +1,17 @@
 # Blender MCP Studio
 
-> 對話驅動 3D 創作平台 — 用自然語言操控 Blender，由 LLM + MCP 驅動。
+> 對話驅動 3D 創作平台；Web UI 與任何標準 MCP host 共用同一 Blender runtime。
 
 ## 架構概覽
 
+```text
+Web REST/WS ─┐
+HTTP MCP ────┼→ FastAPI :19505 → one AppRuntime → BlenderMCPAdapter → TCP :9876
+stdio proxy ─┘                                                     → Blender
 ```
-[React Web UI]
-    ↕ WebSocket /ws/chat
-[FastAPI 19505]
-    ├── LLMChatPort → OllamaAdapter / AnthropicAdapter / ...
-    └── BlenderPort → BlenderMCPAdapter
-                          ↓ TCP :9876
-                    [Blender + MCP Addon]
-                          ↓ bpy
-                    [Blender 3D Scene]
-```
+
+可互動、可供 AI 讀取且有 AST 防漂移 gate 的架構 SSOT：
+[docs/architecture.html](docs/architecture.html)。
 
 **設計原則**：Hexagonal Architecture · TDD · SOLID · DDD · 全解耦合
 
@@ -69,10 +66,45 @@ curl -s localhost:19505/api/health    # → {"status":"ok","blender":"connected"
 ./scripts/start_services.sh
 ```
 
-開啟瀏覽器：**http://localhost:19504**
+開啟瀏覽器：**http://localhost:19504/blender/**
 
 > ⚠️ 本機有其他服務時，使用非常用 port（API=19505，Vite=19504）。
 > 修改 `.env` 的 `BLENDER_HOST/PORT`，`vite.config.ts` 的 proxy target 需同步更新。
+
+### 連接 MCP client
+
+支援 MCP Streamable HTTP 的 Codex、Claude Code、Cursor、VS Code 或其他 host
+可直接使用：
+
+```text
+https://bearmacminimac-mini.tail56c751.ts.net/blender/mcp
+```
+
+只支援 stdio 的 host 使用：
+
+```bash
+~/miniconda3/envs/blender-mcp/bin/python scripts/run_mcp_stdio_proxy.py
+```
+
+完整 client 設定、九項工具與安全邊界見
+[docs/MCP_CLIENTS.md](docs/MCP_CLIENTS.md)。MCP server 不辨識或特判 host 名稱。
+
+### 匯出 3D 列印模型
+
+WebUI 預覽區的「準備切片」可匯出：
+
+| 用途 | 格式 | 單位契約 |
+|---|---|---|
+| 切片／3D 列印 | STL、OBJ、PLY | Blender 公尺自動轉為毫米，可匯入 Cura、PrusaSlicer、OrcaSlicer |
+| DCC 交換／網頁預覽 | FBX、GLB | 保留 Blender 場景單位 |
+
+點「準備切片」會先執行唯讀健檢，顯示毫米尺寸、三角面數、估算體積、表面積，以及非流形、
+退化面、交疊、薄壁與懸空等問題。`ready` 可直接下載；`review` 需明確確認；沒有可分析網格的
+`invalid` 會停用下載。修改門檻或場景後只標記「需要重新檢查」，不持續占用 Blender socket。
+
+匯出面板支援「僅選取物件」、「套用修改器」與「三角化網格」。HTTP client 可呼叫
+`POST /api/print-readiness` 與 `POST /api/export`；兩者由 application service 與 Blender adapter
+負責，WebUI 不依賴 Blender operator 細節，也不會自動修補使用者模型。
 
 ---
 
@@ -124,9 +156,9 @@ OLLAMA_BASE_URL=http://localhost:11434
 
 | Tier | 內容 | 硬 gate |
 |---|---|---|
-| T1 靜態 | web build(tsc)・eslint・ruff check・ruff format | ✅（mypy 為 strict 模式既有債 ~109 → WARN 不擋）|
-| T2 單元 | pytest `tests/unit`；vitest（含**自動化 dummy run**：真前端+真 MDR 引擎+假後端）| ✅ |
-| T3 真機 | `scripts/verify/mcp_verify_rest.py`——nonce + 獨立 oracle 證 MCP↔Blender 真的在作用 | ✅（Blender 沒開＝顯式 SKIP，不當 pass）|
+| T1 靜態 | web build、eslint、ruff、strict mypy、container narrowing | ✅ |
+| T2 單元 | pytest unit/e2e（含真 MCP framing + fake Blender）；vitest dummy run | ✅ |
+| T3 真機 | REST/MCP nonce mutation + 列印健檢 fixtures；addon socket 獨立 oracle | ✅（Blender 沒開＝顯式 SKIP，不當 pass）|
 
 **pre-push hook**（擋掉壞掉的 push）：
 
@@ -162,6 +194,12 @@ python scripts/verify/mcp_verify_chat.py   # chat 端對端（需 Blender + LLM�
 |---|---|
 | [docs/PROJECT.md](docs/PROJECT.md) | 專案目的與願景 |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | 架構決策（Hexagonal Architecture）|
+| [docs/architecture.html](docs/architecture.html) | 人類視覺 + AI 結構化欄位共用的架構 SSOT |
+| [docs/MCP_CLIENTS.md](docs/MCP_CLIENTS.md) | Codex/Claude/Cursor/VS Code/stdio 設定與安全契約 |
+| [docs/development/README.md](docs/development/README.md) | Client-neutral MCP 開發文件導覽與 SSOT 分工 |
+| [docs/development/MCP_LAYER_DEVELOPMENT.md](docs/development/MCP_LAYER_DEVELOPMENT.md) | Client-neutral MCP 目標架構、DDD/SOLID 與安全契約 |
+| [docs/development/MCP_LAYER_TDD.md](docs/development/MCP_LAYER_TDD.md) | MCP layer 的 RED→GREEN→REFACTOR 與可證偽 gate |
+| [docs/development/MCP_LAYER_ADR.md](docs/development/MCP_LAYER_ADR.md) | MCP inbound adapter 的決策理由與替代方案 |
 | [docs/TECH_SPEC.md](docs/TECH_SPEC.md) | 技術規格 |
 | [docs/CODING_STYLE.md](docs/CODING_STYLE.md) | 程式設計風格 |
 | [docs/PROGRESS.md](docs/PROGRESS.md) | 進度追蹤 |

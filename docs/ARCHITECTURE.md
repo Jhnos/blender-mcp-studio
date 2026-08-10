@@ -1,82 +1,110 @@
 # 架構決策（Architecture）
 
-## 整體架構圖
+> 架構單一真相源是可互動的 [architecture.html](architecture.html)。其內嵌 JSON
+> model 同時驅動畫面與 AI 結構化欄位；`test_architecture_ssot.py` 以 AST 驗證
+> model node 與真實 class/function anchor，避免圖與程式漂移。
 
-```
-┌─────────────────────────────────────────────────────────┐
-│                      Web UI Layer                        │
-│              React 18 + TypeScript + Vite               │
-│         ChatPanel  │  SceneView  │  Zustand Store       │
-└─────────────────────────┬───────────────────────────────┘
-                          │ WebSocket / REST
-┌─────────────────────────▼───────────────────────────────┐
-│                    API Layer (FastAPI)                    │
-│          /ws/chat  │  /api/scene  │  /api/health        │
-└─────────────────────────┬───────────────────────────────┘
-                          │ Python function call
-┌─────────────────────────▼───────────────────────────────┐
-│                  Application Layer                        │
-│             ConversationalModelingUseCase                │
-│              SceneManagementUseCase                      │
-└──────────┬──────────────────────────┬───────────────────┘
-           │ LLMPort                  │ BlenderPort
-┌──────────▼────────┐     ┌───────────▼───────────────────┐
-│   LLM Adapters    │     │    Blender MCP Adapter         │
-│  AnthropicAdapter │     │  (wraps ahujasid/blender-mcp)  │
-│  OpenAIAdapter    │     │  Socket → Blender Addon (9876) │
-│  DeepSeekAdapter  │     └───────────────────────────────┘
-│  OllamaAdapter    │                    │
-└───────────────────┘             ┌──────▼──────┐
-        │                         │   Blender   │
-  [Claude/GPT/etc]                │  + addon.py │
-                                  └─────────────┘
-```
+## 核心不變式
 
-## 架構模式
+所有 inbound transport 都匯入同一個 `AppRuntime`：
 
-### Hexagonal Architecture（六邊形架構）
+`HTTP MCP / stdio proxy / REST / WebSocket → application services → Blender adapters → BlenderSocketClient → addon :9876`
 
-- **Domain Core** (`src/core/`) — 零依賴，純 Python，可獨立測試
-- **Ports** (`src/core/ports/`) — 抽象介面（ABC），定義合約
-- **Adapters** (`src/adapters/`) — 實作具體的外部整合，可替換
+- FastAPI、REST、WebSocket 與 MCP 共用同一 `BlenderPort` instance。
+- API lifespan 只 connect/disconnect 一次；stdio proxy 不擁有 backend。
+- MCP 是 inbound adapter，只依賴 `SceneQueryPort` / `SceneCommandPort` / `PrintReadinessQueryPort`。
+- REST 與 MCP 注入同一個 `PrintReadinessService`；它依賴窄化的 `PrintReadinessPort`，不併入 scene commands。
+- WebUI 的批次變形經獨立 `BatchTransformService` 與 `SceneBatchCommandPort`；REST 只是 delivery adapter，沒有把 HTTP 概念放進 use case。
+- WebUI 指令面板只依賴純 `CommandDefinition` registry 與注入 callbacks；它不 import REST action、Zustand store 或 Blender 名稱。
+- `operationStore` 是 UI 操作 lifecycle SSOT，最多保留五筆；retry callback 只有來源明確宣告安全時才存在，批次變形與 Undo/Redo 永不自動重試。
+- `SceneOperationsService` 使用不可變 domain value，並在 Blender JSON 邊界嚴格 narrowing。
+- `BlenderMCPAdapter` 是高階操作到 addon dialect 的唯一翻譯 chokepoint。
+- 共享 `BlenderSocketClient._lock` 序列化 socket request/response；MCP 不建立第二把 transport lock。
 
-### Domain-Driven Design（DDD）
+## 分層與責任
 
-| 概念 | 實作位置 | 說明 |
+| 層 | 主要構件 | 責任 |
 |---|---|---|
-| Aggregate Root | `Scene` | Blender 場景的聚合根 |
-| Entity | `Session` | 對話 session |
-| Value Object | `Command` | 不可變的 Blender 指令 |
-| Use Case | `use_cases/` | 應用層業務邏輯 |
-| Port | `ports/` | 外部依賴抽象 |
-| Adapter | `adapters/` | 具體實作 |
+| Presentation | FastAPI routers、FastMCP server | HTTP/WS/MCP framing、schema、error mapping |
+| Application | `AppRuntime`、`SceneOperationsService`、`PrintReadinessService`、`BatchTransformService` | composition、lifecycle、use-case orchestration |
+| Domain | scene/print-readiness/batch-transform immutable values、窄 ports | Client-neutral language 與 inward dependency contract |
+| Adapter | `BlenderMCPAdapter`、`BlenderPrintReadinessAdapter`、`BlenderBatchTransformAdapter`、`BlenderSocketClient` | addon translation、inspection、single-Undo batch mutation、locking、TCP |
+| Engine | Blender + addon | 執行 `bpy` 並保存 3D scene state |
 
-### Workflow Engine（腳本驅動）
+### Web frontend 模組邊界
 
-每個 Workflow 由兩個檔案組成：
-1. **YAML 定義**（`config/workflows/*.yaml`）：宣告式描述步驟、LLM 選擇、MCP 設定
-2. **Python 腳本**（`src/workflows/scripts/*.py`）：具體的業務邏輯
+```text
+CommandPalette -> CommandRegistry -> injected Studio callbacks
+                                      |-> PreviewStage actions
+                                      |-> ExportPanel readiness handle
+                                      `-> BatchSelectionStore
 
-**核心原則**：換腳本 = 換工作流程目標，引擎不變。
+Preview / history / export / batch -> OperationStore -> OperationStatusCenter
+ObjectList -> MDR dispatch -> REST batch endpoint -> BatchTransformService
+```
 
-## ADR（Architecture Decision Records）
+- `web/src/commands/registry.ts` 是純 TypeScript registry，負責唯一 id、availability 與搜尋排序；新增指令以註冊擴充，不修改 palette conditional。
+- `web/src/commands/studioCommands.ts` 只組合九個 curated 前端指令，所有副作用都由 `StudioCommandActions` 注入。
+- `web/src/hooks/useGlobalShortcuts.ts` 是鍵盤入口，`input`、`textarea`、`select` 與 `contenteditable` 一律 fail closed，不攔截文字編輯。
+- `web/src/stores/batchSelectionStore.ts` 保存前端批次目標與最後已知物件名；勾選不改 Blender active selection。
+- `ExportPanelHandle` 只暴露 `open()` 與 `rerunInspection()` 兩個意圖，不讓指令層讀寫元件內部 report state。
 
-### ADR-001：選用 ahujasid/blender-mcp 作為 MCP 橋接
-- **決策**：採用 ahujasid/blender-mcp（MIT 授權）
-- **理由**：最成熟的開源實作、Claude 官方推薦、社群活躍
-- **後果**：透過 `BlenderMCPAdapter` 包裝，保持可替換性
+Dependency rule：外層依賴內層；domain/application 不 import FastAPI、FastMCP 或 `bpy`。
 
-### ADR-002：多 LLM 抽象層
-- **決策**：定義 `LLMPort` ABC，每個 LLM 提供商一個 Adapter
-- **理由**：用戶希望可以互換 LLM，不鎖定單一提供商
-- **後果**：初期以 Anthropic Claude 為主力，其他 adapter 逐步實作
+## Inbound adapters
 
-### ADR-003：FastAPI + WebSocket
-- **決策**：後端使用 FastAPI，前端透過 WebSocket 即時通訊
-- **理由**：對話建模需要即時回饋（streaming），REST 不夠
-- **後果**：前端實作 `useWebSocket` hook 管理連線狀態
+- Web UI 使用 `/api/*` 與 `/ws/chat`。
+- MCP host 使用標準 Streamable HTTP `/mcp`；外部 canonical URL 是
+  `https://bearmacminimac-mini.tail56c751.ts.net/blender/mcp`。
+- stdio-only host 啟動 `scripts/run_mcp_stdio_proxy.py`，它只把 stdio 轉成
+  Streamable HTTP，不 import project Blender adapter。
 
-### ADR-004：React + TypeScript + Vite
-- **決策**：前端使用 React 18 + TypeScript，Vite 建構
-- **理由**：現代化、可擴充、TypeScript 確保型別安全
-- **後果**：需要 Node.js 環境（與 Python conda 環境並行）
+詳細 client 設定見 [MCP_CLIENTS.md](MCP_CLIENTS.md)。
+
+## 架構決策
+
+### ADR-001：保留 ahujasid/blender-mcp addon 作為 Blender execution boundary
+
+- 決策：以 `BlenderMCPAdapter` 包裝 addon socket protocol。
+- 理由：保留已驗證的 Blender 執行能力，同時阻止 addon dialect 洩漏至 domain。
+- 後果：API process 是 socket owner；真機驗證可用 direct socket 作獨立 oracle。
+
+### ADR-002：LLM provider 透過 ports 可替換
+
+- 決策：LLM use cases 依賴 `LLMPort`，具體 provider 留在 adapters。
+- 理由：MCP scene operations 不應依賴或等待特定 LLM。
+
+### ADR-003：FastAPI process mount client-neutral FastMCP
+
+- 決策：不啟動第二個 MCP backend process；FastMCP ASGI app mount 在 `/mcp`。
+- 理由：REST/MCP 可共用 runtime、identity middleware、Origin guard 與 Blender socket。
+- 後果：MCP lifecycle 與 FastAPI lifespan 組合，但只有 FastAPI lifespan 管 Blender connect。
+
+### ADR-004：遠端以 Streamable HTTP 為主，stdio 只做 proxy
+
+- 決策：不公開 legacy SSE；不建立 stdio-only Blender server。
+- 理由：不同 host 共用同一 remote endpoint，避免每個 client 各開一條 9876 connection。
+
+### ADR-005：批次變形是獨立 transaction boundary
+
+- 決策：`POST /api/scene/batch-transform` 呼叫 `BatchTransformService`，再透過窄 `SceneBatchCommandPort` 進入一個帶 `UNDO`、並以 `('EXEC_DEFAULT', True)` 明確啟用 undo 的 Blender operator。
+- 理由：逐物件 fan-out 會產生部分成功與多筆 Undo；任意 Python endpoint 則破壞 typed client-neutral boundary。
+- 後果：最多 100 個目標先完整 preflight，再一次套用；一次 `/api/undo` 必須復原全部目標，並由真 Blender nonce fixture 證明。
+
+### ADR-006：前端生產力工具採 registry + lifecycle store
+
+- 決策：快捷指令由純 registry 排序與過濾；最近操作由專用 Zustand store 管理，不由每個 component 建立 toast timer。
+- 理由：palette 不應成為任意 backend action console；操作結果也不應散落為互不一致、無法追溯的區域提示。
+- 後果：公開指令固定為九個 curated callbacks；操作記錄上限五筆，只有明確 idempotent 的刷新可顯示重試。
+
+完整決策脈絡與 rejected alternatives 見
+[development/MCP_LAYER_ADR.md](development/MCP_LAYER_ADR.md)。
+
+## 安全邊界
+
+- `/mcp` 受 Tailnet identity middleware 保護，唯一 exemption 是 `/api/health`。
+- MCP public catalog 固定九項 curated tools，刻意不含 `execute_code`；第九項
+  `check_print_readiness` 是唯讀、冪等且 30 秒 timeout。
+- annotations 是 host UX hint，不是 authorization。
+- `clientInfo.name` 不參與 authorization、catalog 或 capability branching。
+- 公網 multi-user connector 不在本版範圍；需要獨立 OAuth 2.1/CIMD、audit、rate limit 與 privacy design。

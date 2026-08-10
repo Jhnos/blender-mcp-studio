@@ -34,3 +34,16 @@ export const MOCK_PREVIEW_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="
   <path d="M240 210 L120 150 L120 250 L240 310 Z" fill="#5f45cc"/>
   <text x="240" y="345" fill="#7b8494" font-family="system-ui" font-size="13" text-anchor="middle">dummy viewport (mock)</text>
 </svg>`
+
+export const MOCK_PRINT_READINESS = {
+  status: 'ready' as const,
+  metrics: {
+    object_count: 2,
+    triangle_count: 1832,
+    dimensions_mm: [82, 96, 138] as [number, number, number],
+    estimated_volume_mm3: 142500,
+    surface_area_mm2: 28740,
+  },
+  issues: [],
+  analysis_truncated: false,
+}

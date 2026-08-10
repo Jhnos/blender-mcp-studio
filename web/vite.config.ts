@@ -3,6 +3,23 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 
+const backendProxy = {
+  '/blender/ws': {
+    target: 'ws://localhost:19505',
+    ws: true,
+    rewrite: (path: string) => path.replace(/^\/blender/, ''),
+  },
+  '/blender/mcp': {
+    target: 'http://localhost:19505',
+    changeOrigin: false,
+    rewrite: (path: string) => path.replace(/^\/blender/, ''),
+  },
+  '/blender/api': {
+    target: 'http://localhost:19505',
+    rewrite: (path: string) => path.replace(/^\/blender/, ''),
+  },
+}
+
 // https://vite.dev/config/
 export default defineConfig({
   base: '/blender',
@@ -10,17 +27,12 @@ export default defineConfig({
   server: {
     host: '127.0.0.1',
     allowedHosts: true,
-    proxy: {
-      '/blender/ws': {
-        target: 'ws://localhost:19505',
-        ws: true,
-        rewrite: (path: string) => path.replace(/^\/blender/, ''),
-      },
-      '/blender/api': {
-        target: 'http://localhost:19505',
-        rewrite: (path: string) => path.replace(/^\/blender/, ''),
-      },
-    },
+    proxy: backendProxy,
+  },
+  preview: {
+    host: '127.0.0.1',
+    allowedHosts: true,
+    proxy: backendProxy,
   },
   test: {
     environment: 'jsdom',

@@ -1,9 +1,12 @@
-import { describe, it, expect, beforeAll, afterAll, afterEach } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { describe, it, expect, beforeAll, afterAll, afterEach, beforeEach, vi } from 'vitest'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { setupServer } from 'msw/node'
 import { http, HttpResponse } from 'msw'
 import { InspectorShell } from './InspectorShell'
 import { useChatStore } from '../stores/chatStore'
+import { useBatchSelectionStore } from '../stores/batchSelectionStore'
+import { useOperationStore } from '../stores/operationStore'
+import { PreviewStage } from '../components/PreviewStage'
 
 // ===========================================================================
 // AUTOMATED DUMMY RUN (T3 core, headless).
@@ -26,13 +29,53 @@ const DUMMY_OBJECTS = [
 const server = setupServer(
   http.get('*/api/scene', () => HttpResponse.json({ objects: DUMMY_OBJECTS })),
   http.get('*/api/snapshots', () => HttpResponse.json({ snapshots: [] })),
+  http.get('*/api/preview', () => new HttpResponse('preview', {
+    headers: { 'Content-Type': 'image/png' },
+  })),
+  http.post('*/api/scene/batch-transform', async ({ request }) => {
+    const body = await request.json() as { object_names: string[] }
+    return HttpResponse.json({
+      object_names: body.object_names,
+      affected_count: body.object_names.length,
+      message: `Updated ${body.object_names.length} objects`,
+    })
+  }),
 )
 
 beforeAll(() => server.listen({ onUnhandledRequest: 'bypass' }))
+beforeEach(() => {
+  vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:dummy-preview')
+  vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => undefined)
+  useBatchSelectionStore.getState().clear()
+  useBatchSelectionStore.getState().prune([])
+  useOperationStore.getState().clear()
+  useChatStore.setState({ sceneRefreshTick: 0, liveScreenshot: null, uiMode: 'basic' })
+})
 afterEach(() => server.resetHandlers())
 afterAll(() => server.close())
 
 describe('dummy run — real engine, dummy backend input', () => {
+  it('completes the keyboard batch-productivity path', async () => {
+    render(<div><PreviewStage /><InspectorShell /></div>)
+    await screen.findByText('Cube')
+
+    fireEvent.keyDown(window, { key: 'k', metaKey: true })
+    const search = screen.getByRole('searchbox', { name: '搜尋指令' })
+    fireEvent.change(search, { target: { value: 'select all' } })
+    fireEvent.keyDown(search, { key: 'Enter' })
+
+    fireEvent.change(await screen.findByLabelText('移動 X（mm）'), { target: { value: '10' } })
+    fireEvent.click(screen.getByRole('button', { name: '套用到 3 個物件' }))
+    await waitFor(() => expect(useOperationStore.getState().operations[0]).toMatchObject({
+      status: 'success',
+      message: 'Updated 3 objects',
+    }))
+
+    fireEvent.click(screen.getByRole('button', { name: '最近操作' }))
+    expect(within(screen.getByRole('list', { name: '操作記錄' }))
+      .getByText('Updated 3 objects')).toBeVisible()
+  })
+
   it('inspector populates from the dummy backend (schema→registry→dispatch→http)', async () => {
     render(<InspectorShell />)
     // Every fixture object must reach the screen through the real engine.

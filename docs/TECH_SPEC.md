@@ -1,141 +1,139 @@
 # 技術規格（Technical Specifications）
 
-## 環境需求
+## Runtime baseline
 
-| 項目 | 版本 | 說明 |
+| 項目 | 版本／值 | 說明 |
 |---|---|---|
-| 硬體 | Mac M4 (Apple Silicon arm64) | osx-arm64 native |
-| macOS | 26.4+ | |
-| Conda | 26.1.0+ | 環境管理 |
-| Python | 3.11 (arm64 native) | conda env |
-| Blender | 4.0+ | Apple Silicon 版 |
-| Node.js | 20 LTS+ | 前端建構 |
-| npm | 10+ | 前端套件管理 |
+| Python | 3.11 | Conda env `blender-mcp` |
+| FastMCP | `>=3.4,<4` | MCP server、in-memory client、stdio proxy |
+| Pydantic | `>=2.0` | Strict MCP input schemas |
+| FastAPI | installed env | REST、WebSocket、ASGI mount |
+| Node.js | 20+ | Vite/React frontend |
+| Blender | 5.1 | validated addon execution engine |
 
-## Python 後端套件
+Dependency declarations are `pyproject.toml` and `environment.yml`. The only CI
+entry point is `scripts/ci.sh`.
 
-| 套件 | 版本 | 用途 |
+## Service and route constants
+
+| Service | Listener | Public route |
 |---|---|---|
-| `mcp` | latest | MCP SDK（官方 Python SDK） |
-| `anthropic` | latest | Claude 適配器 |
-| `openai` | latest | OpenAI 適配器 |
-| `httpx` | latest | 非同步 HTTP（DeepSeek / Ollama） |
-| `pydantic` | >=2.0 | 資料模型 + 驗證 |
-| `pyyaml` | latest | YAML 設定載入 |
-| `python-dotenv` | latest | .env 環境變數 |
-| `fastapi` | latest | 後端 API Server |
-| `uvicorn[standard]` | latest | ASGI Server（WebSocket） |
-| `websockets` | latest | WebSocket 支援 |
-| `pytest` | latest | TDD 測試框架 |
-| `pytest-asyncio` | latest | 非同步測試 |
-| `pytest-cov` | latest | 測試覆蓋率 |
-| `ruff` | latest | Linting + Formatting |
-| `mypy` | latest | 靜態型別檢查 |
+| Vite Web | `127.0.0.1:19504` | `/blender/` |
+| FastAPI | `127.0.0.1:19505` | `/blender/api/*`, `/blender/ws/*`, `/blender/mcp` |
+| Blender addon | `127.0.0.1:9876` | none; API-owned raw TCP |
 
-## 前端套件
+MacHomeHub is configured with `strip_prefix: false`; Vite rewrites `/blender/*`
+to the API's internal `/api`, `/ws`, and `/mcp` paths.
 
-| 套件 | 用途 |
+## MCP transport
+
+- Protocol: MCP Streamable HTTP, negotiated through initialize.
+- Internal endpoint: `http://127.0.0.1:19505/mcp`.
+- Canonical endpoint:
+  `https://bearmacminimac-mini.tail56c751.ts.net/blender/mcp`.
+- Server mode: stateless HTTP.
+- Legacy SSE: not exposed.
+- Compatibility: `scripts/run_mcp_stdio_proxy.py` uses FastMCP `create_proxy` and
+  `transport="stdio"`.
+- Result types: structured text/JSON for typed results; MCP image content for PNG.
+
+## MCP tool contract
+
+| Tool | Read-only | Destructive | Idempotent | Max timeout |
+|---|---:|---:|---:|---:|
+| `blender_status` | yes | no | yes | 5 s |
+| `get_scene_info` | yes | no | yes | 10 s |
+| `get_object_info` | yes | no | yes | 10 s |
+| `get_viewport_screenshot` | yes | no | yes | 30 s |
+| `check_print_readiness` | yes | no | yes | 30 s |
+| `create_object` | no | no | no | 30 s |
+| `modify_object` | no | yes | yes | 30 s |
+| `delete_object` | no | yes | no | 30 s |
+| `apply_material` | no | yes | no | 30 s |
+
+All tools set `openWorldHint=false`. Names are bounded, vectors contain exactly
+three finite numbers, colors are RGBA values in `[0,1]`, and mutation schemas
+reject additional properties. Tool annotations are advisory; identity middleware
+and the registry enforce the actual boundary.
+
+## Domain/application contracts
+
+`SceneQueryPort` defines:
+
+- `status()`
+- `get_scene_info()`
+- `get_object_info(name)`
+- `get_viewport_screenshot(max_size)`
+
+`SceneCommandPort` defines:
+
+- `create_object(spec)`
+- `modify_object(spec)`
+- `delete_object(name)`
+- `apply_material(spec)`
+
+`SceneOperationsService` implements both incoming ports and depends only on
+`BlenderPort`. Domain records are frozen/slot dataclasses. External Blender JSON
+is narrowed field-by-field without silent `str`, `int`, or `bool` coercion.
+
+`PrintReadinessQueryPort.check(spec)` is implemented by the shared
+`PrintReadinessService`; its independent outgoing `PrintReadinessPort.inspect`
+is implemented by `BlenderPrintReadinessAdapter`. Reports use millimetres and
+bounded 20,000-triangle / 5,000-intersection analysis.
+
+## Shared runtime
+
+`api/runtime.py` is the composition root. `AppRuntime` contains one:
+
+- `BlenderPort`
+- `SceneOperationsService`
+- `PrintReadinessService`
+- event bus and adapter factory
+- security, prompt, persistence, vision, asset, and text-3D ports
+
+FastAPI publishes compatibility aliases on `app.state`, but their object identity
+matches the runtime fields. The FastAPI lifespan owns Blender connect/disconnect;
+the combined FastMCP lifespan only owns MCP protocol resources.
+
+## Security
+
+| Control | Enforced behavior |
 |---|---|
-| `react` + `react-dom` | UI 框架 |
-| `typescript` | 型別安全 |
-| `vite` | 建構工具 |
-| `zustand` | 輕量狀態管理 |
-| `tailwindcss` | CSS 框架 |
-| `@types/react` | TypeScript 定義 |
+| Tailnet identity | All HTTP except `/api/health`; `/mcp` missing identity → 401 |
+| Host/Origin guard | Strict allowlist derived from loopback and `CORS_ORIGINS` |
+| Protocol version | Unsupported `MCP-Protocol-Version` → HTTP 400 |
+| Tool surface | Exact nine-tool equality; `execute_code` absent |
+| Error mapping | Recoverable domain errors become actionable `ToolError`/HTTP 422 |
+| Error masking | Unexpected MCP internals do not expose tracebacks to clients |
+| Socket serialization | One `asyncio.Lock` in `BlenderSocketClient` |
 
-## 服務端口
+Client identity strings do not authorize or select tools. Public distribution is
+outside this specification and requires a separate OAuth 2.1/CIMD design.
 
-| 服務 | 端口 | 說明 |
-|---|---|---|
-| Blender MCP Socket | 9876 | Blender addon 監聽 |
-| FastAPI Backend | 8000 | API Server |
-| Vite Dev Server | 5173 | 前端開發 |
-
-## 環境變數（.env）
+## Environment variables
 
 ```bash
-# LLM API Keys
-ANTHROPIC_API_KEY=
-OPENAI_API_KEY=
-DEEPSEEK_API_KEY=
-
-# Ollama（本地）
-OLLAMA_BASE_URL=http://localhost:11434
-
-# MCP / Blender
 BLENDER_HOST=localhost
 BLENDER_PORT=9876
-
-# Server
-API_HOST=0.0.0.0
-API_PORT=8000
-
-# Workflow
-DEFAULT_WORKFLOW=conversational_modeling
-DEFAULT_LLM_PROVIDER=anthropic
+BLENDER_TRANSPORT=socket
+API_HOST=127.0.0.1
+API_PORT=19505
+CORS_ORIGINS=https://bearmacminimac-mini.tail56c751.ts.net
+REQUIRE_TAILNET_IDENTITY=1
+BLENDER_MCP_URL=https://bearmacminimac-mini.tail56c751.ts.net/blender/mcp
 ```
 
-## LLM Port 介面規格
+`BLENDER_MCP_URL` configures only the optional stdio proxy. It does not change
+the API runtime's Blender adapter or socket endpoint.
 
-```python
-class LLMPort(ABC):
-    @abstractmethod
-    async def chat(
-        self,
-        messages: list[Message],
-        system_prompt: str | None = None,
-    ) -> LLMResponse: ...
+## Verification matrix
 
-    @property
-    @abstractmethod
-    def provider_name(self) -> str: ...
+| Tier | Real components | Replaced boundary | Claim |
+|---|---|---|---|
+| Unit | Domain, service, tool registry | Fake Blender port | validation, routing, error semantics |
+| ASGI e2e | FastAPI, FastMCP framing, middleware | Fake Blender port | mount, identity, Origin, protocol, client neutrality |
+| Headless UI | React/MDR/Vite tests | Mock HTTP backend | frontend behavior |
+| Real machine | Public Tailnet MCP + API + Blender | none | nonce mutation and print fixtures with independent socket oracle |
 
-    @property
-    @abstractmethod
-    def model_name(self) -> str: ...
-```
-
-## MCP Port 介面規格
-
-```python
-class MCPPort(ABC):
-    @abstractmethod
-    async def call_tool(
-        self,
-        tool_name: str,
-        arguments: dict[str, Any],
-    ) -> ToolResult: ...
-
-    @abstractmethod
-    async def list_tools(self) -> list[ToolDefinition]: ...
-```
-
-## WebSocket 訊息格式
-
-### Client → Server
-```json
-{
-  "type": "chat",
-  "content": "幫我建立一個立方體",
-  "session_id": "uuid"
-}
-```
-
-### Server → Client
-```json
-{
-  "type": "response",
-  "content": "已在 Blender 中建立立方體...",
-  "status": "streaming | done | error",
-  "session_id": "uuid"
-}
-```
-
-## 測試策略
-
-| 層次 | 工具 | 說明 |
-|---|---|---|
-| Unit | `pytest` | Domain 模型、Use Cases（mock ports） |
-| Integration | `pytest-asyncio` | Adapter 整合（mock API / Blender） |
-| E2E | `pytest` | 完整流程（需 Blender 啟動） |
-| Coverage | `pytest-cov` | 目標 > 80% |
+Run `scripts/ci.sh` for hermetic gates and `scripts/ci.sh --real` only when addon
+`9876` is available. A real tier `SKIP` is not evidence of Blender mutation.

@@ -1,4 +1,12 @@
 import { registerAction, type ActionContext } from './actions'
+import type {
+  BatchTransformReceipt,
+  BatchTransformRequest,
+} from '../domain/batchTransform'
+import type {
+  PrintReadinessOptions,
+  PrintReadinessReport,
+} from '../domain/printReadiness'
 
 // ===========================================================================
 // API action handlers — the ONLY place the frontend talks to the backend.
@@ -62,6 +70,13 @@ export function registerApiActions(): void {
     await http('DELETE', `${base}/api/object/${enc(name)}`)
     return { ok: true }
   })
+  registerAction('scene.batch-transform', async (p, { base }) =>
+    json<BatchTransformReceipt>(await http(
+      'POST',
+      `${base}/api/scene/batch-transform`,
+      p as BatchTransformRequest,
+    )),
+  )
 
   // --- Snapshots ---
   registerAction('snapshot.list', async (_p, { base }) =>
@@ -106,9 +121,33 @@ export function registerApiActions(): void {
     return res.blob()
   })
   registerAction('export.scene', async (p, { base }) => {
-    const { format } = p as { format: string }
-    const res = await http('POST', `${base}/api/export`, { format, selection_only: false })
+    const { format, selectionOnly, applyModifiers, triangulate } = p as {
+      format: string
+      selectionOnly: boolean
+      applyModifiers: boolean
+      triangulate: boolean
+    }
+    const res = await http('POST', `${base}/api/export`, {
+      format,
+      selection_only: selectionOnly,
+      apply_modifiers: applyModifiers,
+      triangulate,
+    })
     return res.blob()
+  })
+  registerAction('print.readiness', async (p, { base }) => {
+    const {
+      selectionOnly,
+      applyModifiers,
+      minWallThicknessMm,
+      overhangAngleDeg,
+    } = p as PrintReadinessOptions
+    return json<PrintReadinessReport>(await http('POST', `${base}/api/print-readiness`, {
+      selection_only: selectionOnly,
+      apply_modifiers: applyModifiers,
+      min_wall_thickness_mm: minWallThicknessMm,
+      overhang_angle_deg: overhangAngleDeg,
+    }))
   })
   registerAction('undo', async (_p, { base }) =>
     json<{ success: boolean; message: string }>(await http('POST', `${base}/api/undo`)),

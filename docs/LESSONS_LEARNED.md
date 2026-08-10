@@ -4,13 +4,41 @@
 
 ---
 
+## 2026-07-19
+
+### 關閉 HMR server 不等於 production page 不會載入 dev client
+- **觸發情境**：長期運行的 WebUI 直接由 Vite dev server 提供，反向代理又不轉送 Vite HMR 的 WebSocket subprotocol；為了消除瀏覽器 console error，只設定 `server.hmr=false`。
+- **該主動檢查**：用真瀏覽器讀取正式 URL 的 script `src` 與 console。頁面是否仍載入 `/@vite/client`？console 是否仍嘗試 HMR WebSocket？只看設定檔或「畫面能開」都無法證明 production runtime 已移除 dev client。
+- **為什麼沒抓到**：`hmr=false` 關掉 server 端 HMR，卻不保證 HTML 不注入 dev client；設定測試與頁面 smoke 都會綠，只有瀏覽器 runtime 證據能分辨。
+- **如何預防**：長期部署先 `vite build`，再用 `vite preview`（或正式靜態伺服器）；dev 與 preview 共用 API/WS/MCP proxy SSOT。部署 sentinel 需同時檢查 plist 使用 preview、installer 先 build，並以瀏覽器確認只載入 hashed assets、console 無錯誤。
+
+### `launchctl bootout` 返回不等於 job 已完全離開 registry
+- **觸發情境**：安裝腳本緊接著執行 `bootout` 與 `bootstrap`；舊程序仍在終止期間，`bootstrap` 偶發回 I/O error。若只因當下 `launchctl print` 尚看得到 job 就當作成功，稍後 job 消失而服務沒有重建。
+- **該主動檢查**：卸載後是否有 bounded wait，確認 label 真正不可查才 bootstrap？bootstrap 失敗是否 bounded retry？完成後是否同時驗證 launchd state、PID listening port 與 health，而非只信其中一個訊號？
+- **為什麼沒抓到**：把非同步 lifecycle 當同步操作，也把「舊 job 還存在」誤判為「新 job 已載入」。兩個瞬間狀態都不能證明最終服務存活。
+- **如何預防**：installer 封裝 wait-for-unload 與 bounded bootstrap retry；最後以 label、port、health 三個獨立訊號驗證。部署測試鎖定 wait/retry helper，避免後續簡化腳本時復發。
+
+### Operator 宣告 `UNDO` 不等於程式化呼叫真的推入可復原 transaction
+- **觸發情境**：用 Python 自訂 Blender operator，`bl_options` 已含 `UNDO`，再由另一段 Python／socket 腳本呼叫它，便宣稱「一次呼叫＝一筆 Undo」。
+- **該主動檢查**：operator 的**呼叫端**有沒有明確啟用 undo 執行參數？官方 `bpy.ops` 呼叫契約把 `execution_context` 與 `undo: bool` 列為獨立 positional arguments；遠端程式化呼叫要用 `bpy.ops.x.y('EXEC_DEFAULT', True)`，不能只讀 class metadata 推論 runtime stack。測試必須建立兩個 nonce 物件、一次變形、一次 Undo，再由獨立 oracle 確認兩者保留且 transform 全復原。
+- **為什麼沒抓到**：單元測試只檢查 generated code 含 `bl_options={'UNDO'}`，變形結果也正確；表面證據同時相容於「有推 stack」與「沒有推 stack」。真機第一次 Undo 直接退回上一個 seed transaction、把 fixture 物件刪掉，才揭露呼叫預設未建立 batch undo step。
+- **如何預防**：① 對程式化 Blender mutation 同時檢查 operator 宣告與呼叫參數；② 把 `('EXEC_DEFAULT', True)` 做成 codegen 單元 sentinel；③ 真機 gate 用「一次 Undo 復原多個既存物件」的鑑別性斷言，不能只看 `/api/undo` 回 success。
+
+---
+
 ## 2026-07-18
+
+### 傳入 allowlist 不等於 guard 已啟用；安全選項的「資料」與「機制開關」要分開驗
+- **觸發情境**：第三方 server/middleware API 同時接受 `allowed_hosts`、`allowed_origins` 等 allowlist，另有一個獨立的 protection mode/enable flag。看到 allowlist 已傳入，就直覺認為 request guard 已生效。
+- **該主動檢查**：送一個明確不在 allowlist 的 Host/Origin，真的拿到 403 嗎？本輪 FastMCP 3.4 的 `allowed_*` 只是 guard 的參數，`host_origin_protection` 預設仍可為 false；資料存在但機制沒 mount，惡意 Origin 照樣 200。協定版本亦同：initialize 本身用 params 協商版本，不是驗證後續 request header 的鑑別點；要用 `tools/list` 帶錯誤 `MCP-Protocol-Version` 才會真正觸發 400。
+- **為什麼沒抓到**：把「設定物件看起來完整」當成 runtime behavior；單看 source/config 會得到假綠。initialize 又是特例，用它測 header 讓測試本身失去鑑別力。
+- **如何預防**：安全設定一律加 negative request sentinel：不可信 Origin→403、未支援 protocol header（非 initialize request）→400、缺 identity→401。先觀察 sentinel 在 guard 缺席時確實紅，再補 enable flag；禁止只 assertion config 文字或 constructor kwargs。
 
 ### 改了 plist env 卻「kickstart 重啟」→ 沒生效：kickstart 不 reload、載入的是另一份拷貝
 - **觸發情境**：改了 launchd plist 的環境變數（CORS、feature flag、port…）然後「重啟服務」想讓它生效。
 - **該主動檢查**：你的「重啟」真的 **reload 了 plist** 嗎？`launchctl kickstart -k` 只重啟**進程**、不重讀 plist；而且**載入中的 plist 往往是 `~/Library/LaunchAgents/` 的另一份拷貝**，不是你剛編輯的 repo/deploy 那份。驗證要讀「載入中進程的實際 env」——`launchctl print <domain>/<label>`，不是讀你剛改的檔。
 - **為什麼沒抓到**：本輪我改了 `deploy/launchd/*.plist` + `kickstart`，宣稱「已部署＋已驗證」。但 kickstart 沒 reload、載入的是舊拷貝，env 根本沒變。更糟的是驗證**不夠鑑別**：我只測了一個「新舊設定都會擋」的 case（CORS Origin=19504，在舊的 [tailscale,19147] 與新的 [tailscale-only] 下**都**被擋），於是假綠，直到下一輪查別的才撞見。同族：本 session 一路的「表面訊號≠真實、驗證要鑑別性」。
-- **如何預防**：① env 變更要用**會 reload** 的機制（本專案 = `bash deploy/launchd/install.sh <svc>`，做 bootout→bootstrap→kickstart；EIO on bootstrap 良性、等 3s 補 bootstrap）；② 驗證讀 `launchctl print <label>` 的**實際載入 env**，或送一個「**只有新設定會通過、舊設定會擋**」的鑑別性請求（例：直打服務、帶/不帶新 header 各一次看 401 vs 200）；③ 別把「編輯了 repo 裡的 plist」當成「載入中的服務變了」——那是兩份不同的檔。
+- **如何預防**：① env 變更要用**會 reload** 的機制（本專案 = `bash deploy/launchd/install.sh <svc>`，做 bootout→等待 label 消失→bounded bootstrap retry→kickstart）；② 驗證讀 `launchctl print <label>` 的**實際載入 env**，或送一個「**只有新設定會通過、舊設定會擋**」的鑑別性請求（例：直打服務、帶/不帶新 header 各一次看 401 vs 200）；③ 別把「編輯了 repo 裡的 plist」當成「載入中的服務變了」——那是兩份不同的檔。
 
 ### `narrow(x) or default` 把「畸形」訊號連同「空」一起塌掉——正確用了 SSOT，尾巴一個 `or {}` 又是 silent-fallback
 - **觸發情境**：一個收窄／解析函式以 `None`（或空）表示「輸入畸形／不符預期」，呼叫端寫成 `narrow(x) or default`（`as_str_keyed(o) or {}`、`parse(s) or []`、`.get(k) or fallback`）。尤其在剛把某個 bug class 改成「一律走 narrowing SSOT」之後——會覺得「用了 SSOT 就安全了」。

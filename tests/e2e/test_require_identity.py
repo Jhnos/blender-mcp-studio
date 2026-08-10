@@ -42,6 +42,12 @@ def test_protected_path_rejects_missing_identity() -> None:
     assert r.status_code == 401
 
 
+def test_mcp_is_not_an_identity_exemption() -> None:
+    """The mounted MCP transport is protected by the same HTTP identity gate."""
+    r = _client(require_identity=True).post("/mcp", json={})
+    assert r.status_code == 401
+
+
 def test_protected_path_allows_present_identity() -> None:
     """With the trusted header, the request passes the gate (routing continues)."""
     r = _client(require_identity=True).get("/api/anything-unrouted", headers=_IDENTITY)

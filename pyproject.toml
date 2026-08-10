@@ -9,6 +9,7 @@ description = "Conversational 3D creation with Blender + MCP + LLM"
 requires-python = ">=3.11"
 dependencies = [
     "mcp",
+    "fastmcp>=3.4,<4",
     "anthropic",
     "openai",
     "httpx",

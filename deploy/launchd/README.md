@@ -1,12 +1,13 @@
 # launchd / LaunchAgent SSOT — Blender MCP Studio
 
-This directory is the **single source of truth** for the two macOS LaunchAgents
+This directory is the **single source of truth** for the three macOS LaunchAgents
 that run Blender MCP Studio in the background.
 
 ```
 deploy/launchd/
 ├── com.blender-mcp.api.plist     # FastAPI service on port 19505 (template)
-├── com.blender-mcp.web.plist     # Vite dev server on port 19504 (template)
+├── com.blender-mcp.web.plist     # Vite production preview on port 19504 (template)
+├── com.blender-mcp.blender.plist # Blender + addon socket on port 9876 (template)
 ├── install.sh                    # render → ~/Library/LaunchAgents/ → bootstrap
 ├── uninstall.sh                  # bootout + archive (.deprecated.YYYYMMDD)
 └── README.md                     # you are here
@@ -24,6 +25,10 @@ re-run `install.sh` to reconcile. See `docs/ENGINEERING_STANDARDS.md §11`.
 | `__HOME__`          | `$HOME`                                                    | `$HOME`                                            |
 | `__CONDA_PYTHON__`  | Conda env python used by the api service                   | `$HOME/miniconda3/envs/blender-mcp/bin/python`     |
 | `__NODE_BIN__`      | Node binary used by the web service                        | `/opt/homebrew/opt/node/bin/node` (Apple Silicon)  |
+
+The installer derives `NPM_BIN` beside `NODE_BIN` and builds Web assets before
+bootstrapping the preview service. Override `NPM_BIN` explicitly when Node and
+npm are installed in different prefixes.
 
 Override the defaults with env vars when invoking `install.sh`:
 
@@ -51,7 +56,8 @@ bash deploy/launchd/install.sh web    # web only
 3. `launchctl bootout`s any existing instance (noise from
    "service not loaded" / EIO is swallowed by `_safe_bootout`).
 4. Atomically moves the rendered file into `~/Library/LaunchAgents/`.
-5. `launchctl bootstrap` + `enable` + `kickstart -k` to start it.
+5. Bounded-retries the known post-bootout `launchctl bootstrap` EIO race, then
+   `enable` + `kickstart -k` to start it.
 
 ## Verify
 
@@ -74,6 +80,45 @@ lsof -iTCP:19504 -sTCP:LISTEN   # web
 ```
 
 A clean diff means the installed plist is faithful to the SSOT.
+
+## MCP endpoint and stdio compatibility
+
+The API owns one shared Blender connection and serves standards-compliant MCP
+Streamable HTTP internally at `http://127.0.0.1:19505/mcp`. Vite forwards the
+Tailnet sub-path without buffering or rewriting MCP headers:
+
+```text
+https://bearmacminimac-mini.tail56c751.ts.net/blender/mcp
+```
+
+The external endpoint is protected by the same Tailnet identity gate as the
+REST API. Hosts that only launch stdio MCP servers can use the transport bridge:
+
+```bash
+$HOME/miniconda3/envs/blender-mcp/bin/python \
+  "$HOME/Desktop/Blender_MCP_drawer/scripts/run_mcp_stdio_proxy.py"
+```
+
+Override the upstream endpoint when needed:
+
+```bash
+BLENDER_MCP_URL=https://another-tailnet-host.example/blender/mcp \
+  $HOME/miniconda3/envs/blender-mcp/bin/python \
+  "$HOME/Desktop/Blender_MCP_drawer/scripts/run_mcp_stdio_proxy.py"
+```
+
+The bridge only converts stdio to Streamable HTTP. It never creates a second
+Blender adapter or addon-socket connection; backend lifecycle remains owned by
+the API LaunchAgent.
+
+## Web deployment policy
+
+The long-running Web LaunchAgent serves `vite preview` from a fresh production
+build. This keeps `@vite/client` and its unsupported `vite-hmr` WebSocket out of
+the Tailnet page while preserving application WebSockets such as
+`/blender/ws/chat`. `vite.config.ts` shares one proxy map between dev and preview,
+so REST, chat WebSocket, and MCP routes do not drift. Manual `npm run dev` keeps
+normal hot-module replacement and the development-only `?mock` browser harness.
 
 ## Uninstall
 

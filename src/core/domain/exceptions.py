@@ -9,6 +9,22 @@ class SceneCreationError(DomainError):
     """Raised when a scene operation fails."""
 
 
+class SceneOperationError(DomainError):
+    """A scene operation failed with a recoverable, user-facing reason."""
+
+
+class BatchTransformError(SceneOperationError):
+    """A batch transform request or execution could not be completed safely."""
+
+
+class SceneExportError(DomainError):
+    """A requested scene export could not produce a valid artifact."""
+
+
+class PrintReadinessError(DomainError):
+    """A print-readiness inspection could not produce a trustworthy report."""
+
+
 class LLMConnectionError(DomainError):
     """Raised when the LLM is unreachable."""
 

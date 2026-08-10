@@ -63,8 +63,9 @@ _run hard "python container-narrowing" "$PY" scripts/check_container_narrowing.p
 
 _tier "T2 · unit + headless dummy run"
 # tests/e2e is hermetic (Mock adapters / TestClient — no real Blender or LLM)
-# and now fully green, so the whole directory is gated. It was previously
-# ungated, which let test_full_pipeline_create_object rot red for a month
+# MCP coverage uses the real registry and protocol framing with a fake Blender port.
+# The whole directory is now fully green and gated. It was previously ungated,
+# which let test_full_pipeline_create_object rot red for a month
 # (create_object vs execute_code — a stale assertion, not a bug; the pipeline
 # correctly rewrites high-level tools to execute_code since 46fe5b3).
 _run hard "python unit + e2e (pytest)" "$PY" -m pytest tests/unit tests/e2e -q --no-header -p no:cacheprovider --no-cov
@@ -73,7 +74,10 @@ _run hard "web unit + dummy run (vitest)" bash -c 'cd web && npx vitest run'
 if (( REAL )); then
   _tier "T3 · real machine (MCP↔Blender)"
   if nc -z localhost 9876 2>/dev/null; then
-    _run hard "MCP pipeline (nonce + independent oracle)" "$PY" scripts/verify/mcp_verify_rest.py
+    _run hard "REST pipeline (nonce + independent oracle)" "$PY" scripts/verify/mcp_verify_rest.py
+    _run hard "MCP protocol (nonce + independent oracle)" "$PY" scripts/verify/mcp_verify_real.py
+    _run hard "print readiness (real Blender fixtures)" "$PY" scripts/verify/print_readiness_verify_real.py
+    _run hard "batch transform (one Undo, independent oracle)" "$PY" scripts/verify/batch_transform_verify_real.py
   else
     # Explicit SKIP, never a silent pass: with Blender down this tier is vacuous.
     printf '  %sSKIP%s MCP pipeline — Blender addon not listening on 9876 %s(start it: launchctl kickstart -k gui/$(id -u)/com.blender-mcp.blender)%s\n' \

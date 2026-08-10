@@ -214,15 +214,20 @@ class BlenderMCPAdapter(BlenderPort):
         command = translate(Command(tool_name=tool_name, arguments=arguments))
         if command.tool_name == _EXECUTE_CODE_TOOL and self._sandbox is not None:
             code = str(command.arguments.get("code", ""))
-            result = self._sandbox.validate(code)
-            if not result.allowed:
-                logger.warning("Blocked execute_code: %s", "; ".join(result.violations))
+            sandbox_result = self._sandbox.validate(code)
+            if not sandbox_result.allowed:
+                logger.warning("Blocked execute_code: %s", "; ".join(sandbox_result.violations))
                 return ToolResult(
                     success=False,
                     output=None,
-                    error=f"Security: blocked code ({'; '.join(result.violations)})",
+                    error=f"Security: blocked code ({'; '.join(sandbox_result.violations)})",
                 )
-        return await self._mcp.call_tool(command.tool_name, dict(command.arguments))
+        result = await self._mcp.call_tool(command.tool_name, dict(command.arguments))
+        if command.tool_name == _EXECUTE_CODE_TOOL and result.success:
+            envelope = as_str_keyed(result.output, context=f"{tool_name} execute_code result")
+            if envelope is not None and isinstance(envelope.get("result"), str):
+                return ToolResult(success=True, output=envelope["result"], error=None)
+        return result
 
     async def get_scene_info(self) -> dict[str, object]:
         result = await self._mcp.call_tool("get_scene_info", {})

@@ -1,125 +1,143 @@
-"""FastAPI application entry point.
-
-Use create_app() for library integration:
-    from api.main import create_app
-    app = create_app(cors_origins=["https://myapp.com"])
-"""
+"""FastAPI application entry point with a shared client-neutral MCP runtime."""
 
 from __future__ import annotations
 
 import asyncio
 import contextlib
+import logging
 import os
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from pathlib import Path
+from urllib.parse import urlparse
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastmcp.utilities.lifespan import combine_lifespans
+from starlette.types import ASGIApp, Receive, Scope, Send
 
-from api.routers import chat, scene
+from api.routers import batch_transform, chat, print_readiness, scene, scene_export
 from api.routers.ws_manager import ConnectionManager, viewport_broadcast_loop
+from api.runtime import AppRuntime, build_runtime
+from src.adapters.mcp_server import create_mcp_server
+from src.core.domain.exceptions import BlenderConnectionError
+
+logger = logging.getLogger(__name__)
+
+
+class _NormalizeMcpPath:
+    """Serve the canonical no-slash MCP URL without an authority-changing redirect."""
+
+    def __init__(self, app: ASGIApp) -> None:
+        self._app = app
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] == "http" and scope["path"] == "/mcp":
+            scope = {**scope, "path": "/mcp/", "raw_path": b"/mcp/"}
+        await self._app(scope, receive, send)
 
 
 @asynccontextmanager
 async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
-    """Startup/shutdown: load env once, init shared adapters and event bus."""
-    from src.adapters.events.in_memory_event_bus import InMemoryEventBus
-    from src.adapters.factory.concrete_adapter_factory import ConcreteAdapterFactory
-    from src.adapters.mcp.factory import build_blender_adapter
-    from src.adapters.polyhaven.polyhaven_adapter import PolyHavenAdapter
-    from src.adapters.prompt.blender_context_prompt_builder import BlenderContextPromptBuilder
-    from src.adapters.security.blender_code_sandbox import BlenderCodeSandbox
-    from src.adapters.security.prompt_injection_sanitizer import PromptInjectionSanitizer
-    from src.adapters.session.sqlite_session_store import SQLiteSessionStore
-    from src.adapters.snapshot.sqlite_snapshot_store import SQLiteSnapshotStore
-    from src.adapters.text3d.hunyuan3d_adapter import build_text3d_adapter
-    from src.adapters.vision.factory import build_vision_adapter
-    from src.infrastructure.env_loader import load_env
+    """Own the single shared Blender connection and viewport task."""
+    runtime: AppRuntime = app.state.runtime
+    try:
+        await runtime.blender.connect()
+    except BlenderConnectionError as exc:
+        logger.warning("Blender unavailable at API startup: %s", exc)
 
-    env_file = app.state.env_file if hasattr(app.state, "env_file") else None
-    load_env(env_file)
-
-    sandbox = BlenderCodeSandbox()
-    blender = build_blender_adapter(sandbox=sandbox)
-    with contextlib.suppress(Exception):
-        await blender.connect()
-
-    event_bus = InMemoryEventBus()
-    adapter_factory = ConcreteAdapterFactory()
-    vision = build_vision_adapter()  # None if no vision API key configured
-    prompt_builder = BlenderContextPromptBuilder()
-    session_store = SQLiteSessionStore()
-    snapshot_store = SQLiteSnapshotStore()
-    polyhaven = PolyHavenAdapter()
-    text3d = build_text3d_adapter()
-
-    app.state.blender = blender
-    app.state.event_bus = event_bus
-    app.state.adapter_factory = adapter_factory
-    app.state.sandbox = sandbox
-    app.state.sanitizer = PromptInjectionSanitizer()
-    app.state.vision = vision
-    app.state.prompt_builder = prompt_builder
-    app.state.session_store = session_store
-    app.state.snapshot_store = snapshot_store
-    app.state.polyhaven = polyhaven
-    app.state.text3d = text3d
-
-    # Viewport live-preview: shared connection registry + broadcast task
-    ws_manager = ConnectionManager()
-    app.state.ws_manager = ws_manager
     push_interval = float(os.environ.get("VIEWPORT_PUSH_INTERVAL", "3"))
     broadcast_task = asyncio.create_task(viewport_broadcast_loop(app.state, interval=push_interval))
+    try:
+        yield
+    finally:
+        broadcast_task.cancel()
+        with contextlib.suppress(asyncio.CancelledError):
+            await broadcast_task
+        await runtime.blender.disconnect()
 
-    yield
 
-    broadcast_task.cancel()
-    with contextlib.suppress(asyncio.CancelledError):
-        await broadcast_task
-    await blender.disconnect()
+def _origins(cors_origins: list[str] | None) -> list[str]:
+    if cors_origins is not None:
+        return cors_origins
+    return [
+        origin.strip()
+        for origin in os.environ.get(
+            "CORS_ORIGINS",
+            "https://bearmacminimac-mini.tail56c751.ts.net",
+        ).split(",")
+        if origin.strip()
+    ]
+
+
+def _identity_required(require_identity: bool | None) -> bool:
+    if require_identity is not None:
+        return require_identity
+    return os.environ.get("REQUIRE_TAILNET_IDENTITY", "").lower() in {
+        "1",
+        "true",
+        "yes",
+    }
+
+
+def _publish_runtime_state(app: FastAPI, runtime: AppRuntime) -> None:
+    """Keep existing route state aliases while exposing the shared runtime."""
+    app.state.runtime = runtime
+    app.state.blender = runtime.blender
+    app.state.scene_operations = runtime.scene_operations
+    app.state.batch_transform = runtime.batch_transform
+    app.state.scene_export = runtime.scene_export
+    app.state.print_readiness = runtime.print_readiness
+    app.state.event_bus = runtime.event_bus
+    app.state.adapter_factory = runtime.adapter_factory
+    app.state.sandbox = runtime.sandbox
+    app.state.sanitizer = runtime.sanitizer
+    app.state.vision = runtime.vision
+    app.state.prompt_builder = runtime.prompt_builder
+    app.state.session_store = runtime.session_store
+    app.state.snapshot_store = runtime.snapshot_store
+    app.state.polyhaven = runtime.polyhaven
+    app.state.text3d = runtime.text3d
+    app.state.ws_manager = ConnectionManager()
 
 
 def create_app(
     cors_origins: list[str] | None = None,
     env_file: Path | None = None,
     require_identity: bool | None = None,
+    runtime: AppRuntime | None = None,
 ) -> FastAPI:
-    """Factory — safe to import as a library.
+    """Create an API whose REST, WebSocket, and MCP adapters share one runtime."""
+    origins = _origins(cors_origins)
+    shared_runtime = runtime or build_runtime(env_file)
+    mcp = create_mcp_server(
+        shared_runtime.scene_operations,
+        shared_runtime.scene_operations,
+        shared_runtime.print_readiness,
+    )
 
-    Args:
-        cors_origins: Allowed CORS origins. Defaults to CORS_ORIGINS env var.
-        env_file: Path to .env file. Defaults to project-root .env.
-        require_identity: Gate HTTP routes on the gateway-injected tailnet
-            identity header. Defaults to the REQUIRE_TAILNET_IDENTITY env var
-            (off unless set), so tests/local dev are unaffected and production
-            opts in via the plist.
-    """
-    if require_identity is None:
-        require_identity = os.environ.get("REQUIRE_TAILNET_IDENTITY", "").lower() in (
-            "1",
-            "true",
-            "yes",
-        )
-    origins = cors_origins or [
-        o.strip()
-        # Access is unified through Tailnet — no local/localhost origin. The
-        # frontend is served same-origin under /blender, so CORS only needs the
-        # Tailscale host. (CORS_ORIGINS env can still override for other hosts.)
-        for o in os.environ.get(
-            "CORS_ORIGINS",
-            "https://bearmacminimac-mini.tail56c751.ts.net",
-        ).split(",")
-        if o.strip()
-    ]
+    allowed_hosts = {"127.0.0.1", "localhost"}
+    for origin in origins:
+        hostname = urlparse(origin).hostname
+        if hostname is not None:
+            allowed_hosts.add(hostname)
 
+    mcp_app = mcp.http_app(
+        path="/",
+        stateless_http=True,
+        host_origin_protection=True,
+        allowed_hosts=sorted(allowed_hosts),
+        allowed_origins=origins,
+    )
     app = FastAPI(
         title="Blender MCP Studio API",
         description="Conversational 3D creation via Blender + MCP + LLM",
         version="0.1.0",
-        lifespan=_lifespan,
+        lifespan=combine_lifespans(_lifespan, mcp_app.lifespan),
     )
     app.state.env_file = env_file
+    app.state.mcp_server = mcp
+    _publish_runtime_state(app, shared_runtime)
 
     app.add_middleware(
         CORSMiddleware,
@@ -128,32 +146,31 @@ def create_app(
         allow_methods=["*"],
         allow_headers=["*"],
     )
-
-    if require_identity:
+    app.add_middleware(_NormalizeMcpPath)
+    if _identity_required(require_identity):
         from api.require_identity import RequireTailnetIdentity
 
         app.add_middleware(RequireTailnetIdentity)
 
     app.include_router(chat.router)
     app.include_router(scene.router)
+    app.include_router(batch_transform.router)
+    app.include_router(scene_export.router)
+    app.include_router(print_readiness.router)
 
     @app.get("/api/health")
     async def health() -> dict[str, str]:
-        # `status` reflects the API's own health (kept "ok" so the MHH watchdog
-        # doesn't needlessly restart a healthy API when only Blender is down).
-        # `blender` reports the REAL engine connectivity, so a live API is never
-        # mistaken for a live Blender (previously this hardcoded "ok").
         blender_state = "unknown"
-        adapter = getattr(app.state, "blender", None)
-        if adapter is not None:
-            try:
-                blender_state = "connected" if await adapter.is_connected() else "disconnected"
-            except Exception:
-                blender_state = "disconnected"
+        try:
+            blender_state = (
+                "connected" if await shared_runtime.blender.is_connected() else "disconnected"
+            )
+        except Exception:
+            blender_state = "disconnected"
         return {"status": "ok", "blender": blender_state}
 
+    app.mount("/mcp", mcp_app)
     return app
 
 
-# Module-level app for uvicorn entry point
 app = create_app()
