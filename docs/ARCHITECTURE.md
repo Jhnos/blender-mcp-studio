@@ -4,6 +4,14 @@
 > model 同時驅動畫面與 AI 結構化欄位；`test_architecture_ssot.py` 以 AST 驗證
 > model node 與真實 class/function anchor，避免圖與程式漂移。
 
+## 目錄
+
+- [核心不變式](#核心不變式)
+- [分層與責任](#分層與責任)
+- [Inbound adapters](#inbound-adapters)
+- [架構決策](#架構決策)
+- [安全邊界](#安全邊界)
+
 ## 核心不變式
 
 所有 inbound transport 都匯入同一個 `AppRuntime`：
@@ -98,7 +106,7 @@ Dependency rule：外層依賴內層；domain/application 不 import FastAPI、F
 - 後果：公開指令固定為九個 curated callbacks；操作記錄上限五筆，只有明確 idempotent 的刷新可顯示重試。
 
 完整決策脈絡與 rejected alternatives 見
-[development/MCP_LAYER_ADR.md](development/MCP_LAYER_ADR.md)。
+[archived MCP layer ADR](archive/2026-07-client-neutral-mcp/development/MCP_LAYER_ADR.md)。
 
 ## 安全邊界
 

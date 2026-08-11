@@ -1,5 +1,17 @@
 # 技術規格（Technical Specifications）
 
+## 目錄
+
+- [Runtime baseline](#runtime-baseline)
+- [Service and route constants](#service-and-route-constants)
+- [MCP transport](#mcp-transport)
+- [MCP tool contract](#mcp-tool-contract)
+- [Domain/application contracts](#domainapplication-contracts)
+- [Shared runtime](#shared-runtime)
+- [Security](#security)
+- [Environment variables](#environment-variables)
+- [Verification matrix](#verification-matrix)
+
 ## Runtime baseline
 
 | 項目 | 版本／值 | 說明 |
@@ -18,7 +30,7 @@ entry point is `scripts/ci.sh`.
 
 | Service | Listener | Public route |
 |---|---|---|
-| Vite Web | `127.0.0.1:19504` | `/blender/` |
+| Vite production preview | `127.0.0.1:19504` | `/blender/` |
 | FastAPI | `127.0.0.1:19505` | `/blender/api/*`, `/blender/ws/*`, `/blender/mcp` |
 | Blender addon | `127.0.0.1:9876` | none; API-owned raw TCP |
 
@@ -81,6 +93,10 @@ is narrowed field-by-field without silent `str`, `int`, or `bool` coercion.
 is implemented by `BlenderPrintReadinessAdapter`. Reports use millimetres and
 bounded 20,000-triangle / 5,000-intersection analysis.
 
+`BatchTransformService` depends on the narrow `SceneBatchCommandPort`. It validates all
+targets before mutation and delegates one Blender operator invocation so one Undo restores
+the entire batch. REST is the delivery adapter; Web selection state is not Blender selection.
+
 ## Shared runtime
 
 `api/runtime.py` is the composition root. `AppRuntime` contains one:
@@ -88,6 +104,7 @@ bounded 20,000-triangle / 5,000-intersection analysis.
 - `BlenderPort`
 - `SceneOperationsService`
 - `PrintReadinessService`
+- `BatchTransformService`
 - event bus and adapter factory
 - security, prompt, persistence, vision, asset, and text-3D ports
 
@@ -133,7 +150,7 @@ the API runtime's Blender adapter or socket endpoint.
 | Unit | Domain, service, tool registry | Fake Blender port | validation, routing, error semantics |
 | ASGI e2e | FastAPI, FastMCP framing, middleware | Fake Blender port | mount, identity, Origin, protocol, client neutrality |
 | Headless UI | React/MDR/Vite tests | Mock HTTP backend | frontend behavior |
-| Real machine | Public Tailnet MCP + API + Blender | none | nonce mutation and print fixtures with independent socket oracle |
+| Real machine | Public Tailnet MCP + API + Blender | none | nonce mutation, print fixtures, and one-Undo batch proof with independent socket oracle |
 
 Run `scripts/ci.sh` for hermetic gates and `scripts/ci.sh --real` only when addon
 `9876` is available. A real tier `SKIP` is not evidence of Blender mutation.

@@ -58,6 +58,8 @@ bash deploy/launchd/install.sh web    # web only
 4. Atomically moves the rendered file into `~/Library/LaunchAgents/`.
 5. Bounded-retries the known post-bootout `launchctl bootstrap` EIO race, then
    `enable` + `kickstart -k` to start it.
+6. For `all`, condition-waits for the Blender addon listener on `9876` before
+   starting the API; a registered/running LaunchAgent is not dependency readiness.
 
 ## Verify
 

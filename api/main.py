@@ -23,6 +23,7 @@ from src.adapters.mcp_server import create_mcp_server
 from src.core.domain.exceptions import BlenderConnectionError
 
 logger = logging.getLogger(__name__)
+PROJECT_VERSION = (Path(__file__).parents[1] / "VERSION").read_text().strip()
 
 
 class _NormalizeMcpPath:
@@ -132,7 +133,7 @@ def create_app(
     app = FastAPI(
         title="Blender MCP Studio API",
         description="Conversational 3D creation via Blender + MCP + LLM",
-        version="0.1.0",
+        version=PROJECT_VERSION,
         lifespan=combine_lifespans(_lifespan, mcp_app.lifespan),
     )
     app.state.env_file = env_file

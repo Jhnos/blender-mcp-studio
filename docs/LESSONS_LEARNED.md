@@ -4,6 +4,14 @@
 
 ---
 
+## 2026-08-11
+
+### Process 已啟動不等於它的相依服務已 ready
+- **觸發情境**：部署多個有啟動順序的長期服務；服務管理器已把上游標成 running，便立刻啟動只在 startup 建立一次連線的下游。
+- **該主動檢查**：在跨服務邊界驗證真正的 readiness invariant（listener、協定探測或語意 health），而不是只看 process/job state；再確認下游是在 readiness 成立後才啟動。
+- **為什麼沒抓到**：部署 gate 只守「plist 成功載入」與最終各 port 存在，沒有守**時間順序**。上游稍後確實開始 listening，讓最終快照看似健康，但下游早先的一次性 connect 已失敗並永久停在 disconnected。
+- **如何預防**：部署編排在相依邊界使用 bounded condition wait，超時 fail loud；用 source-order contract test 鎖定「上游 install → readiness wait → 下游 install」，最後再用下游的語意 health 與端到端 gate 驗證。固定 sleep 不是替代品。
+
 ## 2026-07-19
 
 ### 關閉 HMR server 不等於 production page 不會載入 dev client

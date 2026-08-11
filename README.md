@@ -60,16 +60,22 @@ curl -s localhost:19505/api/health    # → {"status":"ok","blender":"connected"
 > 首次需先安裝 addon 到 Blender：`bash scripts/install_blender_addon.sh`。
 > 手動前景啟動（除錯用）：`bash scripts/run_blender.sh`。
 
-### 啟動服務
+### 啟動正式服務
 
 ```bash
-./scripts/start_services.sh
+./scripts/start_services.sh  # build + install/restart three LaunchAgents + verify listeners
 ```
 
 開啟瀏覽器：**http://localhost:19504/blender/**
 
-> ⚠️ 本機有其他服務時，使用非常用 port（API=19505，Vite=19504）。
-> 修改 `.env` 的 `BLENDER_HOST/PORT`，`vite.config.ts` 的 proxy target 需同步更新。
+正式 Web 服務使用 production build + `vite preview`，不載入 HMR client。前景開發另用：
+
+```bash
+bash scripts/run_dev.sh  # API 19505 + Vite dev 5173；埠已占用時會 fail loud
+```
+
+> 修改服務埠時，先改 `~/MacHomeHub/config/services.yaml` 與 `deploy/launchd/*.plist`，
+> 再同步 Vite proxy；不要直接編輯已安裝的 LaunchAgent。
 
 ### 連接 MCP client
 
@@ -175,8 +181,9 @@ cd web && npx vitest run               # 前端單元 + dummy run
 python scripts/verify/mcp_verify_chat.py   # chat 端對端（需 Blender + LLM）
 ```
 
-驗證計畫的設計理由見 [`docs/verification/frontend-redesign/`](docs/verification/frontend-redesign/)
-（dummy-run 計畫 + MCP 鑑別性驗證計畫）。
+目前的前端 dummy-run 規則見
+[`docs/verification/frontend-redesign/dummy-run-plan.md`](docs/verification/frontend-redesign/dummy-run-plan.md)；
+已完成的 MCP 鑑別性驗證計畫保存在 campaign archive。
 
 ---
 
@@ -196,11 +203,8 @@ python scripts/verify/mcp_verify_chat.py   # chat 端對端（需 Blender + LLM�
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | 架構決策（Hexagonal Architecture）|
 | [docs/architecture.html](docs/architecture.html) | 人類視覺 + AI 結構化欄位共用的架構 SSOT |
 | [docs/MCP_CLIENTS.md](docs/MCP_CLIENTS.md) | Codex/Claude/Cursor/VS Code/stdio 設定與安全契約 |
-| [docs/development/README.md](docs/development/README.md) | Client-neutral MCP 開發文件導覽與 SSOT 分工 |
-| [docs/development/MCP_LAYER_DEVELOPMENT.md](docs/development/MCP_LAYER_DEVELOPMENT.md) | Client-neutral MCP 目標架構、DDD/SOLID 與安全契約 |
-| [docs/development/MCP_LAYER_TDD.md](docs/development/MCP_LAYER_TDD.md) | MCP layer 的 RED→GREEN→REFACTOR 與可證偽 gate |
-| [docs/development/MCP_LAYER_ADR.md](docs/development/MCP_LAYER_ADR.md) | MCP inbound adapter 的決策理由與替代方案 |
+| [docs/tasks/00_INDEX.md](docs/tasks/00_INDEX.md) | 唯一任務狀態與跨對話接手入口 |
+| [docs/KNOWLEDGE.md](docs/KNOWLEDGE.md) | 現行知識導航與 5S 放置規則 |
+| [docs/archive/2026-07-client-neutral-mcp/](docs/archive/2026-07-client-neutral-mcp/) | 已完成 MCP／列印健檢／批次前端 campaign 證據 |
 | [docs/TECH_SPEC.md](docs/TECH_SPEC.md) | 技術規格 |
 | [docs/CODING_STYLE.md](docs/CODING_STYLE.md) | 程式設計風格 |
-| [docs/PROGRESS.md](docs/PROGRESS.md) | 進度追蹤 |
-| [docs/KNOWLEDGE.md](docs/KNOWLEDGE.md) | 踩坑經驗 + 架構決策脈絡 |

@@ -1,6 +1,7 @@
 # Development documentation
 
-本目錄是尚未落地功能的開發規範入口。文件各自只有一個責任，避免同一事實在多處可編輯而漂移。
+本目錄是已完成 client-neutral MCP campaign 的歷史規範入口。文件各自只有一個責任；
+現行任務只讀 [`../../../tasks/00_INDEX.md`](../../../tasks/00_INDEX.md)。
 
 | 問題 | SSOT | 責任 |
 |---|---|---|
@@ -9,14 +10,13 @@
 | 如何用 TDD 實作並證明它是真的？ | [MCP_LAYER_TDD.md](MCP_LAYER_TDD.md) | RED/GREEN/REFACTOR、測試替身、可證偽 gate、真 Blender oracle |
 | 為何選 inbound adapter、又拒絕哪些方案？ | [MCP_LAYER_ADR.md](MCP_LAYER_ADR.md) | ADR-005 的 context、alternatives、consequences 與 status transition |
 | 實際要依序改哪些檔案？ | [implementation plan](../superpowers/plans/2026-07-18-client-neutral-mcp-layer.md) | 逐 task、逐檔案、逐 command、逐 commit 的執行清單 |
-| 專案目前已經採用什麼架構？ | [ARCHITECTURE.md](../ARCHITECTURE.md) | 已落地的全專案架構與 ADR |
-| 過去踩過哪些坑？ | [LESSONS_LEARNED.md](../LESSONS_LEARNED.md) | 事故脈絡與同類錯誤防線 |
+| 專案目前已經採用什麼架構？ | [ARCHITECTURE.md](../../../ARCHITECTURE.md) | 已落地的全專案架構與 ADR |
+| 過去踩過哪些坑？ | [LESSONS_LEARNED.md](../../../LESSONS_LEARNED.md) | 事故脈絡與同類錯誤防線 |
 
 ## 文件狀態
 
-`MCP_LAYER_DEVELOPMENT.md` 與 `MCP_LAYER_TDD.md` 描述規範與驗證方法；實際
-進度只讀 `STATUS.md`。Hermetic implementation 已落地不代表已部署或真機通過，
-`scripts/ci.sh --real` 明確 PASS 前不得宣稱 Blender acceptance 完成。
+`MCP_LAYER_DEVELOPMENT.md` 與 `MCP_LAYER_TDD.md` 保存當時的規範與驗證方法；
+campaign 最終結果只讀 `STATUS.md`。這些文件已封存，不再作現行規格 SSOT。
 
 ## 衝突處理
 

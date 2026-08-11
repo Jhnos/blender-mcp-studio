@@ -1,0 +1,4 @@
+interface:
+  display_name: "Blender MCP Studio"
+  short_description: "Develop and verify the client-neutral Blender MCP Studio"
+  default_prompt: "Use $blender-mcp-studio to implement and verify a Blender MCP Studio change."
