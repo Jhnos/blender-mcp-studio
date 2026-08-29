@@ -5,30 +5,50 @@
 
 ## [Unreleased]
 
-### Added
+### V01.00.001
+
+#### Added
+
+- Added an immutable, validated two-cell tendon-joint specification with RED-to-GREEN tests
+  and a Blender 5.1 generator for three female-yoke discs, two male cross-gimbals, four
+  named hinge axes, four continuous tendon routes, and separated print-layout evidence.
+
+#### Changed
+
+- Made concept renders deterministic in a shared Blender runtime by isolating unrelated
+  scene objects, using scale-stable Workbench colors, and restoring prior visibility.
+- Reduced generated mesh density and removed degenerate gimbal geometry so MCP print
+  readiness completes without truncation; remaining support and tip-snap warnings stay
+  visible as design-review items.
+- Archived the accepted project-knowledge 5S task and opened the tendon-joint task as the
+  sole current progress record.
+
+### V01.00.000
+
+#### Added
 
 - Added project task/checkpoint SSOT, knowledge 5S budgets, and a repository-specific
   `blender-mcp-studio` Skill.
 - Established the base36 `VERSION` release SSOT and exposed it through FastAPI metadata.
 - Added a machine gate for broken local Markdown links, including archived documentation.
 
-### Changed
+#### Changed
 
 - Consolidated agent instructions in `AGENTS.md`, with `CLAUDE.md` importing the shared rules.
 - Archived the completed 2026-07 campaign and replaced the legacy knowledge monolith with a
   current navigation map.
 - Made production startup delegate to launchd and reserved Vite port 5173 for foreground dev.
 
-### Deprecated
+#### Deprecated
 
-### Removed
+#### Removed
 
 - Removed stale local agent permission entries and generated cache/build artifacts from the
   working directory; secrets, dependencies, runtime databases, and launch configuration remain.
 
-### Fixed
+#### Fixed
 
 - Made `install.sh all` wait for measured Blender addon readiness before starting the API,
   preventing a one-shot startup connection from remaining disconnected after a cold boot.
 
-### Security
+#### Security

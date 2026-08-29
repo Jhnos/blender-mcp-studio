@@ -1,6 +1,6 @@
 # Project knowledge and agent-surface 5S
 
-**Status:** ACTIVE
+**Status:** DONE
 
 ## Goal
 
