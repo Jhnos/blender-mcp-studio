@@ -25,11 +25,11 @@ from scripts.tendon_joint_render import (  # noqa: E402
     render_views,
     setup_render,
 )
-from src.core.domain.tendon_joint import TendonJointSpec  # noqa: E402
+from src.core.domain.tendon_joint import TendonVertebraSpec  # noqa: E402
 
 PREFIX = "TJ_"
 OUTPUT_DIR = Path(os.environ.get("TENDON_JOINT_OUTPUT_DIR", "/tmp/blender-mcp-tendon-joint"))
-SPEC = TendonJointSpec()
+SPEC = TendonVertebraSpec()
 
 
 def material(name: str, color: tuple[float, float, float, float], metallic: float = 0.0):
@@ -47,7 +47,7 @@ def material(name: str, color: tuple[float, float, float, float], metallic: floa
 
 
 PRINT_MAT = material("TJ_MAT_PRINTABLE", (0.12, 0.16, 0.22, 1.0), metallic=0.2)
-MALE_MAT = material("TJ_MAT_MALE", (1.0, 0.28, 0.055, 1.0), metallic=0.1)
+PRINT_ALT_MAT = material("TJ_MAT_PRINTABLE_ALT", (0.22, 0.3, 0.4, 1.0), metallic=0.15)
 X_MAT = material("TJ_MAT_X_AXIS", (0.95, 0.08, 0.08, 1.0))
 Y_MAT = material("TJ_MAT_Y_AXIS", (0.08, 0.3, 1.0, 1.0))
 TENDON_MAT = material("TJ_MAT_TENDON", (0.02, 0.92, 0.95, 1.0), metallic=0.15)
@@ -137,15 +137,6 @@ def boolean(target: bpy.types.Object, cutter: bpy.types.Object, operation: str) 
     bpy.data.objects.remove(cutter, do_unlink=True)
 
 
-def bevel(obj: bpy.types.Object, width_mm: float = 0.8) -> None:
-    bpy.context.view_layer.objects.active = obj
-    modifier = obj.modifiers.new(name="TJ_PRINT_BEVEL", type="BEVEL")
-    modifier.width = m(width_mm)
-    modifier.segments = 2
-    modifier.limit_method = "ANGLE"
-    bpy.ops.object.modifier_apply(modifier=modifier.name)
-
-
 def cleanup_mesh(obj: bpy.types.Object) -> None:
     mesh = obj.data
     editable = bmesh.new()
@@ -158,113 +149,100 @@ def cleanup_mesh(obj: bpy.types.Object) -> None:
     mesh.update()
 
 
-def create_disc(index: int, z_mm: float, assembly: bpy.types.Collection) -> bpy.types.Object:
-    role = ("BASE", "MID", "TIP")[index]
-    disc = add_cylinder(
-        f"TJ_PRINTABLE_DISC_{index}_{role}",
-        SPEC.disc_diameter_mm / 2.0,
-        SPEC.disc_thickness_mm,
-        (0.0, 0.0, z_mm),
-    )
-    move_to_collection(disc, assembly)
-    assign(disc, PRINT_MAT)
-    for hole_index, (x_mm, y_mm) in enumerate(SPEC.tendon_positions_mm, start=1):
-        cutter = add_cylinder(
-            f"TJ_CUT_TENDON_{index}_{hole_index}",
-            SPEC.tendon_hole_diameter_mm / 2.0,
-            SPEC.disc_thickness_mm + 4.0,
-            (x_mm, y_mm, z_mm),
-        )
-        boolean(disc, cutter, "DIFFERENCE")
-    return disc
-
-
-def add_snap_yoke(
-    disc: bpy.types.Object,
-    disc_z_mm: float,
-    joint_z_mm: float,
-    axis: str,
-    side: str,
-) -> None:
-    """Add two flexible socket arms to a disc and cut a C-shaped snap opening."""
-    radius_mm = SPEC.disc_diameter_mm / 2.0 - 6.0
-    overlap_mm = 1.0
-    lip_mm = 4.2
-    opening_mm = SPEC.pin_diameter_mm * 0.72
-
-    disc_surface = disc_z_mm + (
-        SPEC.disc_thickness_mm / 2.0 if side == "UP" else -SPEC.disc_thickness_mm / 2.0
-    )
-    arm_end = joint_z_mm + (lip_mm if side == "UP" else -lip_mm)
-    root = disc_surface - overlap_mm if side == "UP" else disc_surface + overlap_mm
-    low, high = sorted((root, arm_end))
-    height_mm = high - low
-    arm_z_mm = (low + high) / 2.0
-
-    for sign in (-1.0, 1.0):
-        if axis == "X":
-            location = (sign * radius_mm, 0.0, arm_z_mm)
-            dimensions = (SPEC.yoke_wall_mm, SPEC.yoke_width_mm, height_mm)
-        else:
-            location = (0.0, sign * radius_mm, arm_z_mm)
-            dimensions = (SPEC.yoke_width_mm, SPEC.yoke_wall_mm, height_mm)
-        arm = add_box(f"TJ_ARM_{disc.name}_{axis}_{sign:+.0f}", dimensions, location)
-        boolean(disc, arm, "UNION")
-
-        socket_location = (
-            (sign * radius_mm, 0.0, joint_z_mm)
-            if axis == "X"
-            else (0.0, sign * radius_mm, joint_z_mm)
-        )
-        socket = add_cylinder(
-            f"TJ_CUT_SOCKET_{disc.name}_{axis}_{sign:+.0f}",
-            SPEC.socket_diameter_mm / 2.0,
-            SPEC.yoke_wall_mm + 3.0,
-            socket_location,
-            axis=axis,
-        )
-        boolean(disc, socket, "DIFFERENCE")
-
-        opening_end = arm_end + (1.0 if side == "UP" else -1.0)
-        slit_low, slit_high = sorted((joint_z_mm, opening_end))
-        slit_height = slit_high - slit_low
-        slit_z = (slit_low + slit_high) / 2.0
-        if axis == "X":
-            slit_dimensions = (SPEC.yoke_wall_mm + 3.0, opening_mm, slit_height)
-            slit_location = (sign * radius_mm, 0.0, slit_z)
-        else:
-            slit_dimensions = (opening_mm, SPEC.yoke_wall_mm + 3.0, slit_height)
-            slit_location = (0.0, sign * radius_mm, slit_z)
-        slit = add_box(
-            f"TJ_CUT_SLIT_{disc.name}_{axis}_{sign:+.0f}", slit_dimensions, slit_location
-        )
-        boolean(disc, slit, "DIFFERENCE")
-
-
-def create_gimbal(cell: int, z_mm: float, assembly: bpy.types.Collection) -> bpy.types.Object:
-    radius_mm = SPEC.disc_diameter_mm / 2.0 - 6.0
+def add_uv_sphere(name: str, diameter_mm: float, z_mm: float) -> bpy.types.Object:
     bpy.ops.mesh.primitive_uv_sphere_add(
         segments=32,
         ring_count=16,
-        radius=m(4.2),
+        radius=m(diameter_mm / 2.0),
         location=(0.0, 0.0, m(z_mm)),
     )
-    gimbal = bpy.context.object
-    gimbal.name = f"TJ_PRINTABLE_GIMBAL_{cell}"
-    move_to_collection(gimbal, assembly)
-    assign(gimbal, MALE_MAT)
-    for axis in ("X", "Y"):
-        pin = add_cylinder(
-            f"TJ_MALE_{cell}_{axis}",
-            SPEC.pin_diameter_mm / 2.0,
-            2.0 * radius_mm + SPEC.yoke_wall_mm,
-            (0.0, 0.0, z_mm),
-            axis=axis,
+    sphere = bpy.context.object
+    sphere.name = name
+    return sphere
+
+
+def create_vertebra(assembly: bpy.types.Collection) -> bpy.types.Object:
+    """Create one reusable body with a male ball and a Y-split female socket."""
+    vertebra = add_cylinder(
+        "TJ_PRINTABLE_VERTEBRA_1",
+        SPEC.body_diameter_mm / 2.0,
+        SPEC.body_thickness_mm,
+        (0.0, 0.0, 0.0),
+    )
+    move_to_collection(vertebra, assembly)
+    assign(vertebra, PRINT_MAT)
+
+    for hole_index, (x_mm, y_mm) in enumerate(SPEC.tendon_positions_mm, start=1):
+        cutter = add_cylinder(
+            f"TJ_CUT_TENDON_{hole_index}",
+            SPEC.tendon_hole_diameter_mm / 2.0,
+            SPEC.body_thickness_mm + 4.0,
+            (x_mm, y_mm, 0.0),
         )
-        boolean(gimbal, pin, "UNION")
-    bevel(gimbal, 0.45)
-    cleanup_mesh(gimbal)
-    return gimbal
+        boolean(vertebra, cutter, "DIFFERENCE")
+
+    neck_depth = SPEC.joint_center_offset_mm - SPEC.body_thickness_mm / 2.0
+    neck = add_cylinder(
+        "TJ_MALE_X_NECK",
+        SPEC.ball_neck_diameter_mm / 2.0,
+        neck_depth,
+        (0.0, 0.0, SPEC.body_thickness_mm / 2.0 + neck_depth / 2.0),
+    )
+    boolean(vertebra, neck, "UNION")
+    ball = add_uv_sphere("TJ_MALE_X_BALL", SPEC.ball_diameter_mm, SPEC.joint_center_offset_mm)
+    boolean(vertebra, ball, "UNION")
+
+    socket_center = -SPEC.joint_center_offset_mm
+    outer = add_uv_sphere("TJ_FEMALE_Y_OUTER", SPEC.socket_outer_diameter_mm, socket_center)
+    boolean(vertebra, outer, "UNION")
+    inner = add_uv_sphere("TJ_CUT_FEMALE_Y_CAVITY", SPEC.socket_diameter_mm, socket_center)
+    boolean(vertebra, inner, "DIFFERENCE")
+
+    outer_radius = SPEC.socket_outer_diameter_mm / 2.0
+    opening_z = socket_center - SPEC.socket_retention_mm
+    cutoff_depth = outer_radius + 4.0
+    cutoff = add_box(
+        "TJ_CUT_FEMALE_Y_OPENING",
+        (
+            SPEC.socket_outer_diameter_mm + 4.0,
+            SPEC.socket_outer_diameter_mm + 4.0,
+            cutoff_depth,
+        ),
+        (0.0, 0.0, opening_z - cutoff_depth / 2.0),
+    )
+    boolean(vertebra, cutoff, "DIFFERENCE")
+
+    slot_high = socket_center + outer_radius * 0.72
+    slot_height = slot_high - opening_z
+    slot = add_box(
+        "TJ_CUT_FEMALE_Y_SLOT",
+        (SPEC.socket_slot_mm, SPEC.socket_outer_diameter_mm + 4.0, slot_height),
+        (0.0, 0.0, opening_z + slot_height / 2.0),
+    )
+    boolean(vertebra, slot, "DIFFERENCE")
+
+    cleanup_mesh(vertebra)
+    return vertebra
+
+
+def repeat_vertebra(
+    master: bpy.types.Object,
+    assembly: bpy.types.Collection,
+) -> list[bpy.types.Object]:
+    master.material_slots[0].link = "OBJECT"
+    master.material_slots[0].material = PRINT_MAT
+    parts = [master]
+    for index in range(2, SPEC.assembly_unit_count + 1):
+        copy = master.copy()
+        copy.data = master.data
+        copy.name = f"TJ_PRINTABLE_VERTEBRA_{index}"
+        copy.location.z = m((index - 1) * SPEC.unit_pitch_mm)
+        assembly.objects.link(copy)
+        copy.material_slots[0].link = "OBJECT"
+        copy.material_slots[0].material = PRINT_ALT_MAT if index % 2 == 0 else PRINT_MAT
+        parts.append(copy)
+    bpy.context.view_layer.update()
+    return parts
 
 
 def create_axis_guide(
@@ -304,47 +282,46 @@ def _build_scene() -> None:
     guides = collection("TJ_GUIDES")
     print_layout = collection("TJ_PRINT_LAYOUT")
 
-    discs = [create_disc(index, index * SPEC.disc_pitch_mm, assembly) for index in range(3)]
-    gimbals: list[bpy.types.Object] = []
+    master = create_vertebra(assembly)
+    printable_parts = repeat_vertebra(master, assembly)
     labels: list[bpy.types.Object] = []
-    for cell in range(1, SPEC.cell_count + 1):
-        lower_z = (cell - 1) * SPEC.disc_pitch_mm
-        upper_z = cell * SPEC.disc_pitch_mm
-        joint_z = (lower_z + upper_z) / 2.0
-        add_snap_yoke(discs[cell - 1], lower_z, joint_z, "X", "UP")
-        add_snap_yoke(discs[cell], upper_z, joint_z, "Y", "DOWN")
-        gimbals.append(create_gimbal(cell, joint_z, assembly))
-        create_axis_guide(f"TJ_AXIS_J{cell}_X", joint_z, "X", guides)
-        create_axis_guide(f"TJ_AXIS_J{cell}_Y", joint_z, "Y", guides)
+    for interface in range(1, SPEC.interface_count + 1):
+        joint_z = (interface - 1) * SPEC.unit_pitch_mm + SPEC.joint_center_offset_mm
+        create_axis_guide(f"TJ_AXIS_J{interface}_X", joint_z, "X", guides)
+        create_axis_guide(f"TJ_AXIS_J{interface}_Y", joint_z, "Y", guides)
         labels.extend(
             (
                 add_text(
-                    f"TJ_LABEL_J{cell}_X",
-                    f"J{cell}  X",
+                    f"TJ_LABEL_J{interface}_X",
+                    f"J{interface}  X",
                     (30.0, -8.0, joint_z + 3.0),
                     TEXT_MAT,
                 ),
                 add_text(
-                    f"TJ_LABEL_J{cell}_Y",
-                    f"J{cell}  Y",
+                    f"TJ_LABEL_J{interface}_Y",
+                    f"J{interface}  Y",
                     (-27.0, -18.0, joint_z - 2.0),
                     TEXT_MAT,
                 ),
             )
         )
 
-    for disc in discs:
-        bevel(disc, 0.75)
-        cleanup_mesh(disc)
-    create_tendon_guides(-8.0, SPEC.assembled_height_mm + 8.0, guides)
+    bottom_z = -SPEC.joint_center_offset_mm - SPEC.socket_retention_mm - 2.0
+    top_z = (
+        (SPEC.assembly_unit_count - 1) * SPEC.unit_pitch_mm
+        + SPEC.joint_center_offset_mm
+        + SPEC.ball_radius_mm
+        + 2.0
+    )
+    create_tendon_guides(bottom_z, top_z, guides)
     labels.extend(
         (
             add_text(
                 "TJ_LABEL_TITLE",
-                "2 CELLS  /  4 DOF",
-                (0.0, -8.0, SPEC.assembled_height_mm + 14.0),
+                "ONE PART x 3  /  4 DOF",
+                (0.0, -8.0, top_z + 8.0),
                 TEXT_MAT,
-                5.0,
+                4.3,
             ),
             add_text(
                 "TJ_LABEL_TENDON",
@@ -356,17 +333,18 @@ def _build_scene() -> None:
         )
     )
 
-    printable_parts = [*discs, *gimbals]
     layout_objects = duplicate_print_layout(printable_parts, print_layout)
     camera, _support_objects = setup_render(SPEC, FLOOR_MAT, assign)
     assembly_objects = [*printable_parts]
     render_views(OUTPUT_DIR, camera, assembly_objects, guides, labels, layout_objects)
 
     scene["TJ_SPEC_MM"] = {
-        "cell_count": SPEC.cell_count,
+        "interface_count": SPEC.interface_count,
+        "assembly_unit_count": SPEC.assembly_unit_count,
+        "printable_part_type_count": len(SPEC.printable_part_types),
         "degrees_of_freedom": SPEC.degrees_of_freedom,
-        "disc_diameter": SPEC.disc_diameter_mm,
-        "pin_diameter": SPEC.pin_diameter_mm,
+        "body_diameter": SPEC.body_diameter_mm,
+        "ball_diameter": SPEC.ball_diameter_mm,
         "socket_diameter": SPEC.socket_diameter_mm,
         "tendon_hole_diameter": SPEC.tendon_hole_diameter_mm,
         "radial_clearance": SPEC.radial_clearance_mm,
@@ -374,6 +352,7 @@ def _build_scene() -> None:
         "maximum_articulation": SPEC.maximum_articulation_deg,
     }
     scene["TJ_PRINTABLE_PARTS"] = [obj.name for obj in printable_parts]
+    scene["TJ_PRINTABLE_PART_TYPES"] = list(SPEC.printable_part_types)
     scene["TJ_AXIS_NAMES"] = list(SPEC.axis_names)
     scene["TJ_DESIGN_NOTE"] = (
         "Concept prototype; validate line wear, snap fatigue, and load before use."

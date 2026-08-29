@@ -5,6 +5,21 @@
 
 ## [Unreleased]
 
+### V01.00.002
+
+#### Added
+
+- Added an immutable one-part vertebra contract and Blender generator: three instances share
+  one mesh, while two ball-socket interfaces provide four named X/Y rotational axes and four
+  continuous tendon routes.
+
+#### Changed
+
+- Replaced the earlier disc-and-cross-gimbal prototype with one repeatable 42 mm vertebra
+  carrying a 10.0 mm male ball and 10.6 mm Y-split female socket.
+- Removed the whole-part bevel after real MCP analysis exposed slot-edge defects; the final
+  report has no non-manifold or intersection findings and retains honest support warnings.
+
 ### V01.00.001
 
 #### Added

@@ -9,7 +9,7 @@ from pathlib import Path
 import bpy
 from mathutils import Matrix, Vector
 
-from src.core.domain.tendon_joint import TendonJointSpec
+from src.core.domain.tendon_joint import TendonVertebraSpec
 
 
 def m(value_mm: float) -> float:
@@ -47,7 +47,7 @@ def face_camera(obj: bpy.types.Object, camera: bpy.types.Object) -> None:
 
 
 def setup_render(
-    spec: TendonJointSpec,
+    spec: TendonVertebraSpec,
     floor_material: bpy.types.Material,
     assign_material: Callable[[bpy.types.Object, bpy.types.Material], None],
 ) -> tuple[bpy.types.Object, list[bpy.types.Object]]:
@@ -86,7 +86,8 @@ def setup_render(
     camera = bpy.context.object
     camera.name = "TJ_CAMERA"
     camera.data.lens = 58
-    look_at(camera, (0.0, 0.0, spec.assembled_height_mm * 0.48))
+    assembly_midpoint = (spec.assembly_unit_count - 1) * spec.unit_pitch_mm / 2.0
+    look_at(camera, (0.0, 0.0, assembly_midpoint))
     scene.camera = camera
 
     lights: list[bpy.types.Object] = []
@@ -111,23 +112,21 @@ def duplicate_print_layout(
     target: bpy.types.Collection,
 ) -> list[bpy.types.Object]:
     positions = (
-        (-52.0, -30.0),
-        (0.0, -30.0),
-        (52.0, -30.0),
-        (-25.0, 34.0),
-        (25.0, 34.0),
+        (-58.0, 0.0),
+        (0.0, 0.0),
+        (58.0, 0.0),
+    )
+    rotations = (
+        Matrix.Rotation(math.radians(65.0), 4, "X"),
+        Matrix.Identity(4),
+        Matrix.Rotation(math.pi, 4, "X"),
     )
     copies: list[bpy.types.Object] = []
-    for source, position in zip(parts, positions, strict=True):
+    for source, position, rotation in zip(parts, positions, rotations, strict=True):
         copy = source.copy()
-        copy.data = source.data.copy()
+        copy.data = source.data
         copy.name = source.name.replace("TJ_PRINTABLE", "TJ_LAYOUT")
         target.objects.link(copy)
-        rotation = (
-            Matrix.Rotation(math.pi, 4, "X")
-            if source.name.endswith("DISC_2_TIP")
-            else Matrix.Identity(4)
-        )
         rotated_z = [(rotation @ vertex.co).z for vertex in copy.data.vertices]
         bed_z = -min(rotated_z)
         copy.matrix_world = (
@@ -165,10 +164,10 @@ def render_views(
     for obj in layout_objects:
         obj.hide_render = False
 
-    camera.location = (0.0, 0.0, m(225.0))
+    camera.location = (0.0, m(-220.0), m(170.0))
     camera.data.type = "ORTHO"
-    camera.data.ortho_scale = m(225.0)
-    look_at(camera, (0.0, 0.0, 0.0))
+    camera.data.ortho_scale = m(165.0)
+    look_at(camera, (0.0, 0.0, 5.0))
     scene.display.shading.show_shadows = False
     scene.render.resolution_x = 1300
     scene.render.resolution_y = 850
