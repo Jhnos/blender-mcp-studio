@@ -5,6 +5,23 @@
 
 ## [Unreleased]
 
+### V01.00.003
+
+#### Added
+
+- Added an immutable hinge-phalanx domain contract, RED-to-GREEN validation tests, and a
+  Blender generator for five identical links sharing one mesh across four serviceable
+  X-Y-X-Y revolute joints.
+- Added deterministic assembly and three-view print-layout evidence with 4 mm pins, optional
+  MR84 4x8x3 bearing interfaces, and four continuous tendon guides.
+
+#### Changed
+
+- Replaced the active bowl-shaped ball-socket concept with alternating single-axis clevis
+  hinges that are suitable for FDM prototyping and map directly to machined pins and bearings.
+- Changed tendon routing to a quarter-turn-invariant cross pattern so the same printed part
+  can be installed at alternating 0/90-degree orientations without changing hole alignment.
+
 ### V01.00.002
 
 #### Added
