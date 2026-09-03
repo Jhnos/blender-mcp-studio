@@ -5,6 +5,24 @@
 
 ## [Unreleased]
 
+### V01.00.004
+
+#### Added
+
+- Added nine short repeated hollow modules, eight alternating side-mounted hinges, a clear
+  10 mm sensor-wire channel, four tendon routes and a single-module millimetre STL export.
+- Added reusable geometry, render and explicit-mesh export helpers plus a JSON-driven
+  generator/oracle/MCP verifier with independent binary STL readback and sampled joint motion.
+- Added RED-to-GREEN tests for geometry constraints, artifact parsing, fail-closed reports,
+  missing motion samples and assembly-camera restoration; documented the reusable workflow.
+
+#### Fixed
+
+- Removed static and bent bridge/lug collisions by deriving bridge placement from the
+  motion envelope; real geometry checks pass 15 discrete poses from −34 to +34 degrees.
+- Prevented overlapping/cropped print layouts and camera state leaking from the last render
+  into the saved assembly file. Thin-wall and support warnings remain visible for trial prints.
+
 ### V01.00.003
 
 #### Added

@@ -1,93 +1,90 @@
-# Four-DOF alternating-axis tendon hinge chain
+# Short hollow alternating-axis tendon hinge chain
 
-**Status:** ACTIVE
+**Status:** AWAITING-ACCEPTANCE
 
 ## Goal
 
-Create one parametric, repeatable phalanx link that is strong enough for an FDM prototype
-and maps cleanly to machined metal. Five identical links must form four serviceable revolute
-joints and four continuous tendon routes without a unique printed connector part.
+Deliver one short, hollow, repeatable module with side-mounted serviceable hinges.
+Nine identical modules form eight alternating X/Y joints; the exact centre remains
+available for sensor wiring. Generation, export and verification must be reusable modules.
 
 ## Context to read
 
-1. `AGENTS.md`
-2. `.agents/skills/blender-mcp-studio/SKILL.md`
-3. This task only; V1/V2 geometry is preserved in git history, not active design input.
+1. `AGENTS.md` and the project `blender-mcp-studio` Skill.
+2. This task and [generated-artifact workflow](../verification/generated-artifacts.md).
+3. V1/V2/V3 are superseded design history in git, not active specifications.
 
-## Specification
+## V4 specification
 
-- Every link has one distal X-axis male tongue and one proximal Y-axis female clevis.
-- Rotate alternate links 90 degrees around the chain axis. The four joint axes must then be
-  `J1_X`, `J2_Y`, `J3_X`, and `J4_Y`.
-- Use a 4 mm pin interface and concentric 8.1 mm seats for optional MR84 4x8x3 bearings.
-  Pins and bearings are standard hardware, not additional printable part types.
-- Four tendon holes use a quarter-turn-invariant cross pattern so all five rotated links
-  retain the same four straight neutral-position routes.
-- Generate a complete assembly view and three-view print layout in millimetres with
-  deterministic component names. Keep the former ball-socket version out of this slice.
-- This is a concept prototype, not a load-certified actuator. Record fit, fatigue, tendon
-  wear, and support assumptions visibly.
+- One printable annular body: 28 mm body diameter, 10.4 mm body length, 20 mm pitch.
+  Including ears, the single mesh bounds are approximately 35 × 42.2 × 28.6 mm.
+  Nine straight modules span 188.6 mm along Z.
+- Central through-bore Ø10 mm; four quarter-turn-invariant diagonal tendon bores Ø2.4 mm
+  at radius 9.5 mm. Rotations are 0/90/0/90/0/90/0/90/0 degrees.
+- Two separate side pins per joint, nominal Ø4 mm; printed bores Ø4.5 mm and optional
+  MR84 4×8×3 bearing seats Ø8.1 mm. Pins never cross the central axis.
+- Side male/female lug centres are 16/19.5 mm from the axis, with 0.4 mm axial running
+  clearance. Lug outside diameter is 19.8 mm; load bridges are 2.4 × 4 mm.
+- Bridge placement is derived from a ±34-degree motion envelope with 0.05 mm design
+  margin. Four joints per plane give a 136-degree algebraic sum, not a guaranteed tip angle.
+- Four tendon lines couple eight joint coordinates; four cable directions are not eight
+  independently actuated degrees of freedom. No actuator or inverse-kinematics claim.
+- Standard pins/bearings and coloured wire routes are concept visualization, not parts
+  to include in the printable STL. No automatic mesh repair or material-strength claim.
 
 ## Acceptance checks
 
-- Pure validation tests reject weak lug walls, undersized pins, bad fork clearance, invalid
-  bearing seats, non-phalanx proportions, and broken tendon edge walls.
-- Blender contains five same-mesh phalanx objects at 0/90/0/90/0 degrees, four named pins,
-  eight bearing objects, and four continuous tendon guides.
-- Renders make the male tongue, female clevis, X/Y pin alternation, and standard hardware
-  legible without cropping.
-- Actual MCP print-readiness identifies remaining review items without hiding them.
-- Human acceptance and a physical pin/bearing coupon are required before STL dimensions are
-  frozen.
+- Pure immutable specification and contract tests pass; malformed/truncated evidence fails.
+- One command generates the .blend, single-module STL and three PNGs, then performs the
+  independent Blender oracle and public MCP readiness call.
+- Nine objects share one mesh; the centre ray is unobstructed; straight and displayed bent
+  adjacent pairs do not overlap. A single joint passes all 15 samples from −34° to +34°.
+- Binary STL is independently readable and reports expected millimetre-scale dimensions.
+- Independent visual rubric A–I checks nine modules, open centre, split pins, X/Y alternation,
+  four tendons, bent preview, uncropped print views, labels and contrast.
+- Slicer inspection and a physical fit coupon are required before manufacturing acceptance.
 
 ## Hand-off
 
 ### Verified facts
 
-- V1 two-part geometry is sealed in `6841cd7`; V2 one-part ball-socket geometry is sealed in
-  `3632db0`. The user rejected the bowl-shaped socket because of FDM lip weakness and poor
-  metal machinability, so the active V3 uses serial hinges.
-- The new RED failed because `src.core.domain.hinge_chain` did not exist. After a conscious
-  contract amendment for quarter-turn-invariant tendon holes, 13 focused tests pass and the
-  TDD weakening ratchet remains green.
-- `HingePhalanxSpec` is an immutable, DDD-pure value object: 5 identical links, 4 revolute
-  joints, X-Y-X-Y axes, one printable part type, 4.5 mm printed pin bore, and 8.1 mm MR84 seat.
-- Blender 5.1 executed `scripts/model_hinge_chain.py` through the addon socket and saved
-  `/tmp/blender-mcp-hinge-chain/hinge_chain_4dof.blend` plus assembly and print-layout PNGs.
-- Independent Blender oracle observed 5 printable objects plus 3 layout objects sharing one
-  mesh, rotations `0/90/0/90/0`, axes `J1_X/J2_Y/J3_X/J4_Y`, and the declared standard
-  hardware contract.
-- The public local Streamable HTTP MCP endpoint exposed nine tools and successfully called
-  `check_print_readiness`. The report completed without truncation, non-manifold findings,
-  or intersections: 3 display objects, 11,616 triangles, about 35,001 mm³ aggregate volume,
-  and 14,625 mm² aggregate surface area.
-- The new `hinge_chain.py` passes the external DDD domain-purity sentinel in isolation.
-- A fresh-context visual round 2 passed every rubric item A-H: five repeated phalanxes,
-  distinct male/female hinge geometry, four alternating X/Y joints, visible pins and bearing
-  rings, four traceable tendon guides, readable hardware text, and uncropped print views.
-- `scripts/ci.sh --real` passes T1 static/build gates, T2 Python/Web tests, and all T3 real
-  Blender REST, MCP, readiness-fixture, and batch/Undo oracles.
-- A FileProvider incident was root-caused during deployment: dataless API sources and the old
-  `web/node_modules`/`web/dist` caused EAGAIN and Tailwind scanning stalls. Tracked sources
-  were materialized, dependencies rebuilt from the lockfile, and formal ports 19504/19505/
-  9876 returned healthy with Blender connected.
+- V3 is sealed in `15e54e4`; the user requested shorter, hollow modules and moved the hinge
+  hardware out of the centre. V4 retains only one repeated printable part type.
+- `HollowSideHingeSpec` is framework-free. Blender geometry, presentation and STL export
+  live in separate helpers; the generic contract/assessment layer does not import `bpy`.
+- Focused tests: 14 domain + 16 artifact/verification/render-state tests pass. RED evidence
+  included missing domain/contract modules, bridge envelope, missing STL, absent motion
+  samples, invalid/truncated readiness, and camera-state leakage.
+- Real contract verification passed: nine same-mesh objects, expected rotations and axis
+  names, clear centre ray, eight zero-overlap straight pairs, eight zero-overlap bent pairs,
+  and 15 zero-overlap single-joint angle samples from −34° to +34°.
+- Public MCP readiness on three layout orientations: 9,588 triangles, no non-manifold,
+  inconsistent-normal, degenerate, zero-volume or intersection issue; no truncation.
+- Independent visual rubric A–I passed. All three final views show complete outlines.
+- Independent STL readback: 3,196 triangles and 35 × 42.2 × 28.6 mm dimensions.
+- Durable local outputs are in `tmp/hollow-side-hinge/` (Git-ignored). Older system-/tmp
+  outputs and the user's copied .blend were not deleted.
+- Final `scripts/ci.sh --real` passes every T1 static/build, T2 Python/Web and T3 real
+  REST/MCP/readiness/batch gate. The domain-purity sentinel and both TDD ratchets pass.
+- The final reproducible run, including STL readback and sampled motion, is recorded in
+  `tmp/hollow-side-hinge/verification.log`. No test or real tier was skipped.
 
-### Open failures
+### Open failures / limits
 
-- Print-readiness remains `review`: across three display orientations the approximate ray
-  check reports 930 sampled thin-wall faces and the 45-degree profile reports 1,601 overhang
-  faces. The designed radial lug wall is 2.45 mm; curved bore/counterbore regions still need
-  slicer inspection and a physical coupon.
-- Neutral tendon routes align under every 90-degree link rotation, but bent-chain tendon
-  rubbing, maximum articulation, backlash, bearing press fit, and fatigue are not physically
-  validated.
-- Old dataless dependency backups are temporarily isolated under `.git/codex-derived-backups`
-  because moving them across the FileProvider boundary blocks; they are not source or part of
-  the worktree and should be removed after the provider permits local deletion.
-- The earlier Tailnet gateway HTTP 502 has not been reverified in this mechanical slice; local
-  identity-protected MCP and the Blender socket are healthy.
+- Readiness is still `review`: 882 approximate thin-wall samples and 1,548 overhang samples
+  across the three orientations. Do not label this print-ready without slicer review.
+- The motion oracle checks adjacent mesh surfaces and 15 discrete single-joint poses, not
+  continuous collision detection, all non-adjacent link pairs, pin/bearing clearances under
+  load, cable swept volume, fatigue, backlash, friction or guaranteed 136-degree tip travel.
+- Central-axis ray clearance does not certify every bent cable diameter or bend radius.
+- Physical M4/MR84 fit, print orientation, supports and retention hardware remain untested.
+- After a user closes Blender, the API can retain a stale connection. Start Blender, confirm
+  :9876 readiness, then reinstall/restart API through launchd before real checks.
+- The historical Tailnet gateway 502 and FileProvider-derived backups are outside this
+  mechanical slice; no external-URL recovery claim is made here.
 
 ### Next step
 
-- Obtain human shape acceptance, then create and print a compact male/clevis/pin/MR84 fit
-  coupon before freezing STL tolerances or attempting a motorized tendon test.
+Inspect the single-module STL in the intended slicer, then print two modules as a hinge/
+M4/MR84 fit coupon. Adjust tolerances through the specification and rerun the same contract;
+do not rewrite the verification harness or freeze manufacturing dimensions yet.

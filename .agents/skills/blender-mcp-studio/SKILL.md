@@ -89,6 +89,15 @@ development uses `bash scripts/run_dev.sh` and Web port 5173.
 5. Prefer public REST/MCP for the behavior under test and use the addon socket only as an
    independent oracle in verification scripts.
 
+## Generated mechanical artifacts
+
+For generated mechanical artifacts, reuse the contract-driven workflow in
+`docs/verification/generated-artifacts.md` and `scripts/verify/contracts/`. Keep specification,
+Blender geometry, presentation, export and evidence assessment separate. Add a model contract
+rather than copying the socket/MCP harness. Check world-space collisions and sampled motion;
+never infer printability or load capacity from a render. Generated outputs belong in ignored
+`tmp/`, not source control. Obtain independent visual evidence after final geometry changes.
+
 ## Close the milestone
 
 - Update the task hand-off with verified facts, open failures, and one next step.

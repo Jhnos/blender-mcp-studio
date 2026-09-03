@@ -1,0 +1,57 @@
+{
+  "name": "hollow-side-hinge-v4",
+  "generator_script": "scripts/model_hollow_side_hinge_chain.py",
+  "reload_modules": [
+    "scripts.blender_artifact_export",
+    "src.core.domain.hollow_side_hinge",
+    "scripts.hollow_hinge_geometry",
+    "scripts.hollow_hinge_render"
+  ],
+  "artifacts": [
+    "tmp/hollow-side-hinge/hollow_side_hinge_8joint.blend",
+    "tmp/hollow-side-hinge/hollow_side_hinge_module.stl",
+    "tmp/hollow-side-hinge/hollow_side_hinge_assembly.png",
+    "tmp/hollow-side-hinge/hollow_side_hinge_bent.png",
+    "tmp/hollow-side-hinge/hollow_side_hinge_print_layout.png"
+  ],
+  "oracle": {
+    "object_prefix": "HH_PRINTABLE_MODULE_",
+    "expected_count": 9,
+    "expected_rotations_deg": [0, 90, 0, 90, 0, 90, 0, 90, 0],
+    "scene_list_property": "HH_AXIS_NAMES",
+    "expected_scene_list": [
+      "J1_X",
+      "J2_Y",
+      "J3_X",
+      "J4_Y",
+      "J5_X",
+      "J6_Y",
+      "J7_X",
+      "J8_Y"
+    ],
+    "center_probe_object": "HH_PRINTABLE_MODULE_1",
+    "joint_sweep": {
+      "master_object": "HH_PRINTABLE_MODULE_1",
+      "pivot_offset_mm": 10.0,
+      "axis": "X",
+      "mating_twist_deg": 90.0,
+      "angles_deg": [-34, -30, -25, -20, -15, -10, -5, 0, 5, 10, 15, 20, 25, 30, 34]
+    },
+    "collision_groups": [
+      {"prefix": "HH_PRINTABLE_MODULE_", "expected_count": 9},
+      {"prefix": "HH_BENT_MODULE_", "expected_count": 9}
+    ]
+  },
+  "readiness": {
+    "selection_prefix": "HH_LAYOUT_MODULE_",
+    "expected_selection_count": 3,
+    "forbidden_issue_codes": [
+      "no_mesh",
+      "non_manifold_edges",
+      "inconsistent_normals",
+      "degenerate_geometry",
+      "zero_volume",
+      "intersections"
+    ]
+  }
+}

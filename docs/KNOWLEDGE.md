@@ -11,6 +11,7 @@ no progress snapshots, copied architecture, model recommendations, or service re
 | Engineering and deployment rules | [`ENGINEERING_STANDARDS.md`](ENGINEERING_STANDARDS.md) and [`../deploy/launchd/README.md`](../deploy/launchd/README.md) | Operations contract |
 | Recurring implementation workflow | [`../.agents/skills/blender-mcp-studio/SKILL.md`](../.agents/skills/blender-mcp-studio/SKILL.md) | Project-specific Skill |
 | Recurring failure classes | [`LESSONS_LEARNED.md`](LESSONS_LEARNED.md) | Newest-first lesson SSOT |
+| Generated model/export verification | [`verification/generated-artifacts.md`](verification/generated-artifacts.md) | Reusable local artifact contract workflow |
 | Completed 2026-07 implementation | [`archive/2026-07-client-neutral-mcp/README.md`](archive/2026-07-client-neutral-mcp/README.md) | Historical evidence |
 | Superseded V2 notes | [`archive/legacy-knowledge-2026-08/KNOWLEDGE.md`](archive/legacy-knowledge-2026-08/KNOWLEDGE.md) | Historical only; do not treat as current |
 
