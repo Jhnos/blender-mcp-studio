@@ -5,6 +5,22 @@
 
 ## [Unreleased]
 
+### V01.00.005
+
+#### Added
+
+- Added the V5 in-disc hinge prototype: Ø34 mm body, shallow reinforced roots, a clear
+  Ø10 mm sensor channel, four tendon bores and separately printable Ø4 mm headed pins.
+- Added body/pin/coupon millimetre STL outputs, detail/top views, JSON-driven hole/slope/
+  hardware probes, fail-closed evidence tests and independent visual acceptance targets.
+
+#### Changed
+
+- Extracted shared Blender mesh primitives for V4/V5 reuse; preserved public REST/MCP DTOs.
+- Superseded V4 task notes with a V5 hand-off, preserving V4 history and generated files.
+- Documented sequential real-verification transactions, Blender STL import scale 0.001,
+  and prototype limits: body support warnings, untested physical fit and missing pin retention.
+
 ### V01.00.004
 
 #### Added

@@ -10,6 +10,7 @@ import bpy
 from mathutils import Matrix, Vector
 
 from src.core.domain.hollow_side_hinge import HollowSideHingeSpec
+from src.core.domain.inset_hinge import InsetHingeSpec
 
 
 def m(value_mm: float) -> float:
@@ -46,7 +47,7 @@ def add_text(
 
 
 def setup_render(
-    spec: HollowSideHingeSpec,
+    spec: HollowSideHingeSpec | InsetHingeSpec,
     floor_material: bpy.types.Material,
     assign_material: Callable[[bpy.types.Object, bpy.types.Material], None],
 ) -> tuple[bpy.types.Object, list[bpy.types.Object]]:
@@ -132,7 +133,7 @@ def duplicate_print_layout(
 def create_bent_preview(
     master: bpy.types.Object,
     target: bpy.types.Collection,
-    spec: HollowSideHingeSpec,
+    spec: HollowSideHingeSpec | InsetHingeSpec,
     primary_material: bpy.types.Material,
     alternate_material: bpy.types.Material,
     cable_material: bpy.types.Material,

@@ -98,6 +98,12 @@ rather than copying the socket/MCP harness. Check world-space collisions and sam
 never infer printability or load capacity from a render. Generated outputs belong in ignored
 `tmp/`, not source control. Obtain independent visual evidence after final geometry changes.
 
+Run whole real-verification processes sequentially: socket serialization does not isolate
+selection across a generator, CI fixtures and an MCP readiness call. Measure exported STL
+dimensions independently. STL coordinates are mm; importing into a metre-based Blender scene
+requires scale 0.001. Keep printed hardware separate from decorative route guides and verify
+its own readiness and static clearance; a `ready` mesh report does not certify retention.
+
 ## Close the milestone
 
 - Update the task hand-off with verified facts, open failures, and one next step.

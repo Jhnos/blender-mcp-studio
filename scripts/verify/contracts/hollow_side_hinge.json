@@ -5,7 +5,8 @@
     "scripts.blender_artifact_export",
     "src.core.domain.hollow_side_hinge",
     "scripts.hollow_hinge_geometry",
-    "scripts.hollow_hinge_render"
+    "scripts.hollow_hinge_render",
+    "scripts.blender_mesh_primitives"
   ],
   "artifacts": [
     "tmp/hollow-side-hinge/hollow_side_hinge_8joint.blend",
