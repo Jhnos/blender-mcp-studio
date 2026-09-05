@@ -156,7 +156,14 @@ main() {
       _install_one com.blender-mcp.web
       ;;
     blender)
+      # Restarting Blender kills the socket the API process is holding. The API
+      # connects once at startup and does not reconnect, so it would keep
+      # answering with a dead socket: /api/health reports "disconnected" while
+      # scene reads fail as malformed payloads rather than as "Blender is
+      # unreachable". Rebuild the dependency in the same order `all` uses.
       _install_one com.blender-mcp.blender
+      _wait_for_listener "127.0.0.1" "9876" "Blender addon"
+      _install_one com.blender-mcp.api
       ;;
     api)
       _install_one com.blender-mcp.api

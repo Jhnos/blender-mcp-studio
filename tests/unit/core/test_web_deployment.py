@@ -55,6 +55,25 @@ def test_install_all_waits_for_blender_before_starting_the_api() -> None:
     assert blender < ready < api
 
 
+def test_installing_blender_alone_also_restarts_the_api() -> None:
+    """Restarting Blender orphans the socket the API is holding.
+
+    The API connects once at startup and never reconnects, so after a bare
+    `install.sh blender` it keeps answering from a dead socket: health reports
+    "disconnected" while scene reads fail as malformed payloads instead of as
+    "Blender is unreachable". The single-service target has to rebuild the same
+    dependency `all` does.
+    """
+    source = (PROJECT_ROOT / "deploy/launchd/install.sh").read_text()
+    case = source[source.index("    blender)") : source.index("    api)")]
+
+    blender = case.index("_install_one com.blender-mcp.blender")
+    ready = case.index('_wait_for_listener "127.0.0.1" "9876"', blender)
+    api = case.index("_install_one com.blender-mcp.api", ready)
+
+    assert blender < ready < api
+
+
 def test_blender_readiness_wait_covers_a_measured_cold_start() -> None:
     source = (PROJECT_ROOT / "deploy/launchd/install.sh").read_text()
 

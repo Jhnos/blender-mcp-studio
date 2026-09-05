@@ -5,6 +5,35 @@
 
 ## [Unreleased]
 
+### V01.00.00B
+
+#### Fixed
+
+- `deploy/launchd/install.sh blender` now waits for the addon listener and restarts the API
+  as well. Restarting Blender orphans the socket the API holds — it connects once at startup
+  and never reconnects — so a bare `blender` install left the API answering from a dead
+  socket. `/api/health` correctly said `disconnected`, but the data path failed as
+  "scene info is missing fields" (422) rather than "Blender is unreachable" (503), which
+  points a reader at the payload instead of the connection.
+
+#### Added
+
+- `scripts/check_installed_plists.py` and its eight tests: a real-tier gate asserting every
+  installed LaunchAgent resolves to this checkout. `docs/12-deployment.md` rule 7 called a
+  clean diff between installed plist and template "the contract" and then left it to manual
+  checking; this is the missing machine check.
+
+#### Changed
+
+- `docs/LESSONS_LEARNED.md` records two more classes found while finishing this release:
+  restarting a depended-on service does not restore the side that depends on it, and a
+  filesystem sync service disguises itself as bugs in git, npm and the agent.
+
+#### Verified
+
+- `scripts/ci.sh --real` — all hard gates green, including the new installed-LaunchAgent
+  gate and all four real-machine tiers against live Blender.
+
 ### V01.00.00A
 
 #### Fixed
