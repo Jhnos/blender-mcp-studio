@@ -15,7 +15,7 @@ deploy/launchd/
 
 The installed copies under `~/Library/LaunchAgents/` are **derived state**.
 If the templates and the installed plists ever diverge, the templates win —
-re-run `install.sh` to reconcile. See `docs/ENGINEERING_STANDARDS.md §11`.
+re-run `install.sh` to reconcile. See `docs/12-deployment.md` (launchd plist SSOT).
 
 ## Placeholders
 
@@ -44,9 +44,11 @@ CONDA_PYTHON="$HOME/miniconda3/envs/myenv/bin/python" bash deploy/launchd/instal
 
 ```bash
 cd ~/Desktop/Blender_MCP_drawer
-bash deploy/launchd/install.sh        # both services
-bash deploy/launchd/install.sh api    # api only
-bash deploy/launchd/install.sh web    # web only
+bash deploy/launchd/install.sh          # all three services (default)
+bash deploy/launchd/install.sh all     # api + web + blender
+bash deploy/launchd/install.sh api     # api only
+bash deploy/launchd/install.sh web     # web only
+bash deploy/launchd/install.sh blender # blender only
 ```
 
 `install.sh` is idempotent. It:

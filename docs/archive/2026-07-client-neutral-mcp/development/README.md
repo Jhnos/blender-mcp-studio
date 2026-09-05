@@ -10,7 +10,7 @@
 | 如何用 TDD 實作並證明它是真的？ | [MCP_LAYER_TDD.md](MCP_LAYER_TDD.md) | RED/GREEN/REFACTOR、測試替身、可證偽 gate、真 Blender oracle |
 | 為何選 inbound adapter、又拒絕哪些方案？ | [MCP_LAYER_ADR.md](MCP_LAYER_ADR.md) | ADR-005 的 context、alternatives、consequences 與 status transition |
 | 實際要依序改哪些檔案？ | [implementation plan](../superpowers/plans/2026-07-18-client-neutral-mcp-layer.md) | 逐 task、逐檔案、逐 command、逐 commit 的執行清單 |
-| 專案目前已經採用什麼架構？ | [ARCHITECTURE.md](../../../ARCHITECTURE.md) | 已落地的全專案架構與 ADR |
+| 專案目前已經採用什麼架構？ | [ARCHITECTURE.md](../../../01-architecture.md) | 已落地的全專案架構與 ADR |
 | 過去踩過哪些坑？ | [LESSONS_LEARNED.md](../../../LESSONS_LEARNED.md) | 事故脈絡與同類錯誤防線 |
 
 ## 文件狀態

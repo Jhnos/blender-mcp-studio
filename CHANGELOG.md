@@ -5,6 +5,45 @@
 
 ## [Unreleased]
 
+### V01.00.008
+
+#### Changed
+
+- Restructured `docs/` into a DCC tree: a `README.md` navigation table with a
+  "when to read" column, numbered topic files (`00-context`, `01-architecture`,
+  `10-runtime-ssot`, `11-mcp-clients`, `12-deployment`, `20-conventions`,
+  `30-verification`), and `[[wikilink]]` cross-links. Renames use `git mv`, so
+  history follows each file.
+- Collapsed seven duplicated fact groups into single sources. Ports, routes,
+  canonical URLs and environment variables now exist only in
+  `docs/10-runtime-ssot.md`; CI tiers, commands and "what does not count as
+  evidence" only in `docs/30-verification.md`. Other documents link instead of
+  restating.
+- Rewrote `docs/KNOWLEDGE.md` as a knowledge-placement map only; navigation moved
+  to `docs/README.md`, removing the second, drifting navigation surface.
+- Corrected stale statements verified against the running system: the task index
+  and task 02 said PR #4 was open (merged as `901cb53`); engineering standards
+  said two LaunchAgents run (three plists exist) and called the service an
+  "MCP-style HTTP API"; `deploy/launchd/README.md` omitted the `blender` install
+  target that `install.sh` supports.
+
+#### Added
+
+- Added `tests/unit/core/test_docs_dcc.py`, a hard gate for three DCC rules:
+  wikilinks resolve, every live doc is reachable from the navigation root within
+  two hops, and ports appear only in their SSOT file. Each rule ships with
+  should-fire and should-pass fixtures, so a guard that degenerates into
+  "always fails" or "never fires" is itself caught.
+
+#### Removed
+
+- Removed `web/README.md` (unreferenced Vite template boilerplate) and five
+  cloud-sync duplicate files under `web/dist/`.
+- Archived `docs/TECH_SPEC.md` to `docs/archive/2026-09-tech-spec-superseded.md`
+  and removed `docs/ENGINEERING_STANDARDS.md` after distributing their content
+  (§1 scope to `00-context`, §11 plist rules to `12-deployment`, the remainder to
+  `20-conventions`, `10-runtime-ssot` and `30-verification`).
+
 ### V01.00.007
 
 #### Added

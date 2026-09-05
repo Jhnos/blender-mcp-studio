@@ -255,7 +255,7 @@ echo "Step 5: 更新 MHH services.yaml"
 
 if [[ ! -f "$MHH_SERVICES" ]]; then
   error "找不到 $MHH_SERVICES，請確認 MacHomeHub 路徑"
-  echo "  跳過 MHH services.yaml 更新（可手動加入，見 docs/INTEGRATION.md §3.5）"
+  echo "  跳過 MHH services.yaml 更新（可手動加入，見 docs/12-deployment.md）"
 else
   if grep -q "Blender MCP Studio" "$MHH_SERVICES"; then
     warn "MHH services.yaml 已含 Blender MCP Studio，跳過"

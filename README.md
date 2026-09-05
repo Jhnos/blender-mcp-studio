@@ -93,7 +93,7 @@ https://bearmacminimac-mini.tail56c751.ts.net/blender/mcp
 ```
 
 完整 client 設定、九項工具與安全邊界見
-[docs/MCP_CLIENTS.md](docs/MCP_CLIENTS.md)。MCP server 不辨識或特判 host 名稱。
+[docs/11-mcp-clients.md](docs/11-mcp-clients.md)。MCP server 不辨識或特判 host 名稱。
 
 ### 匯出 3D 列印模型
 
@@ -206,12 +206,12 @@ python scripts/verify/mcp_verify_chat.py   # chat 端對端（需 Blender + LLM�
 
 | 文件 | 說明 |
 |---|---|
-| [docs/PROJECT.md](docs/PROJECT.md) | 專案目的與願景 |
-| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | 架構決策（Hexagonal Architecture）|
+| [docs/00-context.md](docs/00-context.md) | 專案目的與願景 |
+| [docs/01-architecture.md](docs/01-architecture.md) | 架構決策（Hexagonal Architecture）|
 | [docs/architecture.html](docs/architecture.html) | 人類視覺 + AI 結構化欄位共用的架構 SSOT |
-| [docs/MCP_CLIENTS.md](docs/MCP_CLIENTS.md) | Codex/Claude/Cursor/VS Code/stdio 設定與安全契約 |
+| [docs/11-mcp-clients.md](docs/11-mcp-clients.md) | Codex/Claude/Cursor/VS Code/stdio 設定與安全契約 |
 | [docs/tasks/00_INDEX.md](docs/tasks/00_INDEX.md) | 唯一任務狀態與跨對話接手入口 |
 | [docs/KNOWLEDGE.md](docs/KNOWLEDGE.md) | 現行知識導航與 5S 放置規則 |
 | [docs/archive/2026-07-client-neutral-mcp/](docs/archive/2026-07-client-neutral-mcp/) | 已完成 MCP／列印健檢／批次前端 campaign 證據 |
-| [docs/TECH_SPEC.md](docs/TECH_SPEC.md) | 技術規格 |
-| [docs/CODING_STYLE.md](docs/CODING_STYLE.md) | 程式設計風格 |
+| [docs/10-runtime-ssot.md](docs/10-runtime-ssot.md) | 技術規格 |
+| [docs/20-conventions.md](docs/20-conventions.md) | 程式設計風格 |

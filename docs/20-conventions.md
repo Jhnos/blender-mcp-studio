@@ -1,10 +1,15 @@
-# 程式設計風格（Coding Style）
+# 20 — 開發慣例：風格、命名、DI、commit
+
+> 回導航 [[README]] · 相關 [[01-architecture]]、[[30-verification]]
+>
+> 架構分層規則（誰可以 import 誰）見 [[01-architecture]]；本檔只講寫法。
 
 ## 目錄
 
 - [Python](#python)
 - [TypeScript（前端）](#typescript前端)
 - [Git 規範](#git-規範)
+- [其他工程規範](#其他工程規範)
 
 ## Python
 
@@ -130,3 +135,10 @@ refactor(engine): extract workflow step executor
 - `main` — 穩定版本
 - `feature/<name>` — 新功能
 - `fix/<name>` — 修復
+
+## 其他工程規範
+
+logging、相依版本釘選、密鑰處理等規範沿用跨專案的共同慣例（與 whisper-api-server、
+MHH、LIG 對齊），在本服務確實用到時才寫進本檔。
+
+部署與 launchd plist 的八條規則不在這裡，見 [[12-deployment]]。

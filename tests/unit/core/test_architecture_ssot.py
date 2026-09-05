@@ -9,7 +9,7 @@ from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).parents[3]
 ARTIFACT = PROJECT_ROOT / "docs" / "architecture.html"
-ARCHITECTURE_DOC = PROJECT_ROOT / "docs" / "ARCHITECTURE.md"
+ARCHITECTURE_DOC = PROJECT_ROOT / "docs" / "01-architecture.md"
 
 CODE_ANCHORS = {
     "fastapi": ("api/main.py", "function", "create_app"),
@@ -168,4 +168,4 @@ def test_frontend_productivity_boundaries_are_documented_and_exist() -> None:
 
     for path, documented_name in anchors.items():
         assert (PROJECT_ROOT / path).is_file(), f"missing frontend architecture anchor: {path}"
-        assert documented_name in source, f"ARCHITECTURE.md must document {documented_name}"
+        assert documented_name in source, f"01-architecture.md must document {documented_name}"

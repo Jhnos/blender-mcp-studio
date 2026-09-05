@@ -21,6 +21,6 @@
 ## Archive closure
 
 Campaign accepted and archived on 2026-08-11. Current architecture lives in
-[`../../../ARCHITECTURE.md`](../../../ARCHITECTURE.md), current client setup in
-[`../../../MCP_CLIENTS.md`](../../../MCP_CLIENTS.md), and active work in
+[`../../../01-architecture.md`](../../../01-architecture.md), current client setup in
+[`../../../11-mcp-clients.md`](../../../11-mcp-clients.md), and active work in
 [`../../../tasks/00_INDEX.md`](../../../tasks/00_INDEX.md).

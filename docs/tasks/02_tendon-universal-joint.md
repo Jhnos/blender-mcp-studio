@@ -67,7 +67,8 @@ is superseded, not the current dimensional contract.
 
 ### Next step
 
-Merge [PR #4](https://github.com/Jhnos/blender-mcp-studio/pull/4), download the controlled package and import one coupon at 100% millimetres into the slicer.
+[PR #4](https://github.com/Jhnos/blender-mcp-studio/pull/4) is merged (`901cb53`, 2026-09-05); the controlled package is on `main`.
+Download it and import one coupon at 100% millimetres into the slicer.
 First print the six-part separate
 coupon to tune bore/PIN/clip fit without trapping material; then print the PIP coupon with
 joint axes vertical and supports chosen manually. Record actual clearance, release and clip

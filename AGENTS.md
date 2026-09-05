@@ -11,8 +11,9 @@ application services.
 1. Read `docs/tasks/00_INDEX.md` and the linked `ACTIVE` or `AWAITING-ACCEPTANCE` task.
 2. Read that task's hand-off section, then run `git log --oneline -5`.
 3. Before debugging, search `docs/LESSONS_LEARNED.md` for the same failure class.
-4. Load `docs/ARCHITECTURE.md`, `docs/MCP_CLIENTS.md`, or archived campaign material only
-   when the task names them; do not rescan the repository to reconstruct finished work.
+4. Open `docs/README.md` and load only the topic files its "when to read" column
+   names for this step. Load archived campaign material only when the task names it.
+   Do not rescan the repository to reconstruct finished work.
 
 ## Architecture constraints
 

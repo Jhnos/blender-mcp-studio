@@ -1,14 +1,20 @@
-# 架構決策（Architecture）
+# 01 — 架構：不變式、分層、決策
 
-> 架構單一真相源是可互動的 [architecture.html](architecture.html)。其內嵌 JSON
+> 回導航 [[README]] · 相關 [[10-runtime-ssot]]、[[11-mcp-clients]]、[[20-conventions]]
+>
+> 架構圖的單一真相源是可互動的 [architecture.html](architecture.html)。其內嵌 JSON
 > model 同時驅動畫面與 AI 結構化欄位；`test_architecture_ssot.py` 以 AST 驗證
 > model node 與真實 class/function anchor，避免圖與程式漂移。
+>
+> **埠號、位址與環境變數不寫在本檔**，一律見 [[10-runtime-ssot]]。
 
 ## 目錄
 
 - [核心不變式](#核心不變式)
 - [分層與責任](#分層與責任)
 - [Inbound adapters](#inbound-adapters)
+- [Domain/application 契約](#domainapplication-契約)
+- [Shared runtime](#shared-runtime)
 - [架構決策](#架構決策)
 - [安全邊界](#安全邊界)
 
@@ -16,7 +22,7 @@
 
 所有 inbound transport 都匯入同一個 `AppRuntime`：
 
-`HTTP MCP / stdio proxy / REST / WebSocket → application services → Blender adapters → BlenderSocketClient → addon :9876`
+`HTTP MCP / stdio proxy / REST / WebSocket → application services → Blender adapters → BlenderSocketClient → Blender addon socket`
 
 - FastAPI、REST、WebSocket 與 MCP 共用同一 `BlenderPort` instance。
 - API lifespan 只 connect/disconnect 一次；stdio proxy 不擁有 backend。
@@ -62,12 +68,46 @@ Dependency rule：外層依賴內層；domain/application 不 import FastAPI、F
 ## Inbound adapters
 
 - Web UI 使用 `/api/*` 與 `/ws/chat`。
-- MCP host 使用標準 Streamable HTTP `/mcp`；外部 canonical URL 是
-  `https://bearmacminimac-mini.tail56c751.ts.net/blender/mcp`。
+- MCP host 使用標準 Streamable HTTP `/mcp`；對外 canonical URL 見 [[10-runtime-ssot]]。
 - stdio-only host 啟動 `scripts/run_mcp_stdio_proxy.py`，它只把 stdio 轉成
   Streamable HTTP，不 import project Blender adapter。
 
-詳細 client 設定見 [MCP_CLIENTS.md](MCP_CLIENTS.md)。
+詳細 client 設定見 [[11-mcp-clients]]。
+
+## Domain/application 契約
+
+`SceneQueryPort` 定義 `status()`、`get_scene_info()`、`get_object_info(name)`、
+`get_viewport_screenshot(max_size)`。
+
+`SceneCommandPort` 定義 `create_object(spec)`、`modify_object(spec)`、
+`delete_object(name)`、`apply_material(spec)`。
+
+`SceneOperationsService` 同時實作這兩個 incoming port，且**只**依賴 `BlenderPort`。
+Domain record 一律是 frozen/slots dataclass。外部 Blender JSON 逐欄窄化，
+不做隱性的 `str`／`int`／`bool` 強制轉型。
+
+`PrintReadinessQueryPort.check(spec)` 由共用的 `PrintReadinessService` 實作；
+它獨立的 outgoing `PrintReadinessPort.inspect` 由 `BlenderPrintReadinessAdapter` 實作。
+報告一律用毫米，分析上限為 20,000 三角面／5,000 交集。
+
+`BatchTransformService` 依賴窄化的 `SceneBatchCommandPort`。它在變異前先驗證所有目標，
+再委派**一次** Blender operator 呼叫，使單次 Undo 能還原整批。REST 只是 delivery
+adapter；Web 的選取狀態不等於 Blender 的 selection。
+
+## Shared runtime
+
+`api/runtime.py` 是 composition root。一個 `AppRuntime` 內含唯一一份：
+
+- `BlenderPort`
+- `SceneOperationsService`
+- `PrintReadinessService`
+- `BatchTransformService`
+- event bus 與 adapter factory
+- security、prompt、persistence、vision、asset、text-3D ports
+
+FastAPI 在 `app.state` 上發布相容別名，但它們的物件 identity 與 runtime 欄位相同。
+FastAPI 的 lifespan 擁有 Blender 的 connect/disconnect；組合後的 FastMCP lifespan
+只擁有 MCP 協定資源。
 
 ## 架構決策
 
@@ -91,7 +131,7 @@ Dependency rule：外層依賴內層；domain/application 不 import FastAPI、F
 ### ADR-004：遠端以 Streamable HTTP 為主，stdio 只做 proxy
 
 - 決策：不公開 legacy SSE；不建立 stdio-only Blender server。
-- 理由：不同 host 共用同一 remote endpoint，避免每個 client 各開一條 9876 connection。
+- 理由：不同 host 共用同一 remote endpoint，避免每個 client 各開一條 addon socket connection。
 
 ### ADR-005：批次變形是獨立 transaction boundary
 
@@ -110,9 +150,22 @@ Dependency rule：外層依賴內層；domain/application 不 import FastAPI、F
 
 ## 安全邊界
 
-- `/mcp` 受 Tailnet identity middleware 保護，唯一 exemption 是 `/api/health`。
+| 控制項 | 強制的行為 |
+|---|---|
+| Tailnet identity | 除 `/api/health` 外的所有 HTTP；`/mcp` 缺 identity → 401 |
+| Host/Origin guard | 由 loopback 與 `CORS_ORIGINS` 推導的嚴格 allowlist |
+| Protocol version | 不支援的 `MCP-Protocol-Version` → HTTP 400 |
+| Tool surface | 恰好九項工具的相等性檢查；`execute_code` 不存在 |
+| Error mapping | 可復原的 domain error 轉成可行動的 `ToolError`／HTTP 422 |
+| Error masking | 非預期的 MCP 內部錯誤不把 traceback 洩漏給 client |
+| Socket serialization | `BlenderSocketClient` 內的單一 `asyncio.Lock` |
+
+- `/api/health` 是**唯一**的 identity exemption，存在理由是讓 watchdog 探測 process。
 - MCP public catalog 固定九項 curated tools，刻意不含 `execute_code`；第九項
   `check_print_readiness` 是唯讀、冪等且 30 秒 timeout。
-- annotations 是 host UX hint，不是 authorization。
-- `clientInfo.name` 不參與 authorization、catalog 或 capability branching。
-- 公網 multi-user connector 不在本版範圍；需要獨立 OAuth 2.1/CIMD、audit、rate limit 與 privacy design。
+- annotations 是 host UX hint，**不是** authorization；identity middleware 與
+  registry 才是實際強制的邊界。
+- `clientInfo.name` 可被觀測作協定遙測，但不參與 authorization、catalog 或
+  capability branching。
+- 公網 multi-user connector 不在本版範圍；需要獨立 OAuth 2.1/CIMD、audit、
+  rate limit 與 privacy design。
