@@ -94,11 +94,27 @@ class BlenderSocketClient:
                         return self._decode_response(raw)
                     except json.JSONDecodeError:
                         continue
-            return self._decode_response(raw)
+            # Only reachable via the `break` above: the addon sent EOF before a
+            # complete reply. Decoding the stump would surface a dropped
+            # connection as a *content* error and send the reader hunting for a
+            # data-format bug (LESSONS_LEARNED.md, 2026-09-05).
+            raise BlenderConnectionError(
+                f"Blender at {self._host}:{self._port} closed the connection mid-reply "
+                f"({len(raw)} bytes received)"
+            )
 
     @property
     def is_connected(self) -> bool:
-        return self._writer is not None and not self._writer.is_closing()
+        """Whether the addon is still on the other end of this socket.
+
+        `is_closing()` alone only reports whether *we* asked to close, so it
+        stays False forever after Blender exits — health would keep reporting
+        `connected` with port 9876 shut. The reader reaching EOF is the peer's
+        FIN, which is what actually distinguishes the two.
+        """
+        if self._writer is None or self._reader is None:
+            return False
+        return not self._writer.is_closing() and not self._reader.at_eof()
 
 
 class BlenderMCPClient(MCPPort):
