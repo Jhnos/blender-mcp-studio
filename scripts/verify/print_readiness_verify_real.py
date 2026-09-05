@@ -14,12 +14,18 @@ import os
 import secrets
 import socket
 import ssl
+import sys
 import urllib.request
 from dataclasses import dataclass
+from pathlib import Path
 
 from fastmcp import Client
 
-from src.infrastructure.narrowing import (
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+from src.infrastructure.narrowing import (  # noqa: E402
     as_finite_number,
     as_int,
     as_sequence,

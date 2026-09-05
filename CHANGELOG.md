@@ -5,6 +5,40 @@
 
 ## [Unreleased]
 
+### V01.00.00A
+
+#### Fixed
+
+- The four T3 verifiers gained a `src.` import in V01.00.009 and could not run: `ci.sh`
+  executes them as subprocesses, where nothing puts the repository root on `sys.path`.
+  T1 and T2 stayed green because pytest does. Each now carries the `PROJECT_ROOT` block
+  that `generated_artifact_verify_real.py` already had.
+- Removed two `from src.…` lines that an automated edit had inserted *inside* the
+  triple-quoted Blender scripts these files build. Blender executes those strings in its
+  own interpreter, where this repository does not exist.
+
+#### Added
+
+- `tests/unit/scripts/test_embedded_blender_code.py` — no project import may sit inside a
+  Blender code string. Nothing else can catch this: ruff, mypy and the narrowing gate all
+  see a string, and no test tier executes it. Blender's own dialect is allowed.
+
+#### Changed
+
+- The eslint wiring proof runs the installed binary instead of `npx`, and asserts that
+  binary exists. `npx` performs its own resolution and stalled under load, which made the
+  gate flake; runtime drops from 7.7s to 2.0s.
+- `docs/LESSONS_LEARNED.md` records the environment root cause found while verifying this
+  release: the project directory is inside macOS Desktop-and-Documents iCloud sync, which
+  produced the " 2" conflict copies, the broken git ref, the dataless `web/dist` files and a
+  corrupted `web/node_modules` — four symptoms that each looked like a different tool's bug.
+
+#### Verified
+
+- `scripts/ci.sh --real` — all hard gates green, including all four real-machine tiers
+  against live Blender through the Tailnet endpoint with the addon socket as an
+  independent oracle.
+
 ### V01.00.009
 
 #### Fixed

@@ -111,7 +111,6 @@ def oracle_code(contract: GeneratedArtifactContract) -> str:
 import bpy, bmesh, json, math, re
 from mathutils import Matrix, Vector
 from mathutils.bvhtree import BVHTree
-from src.infrastructure.narrowing import as_str_keyed_exact
 config = json.loads({json.dumps(config_json)})
 def natural_key(obj):
     suffix = re.search(r'(\\d+)$', obj.name)

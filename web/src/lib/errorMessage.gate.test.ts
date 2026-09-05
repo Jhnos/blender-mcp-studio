@@ -1,5 +1,15 @@
 import { execFileSync } from 'node:child_process'
+import { existsSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
+import { dirname, resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
+
+// Resolve the installed binary rather than shelling out to `npx`: npx performs
+// its own resolution step and can stall under load, which would make this gate
+// flake. A gate that fails for reasons unrelated to the rule teaches people to
+// re-run it instead of reading it.
+const WEB_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..')
+const ESLINT_BIN = resolve(WEB_ROOT, 'node_modules', '.bin', 'eslint')
 
 /**
  * Wiring proof for the `no-restricted-syntax` rule that bans hand-rolled
@@ -17,9 +27,9 @@ import { describe, expect, it } from 'vitest'
 const runEslint = (source: string, filename: string): { code: number; output: string } => {
   try {
     const output = execFileSync(
-      'npx',
-      ['eslint', '--no-color', '--stdin', '--stdin-filename', filename],
-      { input: source, encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] },
+      ESLINT_BIN,
+      ['--no-color', '--stdin', '--stdin-filename', filename],
+      { input: source, encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'], cwd: WEB_ROOT },
     )
     return { code: 0, output }
   } catch (error) {
@@ -29,6 +39,12 @@ const runEslint = (source: string, filename: string): { code: number; output: st
 }
 
 describe('the hand-rolled error-message rule', () => {
+  it('has an eslint binary to drive', () => {
+    // Without this, a missing install would make every case below "pass" by
+    // failing for the wrong reason.
+    expect(existsSync(ESLINT_BIN)).toBe(true)
+  })
+
   it('rejects a hand-rolled instanceof Error check', () => {
     const source = 'export const f = (e: unknown) => (e instanceof Error ? e.message : String(e))\n'
     const { code, output } = runEslint(source, 'src/components/Sample.ts')

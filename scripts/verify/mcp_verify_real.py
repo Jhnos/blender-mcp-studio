@@ -13,11 +13,19 @@ import json
 import os
 import secrets
 import socket
+import sys
 from dataclasses import dataclass
+from pathlib import Path
 
 from fastmcp import Client
 
-from src.infrastructure.narrowing import (
+# ci.sh runs this as a subprocess, not through pytest, so nothing else puts the
+# repository root on the path.
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+from src.infrastructure.narrowing import (  # noqa: E402
     as_int,
     as_str,
     as_str_keyed_exact,
@@ -85,6 +93,7 @@ def _oracle_json(code: str) -> object:
 def _cleanup_verification_objects() -> int:
     code = """\
 import bpy, json
+
 objects = [obj for obj in bpy.data.objects if obj.name.startswith('verify_mcp_')]
 for obj in objects:
     bpy.data.objects.remove(obj, do_unlink=True)
