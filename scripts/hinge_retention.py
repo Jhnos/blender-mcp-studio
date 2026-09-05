@@ -1,5 +1,9 @@
 """Retainer seats, captive double-headed pins, and removable grooved pins/clips."""
 
+from __future__ import annotations
+
+import bpy
+
 from scripts.blender_mesh_primitives import (
     add_cylinder,
     assign,
@@ -12,7 +16,7 @@ from scripts.model_inset_hinge import create_pin
 from src.core.domain.biaxial_hinge import BiaxialHingeSpec
 
 
-def cut_retainer_seats(body, spec: BiaxialHingeSpec) -> None:
+def cut_retainer_seats(body: bpy.types.Object, spec: BiaxialHingeSpec) -> None:
     inner = spec.side_male_center_mm - spec.lug_thickness_mm / 2
     for side in (-1, 1):
         seat = add_cylinder(
@@ -30,7 +34,9 @@ def cut_retainer_seats(body, spec: BiaxialHingeSpec) -> None:
     cleanup_mesh(body)
 
 
-def create_captive_pin(target, mat, spec: BiaxialHingeSpec):
+def create_captive_pin(
+    target: bpy.types.Collection, mat: bpy.types.Material, spec: BiaxialHingeSpec
+) -> bpy.types.Object:
     pin = create_pin(target, mat, spec)
     pin.hide_viewport = False
     outside = spec.pin_under_head_radius_mm + spec.pin_head_height_mm
@@ -49,7 +55,9 @@ def create_captive_pin(target, mat, spec: BiaxialHingeSpec):
     return pin
 
 
-def create_grooved_pin(target, mat, spec: BiaxialHingeSpec):
+def create_grooved_pin(
+    target: bpy.types.Collection, mat: bpy.types.Material, spec: BiaxialHingeSpec
+) -> bpy.types.Object:
     pin = create_pin(target, mat, spec)
     pin.hide_viewport = False
     outside = spec.pin_under_head_radius_mm + spec.pin_head_height_mm
@@ -71,7 +79,9 @@ def create_grooved_pin(target, mat, spec: BiaxialHingeSpec):
     return pin
 
 
-def create_retaining_clip(target, mat, spec: BiaxialHingeSpec):
+def create_retaining_clip(
+    target: bpy.types.Collection, mat: bpy.types.Material, spec: BiaxialHingeSpec
+) -> bpy.types.Object:
     height = spec.clip_thickness_mm
     clip = add_cylinder("HH_CLIP_MASTER", spec.retainer_diameter_mm / 2, height, (0, 0, height / 2))
     hole = add_cylinder(

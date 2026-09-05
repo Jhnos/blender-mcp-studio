@@ -38,6 +38,9 @@ packages = ["src", "api"]
 [tool.ruff]
 line-length = 100
 target-version = "py311"
+# Archived generators are frozen history: they are kept findable, not kept
+# current. Holding them to evolving rules would mean rewriting the past.
+extend-exclude = ["scripts/archive"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM"]
@@ -47,6 +50,7 @@ ignore = ["E501"]
 python_version = "3.11"
 strict = true
 ignore_missing_imports = true
+exclude = ["scripts/archive"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

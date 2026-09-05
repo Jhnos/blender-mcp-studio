@@ -16,9 +16,18 @@ import socket
 import ssl
 import urllib.request
 from dataclasses import dataclass
-from typing import cast
 
 from fastmcp import Client
+
+from src.infrastructure.narrowing import (
+    as_finite_number,
+    as_int,
+    as_sequence,
+    as_str,
+    as_str_keyed_exact,
+    dig,
+    required,
+)
 
 DEFAULT_BASE_URL = "https://bearmacminimac-mini.tail56c751.ts.net/blender"
 ORACLE_ADDRESS = ("127.0.0.1", 9876)
@@ -46,9 +55,12 @@ def _oracle_response(code: str, timeout: float = 20.0) -> dict[str, object]:
                 decoded = json.loads(raw.decode())
             except json.JSONDecodeError:
                 continue
-            if not isinstance(decoded, dict):
-                raise RuntimeError("Oracle returned non-object JSON")
-            return cast(dict[str, object], decoded)
+            return required(
+                decoded,
+                as_str_keyed_exact,
+                message="Oracle returned non-object JSON",
+                error=RuntimeError,
+            )
     raise RuntimeError("Oracle closed without a complete response")
 
 
@@ -56,10 +68,10 @@ def _oracle_stdout(code: str) -> str:
     response = _oracle_response(code)
     if response.get("status") != "success":
         raise RuntimeError(f"Oracle execute_code failed: {response!r}")
-    result = response.get("result")
-    if not isinstance(result, dict) or not isinstance(result.get("result"), str):
+    text = as_str(dig(response, "result", "result"))
+    if text is None:
         raise RuntimeError(f"Unexpected oracle result: {response!r}")
-    return result["result"].strip()
+    return text.strip()
 
 
 def _cleanup(prefix: str) -> int:
@@ -72,9 +84,10 @@ def _cleanup(prefix: str) -> int:
         "print(json.dumps({'removed': len(objects)}))"
     )
     result = json.loads(output)
-    if not isinstance(result, dict) or not isinstance(result.get("removed"), int):
+    removed = as_int(dig(result, "removed"))
+    if removed is None:
         raise RuntimeError(f"Unexpected cleanup result: {result!r}")
-    return result["removed"]
+    return removed
 
 
 def _seed(prefix: str, body: str) -> None:
@@ -114,27 +127,36 @@ def _rest_report(base_url: str, **overrides: object) -> dict[str, object]:
         request, timeout=40, context=ssl.create_default_context()
     ) as response:
         result = json.loads(response.read())
-    if not isinstance(result, dict):
-        raise RuntimeError(f"REST returned a non-object report: {result!r}")
-    return cast(dict[str, object], result)
+    return required(
+        result,
+        as_str_keyed_exact,
+        message=f"REST returned a non-object report: {result!r}",
+        error=RuntimeError,
+    )
 
 
 def _issue_codes(report: dict[str, object]) -> set[str]:
-    issues = report.get("issues")
-    if not isinstance(issues, list):
-        raise RuntimeError(f"Report issues are invalid: {report!r}")
+    issues = required(
+        report.get("issues"),
+        as_sequence,
+        message=f"Report issues are invalid: {report!r}",
+        error=RuntimeError,
+    )
     return {
-        item["code"]
+        code
         for item in issues
-        if isinstance(item, dict) and isinstance(item.get("code"), str)
+        for code in [as_str((as_str_keyed_exact(item) or {}).get("code"))]
+        if code is not None
     }
 
 
 def _metrics(report: dict[str, object]) -> dict[str, object]:
-    metrics = report.get("metrics")
-    if not isinstance(metrics, dict):
-        raise RuntimeError(f"Report metrics are invalid: {report!r}")
-    return cast(dict[str, object], metrics)
+    return required(
+        report.get("metrics"),
+        as_str_keyed_exact,
+        message=f"Report metrics are invalid: {report!r}",
+        error=RuntimeError,
+    )
 
 
 def _record(evidence: list[Evidence], hypothesis: str, passed: bool, detail: str) -> None:
@@ -154,9 +176,10 @@ async def _mcp_report(endpoint: str) -> dict[str, object]:
             },
             raise_on_error=False,
         )
-    if result.is_error or not isinstance(result.structured_content, dict):
+    structured = None if result.is_error else as_str_keyed_exact(result.structured_content)
+    if structured is None:
         raise RuntimeError(f"MCP readiness failed: {result.content!r}")
-    return cast(dict[str, object], result.structured_content)
+    return structured
 
 
 async def _verify() -> int:
@@ -175,14 +198,17 @@ async def _verify() -> int:
         )
         cube = _rest_report(base_url)
         cube_metrics = _metrics(cube)
-        cube_dimensions = cube_metrics.get("dimensions_mm")
-        cube_volume = cube_metrics.get("estimated_volume_mm3")
+        cube_dimensions = as_sequence(cube_metrics.get("dimensions_mm"))
+        cube_volume = as_finite_number(cube_metrics.get("estimated_volume_mm3"))
         cube_ok = (
             cube.get("status") == "ready"
-            and isinstance(cube_dimensions, list)
-            and all(abs(float(value) - 20.0) < 0.05 for value in cube_dimensions)
-            and isinstance(cube_volume, (int, float))
-            and abs(float(cube_volume) - 8000.0) < 1.0
+            and cube_dimensions is not None
+            and all(
+                (lambda n: n is not None and abs(n - 20.0) < 0.05)(as_finite_number(value))
+                for value in cube_dimensions
+            )
+            and cube_volume is not None
+            and abs(cube_volume - 8000.0) < 1.0
         )
         _record(
             evidence,

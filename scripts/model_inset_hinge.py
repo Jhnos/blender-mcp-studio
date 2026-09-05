@@ -14,6 +14,7 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from scripts.blender_artifact_export import export_stl_mm  # noqa: E402
+from scripts.blender_generator_runner import run_generator  # noqa: E402
 from scripts.blender_mesh_primitives import (  # noqa: E402
     add_cylinder,
     assign,
@@ -56,7 +57,9 @@ def root(
     return obj
 
 
-def create_body(target, mat, spec: InsetHingeSpec = SPEC) -> bpy.types.Object:
+def create_body(
+    target: bpy.types.Collection, mat: bpy.types.Material, spec: InsetHingeSpec = SPEC
+) -> bpy.types.Object:
     body = add_cylinder(
         "HH_PRINTABLE_MODULE_1",
         spec.body_outer_diameter_mm / 2,
@@ -97,7 +100,9 @@ def create_body(target, mat, spec: InsetHingeSpec = SPEC) -> bpy.types.Object:
     return body
 
 
-def create_pin(target, mat, spec: InsetHingeSpec = SPEC) -> bpy.types.Object:
+def create_pin(
+    target: bpy.types.Collection, mat: bpy.types.Material, spec: InsetHingeSpec = SPEC
+) -> bpy.types.Object:
     pin = add_cylinder(
         "HH_PIN_MASTER",
         spec.pin_head_diameter_mm / 2,
@@ -133,7 +138,12 @@ def create_pin(target, mat, spec: InsetHingeSpec = SPEC) -> bpy.types.Object:
     return pin
 
 
-def repeat_body(master, target, alternate, spec: InsetHingeSpec = SPEC) -> list[bpy.types.Object]:
+def repeat_body(
+    master: bpy.types.Object,
+    target: bpy.types.Collection,
+    alternate: bpy.types.Material,
+    spec: InsetHingeSpec = SPEC,
+) -> list[bpy.types.Object]:
     parts = [master]
     for i, rotation in enumerate(spec.assembly_rotations_deg[1:], 1):
         obj = master.copy()
@@ -149,7 +159,9 @@ def repeat_body(master, target, alternate, spec: InsetHingeSpec = SPEC) -> list[
     return parts
 
 
-def place_pins(master, target, spec: InsetHingeSpec = SPEC) -> list[bpy.types.Object]:
+def place_pins(
+    master: bpy.types.Object, target: bpy.types.Collection, spec: InsetHingeSpec = SPEC
+) -> list[bpy.types.Object]:
     result = []
     outer = spec.pin_under_head_radius_mm + spec.pin_head_height_mm
     for i in range(spec.joint_count):
@@ -203,20 +215,7 @@ def build() -> None:
 
 
 def main() -> None:
-    for obj in list(bpy.data.objects):
-        if obj.name.startswith("HH_"):
-            bpy.data.objects.remove(obj, do_unlink=True)
-    for group in list(bpy.data.collections):
-        if group.name.startswith("HH_"):
-            bpy.data.collections.remove(group)
-    external = [(obj, obj.hide_render, obj.hide_viewport) for obj in bpy.context.scene.objects]
-    try:
-        for obj, _, _ in external:
-            obj.hide_render = obj.hide_viewport = True
-        build()
-    finally:
-        for obj, render, viewport in external:
-            obj.hide_render, obj.hide_viewport = render, viewport
+    run_generator(build)
 
 
 if __name__ == "__main__":

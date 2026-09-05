@@ -6,9 +6,7 @@ import math
 
 import bpy
 
-
-def _m(value_mm: float) -> float:
-    return value_mm / 1000.0
+from scripts.hollow_hinge_render import m as _m
 
 
 def create_box(

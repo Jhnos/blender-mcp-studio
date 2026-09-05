@@ -11,6 +11,7 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from scripts.biaxial_hinge_presentation import present_biaxial  # noqa: E402
 from scripts.blender_artifact_export import export_stl_mm  # noqa: E402
+from scripts.blender_generator_runner import run_generator  # noqa: E402
 from scripts.blender_mesh_primitives import collection, material  # noqa: E402
 from scripts.hinge_retention import (  # noqa: E402
     create_captive_pin,
@@ -74,20 +75,7 @@ def build() -> None:
 
 
 def main() -> None:
-    for obj in list(bpy.data.objects):
-        if obj.name.startswith("HH_"):
-            bpy.data.objects.remove(obj, do_unlink=True)
-    for group in list(bpy.data.collections):
-        if group.name.startswith("HH_"):
-            bpy.data.collections.remove(group)
-    external = [(obj, obj.hide_render, obj.hide_viewport) for obj in bpy.context.scene.objects]
-    try:
-        for obj, _, _ in external:
-            obj.hide_render = obj.hide_viewport = True
-        build()
-    finally:
-        for obj, render, viewport in external:
-            obj.hide_render, obj.hide_viewport = render, viewport
+    run_generator(build)
 
 
 if __name__ == "__main__":

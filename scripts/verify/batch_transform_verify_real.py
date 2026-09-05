@@ -11,7 +11,16 @@ import socket
 import ssl
 import urllib.request
 from dataclasses import dataclass
-from typing import cast
+
+from src.infrastructure.narrowing import (
+    as_finite_number,
+    as_int,
+    as_sequence,
+    as_str,
+    as_str_keyed_exact,
+    dig,
+    required,
+)
 
 DEFAULT_BASE_URL = "https://bearmacminimac-mini.tail56c751.ts.net/blender"
 ORACLE_ADDRESS = ("127.0.0.1", 9876)
@@ -40,9 +49,12 @@ def _oracle_response(code: str, timeout: float = 20.0) -> dict[str, object]:
                 decoded = json.loads(raw.decode())
             except json.JSONDecodeError:
                 continue
-            if not isinstance(decoded, dict):
-                raise RuntimeError("Oracle returned non-object JSON")
-            return cast(dict[str, object], decoded)
+            return required(
+                decoded,
+                as_str_keyed_exact,
+                message="Oracle returned non-object JSON",
+                error=RuntimeError,
+            )
     raise RuntimeError("Oracle closed without a complete response")
 
 
@@ -50,10 +62,10 @@ def _oracle_stdout(code: str) -> str:
     response = _oracle_response(code)
     if response.get("status") != "success":
         raise RuntimeError(f"Oracle execute_code failed: {response!r}")
-    result = response.get("result")
-    if not isinstance(result, dict) or not isinstance(result.get("result"), str):
+    text = as_str(dig(response, "result", "result"))
+    if text is None:
         raise RuntimeError(f"Unexpected oracle result: {response!r}")
-    return result["result"].strip()
+    return text.strip()
 
 
 def _cleanup(prefix: str) -> int:
@@ -66,9 +78,10 @@ def _cleanup(prefix: str) -> int:
         "print(json.dumps({'removed': len(objects)}))"
     )
     result = json.loads(output)
-    if not isinstance(result, dict) or not isinstance(result.get("removed"), int):
+    removed = as_int(dig(result, "removed"))
+    if removed is None:
         raise RuntimeError(f"Unexpected cleanup result: {result!r}")
-    return result["removed"]
+    return removed
 
 
 def _seed(prefix: str) -> tuple[str, str]:
@@ -126,19 +139,32 @@ def _transforms(names: tuple[str, ...]) -> dict[str, dict[str, list[float]]]:
         "        }\n"
         "print(json.dumps(state, sort_keys=True))"
     )
-    raw = json.loads(output)
-    if not isinstance(raw, dict):
-        raise RuntimeError(f"Unexpected transform result: {raw!r}")
+    raw = required(
+        json.loads(output),
+        as_str_keyed_exact,
+        message="Unexpected transform result",
+        error=RuntimeError,
+    )
     result: dict[str, dict[str, list[float]]] = {}
     for name, value in raw.items():
-        if not isinstance(name, str) or not isinstance(value, dict):
-            raise RuntimeError(f"Unexpected object transform: {name!r}={value!r}")
+        transform = required(
+            value,
+            as_str_keyed_exact,
+            message=f"Unexpected object transform: {name!r}={value!r}",
+            error=RuntimeError,
+        )
         channels: dict[str, list[float]] = {}
         for channel in ("location", "rotation", "scale"):
-            vector = value.get(channel)
-            if not isinstance(vector, list) or len(vector) != 3:
+            vector = required(
+                transform.get(channel),
+                as_sequence,
+                message=f"Unexpected {channel}: {transform.get(channel)!r}",
+                error=RuntimeError,
+            )
+            components = [as_finite_number(component) for component in vector]
+            if len(components) != 3 or any(item is None for item in components):
                 raise RuntimeError(f"Unexpected {channel}: {vector!r}")
-            channels[channel] = [float(component) for component in vector]
+            channels[channel] = [item for item in components if item is not None]
         result[name] = channels
     return result
 
@@ -160,9 +186,12 @@ def _rest_json(
         context=ssl.create_default_context(),
     ) as response:
         result = json.loads(response.read())
-    if not isinstance(result, dict):
-        raise RuntimeError(f"REST returned non-object JSON: {result!r}")
-    return cast(dict[str, object], result)
+    return required(
+        result,
+        as_str_keyed_exact,
+        message=f"REST returned non-object JSON: {result!r}",
+        error=RuntimeError,
+    )
 
 
 def _close(left: float, right: float) -> bool:

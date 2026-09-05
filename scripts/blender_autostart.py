@@ -9,13 +9,13 @@ Blender 啟動腳本：自動啟用 blender_mcp addon 並啟動 socket server（
 import bpy
 
 
-def autostart():
+def autostart() -> None:
     # Enable addon
     bpy.ops.preferences.addon_enable(module="blender_mcp")
     bpy.ops.wm.save_userpref()
 
     # Small delay then start server
-    def _start():
+    def _start() -> None:
         try:
             bpy.ops.blendermcp.start_server()
             print("[AutoStart] ✅ BlenderMCP server started on port 9876")

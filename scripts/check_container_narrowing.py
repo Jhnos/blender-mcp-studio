@@ -95,7 +95,10 @@ def _iter_py_files(roots: tuple[str, ...]) -> Iterator[str]:
             yield root
             continue
         for dirpath, dirnames, filenames in os.walk(root):
-            dirnames[:] = [d for d in dirnames if d != "__pycache__"]
+            # Archived code is frozen history: ruff and mypy exclude it for the
+            # same reason. A gate whose scope differs from its siblings' produces
+            # findings nobody is allowed to act on.
+            dirnames[:] = [d for d in dirnames if d not in {"__pycache__", "archive"}]
             for name in sorted(filenames):
                 if name.endswith(".py"):
                     yield os.path.join(dirpath, name)

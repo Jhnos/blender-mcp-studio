@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import math
+from pathlib import Path
 
 import bpy
 
@@ -16,9 +17,21 @@ from scripts.hollow_hinge_render import (
     render_views,
     setup_render,
 )
+from src.core.domain.inset_hinge import InsetHingeSpec
 
 
-def present(output, spec, parts, hardware, pin, pins, layout, bent, cable, bent_target) -> None:
+def present(
+    output: Path,
+    spec: InsetHingeSpec,
+    parts: list[bpy.types.Object],
+    hardware: bpy.types.Collection,
+    pin: bpy.types.Object,
+    pins: list[bpy.types.Object],
+    layout: list[bpy.types.Object],
+    bent: list[bpy.types.Object],
+    cable: bpy.types.Object,
+    bent_target: tuple[float, float, float],
+) -> None:
     floor = material("HH_V5_FLOOR", (0.018, 0.028, 0.045, 1))
     white = material("HH_V5_TEXT", (0.95, 0.98, 1, 1))
     camera, support = setup_render(spec, floor, assign)

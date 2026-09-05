@@ -1,6 +1,9 @@
 """V6 pin workflows: distinct manufacturing layouts and diagnostic close-up views."""
 
+from __future__ import annotations
+
 import math
+from pathlib import Path
 
 import bpy
 from mathutils import Matrix, Vector
@@ -15,9 +18,10 @@ from scripts.hollow_hinge_render import (
     render_views,
     setup_render,
 )
+from src.core.domain.biaxial_hinge import BiaxialHingeSpec
 
 
-def duplicate(source, name, matrix):
+def duplicate(source: bpy.types.Object, name: str, matrix: Matrix) -> bpy.types.Object:
     obj = source.copy()
     obj.data = source.data
     obj.name = name
@@ -27,7 +31,13 @@ def duplicate(source, name, matrix):
     return obj
 
 
-def create_coupons(output, spec, parts, pins, masters):
+def create_coupons(
+    output: Path,
+    spec: BiaxialHingeSpec,
+    parts: list[bpy.types.Object],
+    pins: list[bpy.types.Object],
+    masters: tuple[bpy.types.Object, bpy.types.Object, bpy.types.Object],
+) -> tuple[list[bpy.types.Object], list[bpy.types.Object], list[bpy.types.Object]]:
     captive, removable, clip = masters
     frame = Matrix.Rotation(math.pi / 2, 4, "Y") @ Matrix.Translation(
         (0, 0, m(-spec.joint_center_offset_mm))
@@ -80,7 +90,17 @@ def create_coupons(output, spec, parts, pins, masters):
     return pip, split, layout
 
 
-def capture(output, name, camera, objects, location, target, scale, title, white):
+def capture(
+    output: Path,
+    name: str,
+    camera: bpy.types.Object,
+    objects: list[bpy.types.Object],
+    location: tuple[float, float, float],
+    target: tuple[float, float, float],
+    scale: float,
+    title: str,
+    white: bpy.types.Material,
+) -> None:
     scene = bpy.context.scene
     for obj in objects:
         obj.hide_render = False
@@ -99,7 +119,18 @@ def capture(output, name, camera, objects, location, target, scale, title, white
         obj.hide_render = True
 
 
-def present_biaxial(output, spec, parts, pins, hardware, masters, layout, bent, cable, target):
+def present_biaxial(
+    output: Path,
+    spec: BiaxialHingeSpec,
+    parts: list[bpy.types.Object],
+    pins: list[bpy.types.Object],
+    hardware: bpy.types.Collection,
+    masters: tuple[bpy.types.Object, bpy.types.Object, bpy.types.Object],
+    layout: list[bpy.types.Object],
+    bent: list[bpy.types.Object],
+    cable: bpy.types.Object,
+    target: tuple[float, float, float],
+) -> None:
     floor = material("HH_V6_FLOOR", (0.018, 0.028, 0.045, 1))
     white = material("HH_V6_TEXT", (0.95, 0.98, 1, 1))
     camera, support = setup_render(spec, floor, assign)

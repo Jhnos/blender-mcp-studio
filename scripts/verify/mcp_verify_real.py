@@ -17,6 +17,14 @@ from dataclasses import dataclass
 
 from fastmcp import Client
 
+from src.infrastructure.narrowing import (
+    as_int,
+    as_str,
+    as_str_keyed_exact,
+    dig,
+    required,
+)
+
 DEFAULT_MCP_URL = "https://bearmacminimac-mini.tail56c751.ts.net/blender/mcp"
 ORACLE_ADDRESS = ("127.0.0.1", 9876)
 
@@ -51,9 +59,12 @@ def _oracle_response(code: str, timeout: float = 10.0) -> dict[str, object]:
                 decoded = json.loads(raw.decode())
             except json.JSONDecodeError:
                 continue
-            if not isinstance(decoded, dict):
-                raise RuntimeError("Oracle returned a non-object JSON value")
-            return decoded
+            return required(
+                decoded,
+                as_str_keyed_exact,
+                message="Oracle returned a non-object JSON value",
+                error=RuntimeError,
+            )
     raise RuntimeError("Oracle closed the socket without a complete JSON response")
 
 
@@ -61,10 +72,10 @@ def _oracle_stdout(code: str) -> str:
     response = _oracle_response(code)
     if response.get("status") != "success":
         raise RuntimeError(f"Oracle execute_code failed: {response!r}")
-    result = response.get("result")
-    if not isinstance(result, dict) or not isinstance(result.get("result"), str):
+    text = as_str(dig(response, "result", "result"))
+    if text is None:
         raise RuntimeError(f"Oracle returned an unexpected success shape: {response!r}")
-    return result["result"].strip()
+    return text.strip()
 
 
 def _oracle_json(code: str) -> object:
@@ -80,9 +91,10 @@ for obj in objects:
 print(json.dumps({"removed": len(objects)}))
 """
     result = _oracle_json(code)
-    if not isinstance(result, dict) or not isinstance(result.get("removed"), int):
+    removed = as_int(dig(result, "removed"))
+    if removed is None:
         raise RuntimeError(f"Cleanup returned an unexpected value: {result!r}")
-    return result["removed"]
+    return removed
 
 
 def _record(evidence: list[Evidence], hypothesis: str, passed: bool, detail: str) -> None:

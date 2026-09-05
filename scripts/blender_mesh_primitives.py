@@ -10,7 +10,9 @@ import bpy
 from scripts.hollow_hinge_render import m
 
 
-def material(name: str, color: tuple[float, float, float, float], metallic: float = 0.0):
+def material(
+    name: str, color: tuple[float, float, float, float], metallic: float = 0.0
+) -> bpy.types.Material:
     result = bpy.data.materials.get(name) or bpy.data.materials.new(name)
     result.use_nodes = True
     result.diffuse_color = color
@@ -36,7 +38,7 @@ def move_to_collection(obj: bpy.types.Object, target: bpy.types.Collection) -> N
     target.objects.link(obj)
 
 
-def assign(obj: bpy.types.Object, mat) -> None:
+def assign(obj: bpy.types.Object, mat: bpy.types.Material) -> None:
     obj.data.materials.clear()
     obj.data.materials.append(mat)
 

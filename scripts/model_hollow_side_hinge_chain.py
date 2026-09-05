@@ -14,6 +14,7 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from scripts.blender_artifact_export import export_stl_mm  # noqa: E402
+from scripts.blender_generator_runner import run_generator  # noqa: E402
 from scripts.blender_mesh_primitives import (  # noqa: E402
     add_cylinder,
     assign,
@@ -50,15 +51,6 @@ TENDON_MAT = material("HH_MAT_TENDON", (0.0, 0.96, 0.82, 1.0), metallic=0.08)
 CABLE_MAT = material("HH_MAT_SENSOR_CABLE", (0.93, 0.08, 0.82, 1.0), metallic=0.12)
 TEXT_MAT = material("HH_MAT_TEXT", (0.96, 0.98, 1.0, 1.0))
 FLOOR_MAT = material("HH_MAT_FLOOR", (0.015, 0.022, 0.035, 1.0))
-
-
-def clear_previous() -> None:
-    for obj in list(bpy.data.objects):
-        if obj.name.startswith(PREFIX):
-            bpy.data.objects.remove(obj, do_unlink=True)
-    for group in list(bpy.data.collections):
-        if group.name.startswith(PREFIX):
-            bpy.data.collections.remove(group)
 
 
 def add_side_lugs(module: bpy.types.Object) -> None:
@@ -410,21 +402,7 @@ def build_scene() -> None:
 
 
 def main() -> None:
-    clear_previous()
-    external_visibility = [
-        (obj, obj.hide_render, obj.hide_viewport)
-        for obj in bpy.context.scene.objects
-        if not obj.name.startswith(PREFIX)
-    ]
-    try:
-        for obj, _, _ in external_visibility:
-            obj.hide_render = True
-            obj.hide_viewport = True
-        build_scene()
-    finally:
-        for obj, hide_render, hide_viewport in external_visibility:
-            obj.hide_render = hide_render
-            obj.hide_viewport = hide_viewport
+    run_generator(build_scene, PREFIX)
 
 
 if __name__ == "__main__":

@@ -11,12 +11,16 @@ import sys
 from collections.abc import Mapping
 from dataclasses import asdict
 from pathlib import Path
-from typing import cast
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
+from src.infrastructure.narrowing import (  # noqa: E402
+    as_str,
+    as_str_keyed_exact,
+    required,
+)
 from src.verification.artifact_files import binary_stl_metrics  # noqa: E402
 from src.verification.generated_artifact_contract import (  # noqa: E402
     GeneratedArtifactContract,
@@ -46,35 +50,50 @@ class BlenderSocketOracle:
                     response = json.loads(raw.decode())
                 except json.JSONDecodeError:
                     continue
-                if not isinstance(response, Mapping):
-                    raise RuntimeError("Blender socket returned a non-object response")
-                if response.get("status") != "success":
-                    raise RuntimeError(f"Blender execution failed: {response!r}")
-                return cast(Mapping[str, object], response)
+                narrowed = required(
+                    response,
+                    as_str_keyed_exact,
+                    message="Blender socket returned a non-object response",
+                    error=RuntimeError,
+                )
+                if narrowed.get("status") != "success":
+                    raise RuntimeError(f"Blender execution failed: {narrowed!r}")
+                return narrowed
         raise RuntimeError("Blender socket closed before returning complete JSON")
 
     def execute_json(self, code: str) -> Mapping[str, object]:
         response = self.execute(code)
-        result = response.get("result")
-        if not isinstance(result, Mapping):
-            raise RuntimeError(f"Blender result envelope is invalid: {response!r}")
-        stdout = result.get("result")
-        if not isinstance(stdout, str):
-            raise RuntimeError(f"Blender stdout is invalid: {result!r}")
+        result = required(
+            response.get("result"),
+            as_str_keyed_exact,
+            message=f"Blender result envelope is invalid: {response!r}",
+            error=RuntimeError,
+        )
+        stdout = required(
+            result.get("result"),
+            as_str,
+            message=f"Blender stdout is invalid: {result!r}",
+            error=RuntimeError,
+        )
         lines = [line for line in stdout.splitlines() if line.strip()]
         if not lines:
             raise RuntimeError("Blender oracle returned empty stdout")
-        decoded = json.loads(lines[-1])
-        if not isinstance(decoded, Mapping):
-            raise RuntimeError("Blender oracle JSON is not an object")
-        return cast(Mapping[str, object], decoded)
+        return required(
+            json.loads(lines[-1]),
+            as_str_keyed_exact,
+            message="Blender oracle JSON is not an object",
+            error=RuntimeError,
+        )
 
 
 def load_contract(path: Path) -> GeneratedArtifactContract:
-    decoded = json.loads(path.read_text(encoding="utf-8"))
-    if not isinstance(decoded, Mapping):
-        raise ValueError("verification contract must contain one JSON object")
-    return contract_from_mapping(cast(Mapping[str, object], decoded), PROJECT_ROOT)
+    decoded = required(
+        json.loads(path.read_text(encoding="utf-8")),
+        as_str_keyed_exact,
+        message="verification contract must contain one JSON object",
+        error=ValueError,
+    )
+    return contract_from_mapping(decoded, PROJECT_ROOT)
 
 
 def oracle_code(contract: GeneratedArtifactContract) -> str:
@@ -92,6 +111,7 @@ def oracle_code(contract: GeneratedArtifactContract) -> str:
 import bpy, bmesh, json, math, re
 from mathutils import Matrix, Vector
 from mathutils.bvhtree import BVHTree
+from src.infrastructure.narrowing import as_str_keyed_exact
 config = json.loads({json.dumps(config_json)})
 def natural_key(obj):
     suffix = re.search(r'(\\d+)$', obj.name)
@@ -195,9 +215,10 @@ async def mcp_readiness(
             },
             raise_on_error=False,
         )
-    if result.is_error or not isinstance(result.structured_content, Mapping):
+    structured = None if result.is_error else as_str_keyed_exact(result.structured_content)
+    if structured is None:
         raise RuntimeError(f"MCP readiness failed: {result.content!r}")
-    return cast(Mapping[str, object], result.structured_content)
+    return structured
 
 
 async def verify(args: argparse.Namespace) -> int:

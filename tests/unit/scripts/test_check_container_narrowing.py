@@ -122,3 +122,34 @@ def test_gate_is_wired_into_ci() -> None:
 def test_ssot_module_is_the_only_allowlisted_path() -> None:
     """The exemption list is one module by design; a growing list is a smell."""
     assert {"src/infrastructure/narrowing.py"} == gate.ALLOWLIST_PATHS
+
+
+def test_gate_covers_the_scripts_tree() -> None:
+    """scripts/ was outside every Python gate until 2026-09-05.
+
+    Two thousand lines — including this gate's own source — were unlinted,
+    untyped and unscanned. A gate that does not read a tree cannot report on it,
+    and "no findings" from an unread tree looks exactly like a clean one.
+    """
+    ci = (PROJECT_ROOT / "scripts" / "ci.sh").read_text(encoding="utf-8")
+    for line in ci.splitlines():
+        if "check_container_narrowing.py" in line and "_run hard" in line:
+            assert line.rstrip().endswith("src api scripts")
+            return
+    raise AssertionError("no hard gate invoking check_container_narrowing.py found in ci.sh")
+
+
+def test_archived_code_is_skipped(tmp_path: Path) -> None:
+    """Frozen history is excluded here exactly as it is for ruff and mypy.
+
+    A gate whose scope differs from its siblings' produces findings nobody is
+    allowed to act on — the archive is kept findable, not kept current.
+    """
+    archive = tmp_path / "archive"
+    archive.mkdir()
+    (archive / "old.py").write_text("if isinstance(x, dict):\n    pass\n", encoding="utf-8")
+    (tmp_path / "live.py").write_text("if isinstance(x, dict):\n    pass\n", encoding="utf-8")
+
+    scanned = sorted(Path(path).name for path in gate._iter_py_files((str(tmp_path),)))
+
+    assert scanned == ["live.py"]

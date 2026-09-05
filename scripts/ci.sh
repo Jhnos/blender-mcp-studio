@@ -49,17 +49,17 @@ cd "$ROOT"
 _tier "T1 · static"
 _run hard "web build (tsc + vite)"   bash -c 'cd web && npm run build'
 _run hard "web lint (eslint)"        bash -c 'cd web && npm run lint'
-_run hard "python lint (ruff)"       "$PY" -m ruff check src tests api
-_run hard "python format (ruff)"     "$PY" -m ruff format --check src tests api
+_run hard "python lint (ruff)"       "$PY" -m ruff check src tests api scripts
+_run hard "python format (ruff)"     "$PY" -m ruff format --check src tests api scripts
 # mypy is strict-mode and clean as of 2026-07-17. Keep it that way: a green run
 # here is only worth something if nothing reintroduces `Any` at a JSON boundary
 # — see docs/LESSONS_LEARNED.md, "型別檢查器的綠燈可能是 Any 造成的盲區".
-_run hard "python types (mypy)"      "$PY" -m mypy src api --ignore-missing-imports --no-error-summary
+_run hard "python types (mypy)"      "$PY" -m mypy src api scripts --ignore-missing-imports --explicit-package-bases --no-error-summary
 # mypy is blind to the isinstance(_, dict|list) -> dict[Any, Any] / list[Any] hole
 # (a green run can be a zero-check run). This gate makes that class un-silent: every
 # hit must route through the narrowing SSOT or carry a `# narrow-ok:` waiver. See the
 # script header and docs/LESSONS_LEARNED.md 2026-07-17/18.
-_run hard "python container-narrowing" "$PY" scripts/check_container_narrowing.py src api
+_run hard "python container-narrowing" "$PY" scripts/check_container_narrowing.py src api scripts
 
 _tier "T2 · unit + headless dummy run"
 # tests/e2e is hermetic (Mock adapters / TestClient — no real Blender or LLM)
