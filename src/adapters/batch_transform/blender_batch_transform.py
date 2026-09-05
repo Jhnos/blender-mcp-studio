@@ -5,7 +5,13 @@ from __future__ import annotations
 import base64
 import json
 
-from src.adapters.blender_response import execute_code_output, mapping, sequence, text
+from src.adapters.blender_response import (
+    execute_code_output,
+    integer,
+    mapping,
+    sequence,
+    text,
+)
 from src.core.domain.batch_transform import (
     BatchTransformReceipt,
     BatchTransformSpec,
@@ -79,9 +85,7 @@ finally:
 
 
 def _integer(value: object, context: str) -> int:
-    if isinstance(value, bool) or not isinstance(value, int):
-        raise BatchTransformError(f"Blender returned invalid {context}; expected an integer")
-    return value
+    return integer(value, context, BatchTransformError)
 
 
 def _parse_receipt(output: str) -> BatchTransformReceipt:

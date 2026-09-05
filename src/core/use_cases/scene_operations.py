@@ -29,7 +29,9 @@ _PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
 
 
 def _require_mapping(value: object, context: str) -> dict[str, object]:
-    if not isinstance(value, Mapping):
+    if not isinstance(
+        value, Mapping
+    ):  # narrow-ok: rebuilt below with explicitly checked string keys
         raise SceneOperationError(f"Blender returned invalid {context}; expected an object")
     narrowed: dict[str, object] = {}
     for key, item in value.items():
@@ -64,7 +66,9 @@ def _require_bool(value: object, field: str) -> bool:
 
 
 def _require_sequence(value: object, field: str) -> Sequence[object]:
-    if isinstance(value, (str, bytes)) or not isinstance(value, Sequence):
+    if isinstance(value, (str, bytes)) or not isinstance(
+        value, Sequence
+    ):  # narrow-ok: elements stay object and are narrowed per field by the callers
         raise SceneOperationError(f"Blender returned invalid {field}; expected a list")
     return value
 

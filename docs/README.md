@@ -16,6 +16,7 @@ Blender MCP Studio 的文件樹。**一檔一主題，互相 `[[wikilink]]` 指�
 | [[20-conventions]] | 程式碼風格、命名、DI、commit 慣例 | 寫 code 之前 |
 | [[30-verification]] | **CI 分層、驗證指令、什麼不算證據** | 宣告「完成」之前 |
 | [[LESSONS_LEARNED]] | 失效 class（新的在上） | **除錯動工前**，查同類教訓 |
+| [[DEFERRALS]] | 刻意延後的抽象化 + 觸發條件 | 覺得「這裡明明可以再抽象」時 |
 | [[KNOWLEDGE]] | 知識放置規則與 5S 預算 | 要新增／搬移文件時 |
 
 ## 子目錄

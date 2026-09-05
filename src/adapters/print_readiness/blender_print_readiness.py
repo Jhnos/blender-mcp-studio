@@ -6,7 +6,13 @@ import json
 import math
 import textwrap
 
-from src.adapters.blender_response import execute_code_output, mapping, sequence, text
+from src.adapters.blender_response import (
+    execute_code_output,
+    integer,
+    mapping,
+    sequence,
+    text,
+)
 from src.core.domain.command import Command
 from src.core.domain.exceptions import PrintReadinessError
 from src.core.domain.print_readiness import (
@@ -288,9 +294,7 @@ def _number(value: object, context: str) -> float:
 
 
 def _integer(value: object, context: str) -> int:
-    if isinstance(value, bool) or not isinstance(value, int):
-        raise PrintReadinessError(f"Blender returned invalid {context}; expected an integer")
-    return value
+    return integer(value, context, PrintReadinessError)
 
 
 def _parse_inspection(output: str) -> PrintInspection:

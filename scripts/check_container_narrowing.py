@@ -63,9 +63,28 @@ ALLOWLIST_PATHS = {"src/infrastructure/narrowing.py"}
 # claim a reviewer can judge — never a bare mute switch.
 WAIVER_RE = re.compile(r"#\s*narrow-ok:\s*\S")
 
-# The generic builtins whose isinstance() check discards the element type params
-# (-> dict[Any, Any] / list[Any]). Both are equally silent under mypy --strict.
-TARGET_TYPES = {"dict", "list"}
+# The generic types whose isinstance() check discards the element type params
+# (-> dict[Any, Any] / list[Any] / Mapping[Any, Any] ...). All are equally silent
+# under mypy --strict.
+#
+# The abstract names matter as much as the builtins: this set held only {"dict",
+# "list"} while four call sites narrowed with ``Mapping`` and ``Sequence``, so a
+# hard CI gate reported OK over code it structurally could not see. A gate whose
+# declared scope and actual comparison differ hands out false assurance — see
+# docs/LESSONS_LEARNED.md on partial gates and unenforced chokepoint claims.
+TARGET_TYPES = {
+    "dict",
+    "list",
+    "set",
+    "frozenset",
+    "tuple",
+    "Mapping",
+    "MutableMapping",
+    "Sequence",
+    "MutableSequence",
+    "Iterable",
+    "Collection",
+}
 
 DEFAULT_ROOTS = ("src", "api")
 
@@ -138,10 +157,14 @@ def main(argv: list[str]) -> int:
         print("container-narrowing gate: OK — every isinstance(_, dict|list) is accounted for")
         return 0
 
-    print("container-narrowing gate: FAIL — isinstance(_, dict|list) hit(s) with no honest narrowing")
+    print(
+        "container-narrowing gate: FAIL — isinstance(_, dict|list) hit(s) with no honest narrowing"
+    )
     print("  This narrows only to dict[Any, Any] / list[Any]; using it as a typed container is a")
     print("  silent Any hole mypy --strict cannot see (docs/LESSONS_LEARNED.md 2026-07-17/18).")
-    print("  Fix: route through src.infrastructure.narrowing (as_str_keyed / dig / as_str / as_int),")
+    print(
+        "  Fix: route through src.infrastructure.narrowing (as_str_keyed / dig / as_str / as_int),"
+    )
     print("  or, if the site rebuilds elements honestly, annotate it: `# narrow-ok: <reason>`.")
     print()
     for rel, lineno, text in findings:

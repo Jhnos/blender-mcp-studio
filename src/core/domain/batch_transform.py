@@ -68,7 +68,9 @@ class BatchTransformSpec:
     delta: TransformDelta
 
     def __post_init__(self) -> None:
-        if not isinstance(self.object_names, tuple):
+        if not isinstance(
+            self.object_names, tuple
+        ):  # narrow-ok: invariant check on this dataclass's own declared field, not external data
             raise BatchTransformError("Object names must be an immutable tuple")
         if not self.object_names:
             raise BatchTransformError("Batch transform requires at least one object")

@@ -2,27 +2,38 @@
 
 from __future__ import annotations
 
-import math
-from collections.abc import Mapping, Sequence
-from typing import cast
+from collections.abc import Mapping
+
+from src.infrastructure.narrowing import (
+    as_finite_number,
+    as_nonempty_sequence,
+    as_str_keyed_exact,
+    required,
+)
 
 
 def _mapping(value: object) -> Mapping[str, object]:
-    if not isinstance(value, Mapping) or not all(isinstance(key, str) for key in value):
-        raise ValueError("measurement must be a string-keyed object")
-    return cast(Mapping[str, object], value)
+    return required(
+        value,
+        as_str_keyed_exact,
+        message="measurement must be a string-keyed object",
+        error=ValueError,
+    )
 
 
 def _number(value: object) -> float:
-    if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value):
-        raise ValueError("measurement must be finite")
-    return float(value)
+    return required(value, as_finite_number, message="measurement must be finite", error=ValueError)
 
 
 def _array(value: object) -> tuple[object, ...]:
-    if not isinstance(value, Sequence) or isinstance(value, (str, bytes)) or not value:
-        raise ValueError("measurement array must not be empty")
-    return tuple(value)
+    return tuple(
+        required(
+            value,
+            as_nonempty_sequence,
+            message="measurement array must not be empty",
+            error=ValueError,
+        )
+    )
 
 
 def _near(actual: object, expected: object, tolerance: float) -> bool:

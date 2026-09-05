@@ -3,11 +3,20 @@
 from __future__ import annotations
 
 import json
-import math
 from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
-from typing import cast
+
+from src.infrastructure.narrowing import (
+    as_finite_number,
+    as_mapping,
+    as_nonempty_str,
+    as_positive_int,
+    as_sequence,
+    as_str,
+    as_str_keyed_exact,
+    required,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -78,17 +87,21 @@ def _required_mapping(source: Mapping[str, object], key: str) -> Mapping[str, ob
 
 
 def _required_string(source: Mapping[str, object], key: str) -> str:
-    value = source.get(key)
-    if not isinstance(value, str) or not value.strip():
-        raise ValueError(f"{key} must be a non-empty string")
-    return value
+    return required(
+        source.get(key),
+        as_nonempty_str,
+        message=f"{key} must be a non-empty string",
+        error=ValueError,
+    )
 
 
 def _required_positive_int(source: Mapping[str, object], key: str) -> int:
-    value = source.get(key)
-    if not isinstance(value, int) or isinstance(value, bool) or value <= 0:
-        raise ValueError(f"{key} must be a positive integer")
-    return value
+    return required(
+        source.get(key),
+        as_positive_int,
+        message=f"{key} must be a positive integer",
+        error=ValueError,
+    )
 
 
 def _required_strings(source: Mapping[str, object], key: str) -> tuple[str, ...]:
@@ -104,12 +117,10 @@ def _required_numbers(source: Mapping[str, object], key: str) -> tuple[float, ..
     value = _sequence_value(source, key)
     if not value:
         raise ValueError(f"{key} must be a non-empty number array")
-    if not all(isinstance(item, (int, float)) and not isinstance(item, bool) for item in value):
-        raise ValueError(f"{key} must contain only numbers")
-    numbers = tuple(float(item) for item in value if isinstance(item, (int, float)))
-    if not all(math.isfinite(item) for item in numbers):
+    narrowed = tuple(as_finite_number(item) for item in value)
+    if any(item is None for item in narrowed):
         raise ValueError(f"{key} must contain only finite numbers")
-    return numbers
+    return tuple(item for item in narrowed if item is not None)
 
 
 def _joint_sweep(source: Mapping[str, object]) -> JointSweepExpectation | None:
@@ -214,24 +225,12 @@ runpy.run_path({script_json}, run_name='__main__')
 
 
 def _mapping_value(source: Mapping[str, object], key: str) -> Mapping[str, object] | None:
-    value = source.get(key)
-    if not isinstance(value, Mapping):
-        return None
-    result: dict[str, object] = {}
-    for item_key, item_value in value.items():
-        if not isinstance(item_key, str):
-            return None
-        result[item_key] = item_value
-    return result
+    return as_str_keyed_exact(source.get(key))
 
 
 def _sequence_value(source: Mapping[str, object], key: str) -> list[object] | None:
-    value = source.get(key)
-    if not isinstance(
-        value, list
-    ):  # narrow-ok: elements remain object and require later validation
-        return None
-    return cast(list[object], value)
+    narrowed = as_sequence(source.get(key))
+    return None if narrowed is None else list(narrowed)
 
 
 def assess_verification(
@@ -351,12 +350,9 @@ def assess_verification(
     )
     report = _mapping_value(readiness, "report")
     issues = _sequence_value(report, "issues") if report is not None else None
+    issue_mappings = [m for m in (as_mapping(item) for item in issues or []) if m is not None]
     issue_codes = {
-        code
-        for item in issues or []
-        if isinstance(item, Mapping)
-        for code in [item.get("code")]
-        if isinstance(code, str)
+        code for item in issue_mappings for code in [as_str(item.get("code"))] if code is not None
     }
     forbidden = issue_codes & set(contract.readiness.forbidden_issue_codes)
     evidence.append(
@@ -366,9 +362,8 @@ def assess_verification(
             and report.get("status") in ("ready", "review")
             and report.get("analysis_truncated") is not True
             and issues is not None
-            and all(
-                isinstance(item, Mapping) and isinstance(item.get("code"), str) for item in issues
-            )
+            and len(issue_mappings) == len(issues)
+            and len(issue_codes) == len(issues)
             and not forbidden,
             f"status={report.get('status') if report else None!r}, forbidden={sorted(forbidden)!r}",
         )
