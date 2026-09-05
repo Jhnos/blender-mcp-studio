@@ -5,6 +5,7 @@ import type {
 } from '../domain/printReadiness'
 import { PrintReadinessPanel } from './PrintReadinessPanel'
 import { Button } from './ui'
+import { runTracked } from '../lib/trackedOperation'
 
 export type ExportFormat = 'stl' | 'obj' | 'ply' | 'glb' | 'fbx'
 
@@ -72,18 +73,20 @@ export const ExportPanel = forwardRef<ExportPanelHandle, ExportPanelProps>(funct
     const inspectedOptions = readinessOptions
     const inspectedKey = optionsKey
     const inspectedRevision = sceneRevision
-    setInspectionBusy(true)
     setInspectionError(null)
-    try {
+    // Tracked like every other operation: a failed inspection used to stop at
+    // this panel's own state and never reached the status centre.
+    await runTracked('列印就緒檢查', async () => {
       const nextReport = await onInspect(inspectedOptions)
       setReport(nextReport)
       setCheckedOptions(inspectedKey)
       setCheckedSceneRevision(inspectedRevision)
-    } catch (error) {
-      setInspectionError(error instanceof Error ? error.message : String(error))
-    } finally {
-      setInspectionBusy(false)
-    }
+      return nextReport
+    }, {
+      success: (nextReport) => `檢查完成：${nextReport.status}`,
+      setBusy: setInspectionBusy,
+      onError: setInspectionError,
+    })
   }, [onInspect, optionsKey, readinessOptions, sceneRevision])
 
   const openPanel = useCallback(() => {

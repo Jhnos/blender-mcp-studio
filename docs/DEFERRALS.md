@@ -50,3 +50,30 @@
 
 **觸發條件**：`LLMPort`／`Text3DGenerationPort` 定義出自己的 domain error 型別時
 （屆時可比照 `BlenderConnectionError` 註冊到 `api/main.py` 的 handler）。
+
+---
+
+## D-003 · `PreviewStage` 的 `react-hooks/refs` 定點豁免
+
+**狀態**：`deferred`（2026-09-05 記錄）
+
+**現況**：`web/src/components/PreviewStage.tsx` 的 `commands = useMemo(...)` 帶一行
+`eslint-disable-next-line react-hooks/refs`。被豁免的是 `openPrintReadiness` 與
+`rerunPrintReadiness`——它們讀 `exportPanelRef.current`，而 `createStudioCommands`
+在 render 期被呼叫。
+
+**為何判定安全**：`createStudioCommands` 只是把這些 callback 存進
+`CommandDefinition.run`，**從不呼叫它們**；ref 是在使用者執行指令時才被讀取。
+
+**這不是新問題**：它在本次重構前就存在，只是 `refreshPreview` 有個自我引用的
+callback，讓規則在分析到那裡時就停住、沒往下看。移除自我引用後它才浮現。
+**一個因為分析器提早放棄而「通過」的 lint，跟真的沒問題長得一模一樣**——這與
+`LESSONS_LEARNED.md:101`（部分 gate 給假覆蓋率）同族。
+
+**觸發條件（任一成立就升為 `due`）**：
+- `ExportPanel` 不再用 imperative handle（改以 props/state 驅動開啟與重跑）；或
+- `react-hooks` 規則支援「這個函式只儲存不呼叫」的標註；或
+- 同樣的豁免需要出現在**第二個**元件（代表這是模式問題，不是單點例外）
+
+**目前的防護**：豁免是定點的（`eslint-disable-next-line`，不是整檔關閉），且
+理由寫在程式碼旁供 review。

@@ -1,6 +1,7 @@
 import { createRef } from 'react'
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { useOperationStore } from '../stores/operationStore'
 import type { PrintReadinessReport } from '../domain/printReadiness'
 import { ExportPanel, type ExportPanelHandle } from './ExportPanel'
 
@@ -217,6 +218,60 @@ describe('ExportPanel', () => {
       selectionOnly: true,
       applyModifiers: true,
       triangulate: true,
+    })
+  })
+})
+
+describe('ExportPanel operation tracking', () => {
+  beforeEach(() => {
+    useOperationStore.getState().clear()
+  })
+
+  it('reports a failed inspection to the shared operation store', async () => {
+    // Regression: the inspection used to report only into this panel's local
+    // state, so a failure never surfaced in the OperationStatusCenter while
+    // every other operation did.
+    const ref = createRef<ExportPanelHandle>()
+    render(
+      <ExportPanel
+        ref={ref}
+        busy={false}
+        sceneRevision={0}
+        onInspect={vi.fn().mockRejectedValue(new Error('Blender is unavailable'))}
+        onExport={vi.fn()}
+      />,
+    )
+
+    await act(async () => ref.current?.rerunInspection())
+
+    await waitFor(() => {
+      expect(useOperationStore.getState().operations[0]).toMatchObject({
+        label: '列印就緒檢查',
+        status: 'error',
+        message: 'Blender is unavailable',
+      })
+    })
+  })
+
+  it('reports a successful inspection with the resulting status', async () => {
+    const ref = createRef<ExportPanelHandle>()
+    render(
+      <ExportPanel
+        ref={ref}
+        busy={false}
+        sceneRevision={0}
+        onInspect={vi.fn().mockResolvedValue(REVIEW_REPORT)}
+        onExport={vi.fn()}
+      />,
+    )
+
+    await act(async () => ref.current?.rerunInspection())
+
+    await waitFor(() => {
+      expect(useOperationStore.getState().operations[0]).toMatchObject({
+        status: 'success',
+        message: '檢查完成：review',
+      })
     })
   })
 })

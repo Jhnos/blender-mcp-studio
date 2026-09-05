@@ -6,7 +6,7 @@ import { ExportPanel, type ExportOptions, type ExportPanelHandle } from './Expor
 import { ModelViewport } from './ModelViewport'
 import { OperationStatusCenter } from './OperationStatusCenter'
 import { CommandPalette } from './CommandPalette'
-import { useOperationStore } from '../stores/operationStore'
+import { runTracked } from '../lib/trackedOperation'
 import { useBatchSelectionStore } from '../stores/batchSelectionStore'
 import { createStudioCommands } from '../commands/studioCommands'
 import { useGlobalShortcuts } from '../hooks/useGlobalShortcuts'
@@ -32,32 +32,20 @@ export function PreviewStage() {
   const [exporting, setExporting] = useState(false)
   const [paletteOpen, setPaletteOpen] = useState(false)
   const [lastUpdate, setLastUpdate] = useState<string | null>(null)
-  const objectUrlRef = useRef<string | null>(null)
   const exportPanelRef = useRef<ExportPanelHandle>(null)
 
   const refreshPreview = useCallback(async (announce = false) => {
-    const operationId = announce
-      ? useOperationStore.getState().begin('刷新預覽', () => refreshPreview(true))
-      : null
-    setLoading(true)
-    try {
+    await runTracked('刷新預覽', async () => {
       const blob = await dispatch('preview.get', { t: Date.now() }) as Blob
-      const url = URL.createObjectURL(blob)
-      if (objectUrlRef.current) URL.revokeObjectURL(objectUrlRef.current)
-      objectUrlRef.current = url
-      setPolledUrl(url)
-      if (operationId) useOperationStore.getState().succeed(operationId, '預覽已更新')
-    } catch (error) {
-      setPolledUrl(null)
-      if (operationId) {
-        useOperationStore.getState().fail(
-          operationId,
-          error instanceof Error ? error.message : String(error),
-        )
-      }
-    } finally {
-      setLoading(false)
-    }
+      setPolledUrl(URL.createObjectURL(blob))
+    }, {
+      success: '預覽已更新',
+      // A background poll nobody asked for should not fill the status centre.
+      track: announce,
+      retryable: announce,
+      setBusy: setLoading,
+      onError: () => setPolledUrl(null),
+    })
   }, [dispatch])
 
   // Poll the viewport whenever a Blender command changes the scene.
@@ -67,48 +55,41 @@ export function PreviewStage() {
     if (liveScreenshot) setLastUpdate(new Date().toLocaleTimeString('zh-TW'))
   }, [liveScreenshot])
 
-  useEffect(() => () => { if (objectUrlRef.current) URL.revokeObjectURL(objectUrlRef.current) }, [])
+  // The object URL's lifetime belongs to the state that holds it: revoke the
+  // previous one when it is replaced, and the last one on unmount. Tracking it
+  // in a ref meant the refresh closure read a ref, which is exactly what the
+  // react-hooks rules flag when that closure is handed to another function.
+  useEffect(() => {
+    const url = polledUrl
+    return () => { if (url) URL.revokeObjectURL(url) }
+  }, [polledUrl])
 
   const isLive = liveScreenshot !== null
   const displayUrl = isLive ? `data:image/png;base64,${liveScreenshot}` : polledUrl
 
   const runHistory = useCallback(async (action: 'undo' | 'redo') => {
     const label = action === 'undo' ? '復原' : '重做'
-    const operationId = useOperationStore.getState().begin(label)
-    try {
+    await runTracked(label, async () => {
       const r = await dispatch(action) as { success: boolean; message: string }
-      if (r.success) {
-        useOperationStore.getState().succeed(operationId, r.message)
-        triggerSceneRefresh()
-      } else {
-        useOperationStore.getState().fail(operationId, r.message)
-      }
-    } catch (error) {
-      useOperationStore.getState().fail(
-        operationId,
-        error instanceof Error ? error.message : String(error),
-      )
-    }
+      // A refused undo is a failed operation, not a successful call that says no.
+      if (!r.success) throw new Error(r.message)
+      triggerSceneRefresh()
+      return r
+    }, { success: (r) => r.message })
   }, [dispatch, triggerSceneRefresh])
 
   const doExport = async (options: ExportOptions) => {
     const format = options.format.toUpperCase()
-    const operationId = useOperationStore.getState().begin(`匯出 ${format}`)
-    setExporting(true)
-    try {
+    await runTracked(`匯出 ${format}`, async () => {
       const blob = await dispatch('export.scene', options) as Blob
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url; a.download = `blender-scene.${options.format}`; a.click()
       URL.revokeObjectURL(url)
-      useOperationStore.getState().succeed(operationId, `${format} 已產生，可交給切片器處理`)
-    } catch (error) {
-      useOperationStore.getState().fail(
-        operationId,
-        error instanceof Error ? error.message : String(error),
-      )
-    }
-    finally { setExporting(false) }
+    }, {
+      success: `${format} 已產生，可交給切片器處理`,
+      setBusy: setExporting,
+    })
   }
 
   const inspectPrintReadiness = async (
@@ -123,6 +104,22 @@ export function PreviewStage() {
     element?.focus()
   }, [])
 
+  // Ref reads are wrapped in stable callbacks rather than written inline in the
+  // memo: an object of arrow functions handed to another function is something
+  // the react-hooks rules cannot prove is only invoked later.
+  const openPrintReadiness = useCallback(() => exportPanelRef.current?.open(), [])
+  const rerunPrintReadiness = useCallback(
+    () => exportPanelRef.current?.rerunInspection(),
+    [],
+  )
+
+  // createStudioCommands only stores these callbacks in CommandDefinition.run; it
+  // never invokes them, so the panel handle is read when the user runs a command,
+  // not during render. The imperative handle is the documented seam
+  // (docs/01-architecture.md, ADR-006). This violation was latent before: the rule
+  // stopped analysing this component at an earlier self-referencing callback, so
+  // removing that callback is what made it visible. Tracked in docs/DEFERRALS.md.
+  // eslint-disable-next-line react-hooks/refs
   const commands = useMemo(() => createStudioCommands({
     refreshPreview: () => refreshPreview(true),
     undo: () => runHistory('undo'),
@@ -134,9 +131,9 @@ export function PreviewStage() {
     clearTargets: () => useBatchSelectionStore.getState().clear(),
     focusBatchTransform: () => focusElement('batch-transform-panel'),
     focusObjectList: () => focusElement('scene-object-list'),
-    openPrintReadiness: () => exportPanelRef.current?.open(),
-    rerunPrintReadiness: () => exportPanelRef.current?.rerunInspection(),
-  }), [focusElement, refreshPreview, runHistory])
+    openPrintReadiness,
+    rerunPrintReadiness,
+  }), [focusElement, openPrintReadiness, refreshPreview, rerunPrintReadiness, runHistory])
 
   const openPalette = useCallback(() => setPaletteOpen(true), [])
   useGlobalShortcuts({

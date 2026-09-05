@@ -8,7 +8,7 @@ import {
 } from '../domain/batchTransform'
 import type { Dispatch } from '../mdr/actions'
 import { useChatStore } from '../stores/chatStore'
-import { useOperationStore } from '../stores/operationStore'
+import { runTracked } from '../lib/trackedOperation'
 import { Button, SegmentedControl } from './ui'
 
 type TransformMode = 'move' | 'rotate' | 'scale'
@@ -60,9 +60,6 @@ const numericDraft = (draft: TransformTextDraft): BatchTransformDraft => ({
   scalePercent: numericVector(draft.scale),
 })
 
-const errorMessage = (error: unknown): string =>
-  error instanceof Error ? error.message : String(error)
-
 export function BatchTransformPanel({ dispatch, selectedNames }: BatchTransformPanelProps) {
   const [mode, setMode] = useState<TransformMode>('move')
   const [draft, setDraft] = useState<TransformTextDraft>(emptyTextDraft)
@@ -94,26 +91,24 @@ export function BatchTransformPanel({ dispatch, selectedNames }: BatchTransformP
 
   const apply = async () => {
     if (!validation.valid || selectedNames.length === 0 || busy) return
-    const operationId = useOperationStore.getState().begin('批次變形')
-    setBusy(true)
     setError(null)
     setSuccess(null)
-    try {
+    // No retry callback: re-applying an incremental transform would move the
+    // objects a second time.
+    await runTracked('批次變形', async () => {
       const receipt = await dispatch(
         'scene.batch-transform',
         toBatchTransformRequest(selectedNames, parsedDraft),
       ) as BatchTransformReceipt
       setDraft(emptyTextDraft())
       setSuccess(receipt.message)
-      useOperationStore.getState().succeed(operationId, receipt.message)
       triggerSceneRefresh()
-    } catch (reason) {
-      const message = errorMessage(reason)
-      setError(message)
-      useOperationStore.getState().fail(operationId, message)
-    } finally {
-      setBusy(false)
-    }
+      return receipt
+    }, {
+      success: (receipt) => receipt.message,
+      setBusy,
+      onError: setError,
+    })
   }
 
   const validationMessage = validation.valid || allZero ? null : validation.message
