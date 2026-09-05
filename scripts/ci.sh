@@ -74,6 +74,9 @@ _run hard "web unit + dummy run (vitest)" bash -c 'cd web && npx vitest run'
 if (( REAL )); then
   _tier "T3 · real machine (MCP↔Blender)"
   if nc -z localhost 9876 2>/dev/null; then
+    # Deployment artifacts live on this machine only, so this belongs here and
+    # not in the hermetic tier: a fresh checkout has no LaunchAgents to inspect.
+    _run hard "installed LaunchAgents match this checkout" "$PY" scripts/check_installed_plists.py
     _run hard "REST pipeline (nonce + independent oracle)" "$PY" scripts/verify/mcp_verify_rest.py
     _run hard "MCP protocol (nonce + independent oracle)" "$PY" scripts/verify/mcp_verify_real.py
     _run hard "print readiness (real Blender fixtures)" "$PY" scripts/verify/print_readiness_verify_real.py
