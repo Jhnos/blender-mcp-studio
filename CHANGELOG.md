@@ -5,6 +5,33 @@
 
 ## [Unreleased]
 
+### V01.00.00C
+
+#### Fixed
+
+- `BlenderSocketClient.is_connected` now folds in the reader's EOF instead of trusting
+  `StreamWriter.is_closing()` alone. `is_closing()` reports whether *this* side asked to
+  close, so it stayed True after Blender exited and `/api/health` kept answering
+  `blender: connected` with port 9876 shut — the field `docs/30-verification.md` tells
+  reviewers to trust as the readiness signal.
+- A dropped addon connection now raises `BlenderConnectionError` instead of degrading into
+  a decode failure. `send_command` broke out of its read loop on the peer's EOF and handed
+  the stump to `_decode_response`, so a dead engine surfaced as `JSONDecodeError` and sent
+  the reader hunting for a data-format bug. `LESSONS_LEARNED.md` recorded this class and
+  its prevention item in V01.00.00B; this implements it.
+
+#### Added
+
+- `tests/unit/adapters/test_blender_socket_liveness.py`: three tests over a real loopback
+  server (no mock socket) pinning both halves of the signal — false once the peer hangs up,
+  true while the peer holds the socket.
+
+#### Changed
+
+- `docs/LESSONS_LEARNED.md` records the class behind the above: a connection flag that only
+  reads local state cannot be a readiness signal, and the V01.00.00B lesson's premise
+  ("health honestly said disconnected") held only for one startup ordering.
+
 ### V01.00.00B
 
 #### Fixed

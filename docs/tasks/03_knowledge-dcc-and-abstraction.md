@@ -52,16 +52,19 @@ factory 上**都不存在**。四道 gate 全綠沒抓到，因為 `app.state` �
 | 檢查失敗會進 OperationStatusCenter | `ExportPanel.test.tsx` 2 項，對舊版本會紅 |
 | 閘門真的會擋 | 每個閘門都有 should-fire + should-pass fixture |
 | `scripts/` 已納管 | ruff／format／mypy strict／narrowing 四道，全綠 |
+| 真機層未受重構影響 | `scripts/ci.sh --real` 全綠，零 SKIP：LaunchAgent 比對、REST、MCP、列印就緒、批次變換五項 |
+| health 不再謊報引擎連線 | `tests/unit/adapters/test_blender_socket_liveness.py` 三項（含 should-pass 對照），對舊版本會紅 |
 
 ## Open failures and limitations
 
-- **T3 未跑**：`scripts/ci.sh --real` 需要 Blender addon 在 socket 上就緒。本次全部變更都是
-  結構性重構，但 REST／MCP 對真實 Blender 的行為**尚未在本輪驗證**。
+- 修 `is_connected` 時撞見 API 的關機路徑：對死 socket 呼叫 `disconnect()` 會丟
+  `BrokenPipeError`，uvicorn 印出 "Application shutdown failed"。process 仍會退出，
+  不影響重啟，但那行紅字是誤導。未修。
 - `docs/DEFERRALS.md` 三條延後項仍為 `deferred`。
 - `docs/tasks/02_tendon-universal-joint.md` 的實體列印驗收不受本任務影響，仍未完成。
 
 ## Next step
 
-1. 跑 `scripts/ci.sh --real`，確認 REST／MCP 對真實 Blender 的行為未受重構影響。
+1. ~~跑 `scripts/ci.sh --real`~~ — 已完成（2026-09-05，五項全綠、零 SKIP）。
 2. Lane B（品味）三項待使用者裁決：`docs/README.md` 導航表的分類與命名、列印就緒檢查
    通知的措辭與時機、8 個 router 的檔名是否符合心智模型。
