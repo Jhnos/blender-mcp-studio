@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, Request
 
 from api.schemas import BatchTransformRequest
 from src.core.domain.batch_transform import (
@@ -10,7 +10,6 @@ from src.core.domain.batch_transform import (
     BatchTransformSpec,
     TransformDelta,
 )
-from src.core.domain.exceptions import BatchTransformError, BlenderConnectionError
 from src.core.domain.scene_operations import Vector3
 from src.core.use_cases.batch_transform import BatchTransformService
 
@@ -27,17 +26,12 @@ async def apply_batch_transform(
     request: Request,
 ) -> BatchTransformReceipt:
     service: BatchTransformService = request.app.state.batch_transform
-    try:
-        spec = BatchTransformSpec(
-            object_names=tuple(body.object_names),
-            delta=TransformDelta(
-                translation_mm=_vector(body.translation_mm),
-                rotation_deg=_vector(body.rotation_deg),
-                scale_percent=_vector(body.scale_percent),
-            ),
-        )
-        return await service.apply(spec)
-    except BlenderConnectionError as exc:
-        raise HTTPException(status_code=503, detail=str(exc)) from exc
-    except BatchTransformError as exc:
-        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    spec = BatchTransformSpec(
+        object_names=tuple(body.object_names),
+        delta=TransformDelta(
+            translation_mm=_vector(body.translation_mm),
+            rotation_deg=_vector(body.rotation_deg),
+            scale_percent=_vector(body.scale_percent),
+        ),
+    )
+    return await service.apply(spec)

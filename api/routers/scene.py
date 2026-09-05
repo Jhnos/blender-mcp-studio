@@ -18,7 +18,6 @@ from pydantic import BaseModel, Field
 
 from api.schemas import SceneInfoResponse, UndoRedoResponse
 from src.core.domain.command import Command
-from src.core.domain.exceptions import BlenderConnectionError, SceneOperationError
 from src.core.domain.scene_operations import ModifyObjectSpec
 from src.core.ports.blender_port import BlenderPort
 from src.core.use_cases.iterative_refinement import IterativeRefinementUseCase
@@ -41,12 +40,7 @@ class PipelineRequest(BaseModel):
 
 @router.get("/scene", response_model=SceneInfoResponse)
 async def get_scene(request: Request) -> SceneInfoResponse:
-    try:
-        scene = await request.app.state.scene_operations.get_scene_info()
-    except BlenderConnectionError as exc:
-        raise HTTPException(status_code=503, detail=str(exc)) from exc
-    except SceneOperationError as exc:
-        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    scene = await request.app.state.scene_operations.get_scene_info()
     return SceneInfoResponse(
         objects=[
             {
@@ -63,12 +57,7 @@ async def get_scene(request: Request) -> SceneInfoResponse:
 @router.get("/preview")
 async def get_preview(request: Request) -> Response:
     """Return a viewport screenshot from Blender as PNG image."""
-    try:
-        screenshot = await request.app.state.scene_operations.get_viewport_screenshot()
-    except BlenderConnectionError as exc:
-        raise HTTPException(status_code=503, detail=str(exc)) from exc
-    except SceneOperationError as exc:
-        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    screenshot = await request.app.state.scene_operations.get_viewport_screenshot()
     return Response(content=screenshot.png_bytes, media_type="image/png")
 
 
@@ -555,14 +544,9 @@ async def update_object(
     blender = request.app.state.blender
 
     if body.visible is not None:
-        try:
-            await request.app.state.scene_operations.modify_object(
-                ModifyObjectSpec(name=name, visible=body.visible)
-            )
-        except BlenderConnectionError as exc:
-            raise HTTPException(status_code=503, detail=str(exc)) from exc
-        except SceneOperationError as exc:
-            raise HTTPException(status_code=422, detail=str(exc)) from exc
+        await request.app.state.scene_operations.modify_object(
+            ModifyObjectSpec(name=name, visible=body.visible)
+        )
 
     new_name = body.new_name or name
     if body.selected is None and body.new_name is None:
@@ -596,12 +580,7 @@ async def update_object(
 @router.delete("/object/{name}")
 async def delete_object(name: str, request: Request) -> dict[str, object]:
     """Delete a Blender scene object by name."""
-    try:
-        receipt = await request.app.state.scene_operations.delete_object(name)
-    except BlenderConnectionError as exc:
-        raise HTTPException(status_code=503, detail=str(exc)) from exc
-    except SceneOperationError as exc:
-        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    receipt = await request.app.state.scene_operations.delete_object(name)
     return {
         "deleted": True,
         "name": receipt.object_name,

@@ -11,8 +11,9 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 from urllib.parse import urlparse
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from fastmcp.utilities.lifespan import combine_lifespans
 from starlette.types import ASGIApp, Receive, Scope, Send
 
@@ -20,7 +21,11 @@ from api.routers import batch_transform, chat, print_readiness, scene, scene_exp
 from api.routers.ws_manager import ConnectionManager, viewport_broadcast_loop
 from api.runtime import AppRuntime, build_runtime
 from src.adapters.mcp_server import create_mcp_server
-from src.core.domain.exceptions import BlenderConnectionError
+from src.core.domain.exceptions import (
+    BlenderConnectionError,
+    DomainError,
+    LLMConnectionError,
+)
 
 logger = logging.getLogger(__name__)
 PROJECT_VERSION = (Path(__file__).parents[1] / "VERSION").read_text().strip()
@@ -102,6 +107,36 @@ def _publish_runtime_state(app: FastAPI, runtime: AppRuntime) -> None:
     app.state.ws_manager = ConnectionManager()
 
 
+def _register_domain_error_handlers(app: FastAPI) -> None:
+    """Map domain exceptions to HTTP status in exactly one place.
+
+    Registration order does not matter, but *specificity* does: Starlette walks
+    ``type(exc).__mro__`` and takes the first registered class it finds. Because
+    ``BlenderConnectionError`` and ``LLMConnectionError`` inherit from
+    ``DomainError`` directly, they are found before the base class and keep their
+    503. Registering only ``DomainError`` would silently collapse every 503 into
+    a 422 — ``tests/e2e/test_rest_error_contract.py`` asserts the hierarchy this
+    depends on, so the assumption cannot rot unnoticed.
+
+    Scope: this owns the *domain* mapping only. Endpoint-owned guards — a missing
+    adapter, an unknown snapshot, an oversized upload — stay in their endpoint,
+    where the status is a real decision rather than a translation.
+
+    ``/ws/chat`` is deliberately not covered: Starlette's exception middleware is
+    HTTP-only, so a WebSocket route never reaches these handlers.
+    """
+
+    async def _unavailable(_: Request, exc: Exception) -> JSONResponse:
+        return JSONResponse(status_code=503, content={"detail": str(exc)})
+
+    async def _unprocessable(_: Request, exc: Exception) -> JSONResponse:
+        return JSONResponse(status_code=422, content={"detail": str(exc)})
+
+    app.add_exception_handler(BlenderConnectionError, _unavailable)
+    app.add_exception_handler(LLMConnectionError, _unavailable)
+    app.add_exception_handler(DomainError, _unprocessable)
+
+
 def create_app(
     cors_origins: list[str] | None = None,
     env_file: Path | None = None,
@@ -152,6 +187,8 @@ def create_app(
         from api.require_identity import RequireTailnetIdentity
 
         app.add_middleware(RequireTailnetIdentity)
+
+    _register_domain_error_handlers(app)
 
     app.include_router(chat.router)
     app.include_router(scene.router)

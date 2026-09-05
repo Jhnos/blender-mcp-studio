@@ -2,10 +2,9 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, Request
 
 from api.schemas import PrintReadinessRequest
-from src.core.domain.exceptions import BlenderConnectionError, PrintReadinessError
 from src.core.domain.print_readiness import PrintReadinessReport, PrintReadinessSpec
 from src.core.ports.print_readiness_port import PrintReadinessQueryPort
 
@@ -24,9 +23,4 @@ async def check_print_readiness(
         overhang_angle_deg=body.overhang_angle_deg,
     )
     service: PrintReadinessQueryPort = request.app.state.print_readiness
-    try:
-        return await service.check(spec)
-    except BlenderConnectionError as exc:
-        raise HTTPException(status_code=503, detail=str(exc)) from exc
-    except PrintReadinessError as exc:
-        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    return await service.check(spec)
