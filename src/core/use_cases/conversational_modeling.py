@@ -155,6 +155,15 @@ class ConversationalModelingUseCase:
         self._prompt_builder = prompt_builder
         self._use_tool_calling = isinstance(llm, LLMToolChatPort)
 
+    def system_prompt(self, context: dict[str, object] | None = None) -> str:
+        """The prompt this use case would send, exposed for streaming callers.
+
+        Delivery adapters need it to drive the token stream themselves; reaching
+        for the private helper made the router depend on an implementation
+        detail that could be renamed without warning.
+        """
+        return self._get_system_prompt(context)
+
     def _get_system_prompt(self, context: dict[str, object] | None = None) -> str:
         if self._prompt_builder is not None:
             return self._prompt_builder.build_system_prompt(context)

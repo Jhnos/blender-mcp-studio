@@ -31,6 +31,7 @@ from src.core.ports.adapter_factory_port import AdapterFactoryPort
 from src.core.ports.blender_port import BlenderPort
 from src.core.ports.llm_port import LLMChatPort, LLMResponse, LLMStreamPort
 from src.core.ports.mcp_port import ToolResult
+from src.core.use_cases.conversational_modeling import ConversationalModelingUseCase
 
 # A command block the LLM "emits" so the streaming path runs a Blender call.
 _COMMAND_JSON = '{"tool_name": "create_object", "arguments": {"type": "CUBE"}}'
@@ -87,9 +88,21 @@ class _FakeFactory(AdapterFactoryPort):
 def _make_client(blender_output: object) -> TestClient:
     app = FastAPI()
     app.include_router(chat.router)
-    app.state.blender = _FakeBlender(blender_output)
-    app.state.adapter_factory = _FakeFactory(_FakeStreamLLM())
-    app.state.event_bus = InMemoryEventBus()
+    blender = _FakeBlender(blender_output)
+    llm = _FakeStreamLLM()
+    event_bus = InMemoryEventBus()
+    app.state.blender = blender
+    app.state.adapter_factory = _FakeFactory(llm)
+    app.state.event_bus = event_bus
+    # The use case is assembled by the composition root in production
+    # (api/runtime.py); this mirrors that wiring with fake adapters so the route
+    # under test reads it the same way it does at runtime.
+    app.state.conversational_modeling = ConversationalModelingUseCase(
+        llm=llm,
+        blender=blender,
+        event_bus=event_bus,
+        prompt_builder=None,
+    )
     # sanitizer / prompt_builder / session_store / ws_manager are all optional
     # (the route reads them via getattr(..., None)); leaving them unset is a
     # real configuration the route must tolerate.

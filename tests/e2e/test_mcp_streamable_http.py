@@ -91,6 +91,9 @@ def make_fake_runtime() -> AppRuntime:
         snapshot_store=marker,
         polyhaven=marker,
         text3d=None,
+        conversational_modeling=marker,
+        modeling_pipeline=marker,
+        iterative_refinement=None,
     )
 
 

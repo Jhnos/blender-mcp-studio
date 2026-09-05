@@ -20,8 +20,6 @@ from api.schemas import SceneInfoResponse, UndoRedoResponse
 from src.core.domain.command import Command
 from src.core.domain.scene_operations import ModifyObjectSpec
 from src.core.ports.blender_port import BlenderPort
-from src.core.use_cases.iterative_refinement import IterativeRefinementUseCase
-from src.core.use_cases.modeling_pipeline import ModelingPipelineUseCase
 
 router = APIRouter(prefix="/api")
 logger = logging.getLogger(__name__)
@@ -67,8 +65,8 @@ async def refine_model(body: RefineRequest, request: Request) -> dict[str, objec
 
     Requires a vision adapter to be configured (OPENAI_API_KEY or ANTHROPIC_API_KEY).
     """
-    vision = getattr(request.app.state, "vision", None)
-    if vision is None:
+    use_case = getattr(request.app.state, "iterative_refinement", None)
+    if use_case is None:
         raise HTTPException(
             status_code=503,
             detail="No vision provider configured. Set OPENAI_API_KEY or ANTHROPIC_API_KEY.",
@@ -85,19 +83,12 @@ async def refine_model(body: RefineRequest, request: Request) -> dict[str, objec
 
         session = Session()
 
-    # Build LLM adapter
-    adapter_factory = request.app.state.adapter_factory
-    llm = adapter_factory.create_llm_adapter()
-
-    use_case = IterativeRefinementUseCase(
-        llm=llm,
-        blender=request.app.state.blender,
-        vision=vision,
-        max_iterations=body.max_iterations,
-    )
-
     try:
-        result = await use_case.execute(session, user_request=body.user_request)
+        result = await use_case.execute(
+            session,
+            user_request=body.user_request,
+            max_iterations=body.max_iterations,
+        )
     except Exception as e:
         logger.exception("Refinement failed")
         raise HTTPException(status_code=500, detail=str(e)) from e
@@ -139,8 +130,7 @@ async def run_pipeline(body: PipelineRequest, request: Request) -> dict[str, obj
     except KeyError as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
 
-    blender = request.app.state.blender
-    use_case = ModelingPipelineUseCase(blender=blender)
+    use_case = request.app.state.modeling_pipeline
 
     try:
         result = await use_case.execute(

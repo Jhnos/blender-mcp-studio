@@ -115,21 +115,26 @@ class IterativeRefinementUseCase:
         self,
         session: Session,
         user_request: str,
+        max_iterations: int | None = None,
     ) -> RefinementResult:
         """Run the iterative refinement loop.
 
         Args:
             session: Current conversation session (for LLM context).
             user_request: Original user description of the desired 3D model.
+            max_iterations: Per-call override of the configured budget. Keeping
+                it here rather than in ``__init__`` is what lets the use case be
+                assembled once at the composition root instead of per request.
 
         Returns:
             RefinementResult with all iterations recorded.
         """
+        budget = self._max_iterations if max_iterations is None else max_iterations
         iterations: list[RefinementIteration] = []
         current_session = session
 
-        for i in range(1, self._max_iterations + 1):
-            logger.info("Refinement iteration %d/%d", i, self._max_iterations)
+        for i in range(1, budget + 1):
+            logger.info("Refinement iteration %d/%d", i, budget)
 
             # Step 1: screenshot
             screenshot_bytes = await self._capture_screenshot()

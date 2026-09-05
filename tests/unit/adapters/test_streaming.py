@@ -357,11 +357,14 @@ class _FakeWebSocket:
 async def _drive_streaming(blender_output: object) -> list[dict]:
     ws = _FakeWebSocket()
     llm = _FakeLLM(['{"tool_name": "create_object", "arguments": {"type": "CUBE"}}'])
-    use_case = SimpleNamespace(_blender=_FakeBlender(blender_output))
+    blender = _FakeBlender(blender_output)
+    # The use case no longer carries the Blender port for this caller: the route
+    # passes it explicitly, so the double only needs the prompt hook.
+    use_case = SimpleNamespace(system_prompt=lambda context=None: None)
     session = Session(messages=[Message(role="user", content="make a cube")])
     session_store = AsyncMock()
 
-    await _handle_streaming(ws, llm, use_case, session, session_store)
+    await _handle_streaming(ws, llm, use_case, session, session_store, blender)
     return ws.sent
 
 

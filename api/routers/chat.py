@@ -44,9 +44,7 @@ async def chat_websocket(websocket: WebSocket) -> None:
 
     blender = request.app.state.blender
     factory = request.app.state.adapter_factory
-    event_bus = request.app.state.event_bus
     sanitizer = getattr(request.app.state, "sanitizer", None)
-    prompt_builder = getattr(request.app.state, "prompt_builder", None)
     session_store = getattr(request.app.state, "session_store", None)
     ws_manager = getattr(request.app.state, "ws_manager", None)
 
@@ -54,12 +52,7 @@ async def chat_websocket(websocket: WebSocket) -> None:
         ws_manager.register(websocket)
 
     llm = factory.build_llm_adapter()
-    use_case = ConversationalModelingUseCase(
-        llm=llm,
-        blender=blender,
-        event_bus=event_bus,
-        prompt_builder=prompt_builder,
-    )
+    use_case = request.app.state.conversational_modeling
     supports_streaming = isinstance(llm, LLMStreamPort)
 
     try:
@@ -113,6 +106,7 @@ async def chat_websocket(websocket: WebSocket) -> None:
                             use_case,
                             session,
                             session_store,
+                            blender,
                         )
                         continue
 
@@ -165,13 +159,12 @@ async def _handle_streaming(
     use_case: ConversationalModelingUseCase,
     session: Session,
     session_store: SessionStorePort | None,
+    blender: BlenderPort,
 ) -> None:
     """Push LLM tokens to client in real-time, then execute Blender commands."""
     from src.core.domain.command import CommandParser
 
-    system_prompt = (
-        use_case._get_system_prompt() if hasattr(use_case, "_get_system_prompt") else None
-    )
+    system_prompt = use_case.system_prompt() if hasattr(use_case, "system_prompt") else None
     accumulated = ""
 
     try:
@@ -194,7 +187,7 @@ async def _handle_streaming(
         blender_out: str | None = None
         if command:
             try:
-                result = await use_case._blender.execute(command)
+                result = await blender.execute(command)
                 if result.success:
                     # ToolResult.output is `object` — the socket adapter hands back
                     # the addon's raw response dict when it carries no "result" key
@@ -211,7 +204,7 @@ async def _handle_streaming(
         elif hasattr(websocket.app.state, "_sessions"):
             websocket.app.state._sessions[updated.id] = updated
 
-        screenshot_b64 = await _capture_screenshot(use_case._blender, blender_out)
+        screenshot_b64 = await _capture_screenshot(blender, blender_out)
 
         # Final "done" message with full content + blender output
         await websocket.send_text(

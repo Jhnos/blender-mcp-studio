@@ -17,6 +17,9 @@ from src.core.ports.snapshot_store_port import SnapshotStorePort
 from src.core.ports.text3d_port import Text3DGenerationPort
 from src.core.ports.vision_port import VisionPort
 from src.core.use_cases.batch_transform import BatchTransformService
+from src.core.use_cases.conversational_modeling import ConversationalModelingUseCase
+from src.core.use_cases.iterative_refinement import IterativeRefinementUseCase
+from src.core.use_cases.modeling_pipeline import ModelingPipelineUseCase
 from src.core.use_cases.print_readiness import PrintReadinessService
 from src.core.use_cases.scene_export import SceneExportService
 from src.core.use_cases.scene_operations import SceneOperationsService
@@ -42,6 +45,14 @@ class AppRuntime:
     polyhaven: PolyHavenPort
     text3d: Text3DGenerationPort | None
 
+    # Use cases are assembled here, not in delivery adapters. Building them in a
+    # router hides the wiring behind ``app.state``'s ``Any`` and puts a
+    # composition decision in the HTTP layer.
+    conversational_modeling: ConversationalModelingUseCase
+    modeling_pipeline: ModelingPipelineUseCase
+    #: ``None`` when no vision provider is configured; the endpoint reports 503.
+    iterative_refinement: IterativeRefinementUseCase | None
+
 
 def build_runtime(env_file: Path | None = None) -> AppRuntime:
     """Build concrete outer adapters at the application's only composition root."""
@@ -64,20 +75,37 @@ def build_runtime(env_file: Path | None = None) -> AppRuntime:
     load_env(env_file)
     sandbox = BlenderCodeSandbox()
     blender = build_blender_adapter(sandbox=sandbox)
+    adapter_factory = ConcreteAdapterFactory()
+    llm = adapter_factory.build_llm_adapter()
+    event_bus = InMemoryEventBus()
+    prompt_builder = BlenderContextPromptBuilder()
+    vision = build_vision_adapter()
     return AppRuntime(
         blender=blender,
         scene_operations=SceneOperationsService(blender),
         batch_transform=BatchTransformService(BlenderBatchTransformAdapter(blender)),
         scene_export=SceneExportService(BlenderSceneExportAdapter(blender)),
         print_readiness=PrintReadinessService(BlenderPrintReadinessAdapter(blender)),
-        event_bus=InMemoryEventBus(),
-        adapter_factory=ConcreteAdapterFactory(),
+        event_bus=event_bus,
+        adapter_factory=adapter_factory,
         sandbox=sandbox,
         sanitizer=PromptInjectionSanitizer(),
-        vision=build_vision_adapter(),
-        prompt_builder=BlenderContextPromptBuilder(),
+        vision=vision,
+        prompt_builder=prompt_builder,
         session_store=SQLiteSessionStore(),
         snapshot_store=SQLiteSnapshotStore(),
         polyhaven=PolyHavenAdapter(),
         text3d=build_text3d_adapter(),
+        conversational_modeling=ConversationalModelingUseCase(
+            llm=llm,
+            blender=blender,
+            event_bus=event_bus,
+            prompt_builder=prompt_builder,
+        ),
+        modeling_pipeline=ModelingPipelineUseCase(blender=blender, llm=llm),
+        iterative_refinement=(
+            None
+            if vision is None
+            else IterativeRefinementUseCase(llm=llm, blender=blender, vision=vision)
+        ),
     )

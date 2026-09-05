@@ -104,6 +104,9 @@ def _publish_runtime_state(app: FastAPI, runtime: AppRuntime) -> None:
     app.state.snapshot_store = runtime.snapshot_store
     app.state.polyhaven = runtime.polyhaven
     app.state.text3d = runtime.text3d
+    app.state.conversational_modeling = runtime.conversational_modeling
+    app.state.modeling_pipeline = runtime.modeling_pipeline
+    app.state.iterative_refinement = runtime.iterative_refinement
     app.state.ws_manager = ConnectionManager()
 
 
