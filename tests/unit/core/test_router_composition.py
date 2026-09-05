@@ -51,6 +51,66 @@ def test_routers_do_not_construct_use_cases() -> None:
     )
 
 
+#: Blender dialect markers. A router that contains these is writing Blender
+#: source in the HTTP layer, bypassing the documented rule that the Blender
+#: adapters are the only translation chokepoint (docs/01-architecture.md).
+BPY_MARKERS = ("import bpy", "bpy.ops", "bpy.data", "bpy.context")
+
+#: ``execute_code`` is the addon's arbitrary-Python escape hatch. Routers must go
+#: through a named operation in src/adapters/blender_scripts/ instead.
+ESCAPE_HATCH = '"execute_code"'
+
+
+def _docstring_lines(tree: ast.AST) -> set[int]:
+    """Line numbers occupied by docstrings.
+
+    Docstrings are prose *about* an operation; the script constants this gate
+    hunts are ordinary strings. Skipping every string would disarm the gate —
+    the constants it was written for were strings — so only docstrings are
+    exempt, and only because naming an operation in prose is not embedding it.
+    """
+    lines: set[int] = set()
+    for node in ast.walk(tree):
+        if not isinstance(node, (ast.Module, ast.ClassDef, ast.FunctionDef, ast.AsyncFunctionDef)):
+            continue
+        body = getattr(node, "body", [])
+        if not body:
+            continue
+        first = body[0]
+        if (
+            isinstance(first, ast.Expr)
+            and isinstance(first.value, ast.Constant)
+            and isinstance(first.value.value, str)
+            and first.end_lineno is not None
+        ):
+            lines.update(range(first.lineno, first.end_lineno + 1))
+    return lines
+
+
+def find_blender_dialect(root: Path) -> list[str]:
+    """Return ``file:line`` for router lines carrying Blender source."""
+    hits: list[str] = []
+    for path in sorted(root.glob("*.py")):
+        source = path.read_text(encoding="utf-8")
+        skip = _docstring_lines(ast.parse(source))
+        for lineno, line in enumerate(source.splitlines(), 1):
+            if lineno in skip:
+                continue
+            code = line.split("#", 1)[0]
+            if any(marker in code for marker in BPY_MARKERS) or ESCAPE_HATCH in code:
+                hits.append(f"{path.name}:{lineno}")
+    return hits
+
+
+def test_routers_hold_no_blender_source() -> None:
+    hits = find_blender_dialect(ROUTERS)
+    assert not hits, (
+        "routers contain Blender source or reach for execute_code; move the\n"
+        "operation into src/adapters/blender_scripts/ and call it by name:\n"
+        + "\n".join(f"  {row}" for row in hits)
+    )
+
+
 def test_adapter_factory_port_has_no_create_llm_adapter() -> None:
     """Pins the real interface, so a caller cannot invent a method name.
 
@@ -99,3 +159,42 @@ def test_gate_ignores_ordinary_constructor_calls(tmp_path: Path) -> None:
     """Building a request DTO is not composition and must not be reported."""
     (tmp_path / "r.py").write_text(_UNRELATED_CALL, encoding="utf-8")
     assert find_use_case_constructions(tmp_path) == []
+
+
+_HAS_BPY = 'code = "import bpy\\nbpy.ops.ed.undo()"\n'
+_CALLS_ACL = "outcome = await history_scripts.run_history_action(blender, action)\n"
+_MENTIONS_BPY_IN_A_COMMENT = "# delegates to bpy.ops.import_scene.gltf via the ACL\n"
+
+
+def test_dialect_gate_fires_on_embedded_bpy(tmp_path: Path) -> None:
+    (tmp_path / "r.py").write_text(_HAS_BPY, encoding="utf-8")
+    assert find_blender_dialect(tmp_path) == ["r.py:1"]
+
+
+def test_dialect_gate_passes_a_router_that_calls_the_acl(tmp_path: Path) -> None:
+    (tmp_path / "r.py").write_text(_CALLS_ACL, encoding="utf-8")
+    assert find_blender_dialect(tmp_path) == []
+
+
+def test_dialect_gate_ignores_comments(tmp_path: Path) -> None:
+    """Naming the operation in prose is documentation, not embedded source."""
+    (tmp_path / "r.py").write_text(_MENTIONS_BPY_IN_A_COMMENT, encoding="utf-8")
+    assert find_blender_dialect(tmp_path) == []
+
+
+def test_dialect_gate_ignores_docstrings(tmp_path: Path) -> None:
+    """A docstring may name the operation it delegates to."""
+    source = '"""Imports the GLB via bpy.ops.import_scene.gltf in the ACL."""\n'
+    (tmp_path / "r.py").write_text(source, encoding="utf-8")
+    assert find_blender_dialect(tmp_path) == []
+
+
+def test_dialect_gate_still_sees_script_constants(tmp_path: Path) -> None:
+    """Exempting docstrings must not exempt ordinary string constants.
+
+    The constants this gate was written for were exactly that: module-level
+    triple-quoted strings holding Blender source.
+    """
+    source = '"""Router docstring."""\n\n_CODE = """\\\nimport bpy\nbpy.ops.ed.undo()\n"""\n'
+    (tmp_path / "r.py").write_text(source, encoding="utf-8")
+    assert find_blender_dialect(tmp_path) == ["r.py:4", "r.py:5"]

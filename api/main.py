@@ -17,7 +17,20 @@ from fastapi.responses import JSONResponse
 from fastmcp.utilities.lifespan import combine_lifespans
 from starlette.types import ASGIApp, Receive, Scope, Send
 
-from api.routers import batch_transform, chat, print_readiness, scene, scene_export
+from api.routers import (
+    batch_transform,
+    chat,
+    generate3d,
+    history,
+    materials,
+    objects,
+    pipelines,
+    print_readiness,
+    scene,
+    scene_export,
+    snapshots,
+    vision,
+)
 from api.routers.ws_manager import ConnectionManager, viewport_broadcast_loop
 from api.runtime import AppRuntime, build_runtime
 from src.adapters.mcp_server import create_mcp_server
@@ -195,6 +208,13 @@ def create_app(
 
     app.include_router(chat.router)
     app.include_router(scene.router)
+    app.include_router(objects.router)
+    app.include_router(history.router)
+    app.include_router(snapshots.router)
+    app.include_router(materials.router)
+    app.include_router(vision.router)
+    app.include_router(pipelines.router)
+    app.include_router(generate3d.router)
     app.include_router(batch_transform.router)
     app.include_router(scene_export.router)
     app.include_router(print_readiness.router)

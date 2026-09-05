@@ -135,6 +135,35 @@ def test_domain_error_maps_to_422(
     assert (status, payload) == (422, {"detail": DETAIL})
 
 
+#: Endpoints that reach Blender through the script ACL rather than a service.
+#: Each used to wrap ``blender.execute`` in its own ``except Exception`` — some
+#: answering 503, some swallowing into a 500. They now let the exception reach
+#: the shared handler, and this table is what proves the 503 survived the move.
+BLENDER_BACKED: list[tuple[str, str, str, dict[str, object] | None]] = [
+    ("undo", "POST", "/api/undo", None),
+    ("redo", "POST", "/api/redo", None),
+    ("select_object", "POST", "/api/object/Cube/select", None),
+    ("update_object_rename", "PUT", "/api/object/Cube", {"new_name": "Cube2"}),
+]
+
+
+@pytest.mark.parametrize(
+    ("name", "method", "path", "body"),
+    BLENDER_BACKED,
+    ids=[row[0] for row in BLENDER_BACKED],
+)
+def test_blender_transport_failure_maps_to_503(
+    app: FastAPI,
+    name: str,
+    method: str,
+    path: str,
+    body: dict[str, object] | None,
+) -> None:
+    app.state.blender = RaisingService(BlenderConnectionError(DETAIL))
+    status, payload = _call(app, method, path, body)
+    assert (status, payload) == (503, {"detail": DETAIL})
+
+
 def test_batch_transform_error_is_a_scene_operation_error() -> None:
     """Guards the MRO assumption the centralized handler will depend on.
 

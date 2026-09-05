@@ -34,15 +34,21 @@
 - `SceneOperationsService` 使用不可變 domain value，並在 Blender JSON 邊界嚴格 narrowing。
 - `BlenderMCPAdapter` 是高階操作到 addon dialect 的唯一翻譯 chokepoint。
 - 共享 `BlenderSocketClient._lock` 序列化 socket request/response；MCP 不建立第二把 transport lock。
+- **HTTP router 不擁有三種知識**：domain error 到 HTTP status 的映射由 `api/main.py` 的
+  application-wide handler 獨佔；use case 的組裝只發生在 `api/runtime.py`；`bpy` 原始碼
+  只住在 `src/adapters/blender_scripts/`。三者各有 AST 閘門把關
+  （`tests/unit/core/test_rest_error_ssot.py`、`test_router_composition.py`）。
+- **傳輸失敗與腳本失敗是兩件事**：port 拋出的例外一路傳到 handler（→ 503）；只有真的執行了
+  卻失敗的腳本才回 `ScriptOutcome(success=False)`，由端點決定狀態碼。
 
 ## 分層與責任
 
 | 層 | 主要構件 | 責任 |
 |---|---|---|
-| Presentation | FastAPI routers、FastMCP server | HTTP/WS/MCP framing、schema、error mapping |
+| Presentation | FastAPI routers、FastMCP server | HTTP/WS/MCP framing、schema。**不做 error mapping、不組裝 use case、不含 `bpy` 原始碼** |
 | Application | `AppRuntime`、`SceneOperationsService`、`PrintReadinessService`、`BatchTransformService` | composition、lifecycle、use-case orchestration |
 | Domain | scene/print-readiness/batch-transform immutable values、窄 ports | Client-neutral language 與 inward dependency contract |
-| Adapter | `BlenderMCPAdapter`、`BlenderPrintReadinessAdapter`、`BlenderBatchTransformAdapter`、`BlenderSocketClient` | addon translation、inspection、single-Undo batch mutation、locking、TCP |
+| Adapter | `BlenderMCPAdapter`、`BlenderPrintReadinessAdapter`、`BlenderBatchTransformAdapter`、`src/adapters/blender_scripts/`、`BlenderSocketClient` | addon translation、inspection、single-Undo batch mutation、**`bpy` 腳本 ACL**、locking、TCP |
 | Engine | Blender + addon | 執行 `bpy` 並保存 3D scene state |
 
 ### Web frontend 模組邊界
