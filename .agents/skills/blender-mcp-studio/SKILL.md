@@ -103,6 +103,11 @@ selection across a generator, CI fixtures and an MCP readiness call. Measure exp
 dimensions independently. STL coordinates are mm; importing into a metre-based Blender scene
 requires scale 0.001. Keep printed hardware separate from decorative route guides and verify
 its own readiness and static clearance; a `ready` mesh report does not certify retention.
+After positioning newly copied or hidden verification objects, update the Blender view layer
+before reading `matrix_world`, exporting or building world-space BVHs. For retained hardware,
+pair zero-overlap neutral checks with displaced stop-contact samples; renders are not evidence.
+Keep product/readiness prefixes disjoint from presentation and diagnostic object prefixes;
+the contract's expected selection count is the fail-loud guard against namespace pollution.
 
 ## Close the milestone
 

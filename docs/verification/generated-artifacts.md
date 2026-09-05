@@ -21,6 +21,10 @@ $HOME/miniconda3/envs/blender-mcp/bin/python \
   scripts/verify/contracts/inset_hinge_probe.json
 ```
 
+For the V6 retained-pin model, substitute `biaxial_hinge.json`, then run the PIP and split
+contracts with `--skip-generate`. Run both `biaxial_hinge_probe.json` and
+`biaxial_hinge_split_probe.json`; the latter proves neutral clearance and displaced stop contact.
+
 The default run regenerates task-owned objects and outputs, then verifies them. Use
 `--skip-generate` only to inspect an already generated scene and existing files. Success
 returns 0; missing artifacts, collisions, incomplete evidence or service failures fail loud.
@@ -39,6 +43,12 @@ Blender scene, or open the `.blend`. The V5 coupon contains two bodies and two h
 the pin is 6 × 6 × 9.2 mm overall, not a 6 mm shaft. Shaft diameter is 4 mm. See the
 [V5 target and retention limits](inset-hinge-v5.md) before trial printing.
 
+V6 outputs: `tmp/biaxial-hinge-v6/` contains the shared Ø36 mm body, grooved pin, C clip,
+two-body PIP coupon, six-part separate coupon, `.blend` source and visual evidence. The
+double-headed PIP pins remain interleaved with the two bodies; the separate workflow uses
+two grooved pins and two 0.9 mm experimental C clips. See the
+[V6 target and manufacturing limits](biaxial-hinge-v6.md) before slicing.
+
 The V4 contract remains available as `hollow_side_hinge.json`, with outputs in
 `tmp/hollow-side-hinge/`. Running either generator replaces task-owned `HH_` scene objects;
 saved output files for the other version are retained.
@@ -49,7 +59,11 @@ saved output files for the other version are retained.
 |---|---|
 | `src/core/domain/hollow_side_hinge.py` | Immutable dimensions and geometric constraints |
 | `src/core/domain/inset_hinge.py` | In-disc roots and printed split-pin dimensions |
+| `src/core/domain/biaxial_hinge.py` | Biaxial-root and captive/removable retention constraints |
 | `scripts/model_inset_hinge.py` | V5 body and printable pin assembly |
+| `scripts/model_biaxial_hinge.py` | V6 shared body, assembly and artifact orchestration |
+| `scripts/hinge_retention.py` | Captive pin, grooved pin, C clip and retainer-seat geometry |
+| `scripts/biaxial_hinge_presentation.py` | PIP/separate layouts and diagnostic evidence views |
 | `scripts/blender_mesh_primitives.py` | Shared material, cylinder, boolean and cleanup primitives |
 | `scripts/inset_hinge_presentation.py` | V5 close-up, top view and fit-coupon layout |
 | `scripts/model_hollow_side_hinge_chain.py` | Assemble the model from the specification |
@@ -85,6 +99,9 @@ saved output files for the other version are retained.
 - The centre probe tests the master's local Z axis; it is not a volumetric cable-sweep test.
 - Joint sweep is discrete surface-overlap testing; containment and between-sample contact
   are not certified. Bearing/pin graphics are outside the printable-mesh collision groups.
+- Newly transformed hidden/copy objects must cross an explicit view-layer update before
+  export or world-space BVH measurement. Retention probes require no neutral intersection
+  and positive overlap after configured axial displacement; they do not measure holding force.
 - Readiness deliberately selects/unhides only the configured generated layout prefix.
   Do not run this workflow concurrently with interactive edits or another Blender writer.
 - Empty, invalid or truncated readiness cannot pass; configured structural issues fail.

@@ -17,6 +17,12 @@ def m(value_mm: float) -> float:
     return value_mm / 1000.0
 
 
+def configure_mechanical_camera(camera: bpy.types.Object) -> None:
+    """Clip in model units; Blender's default near plane clips small-part close-ups."""
+    camera.data.clip_start = m(0.1)
+    camera.data.clip_end = m(2000.0)
+
+
 def look_at(obj: bpy.types.Object, target_mm: tuple[float, float, float]) -> None:
     direction = Vector(tuple(m(value) for value in target_mm)) - obj.location
     obj.rotation_euler = direction.to_track_quat("-Z", "Y").to_euler()
@@ -80,6 +86,7 @@ def setup_render(
     camera = bpy.context.object
     camera.name = "HH_CAMERA"
     camera.data.type = "ORTHO"
+    configure_mechanical_camera(camera)
     camera.data.ortho_scale = m(226.0)
     look_at(camera, (0.0, 0.0, midpoint))
     scene.camera = camera

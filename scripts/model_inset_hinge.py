@@ -31,10 +31,12 @@ SPEC = InsetHingeSpec()
 OUTPUT = PROJECT_ROOT / "tmp" / "inset-hinge-v5"
 
 
-def root(name: str, axis: str, center: float, z_sign: float) -> bpy.types.Object:
+def root(
+    name: str, axis: str, center: float, z_sign: float, spec: InsetHingeSpec = SPEC
+) -> bpy.types.Object:
     """Closed loft: shallow four-sided foot, then tangential load-spreading ramps."""
     vertices = []
-    for z, axial, tangent in SPEC.root_profile_mm:
+    for z, axial, tangent in spec.root_profile_mm:
         for a, t in ((-axial, -tangent), (axial, -tangent), (axial, tangent), (-axial, tangent)):
             point = (center + a, t, z_sign * z) if axis == "X" else (t, center + a, z_sign * z)
             vertices.append(tuple(m(value) for value in point))
@@ -54,39 +56,39 @@ def root(name: str, axis: str, center: float, z_sign: float) -> bpy.types.Object
     return obj
 
 
-def create_body(target, mat) -> bpy.types.Object:
+def create_body(target, mat, spec: InsetHingeSpec = SPEC) -> bpy.types.Object:
     body = add_cylinder(
         "HH_PRINTABLE_MODULE_1",
-        SPEC.body_outer_diameter_mm / 2,
-        SPEC.body_length_mm,
+        spec.body_outer_diameter_mm / 2,
+        spec.body_length_mm,
         (0, 0, 0),
         vertices=96,
     )
     move_to_collection(body, target)
     for axis, center, sign in (
-        ("X", SPEC.side_male_center_mm, 1),
-        ("Y", SPEC.side_female_center_mm, -1),
+        ("X", spec.side_male_center_mm, 1),
+        ("Y", spec.side_female_center_mm, -1),
     ):
         for side in (-1, 1):
             location = (
-                (side * center, 0, sign * SPEC.joint_center_offset_mm)
+                (side * center, 0, sign * spec.joint_center_offset_mm)
                 if axis == "X"
-                else (0, side * center, sign * SPEC.joint_center_offset_mm)
+                else (0, side * center, sign * spec.joint_center_offset_mm)
             )
             ear = add_cylinder(
-                "HH_EAR", SPEC.lug_outer_diameter_mm / 2, SPEC.lug_thickness_mm, location, axis
+                "HH_EAR", spec.lug_outer_diameter_mm / 2, spec.lug_thickness_mm, location, axis
             )
-            boolean(body, root("HH_ROOT", axis, side * center, sign), "UNION")
+            boolean(body, root("HH_ROOT", axis, side * center, sign, spec), "UNION")
             boolean(body, ear, "UNION")
             bore = add_cylinder(
-                "HH_BORE", SPEC.printed_pin_bore_mm / 2, SPEC.lug_thickness_mm + 1, location, axis
+                "HH_BORE", spec.printed_pin_bore_mm / 2, spec.lug_thickness_mm + 1, location, axis
             )
             boolean(body, bore, "DIFFERENCE")
     for name, radius, x, y in [
-        ("CENTER", SPEC.center_channel_diameter_mm / 2, 0, 0),
+        ("CENTER", spec.center_channel_diameter_mm / 2, 0, 0),
         *[
-            (f"TENDON_{i}", SPEC.tendon_hole_diameter_mm / 2, x, y)
-            for i, (x, y) in enumerate(SPEC.tendon_positions_mm)
+            (f"TENDON_{i}", spec.tendon_hole_diameter_mm / 2, x, y)
+            for i, (x, y) in enumerate(spec.tendon_positions_mm)
         ],
     ]:
         boolean(body, add_cylinder("HH_CUT_" + name, radius, 40, (x, y, 0)), "DIFFERENCE")
@@ -95,28 +97,28 @@ def create_body(target, mat) -> bpy.types.Object:
     return body
 
 
-def create_pin(target, mat) -> bpy.types.Object:
+def create_pin(target, mat, spec: InsetHingeSpec = SPEC) -> bpy.types.Object:
     pin = add_cylinder(
         "HH_PIN_MASTER",
-        SPEC.pin_head_diameter_mm / 2,
-        SPEC.pin_head_height_mm,
-        (0, 0, SPEC.pin_head_height_mm / 2),
+        spec.pin_head_diameter_mm / 2,
+        spec.pin_head_height_mm,
+        (0, 0, spec.pin_head_height_mm / 2),
     )
-    shaft_top = SPEC.pin_length_mm - SPEC.pin_tip_length_mm
-    shaft_bottom = SPEC.pin_head_height_mm - 0.1
+    shaft_top = spec.pin_length_mm - spec.pin_tip_length_mm
+    shaft_bottom = spec.pin_head_height_mm - 0.1
     shaft = add_cylinder(
         "HH_SHAFT",
-        SPEC.pin_diameter_mm / 2,
+        spec.pin_diameter_mm / 2,
         shaft_top - shaft_bottom,
         (0, 0, (shaft_top + shaft_bottom) / 2),
     )
     boolean(pin, shaft, "UNION")
     bpy.ops.mesh.primitive_cone_add(
         vertices=48,
-        radius1=m(SPEC.pin_diameter_mm / 2),
-        radius2=m(SPEC.pin_diameter_mm / 2 - 0.6),
-        depth=m(SPEC.pin_tip_length_mm + 0.05),
-        location=(0, 0, m((shaft_top - 0.05 + SPEC.pin_length_mm) / 2)),
+        radius1=m(spec.pin_diameter_mm / 2),
+        radius2=m(spec.pin_diameter_mm / 2 - 0.6),
+        depth=m(spec.pin_tip_length_mm + 0.05),
+        location=(0, 0, m((shaft_top - 0.05 + spec.pin_length_mm) / 2)),
     )
     boolean(pin, bpy.context.object, "UNION")
     cleanup_mesh(pin)
@@ -131,13 +133,13 @@ def create_pin(target, mat) -> bpy.types.Object:
     return pin
 
 
-def repeat_body(master, target, alternate) -> list[bpy.types.Object]:
+def repeat_body(master, target, alternate, spec: InsetHingeSpec = SPEC) -> list[bpy.types.Object]:
     parts = [master]
-    for i, rotation in enumerate(SPEC.assembly_rotations_deg[1:], 1):
+    for i, rotation in enumerate(spec.assembly_rotations_deg[1:], 1):
         obj = master.copy()
         obj.data = master.data
         obj.name = f"HH_PRINTABLE_MODULE_{i + 1}"
-        obj.location.z = m(i * SPEC.unit_pitch_mm)
+        obj.location.z = m(i * spec.unit_pitch_mm)
         obj.rotation_euler.z = math.radians(rotation)
         target.objects.link(obj)
         obj.material_slots[0].link = "OBJECT"
@@ -147,10 +149,10 @@ def repeat_body(master, target, alternate) -> list[bpy.types.Object]:
     return parts
 
 
-def place_pins(master, target) -> list[bpy.types.Object]:
+def place_pins(master, target, spec: InsetHingeSpec = SPEC) -> list[bpy.types.Object]:
     result = []
-    outer = SPEC.pin_under_head_radius_mm + SPEC.pin_head_height_mm
-    for i in range(SPEC.joint_count):
+    outer = spec.pin_under_head_radius_mm + spec.pin_head_height_mm
+    for i in range(spec.joint_count):
         for side in (-1, 1):
             obj = master.copy()
             obj.data = master.data
@@ -158,7 +160,7 @@ def place_pins(master, target) -> list[bpy.types.Object]:
             target.objects.link(obj)
             direction = Vector((-side, 0, 0) if i % 2 == 0 else (0, -side, 0))
             obj.rotation_euler = direction.to_track_quat("Z", "Y").to_euler()
-            z = i * SPEC.unit_pitch_mm + SPEC.joint_center_offset_mm
+            z = i * spec.unit_pitch_mm + spec.joint_center_offset_mm
             obj.location = tuple(
                 m(v) for v in ((side * outer, 0, z) if i % 2 == 0 else (0, side * outer, z))
             )

@@ -5,6 +5,31 @@
 
 ## [Unreleased]
 
+### V01.00.006
+
+#### Added
+
+- Added the V6 Ø36 mm repeatable hinge body with biaxial in-disc roots, a clear Ø10 mm
+  sensor channel, four tendon bores and a reduced 19 mm pitch.
+- Added two 3D-print PIN workflows using the same body: a two-body print-in-place coupon
+  with double-headed captive pins, and a six-part coupon with grooved pins plus C clips.
+- Added reusable retention geometry, PIP/separate presentation adapters, declarative
+  readiness contracts, world-space hardware probes and displaced stop-contact evidence.
+
+#### Changed
+
+- Generalized the V5 body and pin builders to accept an injected immutable specification,
+  preserving the earlier model while avoiding a second copy of its Blender construction.
+- Archived the superseded V5 task contract and updated the project Skill, artifact workflow,
+  V6 hand-off and independent A–I visual evidence.
+
+#### Fixed
+
+- Synchronized Blender view-layer transforms before hidden-layout export/BVH measurement,
+  preventing stale world matrices from collapsing split hardware to the origin.
+- Separated product and presentation object prefixes so diagnostic render copies cannot
+  contaminate readiness selection, intersection counts or truncation state.
+
 ### V01.00.005
 
 #### Added

@@ -33,6 +33,15 @@ def _near(actual: object, expected: object, tolerance: float) -> bool:
     )
 
 
+def _retention_pass(measured: Mapping[str, object], expected: Mapping[str, object]) -> bool:
+    if "retention_sample_count" not in expected:
+        return True
+    counts = _array(measured["retention_overlaps"])
+    return len(counts) == _number(expected["retention_sample_count"]) and all(
+        type(count) is int and count > 0 for count in counts
+    )
+
+
 def measurements_pass(evidence: object, limits: object) -> bool:
     """No partial report may imply that dimensions, holes, ramps or pins passed."""
     try:
@@ -52,6 +61,7 @@ def measurements_pass(evidence: object, limits: object) -> bool:
             and _number(measured["hardware_outer_radius_mm"]) <= radius + 0.001
             and len(overlaps) == _number(expected["hardware_pair_count"])
             and all(type(count) is int and count == 0 for count in overlaps)
+            and _retention_pass(measured, expected)
         )
     except (KeyError, ValueError, TypeError):
         # Explicit negative verdict is the verifier's failure result, not a fallback pass.

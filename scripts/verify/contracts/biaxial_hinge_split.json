@@ -1,0 +1,102 @@
+{
+  "name": "biaxial_hinge_split",
+  "generator_script": "scripts/model_biaxial_hinge.py",
+  "reload_modules": [
+    "src.core.domain.inset_hinge",
+    "src.core.domain.biaxial_hinge",
+    "scripts.blender_artifact_export",
+    "scripts.hollow_hinge_render",
+    "scripts.blender_mesh_primitives",
+    "scripts.model_inset_hinge",
+    "scripts.hinge_retention",
+    "scripts.biaxial_hinge_presentation"
+  ],
+  "artifacts": [
+    "tmp/biaxial-hinge-v6/biaxial_hinge_v6.blend",
+    "tmp/biaxial-hinge-v6/body_mm.stl",
+    "tmp/biaxial-hinge-v6/assembly_pin_mm.stl",
+    "tmp/biaxial-hinge-v6/retaining_clip_mm.stl",
+    "tmp/biaxial-hinge-v6/print_in_place_2body_double_head_mm.stl",
+    "tmp/biaxial-hinge-v6/separate_parts_2body_2pin_2clip_mm.stl",
+    "tmp/biaxial-hinge-v6/biaxial_detail.png",
+    "tmp/biaxial-hinge-v6/biaxial_side.png",
+    "tmp/biaxial-hinge-v6/biaxial_top.png",
+    "tmp/biaxial-hinge-v6/pin_styles.png",
+    "tmp/biaxial-hinge-v6/print_in_place.png",
+    "tmp/biaxial-hinge-v6/separate_assembled.png",
+    "tmp/biaxial-hinge-v6/hollow_side_hinge_assembly.png",
+    "tmp/biaxial-hinge-v6/hollow_side_hinge_bent.png"
+  ],
+  "oracle": {
+    "object_prefix": "HH_PRINTABLE_MODULE_",
+    "expected_count": 9,
+    "expected_rotations_deg": [
+      0,
+      90,
+      0,
+      90,
+      0,
+      90,
+      0,
+      90,
+      0
+    ],
+    "scene_list_property": "HH_AXIS_NAMES",
+    "expected_scene_list": [
+      "J1_X",
+      "J2_Y",
+      "J3_X",
+      "J4_Y",
+      "J5_X",
+      "J6_Y",
+      "J7_X",
+      "J8_Y"
+    ],
+    "center_probe_object": "HH_PRINTABLE_MODULE_1",
+    "joint_sweep": {
+      "master_object": "HH_PRINTABLE_MODULE_1",
+      "pivot_offset_mm": 9.5,
+      "axis": "X",
+      "mating_twist_deg": 90,
+      "angles_deg": [
+        -34,
+        -30,
+        -25,
+        -20,
+        -15,
+        -10,
+        -5,
+        0,
+        5,
+        10,
+        15,
+        20,
+        25,
+        30,
+        34
+      ]
+    },
+    "collision_groups": [
+      {
+        "prefix": "HH_PRINTABLE_MODULE_",
+        "expected_count": 9
+      },
+      {
+        "prefix": "HH_BENT_MODULE_",
+        "expected_count": 9
+      }
+    ]
+  },
+  "readiness": {
+    "selection_prefix": "HH_SPLIT_",
+    "expected_selection_count": 6,
+    "forbidden_issue_codes": [
+      "no_mesh",
+      "non_manifold_edges",
+      "inconsistent_normals",
+      "degenerate_geometry",
+      "zero_volume",
+      "intersections"
+    ]
+  }
+}
