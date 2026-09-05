@@ -3,7 +3,7 @@
 <!--
   SSOT for com.blender-mcp.api LaunchAgent.
   Placeholders are substituted by deploy/launchd/install.sh:
-    __PROJECT_ROOT__   → repo root (e.g. /Users/<you>/Desktop/Blender_MCP_drawer)
+    __PROJECT_ROOT__   → repo root (e.g. /Users/<you>/Blender_MCP_drawer)
     __CONDA_PYTHON__   → conda env python (e.g. $HOME/miniconda3/envs/blender-mcp/bin/python)
   Do NOT install this file directly with `cp`; use install.sh.
 -->

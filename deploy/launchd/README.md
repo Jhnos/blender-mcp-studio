@@ -43,7 +43,7 @@ CONDA_PYTHON="$HOME/miniconda3/envs/myenv/bin/python" bash deploy/launchd/instal
 ## Install / re-install
 
 ```bash
-cd ~/Desktop/Blender_MCP_drawer
+cd ~/Blender_MCP_drawer
 bash deploy/launchd/install.sh          # all three services (default)
 bash deploy/launchd/install.sh all     # api + web + blender
 bash deploy/launchd/install.sh api     # api only
@@ -70,7 +70,7 @@ bash deploy/launchd/install.sh blender # blender only
 diff \
   <(plutil -convert xml1 -o - ~/Library/LaunchAgents/com.blender-mcp.api.plist) \
   <(plutil -convert xml1 -o - <(sed \
-      -e "s|__PROJECT_ROOT__|$HOME/Desktop/Blender_MCP_drawer|g" \
+      -e "s|__PROJECT_ROOT__|$HOME/Blender_MCP_drawer|g" \
       -e "s|__HOME__|$HOME|g" \
       -e "s|__CONDA_PYTHON__|$HOME/miniconda3/envs/blender-mcp/bin/python|g" \
       -e "s|__NODE_BIN__|/opt/homebrew/opt/node/bin/node|g" \
@@ -100,7 +100,7 @@ REST API. Hosts that only launch stdio MCP servers can use the transport bridge:
 
 ```bash
 $HOME/miniconda3/envs/blender-mcp/bin/python \
-  "$HOME/Desktop/Blender_MCP_drawer/scripts/run_mcp_stdio_proxy.py"
+  "$HOME/Blender_MCP_drawer/scripts/run_mcp_stdio_proxy.py"
 ```
 
 Override the upstream endpoint when needed:
@@ -108,7 +108,7 @@ Override the upstream endpoint when needed:
 ```bash
 BLENDER_MCP_URL=https://another-tailnet-host.example/blender/mcp \
   $HOME/miniconda3/envs/blender-mcp/bin/python \
-  "$HOME/Desktop/Blender_MCP_drawer/scripts/run_mcp_stdio_proxy.py"
+  "$HOME/Blender_MCP_drawer/scripts/run_mcp_stdio_proxy.py"
 ```
 
 The bridge only converts stdio to Streamable HTTP. It never creates a second

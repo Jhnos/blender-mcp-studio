@@ -152,7 +152,7 @@ because GUI-launched clients do not reliably inherit the shell working directory
     "blender-mcp-studio": {
       "command": "/Users/bearmacmini/miniconda3/envs/blender-mcp/bin/python",
       "args": [
-        "/Users/bearmacmini/Desktop/Blender_MCP_drawer/scripts/run_mcp_stdio_proxy.py"
+        "/Users/bearmacmini/Blender_MCP_drawer/scripts/run_mcp_stdio_proxy.py"
       ],
       "env": {
         "BLENDER_MCP_URL": "https://bearmacminimac-mini.tail56c751.ts.net/blender/mcp"

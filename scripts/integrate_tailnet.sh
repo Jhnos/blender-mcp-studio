@@ -3,7 +3,7 @@
 # 冪等：重複執行安全，已設定項目會跳過
 #
 # 執行方式：
-#   cd /Users/bearmacmini/Desktop/Blender_MCP_drawer
+#   cd /Users/bearmacmini/Blender_MCP_drawer
 #   bash scripts/integrate_tailnet.sh
 #
 # 完成後驗證（均走 Tailscale URL）：

@@ -3,7 +3,7 @@
 <!--
   SSOT for com.blender-mcp.web LaunchAgent.
   Placeholders are substituted by deploy/launchd/install.sh:
-    __PROJECT_ROOT__   → repo root (e.g. /Users/<you>/Desktop/Blender_MCP_drawer)
+    __PROJECT_ROOT__   → repo root (e.g. /Users/<you>/Blender_MCP_drawer)
     __NODE_BIN__       → node binary (e.g. /opt/homebrew/opt/node/bin/node — Apple Silicon Homebrew default)
   Do NOT install this file directly with `cp`; use install.sh.
 -->
