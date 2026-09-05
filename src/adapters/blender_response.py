@@ -7,6 +7,7 @@ messages — which reach REST clients verbatim as a 422 ``detail`` — live here
 
 from __future__ import annotations
 
+import json
 from collections.abc import Sequence
 
 from src.infrastructure.narrowing import (
@@ -21,6 +22,7 @@ from src.infrastructure.narrowing import (
 
 __all__ = [
     "ErrorFactory",
+    "decode_marked_json",
     "execute_code_output",
     "integer",
     "mapping",
@@ -79,6 +81,35 @@ def integer(value: object, context: str, error: ErrorFactory) -> int:
         message=f"Blender returned invalid {context}; expected an integer",
         error=error,
     )
+
+
+def decode_marked_json(
+    output: str,
+    marker: str,
+    *,
+    missing: str,
+    invalid: str,
+    error: ErrorFactory,
+) -> object:
+    """Pull the JSON payload a Blender script printed after ``marker``.
+
+    The adapters print their structured result on one marked line so it survives
+    whatever else Blender wrote to stdout. Finding that line is transport
+    plumbing, identical for every adapter; the marker string, the exception type
+    and both messages stay with the caller because they are what a client
+    eventually reads.
+
+    ``rfind`` is deliberate: a script that logs before printing its result can
+    emit the marker more than once, and the last one is the real payload.
+    """
+    marker_index = output.rfind(marker)
+    if marker_index < 0:
+        raise error(missing)
+    encoded = output[marker_index + len(marker) :].strip().splitlines()[0]
+    try:
+        return json.loads(encoded)
+    except json.JSONDecodeError as exc:
+        raise error(invalid) from exc
 
 
 def execute_code_output(value: object, error: ErrorFactory) -> str:

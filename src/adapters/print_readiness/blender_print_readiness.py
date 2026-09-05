@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-import json
 import math
 import textwrap
 
 from src.adapters.blender_response import (
+    decode_marked_json,
     execute_code_output,
     integer,
     mapping,
@@ -298,14 +298,13 @@ def _integer(value: object, context: str) -> int:
 
 
 def _parse_inspection(output: str) -> PrintInspection:
-    marker_index = output.rfind(_MARKER)
-    if marker_index < 0:
-        raise PrintReadinessError("Blender print inspection returned no structured report")
-    encoded = output[marker_index + len(_MARKER) :].strip().splitlines()[0]
-    try:
-        raw: object = json.loads(encoded)
-    except json.JSONDecodeError as exc:
-        raise PrintReadinessError("Blender print inspection returned invalid JSON") from exc
+    raw = decode_marked_json(
+        output,
+        _MARKER,
+        missing="Blender print inspection returned no structured report",
+        invalid="Blender print inspection returned invalid JSON",
+        error=PrintReadinessError,
+    )
     report = mapping(raw, "print-readiness report", PrintReadinessError)
     if not {"metrics", "issues", "analysis_truncated"}.issubset(report):
         raise PrintReadinessError("Blender print inspection report is missing required fields")

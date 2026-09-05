@@ -6,6 +6,7 @@ import base64
 import json
 
 from src.adapters.blender_response import (
+    decode_marked_json,
     execute_code_output,
     integer,
     mapping,
@@ -89,14 +90,13 @@ def _integer(value: object, context: str) -> int:
 
 
 def _parse_receipt(output: str) -> BatchTransformReceipt:
-    marker_index = output.rfind(_MARKER)
-    if marker_index < 0:
-        raise BatchTransformError("Blender batch transform returned no structured receipt")
-    encoded = output[marker_index + len(_MARKER) :].strip().splitlines()[0]
-    try:
-        raw: object = json.loads(encoded)
-    except json.JSONDecodeError as exc:
-        raise BatchTransformError("Blender batch transform returned invalid JSON") from exc
+    raw = decode_marked_json(
+        output,
+        _MARKER,
+        missing="Blender batch transform returned no structured receipt",
+        invalid="Blender batch transform returned invalid JSON",
+        error=BatchTransformError,
+    )
     receipt = mapping(raw, "batch-transform receipt", BatchTransformError)
     required = {"object_names", "affected_count", "message"}
     if not required.issubset(receipt):
