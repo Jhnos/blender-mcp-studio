@@ -19,6 +19,8 @@ print success from pictures. A fresh reviewer must report each item separately.
 
 ## Manufacturing boundaries
 
+- The downloadable, checksum-controlled release is
+  [`models/biaxial-hinge-v6/`](../../models/biaxial-hinge-v6/); `tmp/` remains working state.
 - All exported STL coordinates are millimetres. Use 100% mm in a slicer; use import scale
   0.001 in a metre-based Blender scene, or open the `.blend`.
 - `print_in_place_2body_double_head_mm.stl` contains two interleaved bodies and two captive

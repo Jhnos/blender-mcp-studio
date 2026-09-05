@@ -115,6 +115,10 @@ WebUI 預覽區的「準備切片」可匯出：
 參數化機構模型可使用[共用產物驗證流程](docs/verification/generated-artifacts.md)：一份 JSON
 契約串接模型生成、STL 匯出、Blender 幾何 oracle 與公開 MCP 健檢，不需為每個版本重寫驗證器。
 
+目前可直接下載與切片的受控版本是
+[V6 雙軸關節列印包](models/biaxial-hinge-v6/README.md)，內含五個毫米 STL、完整 `.blend`
+來源檔與 SHA-256 manifest。它仍是待實體試印的 `review` 原型，不代表負載認證。
+
 ---
 
 ## LLM 設定

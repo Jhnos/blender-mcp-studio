@@ -5,6 +5,23 @@
 
 ## [Unreleased]
 
+### V01.00.007
+
+#### Added
+
+- Added the checksum-controlled V6 print package under `models/biaxial-hinge-v6/`: five
+  millimetre STL coupons and parts, the complete `.blend` source, and a `manifest.json`
+  with independent byte-length, SHA-256, triangle-count and dimension readback.
+- Added `scripts/publish_print_package.py`, an allowlisted promoter from ignored
+  `tmp/biaxial-hinge-v6/` output into the tracked package, with a package readback test and
+  a CLI bootstrap regression test.
+- Added `.gitattributes` marking `.stl` and `.blend` files as binary.
+
+#### Changed
+
+- Documented the promoted package in the README, V6 hand-off, verification guides and
+  project Skill; `tmp/` stays ignored working state and is never unignored wholesale.
+
 ### V01.00.006
 
 #### Added
