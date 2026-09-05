@@ -21,6 +21,34 @@ scripts/ci.sh --real   # T3 REST/MCP/readiness/batch；需要 Blender addon 已�
 本專案**沒有** GitHub Actions；`scripts/ci.sh` 是唯一 CI。新行為一律從一個
 **有鑑別力的失敗測試**開始——測試要能在功能未實作時變紅，而不是靠實作細節通過。
 
+### 閘門涵蓋範圍（每個都要能說出它讀了哪些樹）
+
+| 閘門 | 涵蓋 | 排除 |
+|---|---|---|
+| ruff check／format | `src tests api scripts` | `scripts/archive` |
+| mypy（strict） | `src api scripts` | `scripts/archive` |
+| container-narrowing | `src api scripts` | `scripts/archive`、SSOT 模組自身 |
+| pytest | `tests/unit tests/e2e` | — |
+| eslint／tsc／vitest | `web/src` | `web/dist` |
+
+排除清單三者一致是刻意的：**範圍不一致的閘門會產生沒人有權處理的發現**。
+`scripts/` 在 2026-09-05 之前完全不在任何 Python 閘門的根目錄裡——包括
+`check_container_narrowing.py` 自己的原始碼。
+
+### 結構性閘門（不是 lint，是架構規則）
+
+| 檔案 | 它擋什麼 |
+|---|---|
+| `test_rest_error_ssot.py` | router 自行把 domain error 譯成 HTTP status；並凍結 endpoint 自有的守衛清單 |
+| `test_router_composition.py` | router 組裝 use case、內嵌 `bpy` 原始碼或觸碰 `execute_code` |
+| `test_docs_dcc.py` | 斷掉的 wikilink、導航孤兒、埠號寫在 SSOT 之外 |
+| `test_script_primitive_ssot.py` | 產生器重新定義共用 primitive |
+| `test_file_budgets.py` | `api/`、`src/` 出現 god-file（400 行硬上限，380 行預警） |
+| `errorMessage.gate.test.ts` | 前端手抄 `instanceof Error`（用真的 eslint 驗證規則有生效） |
+
+**每一個都附 should-fire 與 should-pass fixture。** 只有前者的閘門，
+與「永遠報錯」在外觀上完全相同。
+
 ## 驗證矩陣
 
 | Tier | 真實元件 | 被替換的邊界 | 這一層能宣稱什麼 |

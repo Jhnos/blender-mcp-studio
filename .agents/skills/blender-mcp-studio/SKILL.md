@@ -69,15 +69,13 @@ through existing typed actions, and test keyboard, accessibility, stale state, a
 Production services are LaunchAgents sourced from `deploy/launchd/`. Never edit installed
 plists directly and never substitute a detached dev process for production evidence.
 
-```bash
-bash deploy/launchd/install.sh all
-launchctl print gui/$(id -u)/com.blender-mcp.web
-lsof -nP -iTCP:19504 -iTCP:19505 -iTCP:9876 -sTCP:LISTEN
-curl -fsS http://127.0.0.1:19505/api/health
-```
+Install with `bash deploy/launchd/install.sh all`, then verify the *loaded* state rather
+than the plist text — the exact commands live in `AGENTS.md` and `docs/10-runtime-ssot.md`,
+which are the SSOT for ports and addresses. This skill deliberately does not repeat them:
+a copied command is a command that will drift.
 
 The long-running Web service must load hashed production assets, not `/@vite/client`. Manual
-development uses `bash scripts/run_dev.sh` and Web port 5173.
+development uses `bash scripts/run_dev.sh`.
 
 ## Verify in layers
 
@@ -110,6 +108,25 @@ before reading `matrix_world`, exporting or building world-space BVHs. For retai
 pair zero-overlap neutral checks with displaced stop-contact samples; renders are not evidence.
 Keep product/readiness prefixes disjoint from presentation and diagnostic object prefixes;
 the contract's expected selection count is the fail-loud guard against namespace pollution.
+
+## Record what you learned
+
+Searching `docs/LESSONS_LEARNED.md` is only half the loop; this skill used to describe only
+that half. After any non-trivial debugging session, close the other half:
+
+1. **Abstract the root cause into a class.** "X does not imply Y" — the phrasing every entry
+   in that file uses. It must still hold in another project; if it names this repo's files,
+   it is a commit message, not a lesson.
+2. **Name the missing check**: what would have caught it, at what layer, before a human looked?
+3. **Put the prescription into a gate.** A lesson whose fix never becomes something CI runs
+   keeps growing new bugs — that failure is itself already recorded in the file.
+4. **Give the gate a should-fire and a should-pass fixture.** Without the second, a guard that
+   has degenerated into "always fails" is indistinguishable from one that works.
+5. Newest entry goes on top. Never rewrite an existing entry; correct the present instead.
+
+Knowledge that is not a failure class goes elsewhere: an architectural decision becomes an
+ADR in `docs/01-architecture.md`; a deliberate non-abstraction goes to `docs/DEFERRALS.md`
+with a firing trigger. `docs/KNOWLEDGE.md` holds the full placement map.
 
 ## Close the milestone
 

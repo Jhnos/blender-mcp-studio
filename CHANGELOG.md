@@ -5,6 +5,56 @@
 
 ## [Unreleased]
 
+### V01.00.009
+
+#### Fixed
+
+- Repaired `POST /api/refine`, which called `adapter_factory.create_llm_adapter()` — a method
+  that exists on neither the port nor the concrete factory. `app.state` returns `Any`, so mypy
+  could not see the call, and the only factory double in the suite was a bare `MagicMock` that
+  answers to any attribute name. The endpoint had no test at all; it has two now.
+
+#### Changed
+
+- Domain errors map to HTTP status in one place (`api/main.py`). Fourteen hand-written
+  clauses across four routers are gone; the same condition no longer produces `str(exc)` in
+  some endpoints and `f"Blender unreachable: {e}"` in others.
+- Use cases are assembled at the composition root instead of per request in routers, which is
+  what makes their wiring type-checked.
+- `api/routers/scene.py` (749 lines, seven services) is split into eight routers by the service
+  each owns; the largest is now 171 lines. The OpenAPI route set is unchanged.
+- Every `bpy` statement the REST layer needed moved to `src/adapters/blender_scripts/`, where
+  each operation has a name and returns a typed `ScriptOutcome`. Transport failures now
+  propagate to the shared handler instead of being swallowed into a 500 by some routes and
+  turned into a 503 by others.
+- Five copies of JSON narrowing collapse onto `src/infrastructure/narrowing.py`, which grows a
+  predicate layer plus a `required()` combinator that keeps each caller's exception type and
+  message — those strings reach REST clients verbatim as a 422 `detail`.
+- Five frontend call sites share `runTracked`; the print-readiness inspection now reports into
+  the operation store like every other operation instead of only its own panel state.
+- `scripts/` joins every Python gate (ruff, format, mypy strict, container-narrowing). It was
+  outside all of them, including the gate's own source file.
+- The container-narrowing gate now recognises `Mapping`, `Sequence` and the other abstract
+  container types. It had listed only `dict` and `list` while four shipped call sites used the
+  abstract names.
+
+#### Added
+
+- Gates with should-fire and should-pass fixtures for each new rule: no hand-mapped domain
+  errors, no use-case construction or `bpy` source in routers, no re-defined script primitives,
+  a 400-line file budget warning at 380, DCC doc rules, and an eslint rule proven by driving
+  real eslint over stdin.
+- `tests/unit/scripts/test_check_container_narrowing.py` — the blocking gate had no test of
+  its own, which is how its blind spot survived.
+- `docs/DEFERRALS.md` recording three deliberate non-abstractions with firing triggers.
+- `scripts/blender_generator_runner.py` replacing the clear/hide/build/restore wrapper that
+  three generators each carried.
+
+#### Removed
+
+- Archived to `scripts/archive/`: two generators and their render adapters with zero
+  references anywhere, two cat-stand demos, and an unreferenced use case. Nothing deleted.
+
 ### V01.00.008
 
 #### Changed
