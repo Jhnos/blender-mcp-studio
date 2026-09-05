@@ -1,0 +1,68 @@
+{
+  "files": {
+    "assembly_pin_mm.stl": {
+      "bytes": 52684,
+      "dimensions_mm": [
+        6.0,
+        6.0,
+        9.199999809265137
+      ],
+      "sha256": "2a741c1a6d027c40370cc394c6e7a0a53481c1473f45684974a4a1dd99773e50",
+      "triangle_count": 1052
+    },
+    "biaxial_hinge_v6.blend": {
+      "bytes": 201635,
+      "sha256": "a554656e2704718ca21cbf151672f076a61ec4502b31828a2aca54ddb29ba5c2"
+    },
+    "body_mm.stl": {
+      "bytes": 171884,
+      "dimensions_mm": [
+        36.0,
+        36.0,
+        29.599998474121094
+      ],
+      "sha256": "32968c9118cd6dc7cc5586cd719be1d7e42bd8e2ff7147cd6365bebf9bb89b8a",
+      "triangle_count": 3436
+    },
+    "print_in_place_2body_double_head_mm.stl": {
+      "bytes": 412884,
+      "dimensions_mm": [
+        48.59999465942383,
+        36.0,
+        36.0
+      ],
+      "sha256": "9a8402ae3445caa59cafc7a39a08dd3b8436f31dbe2fb5998c804fc81ac5e5f7",
+      "triangle_count": 8256
+    },
+    "retaining_clip_mm.stl": {
+      "bytes": 15584,
+      "dimensions_mm": [
+        5.696705341339111,
+        6.0,
+        0.8999999761581421
+      ],
+      "sha256": "064a3ada8894efc7c113a09da4438a2da642330fc2374fb02e45016b2aa91553",
+      "triangle_count": 310
+    },
+    "separate_parts_2body_2pin_2clip_mm.stl": {
+      "bytes": 479884,
+      "dimensions_mm": [
+        82.0,
+        48.00000190734863,
+        29.60000228881836
+      ],
+      "sha256": "0a74ff534596a302c74a13d869f9d99934b0eb5c34593846a9a973e38b8acc9a",
+      "triangle_count": 9596
+    }
+  },
+  "model_revision": "V6",
+  "source_generator": "scripts/model_biaxial_hinge.py",
+  "units": "mm",
+  "verification_contracts": [
+    "scripts/verify/contracts/biaxial_hinge.json",
+    "scripts/verify/contracts/biaxial_hinge_pip.json",
+    "scripts/verify/contracts/biaxial_hinge_split.json",
+    "scripts/verify/contracts/biaxial_hinge_probe.json",
+    "scripts/verify/contracts/biaxial_hinge_split_probe.json"
+  ]
+}

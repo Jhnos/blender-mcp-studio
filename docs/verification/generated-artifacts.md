@@ -49,6 +49,23 @@ double-headed PIP pins remain interleaved with the two bodies; the separate work
 two grooved pins and two 0.9 mm experimental C clips. See the
 [V6 target and manufacturing limits](biaxial-hinge-v6.md) before slicing.
 
+## Promote a controlled print package
+
+Working output remains ignored. After all V6 real contracts pass, publish only the explicit
+manufacturing allowlist into the tracked package:
+
+```bash
+$HOME/miniconda3/envs/blender-mcp/bin/python scripts/publish_print_package.py
+$HOME/miniconda3/envs/blender-mcp/bin/python -m pytest \
+  tests/unit/scripts/test_versioned_print_package.py -q --no-cov
+```
+
+The publisher copies five STL files and one `.blend` source into
+[`models/biaxial-hinge-v6/`](../../models/biaxial-hinge-v6/), then writes measured STL
+dimensions, triangle counts, byte lengths and SHA-256 values to `manifest.json`. Backup
+`.blend1` files, logs, renders and arbitrary `tmp/` contents are never promoted. Re-running
+the publisher intentionally replaces only those six allowlisted package files.
+
 The V4 contract remains available as `hollow_side_hinge.json`, with outputs in
 `tmp/hollow-side-hinge/`. Running either generator replaces task-owned `HH_` scene objects;
 saved output files for the other version are retained.
@@ -64,6 +81,7 @@ saved output files for the other version are retained.
 | `scripts/model_biaxial_hinge.py` | V6 shared body, assembly and artifact orchestration |
 | `scripts/hinge_retention.py` | Captive pin, grooved pin, C clip and retainer-seat geometry |
 | `scripts/biaxial_hinge_presentation.py` | PIP/separate layouts and diagnostic evidence views |
+| `scripts/publish_print_package.py` | Allowlisted promotion from ignored output to tracked print package |
 | `scripts/blender_mesh_primitives.py` | Shared material, cylinder, boolean and cleanup primitives |
 | `scripts/inset_hinge_presentation.py` | V5 close-up, top view and fit-coupon layout |
 | `scripts/model_hollow_side_hinge_chain.py` | Assemble the model from the specification |

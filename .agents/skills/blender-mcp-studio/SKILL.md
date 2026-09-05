@@ -96,7 +96,9 @@ For generated mechanical artifacts, reuse the contract-driven workflow in
 Blender geometry, presentation, export and evidence assessment separate. Add a model contract
 rather than copying the socket/MCP harness. Check world-space collisions and sampled motion;
 never infer printability or load capacity from a render. Generated outputs belong in ignored
-`tmp/`, not source control. Obtain independent visual evidence after final geometry changes.
+`tmp/`, not source control. A user-requested release may promote an explicit allowlist into
+`models/<revision>/` with the package publisher, checksum manifest and independent STL test;
+never unignore `tmp/` wholesale. Obtain independent visual evidence after final geometry changes.
 
 Run whole real-verification processes sequentially: socket serialization does not isolate
 selection across a generator, CI fixtures and an MCP readiness call. Measure exported STL

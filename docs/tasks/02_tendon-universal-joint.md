@@ -47,6 +47,10 @@ is superseded, not the current dimensional contract.
   Generated outputs live under ignored `tmp/biaxial-hinge-v6/`.
 - `scripts/ci.sh --real` passed T1 static, T2 Python/Web tests and all T3 real-machine
   REST, MCP, readiness and batch-transform checks without skipped tiers.
+- Five verified STL files and the complete `.blend` source are promoted into
+  [`models/biaxial-hinge-v6/`](../../models/biaxial-hinge-v6/) with a generated SHA-256,
+  byte-length, triangle-count and millimetre-dimension manifest. A package test re-reads
+  every committed binary; arbitrary `tmp/`, backup, log and render files remain excluded.
 
 ### Open failures and limitations
 
@@ -63,7 +67,8 @@ is superseded, not the current dimensional contract.
 
 ### Next step
 
-Import one coupon at 100% millimetres into the slicer. First print the six-part separate
+Merge [PR #4](https://github.com/Jhnos/blender-mcp-studio/pull/4), download the controlled package and import one coupon at 100% millimetres into the slicer.
+First print the six-part separate
 coupon to tune bore/PIN/clip fit without trapping material; then print the PIP coupon with
 joint axes vertical and supports chosen manually. Record actual clearance, release and clip
 survival before scaling to the nine-body chain or applying motor load.
