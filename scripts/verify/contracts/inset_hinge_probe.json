@@ -1,0 +1,22 @@
+{
+  "master_object": "HH_PRINTABLE_MODULE_1",
+  "body_prefix": "HH_PRINTABLE_MODULE_",
+  "hardware_prefix": "HH_ASSEMBLED_PIN_",
+  "holes_mm": [
+    [0, 0, 5],
+    [-9.1923881554, -9.1923881554, 1.2],
+    [-9.1923881554, 9.1923881554, 1.2],
+    [9.1923881554, -9.1923881554, 1.2],
+    [9.1923881554, 9.1923881554, 1.2]
+  ],
+  "surface_origins_mm": [[8, -8, 4], [8, -5, 12], [10.6, 0, 4]],
+  "limits": {
+    "dimensions_mm": [34, 34, 29.6],
+    "radius_mm": 17,
+    "slope_angles_deg": [38.6598, 34.992, 38.6598],
+    "hole_ray_count": 45,
+    "hardware_count": 16,
+    "hardware_inner_radius_mm": 5.3,
+    "hardware_pair_count": 144
+  }
+}

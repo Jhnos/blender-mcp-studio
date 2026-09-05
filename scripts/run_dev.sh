@@ -1,25 +1,34 @@
 #!/usr/bin/env bash
-# run_dev.sh — 同時啟動 FastAPI backend 和 Vite 前端
+# run_dev.sh — foreground development only; production is managed by launchd.
+
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-ROOT="$(dirname "$SCRIPT_DIR")"
+PROJECT_ROOT="$(dirname "${SCRIPT_DIR}")"
+API_PORT=19505
+WEB_PORT=5173
+DEV_PYTHON="${CI_PYTHON:-${HOME}/miniconda3/envs/blender-mcp/bin/python}"
 
-echo "🚀 啟動 FastAPI backend (port 8000)..."
-conda run -n blender-mcp uvicorn api.main:app --reload --host 0.0.0.0 --port 8000 &
+for port in "${API_PORT}" "${WEB_PORT}"; do
+  if lsof -nP -iTCP:"${port}" -sTCP:LISTEN >/dev/null; then
+    echo "error: port ${port} is already in use; stop the conflicting service first" >&2
+    exit 1
+  fi
+done
+
+cleanup() {
+  kill "${BACKEND_PID:-}" "${FRONTEND_PID:-}" 2>/dev/null || true
+}
+trap cleanup EXIT INT TERM
+
+cd "${PROJECT_ROOT}"
+"${DEV_PYTHON}" -m uvicorn api.main:app --reload --host 127.0.0.1 --port "${API_PORT}" &
 BACKEND_PID=$!
 
-echo "🌐 啟動 Vite 前端 (port 5173)..."
-cd "$ROOT/web" && npm run dev &
+npm --prefix web run dev -- --host 127.0.0.1 --port "${WEB_PORT}" &
 FRONTEND_PID=$!
 
-echo ""
-echo "✅ 開發環境啟動！"
-echo "   Backend: http://localhost:8000"
-echo "   Frontend: http://localhost:5173"
-echo "   API Docs: http://localhost:8000/docs"
-echo ""
-echo "按 Ctrl+C 停止所有服務"
-
-trap "kill $BACKEND_PID $FRONTEND_PID 2>/dev/null; exit 0" SIGINT SIGTERM
+echo "API: http://127.0.0.1:${API_PORT}"
+echo "Web: http://127.0.0.1:${WEB_PORT}/blender/"
+echo "Press Ctrl+C to stop both foreground processes."
 wait

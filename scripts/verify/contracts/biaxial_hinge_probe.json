@@ -1,0 +1,103 @@
+{
+  "master_object": "HH_PRINTABLE_MODULE_1",
+  "body_prefix": "HH_PRINTABLE_MODULE_",
+  "hardware_prefix": "HH_ASSEMBLED_PIN_",
+  "holes_mm": [
+    [
+      0,
+      0,
+      5
+    ],
+    [
+      -9.1923881554,
+      -9.1923881554,
+      1.2
+    ],
+    [
+      -9.1923881554,
+      9.1923881554,
+      1.2
+    ],
+    [
+      9.1923881554,
+      -9.1923881554,
+      1.2
+    ],
+    [
+      9.1923881554,
+      9.1923881554,
+      1.2
+    ]
+  ],
+  "surface_origins_mm": [
+    [
+      8,
+      -3.5,
+      5
+    ],
+    [
+      10.6,
+      0,
+      5
+    ],
+    [
+      6,
+      0,
+      5
+    ]
+  ],
+  "limits": {
+    "dimensions_mm": [
+      36,
+      36,
+      29.6
+    ],
+    "radius_mm": 18,
+    "slope_angles_deg": [
+      36.6070748126075,
+      35.83765295427829,
+      35.83765295427829
+    ],
+    "hole_ray_count": 45,
+    "hardware_count": 16,
+    "hardware_inner_radius_mm": 5.3,
+    "hardware_pair_count": 144,
+    "retention_sample_count": 4
+  },
+  "retention_tests": [
+    {
+      "moving_objects": [
+        "HH_ASSEMBLED_PIN_1_-1"
+      ],
+      "displacements_mm": [
+        [
+          1,
+          0,
+          0
+        ],
+        [
+          -1,
+          0,
+          0
+        ]
+      ]
+    },
+    {
+      "moving_objects": [
+        "HH_ASSEMBLED_PIN_1_1"
+      ],
+      "displacements_mm": [
+        [
+          1,
+          0,
+          0
+        ],
+        [
+          -1,
+          0,
+          0
+        ]
+      ]
+    }
+  ]
+}

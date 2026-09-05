@@ -1,5 +1,13 @@
 # MCP clients
 
+## Contents
+
+- [Connection contract](#connection-contract)
+- [Tool catalog](#tool-catalog)
+- [Client configuration examples](#codex-configuration-example)
+- [Security boundaries](#security-boundaries)
+- [Verification](#verification)
+
 Blender MCP Studio exposes standard MCP Streamable HTTP at:
 
 `https://bearmacminimac-mini.tail56c751.ts.net/blender/mcp`

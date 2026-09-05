@@ -67,6 +67,21 @@ _wait_for_unload() {
   return 1
 }
 
+_wait_for_listener() {
+  local host="$1" port="$2" label="$3" attempt
+  # A measured cold Blender 5.1 launch on the target M4 took about 40 seconds.
+  # Keep the wait bounded but leave enough margin for preference/addon startup.
+  for attempt in {1..180}; do
+    if nc -z "${host}" "${port}" >/dev/null 2>&1; then
+      echo "ready:     ${label} (${host}:${port})"
+      return 0
+    fi
+    sleep 0.5
+  done
+  echo "error: ${label} did not listen on ${host}:${port} within 90 seconds" >&2
+  return 1
+}
+
 # launchd can keep a just-booted-out service in its internal deregistration
 # window briefly. An immediate bootstrap then returns EIO even though the
 # rendered plist is valid. Retry only that bounded local registration step;
@@ -136,6 +151,7 @@ main() {
     all)
       _build_web_assets
       _install_one com.blender-mcp.blender
+      _wait_for_listener "127.0.0.1" "9876" "Blender addon"
       _install_one com.blender-mcp.api
       _install_one com.blender-mcp.web
       ;;

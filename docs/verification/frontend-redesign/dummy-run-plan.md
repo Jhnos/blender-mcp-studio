@@ -1,7 +1,7 @@
 # 前端 DUMMY RUN 驗證計畫（T3）
 
 > 依據：`dummy-run-ladder`（MOCK≠DUMMY RUN、軸 M/軸 Q 分離、誠實宣告）＋ `verification-plan-design`（FICE + DFMEA）。
-> 姊妹文件：[`mcp-pipeline-verification-plan.md`](./mcp-pipeline-verification-plan.md)（T4 真機 MCP 鑑別性驗證）。
+> 歷史姊妹文件：[`mcp-pipeline-verification-plan.md`](../../archive/2026-07-client-neutral-mcp/verification/mcp-pipeline-verification-plan.md)（T4 真機 MCP 鑑別性驗證）。
 
 ## 1. 這是什麼 / 為什麼需要
 
@@ -73,7 +73,7 @@ HTTP action；只把 scene/preview/batch response 換成 MSW fixture。
 **這次 dummy run（階 4，輸入＝手造 fixture / MSW）：**
 - **證到（軸 M）**：真前端 + 真 MDR 引擎端對端跑通——schema→registry→dispatcher 派發、action 派發、漸進揭露過濾、三區版面、信任層、a11y 表面。前端機制在**與後端解耦**下成立。
 - **證不了（軸 Q）**：真實 Blender 輸出品質、真實使用者易用性。fixture 的物件與 `dummy viewport (mock)` 是 **proxy，內容非真實 Blender 產出**。
-- **紅線**：dummy run 的畫面**永遠不得**當成「MCP 有在作用」的證據。那需要 T4 真機 + 獨立 oracle → 見 [`mcp-pipeline-verification-plan.md`](./mcp-pipeline-verification-plan.md)（已於 2026-07-15 執行，H0–H7 過）。
+- **紅線**：dummy run 的畫面**永遠不得**當成「MCP 有在作用」的證據。那需要 T4 真機 + 獨立 oracle → 見 [`mcp-pipeline-verification-plan.md`](../../archive/2026-07-client-neutral-mcp/verification/mcp-pipeline-verification-plan.md)（已於 2026-07-15 執行，H0–H7 過）。
 
 ## 6. 與 T4 的分工
 

@@ -1,0 +1,105 @@
+{
+  "master_object": "HH_SPLIT_BODY_1",
+  "body_prefix": "HH_SPLIT_BODY_",
+  "hardware_prefix": "HH_SPLIT_HW_",
+  "holes_mm": [
+    [
+      0,
+      0,
+      5
+    ],
+    [
+      -9.1923881554,
+      -9.1923881554,
+      1.2
+    ],
+    [
+      -9.1923881554,
+      9.1923881554,
+      1.2
+    ],
+    [
+      9.1923881554,
+      -9.1923881554,
+      1.2
+    ],
+    [
+      9.1923881554,
+      9.1923881554,
+      1.2
+    ]
+  ],
+  "surface_origins_mm": [
+    [
+      8,
+      -3.5,
+      5
+    ],
+    [
+      10.6,
+      0,
+      5
+    ],
+    [
+      6,
+      0,
+      5
+    ]
+  ],
+  "limits": {
+    "dimensions_mm": [
+      36,
+      36,
+      29.6
+    ],
+    "radius_mm": 18,
+    "slope_angles_deg": [
+      36.6070748126075,
+      35.83765295427829,
+      35.83765295427829
+    ],
+    "hole_ray_count": 45,
+    "hardware_count": 4,
+    "hardware_inner_radius_mm": 5.3,
+    "hardware_pair_count": 8,
+    "retention_sample_count": 4
+  },
+  "retention_tests": [
+    {
+      "moving_objects": [
+        "HH_SPLIT_HW_1",
+        "HH_SPLIT_HW_3"
+      ],
+      "displacements_mm": [
+        [
+          1,
+          0,
+          0
+        ],
+        [
+          -1,
+          0,
+          0
+        ]
+      ]
+    },
+    {
+      "moving_objects": [
+        "HH_SPLIT_HW_2",
+        "HH_SPLIT_HW_4"
+      ],
+      "displacements_mm": [
+        [
+          1,
+          0,
+          0
+        ],
+        [
+          -1,
+          0,
+          0
+        ]
+      ]
+    }
+  ]
+}

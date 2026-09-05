@@ -1,5 +1,11 @@
 # 程式設計風格（Coding Style）
 
+## 目錄
+
+- [Python](#python)
+- [TypeScript（前端）](#typescript前端)
+- [Git 規範](#git-規範)
+
 ## Python
 
 ### 型別

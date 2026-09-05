@@ -8,7 +8,7 @@ updated to stay aligned.
 ## §1 Scope
 
 Blender MCP Studio is a single-host service that exposes Blender automation
-via an MCP-style HTTP API (port 19505) plus a Vite dev-server frontend
+via an MCP-style HTTP API (port 19505) plus a built Vite production preview
 (port 19504). Both run as per-user macOS LaunchAgents on the maintainer's
 M4. The standards below are intentionally lightweight — sized for a
 one-machine service — but are still binding.
@@ -37,15 +37,21 @@ Concretely:
      errors ("service not loaded", EIO, ENOENT) via a `_safe_bootout`
      helper.
    - Atomically replace the file in `~/Library/LaunchAgents/`.
-   - `launchctl bootstrap` + `enable` + `kickstart -k` the new instance.
+   - Wait until the old label is unloaded, then bounded-retry `launchctl bootstrap`
+     before `enable` + `kickstart -k` the new instance.
 4. **uninstall.sh archives, doesn't delete.** It must move the installed
    plist to `<name>.plist.deprecated.YYYYMMDD` (with a counter suffix if
    that path already exists), so one rollback step is always available.
-5. **No drift.** A clean diff between
+5. **Production Web is built first.** Installing `web` or `all` must run the
+   frontend build before bootstrap. HMR belongs only to foreground development.
+6. **Dependencies become ready in order.** Installing `all` must condition-wait for
+   the Blender addon listener before starting the API. LaunchAgent `running` state
+   alone is not a readiness signal.
+7. **No drift.** A clean diff between
    `plutil -convert xml1 -o -` of the installed plist and the rendered
    template is the contract. CI / pre-commit checks may enforce this in
    the future; for now it is checked manually after every change.
-6. **Don't bypass install.sh.** Editing
+8. **Don't bypass install.sh.** Editing
    `~/Library/LaunchAgents/<label>.plist` directly is forbidden — it
    silently re-introduces drift. Always edit the template, then re-run
    `install.sh`.

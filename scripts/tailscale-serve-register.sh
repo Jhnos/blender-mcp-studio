@@ -4,7 +4,7 @@
 # 重複執行安全（已設定則跳過）
 #
 # 用途：MacHomeHub 透過 https://bearmacminimac-mini.tail56c751.ts.net/blender/
-#       存取 Blender MCP Studio。Vite dev server 負責把 /blender/api 和
+#       存取 Blender MCP Studio。Vite production preview 負責把 /blender/api 和
 #       /blender/ws 代理到 FastAPI (port 19505)。
 #
 # 執行：bash scripts/tailscale-serve-register.sh

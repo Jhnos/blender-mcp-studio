@@ -1,13 +1,24 @@
 # Blender MCP Studio — Tailnet 整合
 
-> 最後更新：2026-07-18。架構模型 SSOT 見 [architecture.html](architecture.html)，
+> 最後更新：2026-08-11。架構模型 SSOT 見 [architecture.html](architecture.html)，
 > MCP client 設定見 [MCP_CLIENTS.md](MCP_CLIENTS.md)。
+
+## 目錄
+
+- [路徑與服務](#路徑與服務)
+- [Prefix contract](#prefix-contract)
+- [Lifecycle and ownership](#lifecycle-and-ownership)
+- [Tailnet identity and Origin protection](#tailnet-identity-and-origin-protection)
+- [LaunchAgent installation](#launchagent-installation)
+- [MCP verification](#mcp-verification)
+- [Troubleshooting](#troubleshooting)
+- [Explicit non-goals](#explicit-non-goals)
 
 ## 路徑與服務
 
 | 對外路徑 | 內部路徑 | Owner | 用途 |
 |---|---|---|---|
-| `/blender/` | Vite `127.0.0.1:19504` | Web LaunchAgent | React UI |
+| `/blender/` | Vite production preview `127.0.0.1:19504` | Web LaunchAgent | React UI |
 | `/blender/api/*` | FastAPI `127.0.0.1:19505/api/*` | API LaunchAgent | REST |
 | `/blender/ws/*` | FastAPI `127.0.0.1:19505/ws/*` | API LaunchAgent | WebSocket |
 | `/blender/mcp` | FastAPI `127.0.0.1:19505/mcp` | API LaunchAgent | MCP Streamable HTTP |
