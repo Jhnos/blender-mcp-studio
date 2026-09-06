@@ -57,6 +57,12 @@ printed with the arms **upright** and the palm flat; see the
 
 ## Promote a controlled print package
 
+```bash
+$HOME/miniconda3/envs/blender-mcp/bin/python scripts/publish_print_package.py \
+  --package octopus-hand-v1      # or biaxial-hinge-v6, the default
+```
+
+
 Working output remains ignored. After all V6 real contracts pass, publish only the explicit
 manufacturing allowlist into the tracked package:
 

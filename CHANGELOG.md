@@ -5,6 +5,28 @@
 
 ## [Unreleased]
 
+### V01.05.000
+
+#### Added
+
+- `models/octopus-hand-v1/` — the controlled print package, so the STL is reachable from the
+  cloud repository instead of only from ignored working output. Five STL files, the `.blend`
+  source, a SHA-256 / byte-length / triangle-count / millimetre manifest, and a README that
+  leads with the coupon and states plainly that no physical print has happened.
+- `tests/unit/scripts/test_octopus_print_package.py` re-reads every committed binary rather
+  than trusting the manifest that shipped beside it, and asserts the README still says the
+  package is unprinted and must not be auto-arranged.
+
+#### Changed
+
+- `scripts/publish_print_package.py` takes a `--package` argument and holds one `Package`
+  record per model. It was hard-wired to V6's paths, file list, revision and contracts; a
+  second model had no way in that was not a fork. `--package biaxial-hinge-v6` stays the
+  default, so the documented command is unchanged.
+- The task hand-off claimed promotion waits for a physical print, "following V6's
+  precedent". That was wrong in both halves: V6 was promoted before any print, and its own
+  open failures still say so. Corrected in place rather than quietly dropped.
+
 ### V01.04.000
 
 #### Added

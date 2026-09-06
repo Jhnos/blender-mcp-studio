@@ -88,8 +88,10 @@ V6 只是一段直鏈：九節一柱，沒有手掌、沒有末端、沒有多�
    兩種銷軸方位都在裡面，還帶一片抓取墊。mm、100%、**關閉 auto-arrange**、臂朝上。
    要回答的就是：水平銷孔橋接印不印得出來、captive PIN 冠部會不會塌、45° 倒角夠不夠。
 2. coupon 過了才印 `octopus_hand_v1_mm.stl`（整機，76 個殼，117 mm 高）。
-3. 實體驗過之後才用 `scripts/publish_print_package.py` 晉升到 `models/octopus-hand-v1/`，
-   照 V6 的前例（先印過再晉升）。
+3. ~~實體驗過之後才晉升~~ — **已晉升**（2026-09-06）。`models/octopus-hand-v1/` 內有五個 STL、
+   `.blend` 與 SHA-256 manifest，雲端 repo 直接拿得到。
+   （更正：我先前寫「照 V6 前例先印過再晉升」是錯的——V6 也是**印之前**就晉升了，
+   任務 02 的 open failures 至今仍寫著「沒有任何實體列印」。）
 4. 新開一個 context，拿 `tmp/octopus-hand-v1/` 的四張 PNG 逐項判 A–J，結果寫回
    `docs/verification/octopus-hand-v1.md`。這一步可以和列印並行。
 5. Lane B（品味）待裁：掌盤五個角的空白區要不要挖輕量孔、勾爪長度與角度、
