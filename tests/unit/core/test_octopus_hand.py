@@ -206,6 +206,29 @@ def test_the_one_piece_export_has_to_contain_every_printed_part() -> None:
     assert spec.printed_part_count == 76
 
 
+def test_coupon_covers_the_joints_a_first_print_has_to_answer() -> None:
+    """The coupon exists to fail cheaply, so it must contain the risky geometry.
+
+    Printed upright the pin axes go horizontal — bores become bridges and the
+    captive pins get an unsupported crown. Nothing in software settles that. The
+    coupon has to carry a base joint, at least one joint of each pin heading, and
+    a grip pad, and be small enough that losing it costs an hour.
+    """
+    spec = OctopusHandSpec()
+
+    assert 2 <= spec.coupon_body_count < spec.arm_body_count
+    assert spec.coupon_joint_count == spec.coupon_body_count
+    headings = {spec.joint_axis_twist_deg(joint) for joint in range(spec.coupon_joint_count)}
+    assert len(headings) == 2, "a coupon with one pin heading proves half the problem"
+    assert spec.coupon_pin_count == 2 * spec.coupon_joint_count
+    # The palm chunk must reach past the socket it carries, with wall to spare.
+    assert (
+        spec.coupon_palm_radius_mm >= spec.arm_spec.connector_envelope_radius_mm + spec.palm_wall_mm
+    )
+    assert spec.coupon_height_mm < spec.upright_height_mm / 2
+    assert spec.coupon_part_count * 5 < spec.printed_part_count, "not cheap enough to lose"
+
+
 @pytest.mark.parametrize(
     "changes",
     [
@@ -227,6 +250,11 @@ def test_the_one_piece_export_has_to_contain_every_printed_part() -> None:
         ),
         pytest.param({"tip_cable_bore_diameter_mm": 1.0}, id="bore too small for the cable"),
         pytest.param({"palm_thickness_mm": 3.0}, id="palm too thin to carry the socket roots"),
+        pytest.param({"coupon_body_count": 1}, id="one body has no joint to test"),
+        pytest.param({"coupon_body_count": 5}, id="a coupon that is the whole arm is not a coupon"),
+        pytest.param(
+            {"coupon_palm_radius_mm": 12.0}, id="palm chunk does not reach past the socket"
+        ),
         pytest.param(
             {"cable_relief_widening_mm": 9.0}, id="cable reliefs would merge into each other"
         ),

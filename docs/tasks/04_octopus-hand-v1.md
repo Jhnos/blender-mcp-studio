@@ -83,12 +83,14 @@ V6 只是一段直鏈：九節一柱，沒有手掌、沒有末端、沒有多�
 
 ### Next step
 
-1. 用切片軟體開 `tmp/octopus-hand-v1/octopus_hand_v1_mm.stl`（mm、100%、**關閉 auto-arrange**），**臂朝上**擺放，
-   先確認銷孔水平橋接與 captive PIN 冠部能不能印出來。整機列印失敗成本高，
-   建議先只印單臂＋一小塊掌盤試水。
-2. 實體驗過之後才用 `scripts/publish_print_package.py` 晉升到 `models/octopus-hand-v1/`，
+1. **先印 `tmp/octopus-hand-v1/test_coupon_mm.stl`**（47.8 × 48.0 × 56.8 mm，7 個殼：
+   一塊 Ø48 掌盤 + 兩節 + 四支保持銷）。它涵蓋基座關節（切線銷）與一個徑向銷關節，
+   兩種銷軸方位都在裡面，還帶一片抓取墊。mm、100%、**關閉 auto-arrange**、臂朝上。
+   要回答的就是：水平銷孔橋接印不印得出來、captive PIN 冠部會不會塌、45° 倒角夠不夠。
+2. coupon 過了才印 `octopus_hand_v1_mm.stl`（整機，76 個殼，117 mm 高）。
+3. 實體驗過之後才用 `scripts/publish_print_package.py` 晉升到 `models/octopus-hand-v1/`，
    照 V6 的前例（先印過再晉升）。
-3. 新開一個 context，拿 `tmp/octopus-hand-v1/` 的四張 PNG 逐項判 A–J，結果寫回
+4. 新開一個 context，拿 `tmp/octopus-hand-v1/` 的四張 PNG 逐項判 A–J，結果寫回
    `docs/verification/octopus-hand-v1.md`。這一步可以和列印並行。
-4. Lane B（品味）待裁：掌盤五個角的空白區要不要挖輕量孔、勾爪長度與角度、
+5. Lane B（品味）待裁：掌盤五個角的空白區要不要挖輕量孔、勾爪長度與角度、
    指尖上方那對用不到的公耳要不要切掉。

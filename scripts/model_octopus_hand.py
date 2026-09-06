@@ -17,6 +17,7 @@ from scripts.blender_mesh_primitives import collection, material  # noqa: E402
 from scripts.hinge_retention import create_captive_pin, cut_retainer_seats  # noqa: E402
 from scripts.hollow_hinge_render import m  # noqa: E402
 from scripts.model_inset_hinge import create_body  # noqa: E402
+from scripts.octopus_coupon import build_coupon, coupon_note  # noqa: E402
 from scripts.octopus_grip_geometry import add_grip_pads  # noqa: E402
 from scripts.octopus_hand_presentation import layout_parts, present_octopus  # noqa: E402
 from scripts.octopus_palm_geometry import create_palm  # noqa: E402
@@ -106,8 +107,8 @@ def build() -> None:
     light = material("HH_OCT_ALT", (1.0, 0.7, 0.24, 1))
     cyan = material("HH_OCT_PIN", (0.03, 0.7, 0.9, 1))
 
-    hand, hardware, layout = (
-        collection("HH_OCT_" + name) for name in ("HAND", "HARDWARE", "LAYOUT")
+    hand, hardware, layout, coupon = (
+        collection("HH_OCT_" + name) for name in ("HAND", "HARDWARE", "LAYOUT", "COUPON")
     )
 
     palm = create_palm(hand, teal, SPEC)
@@ -158,7 +159,13 @@ def build() -> None:
         )
     export_stl_mm(printed, OUTPUT / "octopus_hand_v1_mm.stl")
 
+    arm_bodies = [obj for obj in bodies if obj.name.startswith("HH_OCT_SEG_1_")]
+    arm_pins = [obj for obj in pins if obj.name.startswith("HH_OCT_PIN_1_")]
+    coupon_parts = build_coupon(palm, arm_bodies, arm_pins, coupon, SPEC)
+    export_stl_mm(coupon_parts, OUTPUT / "test_coupon_mm.stl")
+
     scene["HH_OCT_ARM_NAMES"] = [f"ARM_{index}" for index in range(1, SPEC.arm_count + 1)]
+    scene["HH_OCT_COUPON_NOTE"] = coupon_note(SPEC)
     scene["HH_OCT_DESIGN_NOTE"] = (
         "Octopus hand V1: pentagonal palm, five V6 biaxial arms, print-in-place captive "
         "pins, four cable eyelets and one claw per tip. Unqualified fit prototype; no "

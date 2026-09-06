@@ -60,6 +60,17 @@ arms on the face radius let neighbouring pads intersect at the corners while eve
 per-arm check stayed green. `grip_envelope_radius_mm` is now what the spacing invariant
 measures.
 
+## Fit coupon
+
+`test_coupon_mm.stl` — 47.846 × 48.000 × 56.800 mm, 11 636 triangles, 7 shells: a Ø48 mm
+chunk of palm carrying two bodies and four captive pins. It is cut from the real geometry,
+not modelled again, so what it proves transfers.
+
+It exists because the upright pose's one open question — horizontal pin bores printing as
+bridges, and captive pins with an unsupported crown — costs a night to answer on the whole
+hand and an hour on this. It carries a base joint (tangential pin), a body-to-body joint
+(radial pin) and a grip pad, so both pin headings and the pad's 45° chamfer are in it.
+
 ## Print pose
 
 Arms **upright**, palm flat on the bed. Splayed flat the hand does not fit a 220 mm bed;

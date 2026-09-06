@@ -46,6 +46,8 @@ class OctopusHandSpec:
     tip_cap_top_diameter_mm: float = 22.0
     tip_cable_bore_diameter_mm: float = 3.0
     tip_feature_fuse_mm: float = 1.0
+    coupon_body_count: int = 2
+    coupon_palm_radius_mm: float = 24.0
     cable_relief_depth_mm: float = 1.0
     cable_relief_widening_mm: float = 0.6
 
@@ -83,6 +85,12 @@ class OctopusHandSpec:
 
         if self.palm_thickness_mm < arm.root_profile_mm[0][0] + self.palm_wall_mm:
             raise ValueError("palm is too thin to carry the socket roots")
+        if type(self.coupon_body_count) is not int or not 2 <= self.coupon_body_count < (
+            self.arm_body_count
+        ):
+            raise ValueError("a coupon needs at least two bodies and fewer than a whole arm")
+        if self.coupon_palm_radius_mm < arm.connector_envelope_radius_mm + self.palm_wall_mm:
+            raise ValueError("coupon palm chunk does not reach past the socket it carries")
         if self.cable_relief_depth_mm >= self.palm_thickness_mm / 2:
             raise ValueError("cable relief eats more than half the palm thickness")
         if self.closest_tendon_hole_gap_mm <= 2 * self.cable_relief_radius_mm:
@@ -317,6 +325,30 @@ class OctopusHandSpec:
     @property
     def total_tendon_count(self) -> int:
         return self.arm_count * len(self.arm_spec.tendon_positions_mm)
+
+    @property
+    def coupon_joint_count(self) -> int:
+        """One joint per coupon body: the base joint plus each body-to-body joint."""
+        return self.coupon_body_count
+
+    @property
+    def coupon_pin_count(self) -> int:
+        return 2 * self.coupon_joint_count
+
+    @property
+    def coupon_part_count(self) -> int:
+        """Palm chunk, bodies and pins — what the coupon export must carry."""
+        return 1 + self.coupon_body_count + self.coupon_pin_count
+
+    @property
+    def coupon_height_mm(self) -> float:
+        """Palm chunk plus the bodies above it — what the bed actually sees."""
+        arm = self.arm_spec
+        return self.palm_thickness_mm + (
+            self.coupon_body_count * arm.unit_pitch_mm
+            + arm.joint_center_offset_mm
+            + arm.lug_outer_diameter_mm / 2
+        )
 
     @property
     def printed_body_count(self) -> int:

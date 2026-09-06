@@ -77,6 +77,19 @@ def add_cylinder(
 
 
 def boolean(target: bpy.types.Object, tool: bpy.types.Object, operation: str) -> None:
+    """Apply `tool` to `target`, refusing to do it to an object nobody evaluates.
+
+    `hide_viewport` drops an object out of the depsgraph, and `modifier_apply` on a
+    disabled modifier removes it without applying anything — no error, no geometry.
+    Three separate features have shipped as silent no-ops that way, and each looked
+    fine afterwards because none of them changed a bounding box. Callers that hide
+    their masters must unhide them for the duration, as `hinge_retention` already does.
+    """
+    if target.hide_viewport:
+        raise RuntimeError(
+            f"{operation} on {target.name!r} would be skipped silently: the object is "
+            "hidden in the viewport, so it is not evaluated. Unhide it while building."
+        )
     bpy.context.view_layer.objects.active = target
     modifier = target.modifiers.new(name=f"HH_{operation}", type="BOOLEAN")
     modifier.operation = operation

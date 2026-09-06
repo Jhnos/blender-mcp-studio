@@ -15,6 +15,7 @@
   "scripts.octopus_palm_geometry",
   "scripts.octopus_grip_geometry",
   "scripts.octopus_tip_geometry",
+  "scripts.octopus_coupon",
   "scripts.octopus_hand_presentation"
  ],
  "artifacts": [
@@ -23,6 +24,7 @@
   "tmp/octopus-hand-v1/arm_body_mm.stl",
   "tmp/octopus-hand-v1/arm_tip_mm.stl",
   "tmp/octopus-hand-v1/octopus_hand_v1_mm.stl",
+  "tmp/octopus-hand-v1/test_coupon_mm.stl",
   "tmp/octopus-hand-v1/octopus_hand_assembly.png",
   "tmp/octopus-hand-v1/octopus_palm_top.png",
   "tmp/octopus-hand-v1/octopus_tip_detail.png",

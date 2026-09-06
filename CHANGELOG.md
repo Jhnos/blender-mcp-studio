@@ -5,6 +5,29 @@
 
 ## [Unreleased]
 
+### V01.04.000
+
+#### Added
+
+- `test_coupon_mm.stl` — a fit coupon cut from the real geometry: a Ø48 mm chunk of palm
+  carrying two bodies and four captive pins, 47.8 × 48.0 × 56.8 mm in 7 shells. It carries
+  both pin headings and a grip pad, so the one question the upright pose leaves open —
+  horizontal bores printing as bridges, captive pins with an unsupported crown — costs an
+  hour to answer instead of a night.
+- `boolean()` now refuses a target that is hidden in the viewport. `hide_viewport` drops an
+  object out of the depsgraph and `modifier_apply` then removes the modifier without
+  applying it — no error, no geometry. Three features shipped as silent no-ops that way in
+  one sitting, each looking fine because none changed a bounding box. Proven in real
+  Blender both ways: a hidden target raises, a visible one still goes 6 faces to 12.
+  V6's own contract stays green at 11/11.
+
+#### Changed
+
+- `docs/LESSONS_LEARNED.md` records the meta-lesson: when a documented class recurs, the
+  fix is a gate at the choke point every path goes through, not another line of guidance.
+  A hand-written workaround already in the codebase is the signal that the gate is missing —
+  `hinge_retention` had been toggling visibility around its Booleans all along.
+
 ### V01.03.001
 
 #### Fixed
