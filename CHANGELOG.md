@@ -5,6 +5,16 @@
 
 ## [Unreleased]
 
+### V01.03.001
+
+#### Fixed
+
+- The one-piece STL left out all fifty captive pins. `export_stl_mm([palm, *bodies])` looked
+  complete and sliced without complaint, but every joint would have printed as an empty bore
+  and the hand would have come off the bed as a pile of loose discs. The export now carries
+  the pins too, and the generator fails loud if the list does not match
+  `printed_part_count` — palm, 25 bodies, 50 pins, 76 shells.
+
 ### V01.03.000
 
 #### Added

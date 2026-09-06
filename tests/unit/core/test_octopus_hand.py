@@ -191,6 +191,21 @@ def test_tip_features_stay_clear_of_the_joint_the_tip_actually_hangs_from() -> N
     assert spec.tip_cap_max_radius_mm <= spec.grip_outer_diameter_mm / 2
 
 
+def test_the_one_piece_export_has_to_contain_every_printed_part() -> None:
+    """A print-in-place hand whose pins are missing prints as a pile of loose discs.
+
+    The pins are separate objects in the scene, so an export list built from the
+    palm and the bodies alone looks complete and slices without complaint — every
+    joint just comes out as an empty bore.
+    """
+    spec = OctopusHandSpec()
+
+    assert spec.printed_body_count == spec.arm_count * spec.arm_body_count
+    assert spec.printed_pin_count == 2 * spec.printed_body_count
+    assert spec.printed_part_count == 1 + spec.printed_body_count + spec.printed_pin_count
+    assert spec.printed_part_count == 76
+
+
 @pytest.mark.parametrize(
     "changes",
     [

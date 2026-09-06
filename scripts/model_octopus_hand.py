@@ -151,7 +151,12 @@ def build() -> None:
     export_stl_mm([palm], OUTPUT / "palm_mm.stl")
     export_stl_mm([master], OUTPUT / "arm_body_mm.stl")
     export_stl_mm([tip_master], OUTPUT / "arm_tip_mm.stl")
-    export_stl_mm([palm, *bodies], OUTPUT / "octopus_hand_v1_mm.stl")
+    printed = [palm, *bodies, *pins]
+    if len(printed) != SPEC.printed_part_count:
+        raise RuntimeError(
+            f"one-piece export has {len(printed)} parts, expected {SPEC.printed_part_count}"
+        )
+    export_stl_mm(printed, OUTPUT / "octopus_hand_v1_mm.stl")
 
     scene["HH_OCT_ARM_NAMES"] = [f"ARM_{index}" for index in range(1, SPEC.arm_count + 1)]
     scene["HH_OCT_DESIGN_NOTE"] = (

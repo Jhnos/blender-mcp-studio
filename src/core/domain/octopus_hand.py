@@ -319,5 +319,24 @@ class OctopusHandSpec:
         return self.arm_count * len(self.arm_spec.tendon_positions_mm)
 
     @property
+    def printed_body_count(self) -> int:
+        return self.arm_count * self.arm_body_count
+
+    @property
+    def printed_pin_count(self) -> int:
+        """Two captive pins per joint, base joint at the palm included."""
+        return 2 * self.printed_body_count
+
+    @property
+    def printed_part_count(self) -> int:
+        """Everything the one-piece export must carry: palm, bodies and pins.
+
+        The pins are separate objects in the scene, so an export list built from
+        the palm and the bodies alone looks complete and slices without complaint.
+        Every joint just comes out as an empty bore, and the hand falls apart.
+        """
+        return 1 + self.printed_body_count + self.printed_pin_count
+
+    @property
     def printable_part_types(self) -> tuple[str, str, str]:
         return ("octopus_palm", "biaxial_arm_body", "octopus_tip")

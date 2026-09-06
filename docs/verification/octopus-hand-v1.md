@@ -16,6 +16,7 @@ document only covers what the hand adds.
 | Wiring | One Ø10 mm channel on the palm axis, clear of every tendon hole |
 | Grip pads | Four per repeated body, on the plain diagonals, Ø42 across their flat faces |
 | Tip | Terminal hexagonal cap, Ø42 shoulder tapering to Ø22, two cross-bores anchoring four cables |
+| Whole hand | 144.408 × 138.545 × 117.000 mm, 129 860 triangles, **76 separate shells** — palm, 25 bodies, 50 captive pins. Do **not** auto-arrange them |
 
 The palm's top face is treated as a body centre plane. That is the whole trick: the socket
 carries the same male ears any body carries on its +Z face, so V6's `create_body` is reused
@@ -82,6 +83,7 @@ Two contracts, both green with no skips:
 |---|---|
 | Arm chain twists correctly | rotations `(0, 90, 0, 90)` on arm 1; tips `(0, 72, 144, 216, 288)` |
 | Grip pads clear the neighbours | inter-arm group of 20, 19 adjacent pairs, all 0 after the stations moved to 41.5 mm |
+| One-piece export is complete | 76 shells, matching `printed_part_count` — palm + 25 bodies + 50 pins |
 | Cable path open through the cap | tip centre ray misses — it did **not** before the drill was sized off the cap |
 | Bodies share one mesh | `shared_mesh_count = 1` for both the 20 plain bodies and the 5 tips |
 | No collision inside an arm | 5 per-arm groups, 4 objects each, all adjacent overlaps 0 |
