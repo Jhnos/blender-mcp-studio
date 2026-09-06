@@ -1,0 +1,90 @@
+{
+ "name": "octopus_hand_tips",
+ "generator_script": "scripts/model_octopus_hand.py",
+ "reload_modules": [
+  "src.core.domain.inset_hinge",
+  "src.core.domain.biaxial_hinge",
+  "src.core.domain.octopus_hand",
+  "scripts.blender_artifact_export",
+  "scripts.hollow_hinge_render",
+  "scripts.blender_mesh_primitives",
+  "scripts.model_inset_hinge",
+  "scripts.hinge_retention",
+  "scripts.biaxial_hinge_presentation",
+  "scripts.octopus_palm_geometry",
+  "scripts.octopus_tip_geometry",
+  "scripts.octopus_hand_presentation"
+ ],
+ "artifacts": [
+  "tmp/octopus-hand-v1/octopus_hand_v1.blend",
+  "tmp/octopus-hand-v1/palm_mm.stl",
+  "tmp/octopus-hand-v1/arm_body_mm.stl",
+  "tmp/octopus-hand-v1/arm_tip_mm.stl",
+  "tmp/octopus-hand-v1/octopus_hand_v1_mm.stl",
+  "tmp/octopus-hand-v1/octopus_hand_assembly.png",
+  "tmp/octopus-hand-v1/octopus_palm_top.png",
+  "tmp/octopus-hand-v1/octopus_tip_detail.png",
+  "tmp/octopus-hand-v1/octopus_print_layout.png"
+ ],
+ "oracle": {
+  "object_prefix": "HH_OCT_TIP_",
+  "expected_count": 5,
+  "expected_rotations_deg": [
+   90,
+   162,
+   234,
+   306,
+   18
+  ],
+  "scene_list_property": "HH_OCT_ARM_NAMES",
+  "expected_scene_list": [
+   "ARM_1",
+   "ARM_2",
+   "ARM_3",
+   "ARM_4",
+   "ARM_5"
+  ],
+  "center_probe_object": "HH_OCT_TIP_1",
+  "joint_sweep": {
+   "master_object": "HH_OCT_MASTER_TIP",
+   "pivot_offset_mm": 9.5,
+   "axis": "X",
+   "mating_twist_deg": 90,
+   "angles_deg": [
+    -34,
+    -30,
+    -25,
+    -20,
+    -15,
+    -10,
+    -5,
+    0,
+    5,
+    10,
+    15,
+    20,
+    25,
+    30,
+    34
+   ]
+  },
+  "collision_groups": [
+   {
+    "prefix": "HH_OCT_TIP_",
+    "expected_count": 5
+   }
+  ]
+ },
+ "readiness": {
+  "selection_prefix": "HH_OCT_LAYOUT_PART_",
+  "expected_selection_count": 3,
+  "forbidden_issue_codes": [
+   "no_mesh",
+   "non_manifold_edges",
+   "inconsistent_normals",
+   "degenerate_geometry",
+   "zero_volume",
+   "intersections"
+  ]
+ }
+}

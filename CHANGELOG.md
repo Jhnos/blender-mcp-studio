@@ -5,6 +5,34 @@
 
 ## [Unreleased]
 
+### V01.01.000
+
+#### Added
+
+- Octopus hand V1: a five-armed print-in-place gripper built entirely from new files. A
+  pentagonal palm carries five V6 biaxial arms, twenty tendon holes and one central wire
+  channel; each tip gets four cross-drilled cable eyelets and an inward claw. `OctopusHandSpec`
+  composes `BiaxialHingeSpec` rather than subclassing it, so V6's contract is untouched — no
+  V6 domain, generator or `models/` file changed.
+- The printer bed is a spec invariant, not a comment: `upright_footprint_mm > max_bed_mm`
+  raises. Splayed flat the hand needs 275.9 mm and does not fit a 220 mm bed; upright it
+  needs 133.3 mm square by that bound and exports at 126.8 × 120.6 × 113.8 mm.
+- Two artifact contracts, `octopus_hand.json` and `octopus_hand_tips.json`, green on real
+  Blender with no skips. Between them they measure per-arm collision, **inter-arm** collision
+  (twenty bodies sorted level by level), tip-to-tip clearance, a −34°…+34° joint sweep for
+  both the plain body and the tip, an open wire channel, an open cable path through the tip,
+  and an untruncated readiness report.
+- `docs/verification/octopus-hand-v1.md` — target, evidence table, a ten-item visual rubric
+  and the evidence boundaries.
+
+#### Changed
+
+- `docs/LESSONS_LEARNED.md` records the class this build walked into: a feature that does not
+  change an object's bounding box is invisible to dimension readback. A hidden object drops
+  out of Blender's depsgraph and its Booleans are silently skipped, so the tip exported
+  byte-identical to the plain body while fourteen contract checks stayed green. The generator
+  now fails loud if the tip's face count did not grow.
+
 ### V01.00.00C
 
 #### Fixed

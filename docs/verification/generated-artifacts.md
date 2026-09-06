@@ -49,6 +49,12 @@ double-headed PIP pins remain interleaved with the two bodies; the separate work
 two grooved pins and two 0.9 mm experimental C clips. See the
 [V6 target and manufacturing limits](biaxial-hinge-v6.md) before slicing.
 
+Octopus hand V1 outputs: `tmp/octopus-hand-v1/` contains the pentagonal palm, the plain arm
+body, the tip, the one-piece hand `.stl`, the `.blend` source and four PNGs. Run
+`octopus_hand.json` first, then `octopus_hand_tips.json` with `--skip-generate`. The hand is
+printed with the arms **upright** and the palm flat; see the
+[V1 target and manufacturing limits](octopus-hand-v1.md) before slicing.
+
 ## Promote a controlled print package
 
 Working output remains ignored. After all V6 real contracts pass, publish only the explicit
@@ -88,6 +94,11 @@ saved output files for the other version are retained.
 | `scripts/hollow_hinge_geometry.py` | Watertight D-lug and bridge primitives |
 | `scripts/hollow_hinge_render.py` | Three views, spaced layout and saved-camera restoration |
 | `scripts/blender_artifact_export.py` | Explicit-mesh STL export in mm; restore selection/visibility |
+| `src/core/domain/octopus_hand.py` | Palm stations, bed envelope, cable relief and tip constraints |
+| `scripts/octopus_palm_geometry.py` | Pentagonal palm, five orbited sockets, tendon and wire holes |
+| `scripts/octopus_tip_geometry.py` | Cross-drilled cable eyelets and the inward claw |
+| `scripts/octopus_hand_presentation.py` | Hand views and the distinct-part print layout |
+| `scripts/model_octopus_hand.py` | V1 hand assembly and artifact orchestration |
 | `src/verification/generated_artifact_contract.py` | Contract parsing and evidence assessment |
 | `src/verification/artifact_files.py` | Binary STL length/coordinate validation without Blender |
 | `src/verification/mesh_measurements.py` | Fail-closed dimensions, slopes, bores and pin evidence |
