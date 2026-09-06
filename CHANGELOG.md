@@ -5,6 +5,14 @@
 
 ## [Unreleased]
 
+### V01.01.001
+
+#### Changed
+
+- `docs/tasks/04_octopus-hand-v1.md` records that the octopus hand's visual rubric has not
+  been judged by a fresh context yet. The rubric existing is not the rubric having passed,
+  and the hand-off was letting the next reader assume otherwise.
+
 ### V01.01.000
 
 #### Added
