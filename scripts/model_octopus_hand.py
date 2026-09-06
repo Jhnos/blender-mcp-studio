@@ -171,7 +171,7 @@ def build() -> None:
         "pins, four cable eyelets and one claw per tip. Unqualified fit prototype; no "
         "grip force, retention or strength claim. Cables are threaded after printing."
     )
-    present_octopus(OUTPUT, SPEC, [palm, *bodies, *pins], layout_objects)
+    present_octopus(OUTPUT, SPEC, palm, bodies, pins, layout_objects)
     bpy.ops.wm.save_as_mainfile(filepath=str(OUTPUT / "octopus_hand_v1.blend"))
     print("OCTOPUS_HAND_READY", str(OUTPUT))
 

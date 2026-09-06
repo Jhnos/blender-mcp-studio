@@ -42,21 +42,40 @@ def layout_parts(
 def present_octopus(
     output: Path,
     spec: OctopusHandSpec,
-    hand_objects: list[bpy.types.Object],
+    palm: bpy.types.Object,
+    bodies: list[bpy.types.Object],
+    pins: list[bpy.types.Object],
     layout_objects: list[bpy.types.Object],
 ) -> None:
-    """Four renders, each restoring what it hid, so the .blend saves in one state."""
+    """Eight renders, each restoring what it hid, so the .blend saves in one state.
+
+    Four of them exist because a fresh reviewer could not judge six of the eleven
+    rubric items from the overview shots: at that distance you cannot count four
+    tendon holes per station, see which way a joint axis runs, or tell a 2 mm gap
+    between arms from contact. The close-ups are framed on exactly those questions.
+    """
     output.mkdir(parents=True, exist_ok=True)
     label = material("HH_OCT_LABEL", (0.92, 0.94, 0.98, 1))
     floor = material("HH_OCT_FLOOR", (0.05, 0.06, 0.08, 1))
     camera, _ = setup_render(spec.arm_spec, floor, assign)
 
-    for obj in [*hand_objects, *layout_objects]:
-        obj.hide_render = True
+    hand_objects = [palm, *bodies, *pins]
+    # Hide every generated mesh, not just the two lists this function was handed.
+    # Coupon parts are in neither, and they walked into frame on the close-ups —
+    # a shot has to show only what it declares, or the reviewer judges the wrong thing.
+    for obj in bpy.data.objects:
+        if obj.type == "MESH" and obj.name.startswith("HH_") and obj.name != "HH_FLOOR":
+            obj.hide_render = True
 
     span = spec.upright_footprint_mm
     mid_height = spec.upright_height_mm / 2
     station = spec.arm_station_positions_mm[0]
+    first_arm = [
+        obj
+        for obj in [*bodies, *pins]
+        if obj.name.startswith(("HH_OCT_SEG_1_", "HH_OCT_TIP_1", "HH_OCT_PIN_1_"))
+    ]
+    first_tip = [obj for obj in bodies if obj.name == "HH_OCT_TIP_1"]
 
     capture(
         output,
@@ -100,6 +119,55 @@ def present_octopus(
         (span * 0.55, 0.0, 10.0),
         span * 2.0,
         "Distinct printable parts - palm, arm body, tip",
+        label,
+    )
+
+    # --- close-ups, one per question the overview shots could not answer ---
+    capture(
+        output,
+        "octopus_palm_bare.png",
+        camera,
+        [palm],
+        (0.1, -0.1, span * 2.4),
+        (0.0, 0.0, 0.0),
+        span * 1.15,
+        "Palm alone - count four tendon holes per station, and the centre channel",
+        label,
+    )
+    capture(
+        output,
+        "octopus_socket_detail.png",
+        camera,
+        [palm, *[o for o in pins if o.name.startswith("HH_OCT_PIN_1_1_")]],
+        (station[0] + 70.0, station[1] - 70.0, 34.0),
+        (station[0], station[1], 4.0),
+        72.0,
+        "One palm socket from the side - three-stage root, and the base joint pin",
+        label,
+    )
+    capture(
+        output,
+        "octopus_arm_side.png",
+        camera,
+        [palm, *first_arm],
+        # Straight down the radius on purpose: a tangential pin then shows its round
+        # face and a radial one shows its end, so the alternation is visible rather
+        # than inferred. At forty-five degrees both look the same.
+        (station[0] + 210.0, station[1], spec.upright_height_mm * 0.5),
+        (station[0], station[1], spec.upright_height_mm * 0.45),
+        spec.upright_height_mm * 1.2,
+        "One arm down the radius - alternating pin axes, a pin at every joint",
+        label,
+    )
+    capture(
+        output,
+        "octopus_tip_top.png",
+        camera,
+        first_tip,
+        (station[0] + 30.0, station[1] - 30.0, spec.arm_tip_height_mm + 55.0),
+        (station[0], station[1], spec.arm_tip_height_mm - 12.0),
+        70.0,
+        "One tip from above - both cable cross-bores, and no ears left on it",
         label,
     )
 

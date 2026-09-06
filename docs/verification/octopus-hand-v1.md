@@ -116,6 +116,18 @@ whole hand 95 260 at 144.408 × 138.545 × 117.000 mm.
 
 Judge these against the generated PNGs, not against this text.
 
+**Eight views, and why there are eight.** The first review ran on the four overview
+shots and returned six of eleven items UNCLEAR — not because anything was wrong, but
+because at that distance you cannot count four tendon holes per station, tell which way
+a joint axis runs, or separate a 2 mm gap between arms from contact. Four close-ups were
+added, each framed on one of those questions: `octopus_palm_bare.png` (holes and centre
+channel, arms hidden), `octopus_socket_detail.png` (root profile and the base joint pin),
+`octopus_arm_side.png` (down the radius, so a tangential pin reads as one centred disc
+and a radial one as two side-by-side), `octopus_tip_top.png` (both cross-bores, no ears).
+
+A rubric is only as good as the evidence it is judged on. Overview renders make a model
+look right; they do not let anyone check it.
+
 - **A** Palm is a regular pentagon with an arm station at each of the five vertices.
 - **B** Every station shows the three-stage sloped root fused into the palm, not floating on it.
 - **C** Twenty tendon holes are visible, four grouped about each arm axis at equal radius.
