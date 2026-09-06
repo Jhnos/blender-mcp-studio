@@ -5,6 +5,29 @@
 
 ## [Unreleased]
 
+### V01.06.000
+
+#### Added
+
+- Six close-up renders in all, driven by what two fresh reviewers could not judge from the
+  overview shots. Round one returned six of eleven rubric items UNCLEAR, round two four; each
+  new view is framed on one named question — the palm alone for counting tendon holes, a
+  socket in profile, one arm looked at down its own radius so alternating pin axes read as
+  one centred disc against two side-by-side, the tip from above and below, and a single body
+  showing pads on the diagonals against ears on the axes.
+
+#### Changed
+
+- Close-ups render without shadows. At that range the view label sits inside the scene and
+  threw a shadow across the part; a reviewer read it as a double exposure and stopped
+  trusting the edges it fell on.
+- Rubric item I — "no arm touches its neighbour" — is withdrawn from the visual rubric. Two
+  reviewers in a row declined to call it and both were right: a shaded isometric cannot
+  separate projected overlap from contact, least of all at the pad corners. The
+  `HH_OCT_SEG_` collision group measures it directly, nineteen adjacent pairs at zero
+  overlap. A rubric item nobody can answer is not a gate, and the eye is the wrong
+  instrument for this one.
+
 ### V01.05.000
 
 #### Added

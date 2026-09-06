@@ -138,7 +138,13 @@ look right; they do not let anyone check it.
   through the top face.
 - **H** Two cross-bores are visible on the cap, each meeting a pair of tendon holes.
 - **K** Every repeated body carries four flat pads on its diagonals, none on an ear.
-- **I** No arm touches its neighbour anywhere along its length.
+- **L** The tip's cable paths come out of its underside, not just its top face.
+- **I** ~~No arm touches its neighbour anywhere along its length.~~ **Withdrawn from the
+  visual rubric.** Two reviewers in a row could not call it, and they were right not to:
+  a shaded isometric cannot separate projected overlap from contact, least of all at the
+  pad corners. The `HH_OCT_SEG_` collision group measures it directly — twenty bodies
+  sorted level by level, nineteen adjacent pairs, zero overlap. An eye is the wrong
+  instrument here, and a rubric item nobody can answer is not a gate.
 - **J** The print layout view shows three distinct parts: palm, plain body, tip.
 
 ## Evidence boundaries

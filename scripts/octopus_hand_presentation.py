@@ -123,6 +123,12 @@ def present_octopus(
     )
 
     # --- close-ups, one per question the overview shots could not answer ---
+    # Shadows off for these. At close range the view label sits inside the scene and
+    # throws a shadow across the part; a reviewer read that as a double exposure and
+    # stopped trusting the edges it fell on. Drama is worth less here than legibility.
+    scene = bpy.context.scene
+    shadows = scene.display.shading.show_shadows
+    scene.display.shading.show_shadows = False
     capture(
         output,
         "octopus_palm_bare.png",
@@ -170,6 +176,31 @@ def present_octopus(
         "One tip from above - both cable cross-bores, and no ears left on it",
         label,
     )
+
+    capture(
+        output,
+        "octopus_tip_underside.png",
+        camera,
+        first_tip,
+        (station[0] + 30.0, station[1] - 30.0, spec.arm_tip_height_mm - 78.0),
+        (station[0], station[1], spec.arm_tip_height_mm - 30.0),
+        70.0,
+        "The same tip from below - the cable paths come out the bottom",
+        label,
+    )
+    capture(
+        output,
+        "octopus_body_detail.png",
+        camera,
+        [obj for obj in bodies if obj.name == "HH_OCT_SEG_1_2"],
+        (station[0] + 55.0, station[1] - 55.0, 2 * spec.arm_spec.unit_pitch_mm + 40.0),
+        (station[0], station[1], 2 * spec.arm_spec.unit_pitch_mm),
+        70.0,
+        "One repeated body - four flat pads on the diagonals, ears on the axes",
+        label,
+    )
+
+    scene.display.shading.show_shadows = shadows
 
     for obj in hand_objects:
         obj.hide_render = False

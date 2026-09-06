@@ -32,7 +32,9 @@
   "tmp/octopus-hand-v1/octopus_palm_bare.png",
   "tmp/octopus-hand-v1/octopus_socket_detail.png",
   "tmp/octopus-hand-v1/octopus_arm_side.png",
-  "tmp/octopus-hand-v1/octopus_tip_top.png"
+  "tmp/octopus-hand-v1/octopus_tip_top.png",
+  "tmp/octopus-hand-v1/octopus_tip_underside.png",
+  "tmp/octopus-hand-v1/octopus_body_detail.png"
  ],
  "oracle": {
   "object_prefix": "HH_OCT_SEG_1_",
