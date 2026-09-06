@@ -5,6 +5,42 @@
 
 ## [Unreleased]
 
+### V01.03.000
+
+#### Added
+
+- Grip pads on every repeated arm body: four per body, on the plain diagonals, Ø42 across
+  their flat faces. The diagonals are the only rim free of joint hardware and the only
+  headings unchanged by the chain's ninety degree twist, so one pattern serves every body.
+  Each pad's outer face is flat — a flat face beds against an object where a cylinder
+  touches it on a line — and its underside is chamfered 45° so it is not a bare overhang.
+- The tip is now a terminal segment rather than a body with parts glued on. Everything
+  above the disc is cut away, unused ears included, and replaced by a six-faced cap that
+  flares off the disc at a printable angle and then only narrows. Two through-bores anchor
+  the four cables, each crossing one opposed pair of tendon holes inside the cap.
+- `src/core/domain/octopus_grip.py` — the grip surfaces split into their own spec when
+  `octopus_hand.py` reached the god-file warning. The seam is real: one module lays the
+  hand out, the other owns what presses on an object.
+
+#### Fixed
+
+- Spacing the arms on the pads' face diameter let neighbouring pads intersect at their
+  corners. A flat face is a chord, so its corners stand further out than its middle:
+  Ø42 across the faces is an envelope of Ø46.35. `grip_envelope_radius_mm` is what the
+  spacing invariant measures now, and the stations moved out to 41.5 mm to suit.
+- The tip cap's closed bottom sat flush with the disc's own surface, leaving the Boolean
+  two coplanar sheets and readiness reporting `non_manifold_edges`. The cap now starts a
+  fuse depth inside solid material.
+- The tip's centre wire channel was drilled to the body's depth, not the cap's, leaving it
+  blind above z=13 while the cap top sits at z=18. Invisible in the bounding box; caught by
+  the centre-ray probe.
+
+#### Changed
+
+- `docs/LESSONS_LEARNED.md` records the envelope class: a nominal face dimension is the
+  nearest point of a non-circular part, not its farthest, and clearance invariants that
+  read it are measuring the wrong thing.
+
 ### V01.02.000
 
 #### Fixed

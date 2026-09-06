@@ -4,6 +4,7 @@
  "reload_modules": [
   "src.core.domain.inset_hinge",
   "src.core.domain.biaxial_hinge",
+  "src.core.domain.octopus_grip",
   "src.core.domain.octopus_hand",
   "scripts.blender_artifact_export",
   "scripts.hollow_hinge_render",
@@ -12,6 +13,7 @@
   "scripts.hinge_retention",
   "scripts.biaxial_hinge_presentation",
   "scripts.octopus_palm_geometry",
+  "scripts.octopus_grip_geometry",
   "scripts.octopus_tip_geometry",
   "scripts.octopus_hand_presentation"
  ],

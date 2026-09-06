@@ -88,7 +88,7 @@ def present_octopus(
         (station[0] + 90.0, -110.0, spec.arm_tip_height_mm + 60.0),
         (station[0], station[1], spec.arm_tip_height_mm - 10.0),
         90.0,
-        "Tip - four cable eyelets and one inward claw",
+        "Tip - a terminal hexagonal cap with two cable cross-bores",
         label,
     )
     capture(

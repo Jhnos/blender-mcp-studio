@@ -17,9 +17,10 @@ from scripts.blender_mesh_primitives import collection, material  # noqa: E402
 from scripts.hinge_retention import create_captive_pin, cut_retainer_seats  # noqa: E402
 from scripts.hollow_hinge_render import m  # noqa: E402
 from scripts.model_inset_hinge import create_body  # noqa: E402
+from scripts.octopus_grip_geometry import add_grip_pads  # noqa: E402
 from scripts.octopus_hand_presentation import layout_parts, present_octopus  # noqa: E402
 from scripts.octopus_palm_geometry import create_palm  # noqa: E402
-from scripts.octopus_tip_geometry import add_tip_features  # noqa: E402
+from scripts.octopus_tip_geometry import build_tip  # noqa: E402
 from src.core.domain.octopus_hand import OctopusHandSpec  # noqa: E402
 
 SPEC = OctopusHandSpec()
@@ -113,25 +114,25 @@ def build() -> None:
     master = create_body(hand, gold, arm)
     master.name = "HH_OCT_MASTER_BODY"
     cut_retainer_seats(master, arm)
+    add_grip_pads(master, SPEC)
 
     # Copy the tip master while the body is still visible, and keep it visible until
-    # its features are applied. `hide_viewport` drops an object out of the depsgraph,
+    # its own geometry is applied. `hide_viewport` drops an object out of the depsgraph,
     # and a Boolean applied to an object that is not evaluated silently does nothing —
     # the export then looks fine, because these features do not change the bounding box.
     tip_master = master.copy()
     tip_master.data = master.data.copy()
     tip_master.name = "HH_OCT_MASTER_TIP"
     hand.objects.link(tip_master)
-    add_tip_features(tip_master, SPEC)
-    if len(tip_master.data.polygons) <= len(master.data.polygons):
+    build_tip(tip_master, SPEC)
+    if len(tip_master.data.polygons) == len(master.data.polygons):
         # Observed 2026-09-06: with the tip master hidden, every Boolean was skipped
         # and arm_tip_mm.stl came out byte-identical to arm_body_mm.stl — 3436
         # triangles each. Neither the dimension readback nor the artifact contract
         # could see it, because eyelets and claw sit inside the body's bounding box.
         raise RuntimeError(
-            "tip features did not apply: "
-            f"{len(tip_master.data.polygons)} faces vs the plain body's "
-            f"{len(master.data.polygons)}"
+            "the tip is still a plain body: "
+            f"{len(tip_master.data.polygons)} faces, same as the body it was cut from"
         )
     master.hide_render = master.hide_viewport = True
     tip_master.hide_render = tip_master.hide_viewport = True

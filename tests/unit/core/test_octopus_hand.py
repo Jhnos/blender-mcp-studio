@@ -44,29 +44,8 @@ def test_upright_pose_fits_the_declared_bed_and_splayed_pose_does_not() -> None:
     # full pitch up — the arm gains a base joint the free-standing chain has not.
     assert spec.arm_base_offset_mm == pytest.approx(spec.arm_spec.unit_pitch_mm)
     assert spec.arm_body_count == 5
-    assert spec.upright_height_mm == pytest.approx(
-        spec.palm_thickness_mm
-        + spec.arm_tip_height_mm
-        + spec.tip_eyelet_diameter_mm
-        + 2 * spec.tip_eyelet_wall_mm
-    )
+    assert spec.upright_height_mm == pytest.approx(spec.palm_thickness_mm + spec.arm_tip_height_mm)
     assert spec.upright_height_mm > spec.arm_spec.assembled_height_mm
-
-
-def test_every_tip_eyelet_sits_over_its_tendon_exit_and_still_leaves_wall() -> None:
-    spec = OctopusHandSpec()
-    arm = spec.arm_spec
-
-    assert spec.tip_eyelet_count == len(arm.tendon_positions_mm)
-    assert spec.tip_eyelet_radius_mm == pytest.approx(arm.tendon_radius_mm)
-    assert (
-        spec.tip_eyelet_radius_mm + spec.tip_eyelet_diameter_mm / 2 + spec.tip_eyelet_wall_mm
-        <= arm.body_outer_diameter_mm / 2
-    )
-    # The eyelet must pass the cable the tendon holes carry.
-    assert spec.tip_eyelet_diameter_mm > arm.tendon_hole_diameter_mm
-    # Upright printing only stays support-free while the claw hangs under 45 degrees.
-    assert 0 < spec.tip_claw_slope_deg < 45
 
 
 def test_central_wire_channel_clears_every_tendon_hole_in_the_palm() -> None:
@@ -114,59 +93,83 @@ def test_cable_relief_widens_each_hole_exit_without_reaching_its_neighbour() -> 
     assert innermost - relief_radius > spec.wire_channel_diameter_mm / 2
 
 
-def test_claw_points_at_the_palm_axis_once_the_arm_is_assembled() -> None:
-    """The claw is built in the body's own frame, which the chain has already twisted.
+def test_grip_pads_sit_only_where_no_joint_hardware_does() -> None:
+    """Pads go on the four plain diagonals, which is also the rotation-invariant choice.
 
-    Bodies alternate 90 degrees up the chain, so the last one does not face the way
-    the arm does. Building the claw along a fixed local axis would aim it sideways;
-    the heading has to undo the body's own twist.
+    Ears occupy the cardinal directions — male on X above, female on Y below — so the
+    diagonals are the only free rim. They are also unchanged by the chain's ninety
+    degree twist, so every body presents the same pad pattern whatever its own twist.
+    """
+    spec = OctopusHandSpec()
+    arm = spec.arm_spec
+
+    assert spec.grip_pad_angles_deg == (45.0, 135.0, 225.0, 315.0)
+    assert len(spec.grip_pad_angles_deg) == len(arm.tendon_positions_mm)
+    for angle in spec.grip_pad_angles_deg:
+        assert angle % 90 != 0, "a pad on a cardinal direction would land on an ear"
+    assert spec.grip_outer_diameter_mm > arm.body_outer_diameter_mm
+    assert spec.grip_pad_projection_mm == pytest.approx(
+        (spec.grip_outer_diameter_mm - arm.body_outer_diameter_mm) / 2
+    )
+    # The pad grows the rim outward past the tendon holes, never into them.
+    assert spec.grip_outer_diameter_mm / 2 - arm.tendon_radius_mm > arm.tendon_hole_diameter_mm
+
+
+def test_grip_pads_do_not_push_the_arms_into_each_other() -> None:
+    """Growing the grip surface has to move the stations out, or the arms touch."""
+    spec = OctopusHandSpec()
+
+    assert spec.arm_station_radius_mm >= spec.minimum_station_radius_mm
+    first, second = spec.arm_station_positions_mm[:2]
+    # The pad's flat face is its *closest* point, not its farthest: the corners of
+    # the chord sit further out than the face does. Spacing the arms on the face
+    # radius let neighbouring pads intersect at their corners.
+    assert spec.grip_envelope_radius_mm > spec.grip_outer_diameter_mm / 2
+    assert math.dist(first, second) >= 2 * spec.grip_envelope_radius_mm + spec.palm_wall_mm
+    assert spec.upright_footprint_mm <= spec.max_bed_mm
+
+
+def test_grip_pad_underside_is_self_supporting_when_printed_upright() -> None:
+    """A pad standing proud of a vertical disc would otherwise be a flat overhang."""
+    spec = OctopusHandSpec()
+
+    assert 0 < spec.grip_pad_slope_deg <= 45
+    assert spec.grip_flat_face_height_mm > 0, "the chamfer ate the whole gripping face"
+    assert spec.grip_flat_face_height_mm < spec.grip_pad_height_mm
+
+
+def test_tip_is_a_terminal_polyhedron_not_a_body_with_parts_glued_on() -> None:
+    """The tip ends the chain, so it keeps no ears it cannot use.
+
+    Everything above the disc's top face is replaced by a faceted frustum: flat faces
+    to press on an object, and a profile that never overhangs when printed upright.
     """
     spec = OctopusHandSpec()
 
-    assert spec.tip_body_rotation_deg == spec.body_twist_deg(spec.arm_body_count)
-    assert (spec.tip_claw_direction_deg + spec.tip_body_rotation_deg) % 360 == pytest.approx(180.0)
-    # Same claim, made where it matters: at every station the claw ends up inward.
-    for angle in spec.arm_station_angles_deg:
-        heading = (angle + spec.tip_body_rotation_deg + spec.tip_claw_direction_deg) % 360
-        assert heading == pytest.approx((angle + 180.0) % 360)
+    assert spec.tip_facet_count == 6
+    assert spec.tip_cap_top_diameter_mm < spec.grip_outer_diameter_mm
+    # Widens off the disc at a self-supporting slope, then only ever narrows.
+    assert 0 < spec.tip_cap_flare_slope_deg <= 45
+    # The cap must start strictly inside the disc. A base face flush with the disc's
+    # own surface leaves coplanar geometry for the Boolean, which is where the
+    # readiness check found non-manifold edges.
+    assert spec.tip_cap_base_z_mm < spec.tip_feature_base_z_mm
+    assert spec.tip_cap_base_radius_mm < spec.arm_spec.body_outer_diameter_mm / 2
+    assert spec.tip_cap_taper_slope_deg < 90, "a frustum that widens upward would overhang"
+    assert spec.tip_cap_top_z_mm > spec.tip_cap_shoulder_z_mm > spec.tip_feature_base_z_mm
 
 
-def test_base_joint_swings_each_arm_toward_and_away_from_the_palm_centre() -> None:
-    """The arm's first degree of freedom must be radial, not circumferential.
-
-    A hinge turns about its pin axis, so a pin aimed along the radius swings the
-    arm sideways around the palm — it opens and closes nothing. To curl an arm in
-    toward the centre the base pin has to lie across the radius, tangentially.
-    Axes are lines, so every comparison here is modulo 180 degrees.
-    """
+def test_tip_cable_bores_cross_every_tendon_inside_the_cap() -> None:
+    """Two through-bores, four cables: each one turns once and is tied through a ring."""
     spec = OctopusHandSpec()
+    arm = spec.arm_spec
 
-    for station in spec.arm_station_angles_deg:
-        pin_axis = (station + spec.palm_socket_twist_deg) % 180
-        radial = station % 180
-        assert pin_axis == pytest.approx((radial + 90) % 180)
-
-
-def test_joint_axes_alternate_up_the_arm_so_every_pair_of_ears_still_mates() -> None:
-    """Making the base joint radial is only correct if the chain above it still closes.
-
-    Each body carries female ears on its local Y face and male ears on local X, so
-    a joint exists only where the twist of one lands on the twist of the next.
-    """
-    spec = OctopusHandSpec()
-
-    upper = spec.palm_socket_twist_deg
-    for index in range(1, spec.arm_body_count + 1):
-        female = spec.body_twist_deg(index) + 90.0
-        assert female % 180 == pytest.approx(upper % 180), f"body {index} does not meet its socket"
-        upper = spec.body_twist_deg(index)
-
-    # And the alternation the pins are placed on must agree with those same twists.
-    assert spec.joint_axis_twist_deg(0) == pytest.approx(spec.palm_socket_twist_deg)
-    for joint in range(1, spec.arm_body_count):
-        assert spec.joint_axis_twist_deg(joint) == pytest.approx(spec.body_twist_deg(joint))
-    axes = [spec.joint_axis_twist_deg(joint) % 180 for joint in range(spec.arm_body_count)]
-    assert all(first != second for first, second in zip(axes, axes[1:], strict=False))
+    assert len(spec.tip_cable_bore_angles_deg) == 2
+    assert spec.tip_cable_bore_z_mm > spec.tip_cap_shoulder_z_mm
+    # The bore has to be low enough that the tapering cap still has material at the
+    # tendon radius, or it would break out of the side instead of crossing the cable.
+    assert spec.tip_cap_radius_at_mm(spec.tip_cable_bore_z_mm) > arm.tendon_radius_mm
+    assert spec.tip_cable_bore_diameter_mm > arm.tendon_hole_diameter_mm
 
 
 def test_tip_features_stay_clear_of_the_joint_the_tip_actually_hangs_from() -> None:
@@ -184,9 +187,8 @@ def test_tip_features_stay_clear_of_the_joint_the_tip_actually_hangs_from() -> N
     assert spec.tip_feature_base_z_mm > 0, "features must not cross the body's mid-plane"
     clearance = spec.tip_feature_base_z_mm - (lower_joint_z + arm.lug_outer_diameter_mm / 2)
     assert clearance > 0, "tip features reach into the ear below them"
-    # The features also have to stay inside the body's own footprint, or the tip
-    # would foul its neighbours where the plain bodies do not.
-    assert spec.tip_claw_reach_mm < arm.body_outer_diameter_mm / 2
+    # The cap must not reach past the grip envelope the stations were spaced for.
+    assert spec.tip_cap_max_radius_mm <= spec.grip_outer_diameter_mm / 2
 
 
 @pytest.mark.parametrize(
@@ -197,15 +199,21 @@ def test_tip_features_stay_clear_of_the_joint_the_tip_actually_hangs_from() -> N
         pytest.param({"arm_station_radius_mm": 20.0}, id="neighbouring arms would intersect"),
         pytest.param({"max_bed_mm": 90.0}, id="upright envelope exceeds the declared bed"),
         pytest.param(
-            {"wire_channel_diameter_mm": 50.0}, id="wire channel swallows the tendon holes"
+            {"wire_channel_diameter_mm": 70.0}, id="wire channel swallows the tendon holes"
         ),
-        pytest.param({"tip_eyelet_diameter_mm": 9.0}, id="eyelet leaves no wall in the end body"),
+        pytest.param({"grip_outer_diameter_mm": 36.0}, id="grip pad flush with the body"),
+        pytest.param({"grip_pad_arc_deg": 95.0}, id="grip pads would run into each other"),
+        pytest.param({"grip_pad_slope_deg": 70.0}, id="pad underside would need support"),
+        pytest.param({"grip_pad_height_mm": 2.0}, id="chamfer eats the whole gripping face"),
+        pytest.param({"tip_cap_top_diameter_mm": 44.0}, id="cap widens instead of tapering"),
+        pytest.param({"tip_cap_flare_mm": 0.5}, id="cap flare would need support"),
         pytest.param(
-            {"tip_claw_slope_deg": 60.0}, id="claw would need support when printed upright"
+            {"tip_cap_top_diameter_mm": 2.0}, id="cap tapers so hard the bore misses the tendons"
         ),
+        pytest.param({"tip_cable_bore_diameter_mm": 1.0}, id="bore too small for the cable"),
         pytest.param({"palm_thickness_mm": 3.0}, id="palm too thin to carry the socket roots"),
         pytest.param(
-            {"cable_relief_widening_mm": 7.0}, id="cable reliefs would merge into each other"
+            {"cable_relief_widening_mm": 9.0}, id="cable reliefs would merge into each other"
         ),
         pytest.param({"cable_relief_depth_mm": 5.0}, id="relief eats more than half the palm"),
     ],

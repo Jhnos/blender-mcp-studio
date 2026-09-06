@@ -9,13 +9,13 @@ document only covers what the hand adds.
 
 | | |
 |---|---|
-| Palm | Regular pentagon, 6 mm thick, 126.8 × 120.6 mm as exported |
-| Arms | Five, each 5 bodies on a Ø36 mm V6 profile, 19 mm pitch |
+| Palm | Regular pentagon, 6 mm thick, 151.8 mm across corners |
+| Arms | Five, each 5 bodies on a Ø36 mm V6 profile, 19 mm pitch, stations at radius 41.5 mm |
 | Joints | Five per arm — four between bodies plus one where the palm socket carries the first body |
 | Cables | Four Ø2.4 mm tendon holes per arm, 20 in total, at radius 13 mm about each arm axis |
-| Wiring | One Ø10 mm channel on the palm axis, 18.1 mm clear of the nearest tendon hole |
-| Tip | Four cross-drilled Ø3 mm eyelets over the tendon exits, one 14 mm claw leaning 40° inward |
-| Whole hand | 126.774 × 120.570 × 113.800 mm, 104 642 triangles |
+| Wiring | One Ø10 mm channel on the palm axis, clear of every tendon hole |
+| Grip pads | Four per repeated body, on the plain diagonals, Ø42 across their flat faces |
+| Tip | Terminal hexagonal cap, Ø42 shoulder tapering to Ø22, two cross-bores anchoring four cables |
 
 The palm's top face is treated as a body centre plane. That is the whole trick: the socket
 carries the same male ears any body carries on its +Z face, so V6's `create_body` is reused
@@ -39,11 +39,30 @@ heading to get it, and every body above is twisted to match so the ears still me
 Measured in the live scene, not derived: each arm's base pin axis sits **90.0°** to its own
 radius at all five stations (0°/90°, 72°/162°, 144°/54°, 216°/126°, 288°/18°).
 
+## Gripping surfaces
+
+The repeated bodies carry four pads each, on the diagonals. That is the only rim free
+of joint hardware — ears take the cardinal directions — and it is also the choice that
+survives the chain's twist, since a diagonal maps onto a diagonal under ninety degrees.
+Each pad's outer face is flat, because a flat face beds against an object where a
+cylinder only touches it on a line, and its underside is chamfered at 45° so it is not
+a bare overhang when printed upright.
+
+The tip is a terminal segment, not a body with parts glued on: everything above the
+disc is cut away, unused ears included, and replaced by a six-faced cap. Cables are
+anchored by two through-bores that each cross one opposed pair of tendon holes inside
+the cap, so a cable comes up its hole, turns once, and knots through a closed ring.
+
+**The number that bit:** Ø42 is where the pad's *flat face* sits. A flat face is a
+chord, and its corners stand further out — 23.17 mm, an envelope of Ø46.35. Spacing the
+arms on the face radius let neighbouring pads intersect at the corners while every
+per-arm check stayed green. `grip_envelope_radius_mm` is now what the spacing invariant
+measures.
+
 ## Print pose
 
-Arms **upright**, palm flat on the bed. Splayed flat the hand needs Ø275.9 mm and does not
-fit a 220 mm bed; upright it needs 133.3 mm square by the spec's conservative bound, and
-126.8 × 120.6 mm as actually exported. `OctopusHandSpec` rejects any variant whose upright
+Arms **upright**, palm flat on the bed. Splayed flat the hand does not fit a 220 mm bed;
+upright it needs 151.8 mm square by the spec's bound. `OctopusHandSpec` rejects any variant whose upright
 envelope exceeds `max_bed_mm`, so the bed is a machine-checked invariant, not a note.
 
 Upright also puts V6's three-stage roots (36.6° / 35.8° / 35.8°, all under 45°) back in the
@@ -62,6 +81,8 @@ Two contracts, both green with no skips:
 | Claim | Evidence |
 |---|---|
 | Arm chain twists correctly | rotations `(0, 90, 0, 90)` on arm 1; tips `(0, 72, 144, 216, 288)` |
+| Grip pads clear the neighbours | inter-arm group of 20, 19 adjacent pairs, all 0 after the stations moved to 41.5 mm |
+| Cable path open through the cap | tip centre ray misses — it did **not** before the drill was sized off the cap |
 | Bodies share one mesh | `shared_mesh_count = 1` for both the 20 plain bodies and the 5 tips |
 | No collision inside an arm | 5 per-arm groups, 4 objects each, all adjacent overlaps 0 |
 | **No collision between arms** | `HH_OCT_SEG_` group of 20 sorted level-by-level: 19 adjacent pairs, all 0 |
@@ -74,9 +95,9 @@ Two contracts, both green with no skips:
 | Tip features really applied | `arm_tip_mm.stl` 5140 triangles against the plain body's 3436 |
 | Readiness complete | `status = review`, no forbidden structural code, **not truncated** |
 
-Independent STL readback (no Blender): palm 10 222 triangles at 126.774 × 120.570 × 18.800 mm;
-arm body 3436 at 36 × 36 × 29.6 mm; tip 5140 at the same envelope; whole hand 104 642 at
-126.774 × 120.570 × 113.800 mm.
+Independent STL readback (no Blender): palm 10 220 triangles at 144.408 × 137.340 × 18.800 mm;
+arm body 3382 at 43.547 × 43.547 × 29.600 mm; tip 3480 at 43.547 × 43.547 × 32.800 mm;
+whole hand 95 260 at 144.408 × 138.545 × 117.000 mm.
 
 ## Fresh-context visual rubric
 
@@ -88,8 +109,10 @@ Judge these against the generated PNGs, not against this text.
 - **D** One central channel is open through the palm and clear of every tendon hole.
 - **E** Each arm shows five bodies with alternating joint axes up its length.
 - **F** A captive pin is seated at every joint, including the base joint at the palm.
-- **G** Each tip carries four eyelet bosses, each cross-drilled and sitting over a tendon exit.
-- **H** Each claw rises from the rim and leans toward the palm axis, not sideways or outward.
+- **G** Each tip is a six-faced cap with no leftover ears, and its centre channel is open
+  through the top face.
+- **H** Two cross-bores are visible on the cap, each meeting a pair of tendon holes.
+- **K** Every repeated body carries four flat pads on its diagonals, none on an ear.
 - **I** No arm touches its neighbour anywhere along its length.
 - **J** The print layout view shows three distinct parts: palm, plain body, tip.
 
@@ -116,7 +139,7 @@ Judge these against the generated PNGs, not against this text.
   unrelated after. The joint a tip really hangs from is the one below it, and what stands in
   for a sweep there is the spec invariant that every tip feature stays above the body's
   mid-plane, clear of the ears underneath.
-- The tip body keeps V6's unused male ears on its top face. They are harmless and pin-free,
-  but they add height and a snag edge; trimming them is a V2 change.
+- The pads and the cap add contact **area**; nothing here measures contact **force**, friction
+  or whether an object of any given shape is actually held.
 - STL carries no unit metadata. Keep mm and 100% in the slicer; import at scale 0.001 into a
   metre-based Blender scene, or open the `.blend`.
