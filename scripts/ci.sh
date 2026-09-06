@@ -27,6 +27,9 @@ REAL=0
 
 RED=$'\033[31m'; GRN=$'\033[32m'; YEL=$'\033[33m'; DIM=$'\033[2m'; BLD=$'\033[1m'; RST=$'\033[0m'
 FAILED=()
+# A failure that leaves nothing on disk cannot be diagnosed later. The terminal
+# tail is for whoever is watching; this is for the flake nobody saw.
+CI_LOG_DIR="${CI_LOG_DIR:-$ROOT/tmp/ci-logs}"
 
 _run() {  # _run <hard|warn> <label> <cmd...>
   local kind="$1" label="$2"; shift 2
@@ -36,7 +39,12 @@ _run() {  # _run <hard|warn> <label> <cmd...>
   elif [[ "$kind" == warn ]]; then
     printf '  %sWARN%s %s %s(non-blocking debt)%s\n' "$YEL" "$RST" "$label" "$DIM" "$RST"
   else
-    printf '  %sFAIL%s %s\n' "$RED" "$RST" "$label"
+    local slug log
+    slug="$(printf '%s' "$label" | tr -cs 'A-Za-z0-9' '-' | tr 'A-Z' 'a-z' | sed 's/-*$//')"
+    mkdir -p "$CI_LOG_DIR"
+    log="$CI_LOG_DIR/$(date +%Y%m%d-%H%M%S)-$slug.log"
+    printf '%s\n' "$out" > "$log"
+    printf '  %sFAIL%s %s %s(full output: %s)%s\n' "$RED" "$RST" "$label" "$DIM" "$log" "$RST"
     printf '%s\n' "$out" | tail -15 | sed 's/^/       /'
     FAILED+=("$label")
   fi
