@@ -26,15 +26,6 @@ SPEC = OctopusHandSpec()
 OUTPUT = PROJECT_ROOT / "tmp" / "octopus-hand-v1"
 
 
-def body_rotation_deg(index: int) -> float:
-    """Twist of arm body `index` (1-based) within its own chain.
-
-    The palm's socket stands in for body zero, so the first arm body is the one
-    that has to turn ninety degrees to bring its ears onto the socket's axis.
-    """
-    return 90.0 if index % 2 else 0.0
-
-
 def place_arm(
     master: bpy.types.Object,
     tip_master: bpy.types.Object,
@@ -58,7 +49,7 @@ def place_arm(
         obj.name = f"HH_OCT_TIP_{arm_index}" if is_tip else f"HH_OCT_SEG_{arm_index}_{index}"
         target.objects.link(obj)
         obj.location = (m(station_mm[0]), m(station_mm[1]), m(index * arm.unit_pitch_mm))
-        twist = (station_angle_deg + body_rotation_deg(index)) % 360.0
+        twist = (station_angle_deg + spec.body_twist_deg(index)) % 360.0
         obj.rotation_euler.z = math.radians(twist)
         obj.hide_render = obj.hide_viewport = False
         obj.material_slots[0].link = "OBJECT"
@@ -79,29 +70,21 @@ def place_arm_pins(
     spec = SPEC
     arm = spec.arm_spec
     outer = arm.pin_under_head_radius_mm + arm.pin_head_height_mm
-    swing = math.radians(station_angle_deg)
-    cos_a, sin_a = math.cos(swing), math.sin(swing)
     pins: list[bpy.types.Object] = []
     for joint in range(spec.arm_body_count):
         z_mm = joint * arm.unit_pitch_mm + arm.joint_center_offset_mm
+        heading = math.radians(station_angle_deg + spec.joint_axis_twist_deg(joint))
+        cos_h, sin_h = math.cos(heading), math.sin(heading)
         for side in (-1, 1):
             obj = master.copy()
             obj.data = master.data
             obj.name = f"HH_OCT_PIN_{arm_index}_{joint + 1}_{side}"
             target.objects.link(obj)
-            local = Vector((-side, 0.0, 0.0)) if joint % 2 == 0 else Vector((0.0, -side, 0.0))
-            direction = Vector(
-                (
-                    local.x * cos_a - local.y * sin_a,
-                    local.x * sin_a + local.y * cos_a,
-                    0.0,
-                )
-            )
+            direction = Vector((-side * cos_h, -side * sin_h, 0.0))
             obj.rotation_euler = direction.to_track_quat("Z", "Y").to_euler()
-            local_offset = (side * outer, 0.0) if joint % 2 == 0 else (0.0, side * outer)
             obj.location = (
-                m(station_mm[0] + local_offset[0] * cos_a - local_offset[1] * sin_a),
-                m(station_mm[1] + local_offset[0] * sin_a + local_offset[1] * cos_a),
+                m(station_mm[0] + side * outer * cos_h),
+                m(station_mm[1] + side * outer * sin_h),
                 m(z_mm),
             )
             obj.hide_render = obj.hide_viewport = False

@@ -35,6 +35,7 @@ class OctopusHandSpec:
     tip_claw_length_mm: float = 14.0
     tip_claw_thickness_mm: float = 3.0
     tip_claw_slope_deg: float = 40.0
+    tip_feature_fuse_mm: float = 1.0
     cable_relief_depth_mm: float = 1.0
     cable_relief_widening_mm: float = 0.6
 
@@ -70,6 +71,15 @@ class OctopusHandSpec:
             raise ValueError("tip eyelet must pass the cable the tendon holes carry")
         if self.tip_claw_slope_deg >= 45:
             raise ValueError("claw overhang would need support when printed upright")
+        if self.tip_feature_base_z_mm <= 0:
+            raise ValueError("tip features would cross the body's mid-plane")
+        if (
+            self.tip_feature_base_z_mm
+            <= -arm.joint_center_offset_mm + arm.lug_outer_diameter_mm / 2
+        ):
+            raise ValueError("tip features reach into the ear the tip hangs from")
+        if self.tip_claw_reach_mm >= arm.body_outer_diameter_mm / 2:
+            raise ValueError("claw reaches outside the body footprint")
         if self.palm_thickness_mm < arm.root_profile_mm[0][0] + self.palm_wall_mm:
             raise ValueError("palm is too thin to carry the socket roots")
         if self.cable_relief_depth_mm >= self.palm_thickness_mm / 2:
@@ -200,18 +210,58 @@ class OctopusHandSpec:
         return 2 * (self.arm_station_radius_mm + self.arm_spec.assembled_height_mm)
 
     @property
-    def tip_body_rotation_deg(self) -> float:
-        """The last arm body's own twist in the chain, before its station angle.
+    def palm_socket_twist_deg(self) -> float:
+        """Twist of the palm socket away from its arm's radial direction.
 
-        Bodies alternate ninety degrees up the chain so the ears meet, which means
-        the last body does not face the way its arm does.
+        A hinge turns about its pin axis. A socket left facing along the radius
+        gives the arm a base joint that swings it sideways around the palm, which
+        opens and closes nothing. Turning the socket a quarter turn puts the pin
+        across the radius, so the first joint carries the arm in and out of the
+        palm centre — the motion a grasping arm actually needs.
         """
-        return 90.0 if self.arm_body_count % 2 else 0.0
+        return 90.0
+
+    def body_twist_deg(self, index: int) -> float:
+        """Twist of arm body `index` (1-based) before its station angle is added.
+
+        The palm socket is twisted, so the whole chain above it is too: body one
+        meets the socket square, and every body after alternates as usual.
+        """
+        return 0.0 if index % 2 else 90.0
+
+    def joint_axis_twist_deg(self, joint_index: int) -> float:
+        """Pin-axis heading of joint `joint_index` (0 is the base joint at the palm).
+
+        Even joints run tangentially, odd joints radially, so an arm curls in and
+        out and swings side to side by turns.
+        """
+        return 90.0 if joint_index % 2 == 0 else 0.0
+
+    @property
+    def tip_body_rotation_deg(self) -> float:
+        """The last arm body's own twist, which the claw heading has to undo."""
+        return self.body_twist_deg(self.arm_body_count)
 
     @property
     def tip_claw_direction_deg(self) -> float:
         """Local heading that aims the claw at the palm axis once the arm is placed."""
         return (180.0 - self.tip_body_rotation_deg) % 360.0
+
+    @property
+    def tip_feature_base_z_mm(self) -> float:
+        """Height above the body centre where eyelets and claw start.
+
+        Features sink `tip_feature_fuse_mm` into the body's top face so the union
+        fuses rather than merely touches. Staying above the mid-plane is what keeps
+        them out of the ears on the underside — the joint the tip actually hangs from.
+        """
+        return self.arm_spec.body_length_mm / 2 - self.tip_feature_fuse_mm
+
+    @property
+    def tip_claw_reach_mm(self) -> float:
+        """How far the claw's tip stays from the arm axis after leaning inward."""
+        base = self.arm_spec.body_outer_diameter_mm / 2 - self.tip_claw_thickness_mm / 2
+        return abs(base - self.tip_claw_length_mm * math.sin(math.radians(self.tip_claw_slope_deg)))
 
     @property
     def tip_eyelet_count(self) -> int:

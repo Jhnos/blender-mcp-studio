@@ -30,10 +30,10 @@
   "object_prefix": "HH_OCT_SEG_1_",
   "expected_count": 4,
   "expected_rotations_deg": [
-   90,
    0,
    90,
-   0
+   0,
+   90
   ],
   "scene_list_property": "HH_OCT_ARM_NAMES",
   "expected_scene_list": [

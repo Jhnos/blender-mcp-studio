@@ -21,9 +21,6 @@ from scripts.hollow_hinge_render import m
 from src.core.domain.biaxial_hinge import BiaxialHingeSpec
 from src.core.domain.octopus_hand import OctopusHandSpec
 
-#: How deep a feature starts inside the body so the union fuses instead of touching.
-_FUSE_MM = 1.0
-
 #: Segments per tip cylinder. Same reason as the palm drills: a complete readiness
 #: analysis is worth more than facets nobody can print.
 _TIP_SEGMENTS = 24
@@ -42,19 +39,19 @@ def create_eyelet(
 ) -> bpy.types.Object:
     """A boss over one tendon exit, cross-drilled so the cable can be tied through."""
     height = _boss_height_mm(spec)
-    base_z = arm.body_length_mm / 2 - _FUSE_MM
+    base_z = spec.tip_feature_base_z_mm
     boss = add_cylinder(
         "HH_OCT_EYELET",
         _boss_radius_mm(spec),
-        height + _FUSE_MM,
-        (x_mm, y_mm, base_z + (height + _FUSE_MM) / 2),
+        height + spec.tip_feature_fuse_mm,
+        (x_mm, y_mm, base_z + (height + spec.tip_feature_fuse_mm) / 2),
         vertices=_TIP_SEGMENTS,
     )
     cross = add_cylinder(
         "HH_OCT_EYELET_CROSS",
         spec.tip_eyelet_diameter_mm / 2,
         2 * _boss_radius_mm(spec) + 2,
-        (x_mm, y_mm, base_z + _FUSE_MM + height / 2),
+        (x_mm, y_mm, base_z + spec.tip_feature_fuse_mm + height / 2),
         "Y",
         vertices=_TIP_SEGMENTS,
     )
@@ -76,7 +73,7 @@ def create_claw(spec: OctopusHandSpec, arm: BiaxialHingeSpec) -> bpy.types.Objec
     heading = math.radians(spec.tip_claw_direction_deg)
     cos_h, sin_h = math.cos(heading), math.sin(heading)
     base_radius = arm.body_outer_diameter_mm / 2 - spec.tip_claw_thickness_mm / 2
-    base_z = arm.body_length_mm / 2 - _FUSE_MM
+    base_z = spec.tip_feature_base_z_mm
     tip_radius = base_radius - spec.tip_claw_length_mm * math.sin(slope)
     tip_z = base_z + spec.tip_claw_length_mm * math.cos(slope)
 

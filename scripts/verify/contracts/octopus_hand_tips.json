@@ -30,11 +30,11 @@
   "object_prefix": "HH_OCT_TIP_",
   "expected_count": 5,
   "expected_rotations_deg": [
-   90,
-   162,
-   234,
-   306,
-   18
+   0,
+   72,
+   144,
+   216,
+   288
   ],
   "scene_list_property": "HH_OCT_ARM_NAMES",
   "expected_scene_list": [
@@ -45,29 +45,6 @@
    "ARM_5"
   ],
   "center_probe_object": "HH_OCT_TIP_1",
-  "joint_sweep": {
-   "master_object": "HH_OCT_MASTER_TIP",
-   "pivot_offset_mm": 9.5,
-   "axis": "X",
-   "mating_twist_deg": 90,
-   "angles_deg": [
-    -34,
-    -30,
-    -25,
-    -20,
-    -15,
-    -10,
-    -5,
-    0,
-    5,
-    10,
-    15,
-    20,
-    25,
-    30,
-    34
-   ]
-  },
   "collision_groups": [
    {
     "prefix": "HH_OCT_TIP_",

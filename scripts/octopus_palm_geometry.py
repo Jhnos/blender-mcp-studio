@@ -142,7 +142,11 @@ def create_palm(
 
     stations = zip(spec.arm_station_angles_deg, spec.arm_station_positions_mm, strict=True)
     for angle, station in stations:
-        boolean(palm, orbit_to_station(create_socket(arm), angle, station), "UNION")
+        # The socket is twisted off its arm's radial heading so the base joint's pin
+        # lies across the radius: that is what makes the first joint carry the arm in
+        # and out of the palm centre rather than swing it sideways around the palm.
+        socket = orbit_to_station(create_socket(arm), angle + spec.palm_socket_twist_deg, station)
+        boolean(palm, socket, "UNION")
 
     for x_mm, y_mm in spec.tendon_hole_positions_mm:
         _drill(palm, arm.tendon_hole_diameter_mm / 2, x_mm, y_mm, spec)

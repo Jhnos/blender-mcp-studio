@@ -123,12 +123,70 @@ def test_claw_points_at_the_palm_axis_once_the_arm_is_assembled() -> None:
     """
     spec = OctopusHandSpec()
 
-    assert spec.tip_body_rotation_deg == 90.0
+    assert spec.tip_body_rotation_deg == spec.body_twist_deg(spec.arm_body_count)
     assert (spec.tip_claw_direction_deg + spec.tip_body_rotation_deg) % 360 == pytest.approx(180.0)
     # Same claim, made where it matters: at every station the claw ends up inward.
     for angle in spec.arm_station_angles_deg:
         heading = (angle + spec.tip_body_rotation_deg + spec.tip_claw_direction_deg) % 360
         assert heading == pytest.approx((angle + 180.0) % 360)
+
+
+def test_base_joint_swings_each_arm_toward_and_away_from_the_palm_centre() -> None:
+    """The arm's first degree of freedom must be radial, not circumferential.
+
+    A hinge turns about its pin axis, so a pin aimed along the radius swings the
+    arm sideways around the palm — it opens and closes nothing. To curl an arm in
+    toward the centre the base pin has to lie across the radius, tangentially.
+    Axes are lines, so every comparison here is modulo 180 degrees.
+    """
+    spec = OctopusHandSpec()
+
+    for station in spec.arm_station_angles_deg:
+        pin_axis = (station + spec.palm_socket_twist_deg) % 180
+        radial = station % 180
+        assert pin_axis == pytest.approx((radial + 90) % 180)
+
+
+def test_joint_axes_alternate_up_the_arm_so_every_pair_of_ears_still_mates() -> None:
+    """Making the base joint radial is only correct if the chain above it still closes.
+
+    Each body carries female ears on its local Y face and male ears on local X, so
+    a joint exists only where the twist of one lands on the twist of the next.
+    """
+    spec = OctopusHandSpec()
+
+    upper = spec.palm_socket_twist_deg
+    for index in range(1, spec.arm_body_count + 1):
+        female = spec.body_twist_deg(index) + 90.0
+        assert female % 180 == pytest.approx(upper % 180), f"body {index} does not meet its socket"
+        upper = spec.body_twist_deg(index)
+
+    # And the alternation the pins are placed on must agree with those same twists.
+    assert spec.joint_axis_twist_deg(0) == pytest.approx(spec.palm_socket_twist_deg)
+    for joint in range(1, spec.arm_body_count):
+        assert spec.joint_axis_twist_deg(joint) == pytest.approx(spec.body_twist_deg(joint))
+    axes = [spec.joint_axis_twist_deg(joint) % 180 for joint in range(spec.arm_body_count)]
+    assert all(first != second for first, second in zip(axes, axes[1:], strict=False))
+
+
+def test_tip_features_stay_clear_of_the_joint_the_tip_actually_hangs_from() -> None:
+    """Nothing mates above a tip, so the joint that matters is the one below it.
+
+    The eyelets and claw are all built above the body's mid-plane, which is what
+    keeps them out of the female ears the tip closes on body four with. This is
+    the check that replaces a sweep of the tip against a copy of itself — that
+    sweep measured a joint the hand does not have.
+    """
+    spec = OctopusHandSpec()
+    arm = spec.arm_spec
+
+    lower_joint_z = -arm.joint_center_offset_mm
+    assert spec.tip_feature_base_z_mm > 0, "features must not cross the body's mid-plane"
+    clearance = spec.tip_feature_base_z_mm - (lower_joint_z + arm.lug_outer_diameter_mm / 2)
+    assert clearance > 0, "tip features reach into the ear below them"
+    # The features also have to stay inside the body's own footprint, or the tip
+    # would foul its neighbours where the plain bodies do not.
+    assert spec.tip_claw_reach_mm < arm.body_outer_diameter_mm / 2
 
 
 @pytest.mark.parametrize(

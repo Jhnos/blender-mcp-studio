@@ -21,6 +21,24 @@ The palm's top face is treated as a body centre plane. That is the whole trick: 
 carries the same male ears any body carries on its +Z face, so V6's `create_body` is reused
 without modification and the arm gains a base joint for free.
 
+## Joint axes
+
+A hinge turns about its pin axis, so where the pin points decides what the joint can do.
+
+| Joint | Pin axis | The arm can |
+|---|---|---|
+| 0 — palm socket | tangential, across the radius | swing **in toward the palm centre and back out** |
+| 1 — body 1↔2 | radial, along the radius | swing sideways around the palm |
+| 2, 4 | tangential | in and out |
+| 3 | radial | sideways |
+
+The base joint being radial-swinging is the point of the whole hand: it is the joint that
+closes the grip. `palm_socket_twist_deg` turns the socket a quarter turn off its arm's radial
+heading to get it, and every body above is twisted to match so the ears still meet.
+
+Measured in the live scene, not derived: each arm's base pin axis sits **90.0°** to its own
+radius at all five stations (0°/90°, 72°/162°, 144°/54°, 216°/126°, 288°/18°).
+
 ## Print pose
 
 Arms **upright**, palm flat on the bed. Splayed flat the hand needs Ø275.9 mm and does not
@@ -43,12 +61,14 @@ Two contracts, both green with no skips:
 
 | Claim | Evidence |
 |---|---|
-| Arm chain twists correctly | rotations `(90, 0, 90, 0)` on arm 1; tips `(90, 162, 234, 306, 18)` |
+| Arm chain twists correctly | rotations `(0, 90, 0, 90)` on arm 1; tips `(0, 72, 144, 216, 288)` |
 | Bodies share one mesh | `shared_mesh_count = 1` for both the 20 plain bodies and the 5 tips |
 | No collision inside an arm | 5 per-arm groups, 4 objects each, all adjacent overlaps 0 |
 | **No collision between arms** | `HH_OCT_SEG_` group of 20 sorted level-by-level: 19 adjacent pairs, all 0 |
 | Tips clear each other | `HH_OCT_TIP_` group of 5, 4 adjacent pairs, all 0 |
-| Joint articulates | sweep −34°…+34°, 15 samples, 0 overlap — run for the plain body and again for the tip |
+| Joint articulates | sweep −34°…+34°, 15 samples, 0 overlap, on the plain body |
+| Base joint is radial | live-scene measurement: base pin axis 90.0° to the radius at all five stations |
+| Tip clears the joint below it | features start 1.0 mm above the body centre; the ear beneath tops out at −4.2 mm |
 | Wire channel open | palm centre ray misses (`center_ray_hit = false`) |
 | Cable path open through the tip | tip centre ray misses after the eyelet bosses were unioned on |
 | Tip features really applied | `arm_tip_mm.stl` 5140 triangles against the plain body's 3436 |
@@ -90,6 +110,12 @@ Judge these against the generated PNGs, not against this text.
   covered by symmetry rather than by measurement.
 - The palm↔first-body joint is not in any adjacency group. Its clearance is inferred from the
   same joint geometry the sweep exercises, not measured in place.
+- The tip has **no sweep of its own**. Sweeping it against a copy of itself measured a joint
+  the hand does not have — nothing mates above a tip — and that test passed for a reason
+  unrelated to the design before the joint axes changed, then failed for one just as
+  unrelated after. The joint a tip really hangs from is the one below it, and what stands in
+  for a sweep there is the spec invariant that every tip feature stays above the body's
+  mid-plane, clear of the ears underneath.
 - The tip body keeps V6's unused male ears on its top face. They are harmless and pin-free,
   but they add height and a snag edge; trimming them is a V2 change.
 - STL carries no unit metadata. Keep mm and 100% in the slicer; import at scale 0.001 into a

@@ -5,6 +5,29 @@
 
 ## [Unreleased]
 
+### V01.02.000
+
+#### Fixed
+
+- The octopus hand's base joint swung the wrong way. The palm socket faced along its arm's
+  radius, so the pin lay along the radius too and the first joint swung the arm sideways
+  around the palm — it opened and closed nothing. `palm_socket_twist_deg` now turns each
+  socket a quarter turn so the pin lies across the radius and the arm carries in toward the
+  palm centre and back out, which is the joint that actually closes a grip. Every body above
+  is twisted to match, so the ears still meet, and the pins follow the same alternation.
+  Measured in the live scene: the base pin axis sits 90.0° to the radius at all five stations.
+
+#### Changed
+
+- `octopus_hand_tips.json` no longer sweeps the tip against a copy of itself. That measured a
+  joint the hand does not have — nothing mates above a tip — and it passed for an unrelated
+  reason before the axes changed and failed for an equally unrelated one after. What replaces
+  it is a spec invariant: every tip feature starts above the body's mid-plane, clear of the
+  ears the tip actually hangs from. `tip_feature_fuse_mm` moved into the spec so that
+  clearance is a checked dimension rather than a constant in the generator.
+- `docs/LESSONS_LEARNED.md` records the class: a proxy test whose configuration does not exist
+  in the product carries no information green or red, and looks identical to a real guard.
+
 ### V01.01.001
 
 #### Changed
