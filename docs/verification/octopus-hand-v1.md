@@ -147,6 +147,25 @@ look right; they do not let anyone check it.
   instrument here, and a rubric item nobody can answer is not a gate.
 - **J** The print layout view shows three distinct parts: palm, plain body, tip.
 
+### Result — judged 2026-09-06
+
+A fresh context, given the ten PNGs and nothing else, returned **eleven PASS, no FAIL, no
+UNCLEAR**. It took three rounds to get there, and the first two rounds were the point:
+round one (four overview shots) came back six UNCLEAR, round two four. Nothing was ever
+wrong with the model — the evidence was.
+
+Two of the eleven the reviewer marked as read rather than seen, and said so. Both have a
+machine measurement behind them, which is why they stand:
+
+| Item | What the eye could only infer | What measures it |
+|---|---|---|
+| D, centre channel is *through* | a dark hole, with no underside view | `center_ray_hit = false` on `HH_OCT_PALM` — a ray down the palm axis that misses |
+| K, there are *four* pads | three visible, the fourth hidden by the part itself | `test_octopus_hand.py` pins `grip_pad_angles_deg == (45, 135, 225, 315)`, and the generator unions one pad per heading |
+
+The reviewer offered two more renders to close those by eye. They are not worth making:
+a ray cast and a unit test settle both better than a picture can, and the lesson of item I
+is that a rubric should not ask the eye to do an instrument's job.
+
 ## Evidence boundaries
 
 - No physical print, slicer support decision, dimensional-fit, release, grip-force,

@@ -5,6 +5,18 @@
 
 ## [Unreleased]
 
+### V01.06.001
+
+#### Changed
+
+- The octopus hand's visual rubric is judged. A fresh context, given the ten renders and
+  nothing else, returned eleven PASS with no FAIL and no UNCLEAR. It took three rounds, and
+  the first two are the interesting part: each round's UNCLEAR items were about the evidence,
+  never the model, which is how four overview shots became ten framed views. The two items
+  the reviewer marked as inferred rather than seen each have a machine measurement behind
+  them — a ray cast down the palm axis, and a unit test pinning four pad headings — so no
+  further renders were made for them.
+
 ### V01.06.000
 
 #### Added
