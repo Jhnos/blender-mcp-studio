@@ -25,6 +25,7 @@ OWNED: dict[str, str] = {
     "add_cylinder": "blender_mesh_primitives.py",
     "boolean": "blender_mesh_primitives.py",
     "cleanup_mesh": "blender_mesh_primitives.py",
+    "loft_rings": "blender_mesh_primitives.py",
     "collection": "blender_mesh_primitives.py",
     "run_generator": "blender_generator_runner.py",
     "clear_previous": "blender_generator_runner.py",

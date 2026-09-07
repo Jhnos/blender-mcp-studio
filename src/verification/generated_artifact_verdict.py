@@ -1,0 +1,195 @@
+"""Turning what a real Blender scene reported into a pass or a fail.
+
+Split out of `generated_artifact_contract` because it answers a different question.
+That module reads a contract — what the scene is *expected* to be — and this one reads
+the scene's own report and decides. The two touch only through the frozen expectation
+objects, which is why they can be read separately at all.
+
+Every reader here goes through the narrowing SSOT rather than `isinstance`, and every
+verdict is fail-closed: a measurement that did not arrive, arrived short, or arrived in
+the wrong shape is a FAIL, never a skip and never a pass. A partial answer that reads as
+a green tick is the failure mode this whole file exists to prevent.
+"""
+
+from __future__ import annotations
+
+from collections.abc import Mapping
+from dataclasses import dataclass
+
+from src.infrastructure.narrowing import as_mapping, as_str
+from src.verification.generated_artifact_contract import (
+    GeneratedArtifactContract,
+    mapping_value,
+    sequence_value,
+)
+
+
+@dataclass(frozen=True, slots=True)
+class VerificationEvidence:
+    name: str
+    passed: bool
+    detail: str
+
+
+@dataclass(frozen=True, slots=True)
+class VerificationSummary:
+    evidence: tuple[VerificationEvidence, ...]
+
+    @property
+    def passed(self) -> bool:
+        return bool(self.evidence) and all(item.passed for item in self.evidence)
+
+
+def assess_verification(
+    contract: GeneratedArtifactContract,
+    artifact_state: Mapping[str, bool],
+    oracle: Mapping[str, object],
+    readiness: Mapping[str, object],
+) -> VerificationSummary:
+    evidence: list[VerificationEvidence] = []
+    missing_artifacts = [
+        str(path) for path in contract.artifacts if not artifact_state.get(str(path))
+    ]
+    evidence.append(
+        VerificationEvidence(
+            "artifacts",
+            not missing_artifacts,
+            "all generated files exist"
+            if not missing_artifacts
+            else f"missing: {missing_artifacts}",
+        )
+    )
+
+    expected = contract.oracle
+    object_count = oracle.get("object_count")
+    evidence.append(
+        VerificationEvidence(
+            "object_count",
+            object_count == expected.expected_count,
+            f"observed={object_count!r}, expected={expected.expected_count}",
+        )
+    )
+    shared_mesh_count = oracle.get("shared_mesh_count")
+    evidence.append(
+        VerificationEvidence(
+            "shared_mesh",
+            shared_mesh_count == 1,
+            f"observed={shared_mesh_count!r}, expected=1",
+        )
+    )
+    rotations = sequence_value(oracle, "rotations_deg")
+    observed_rotations = tuple(
+        float(value) for value in rotations or [] if isinstance(value, (int, float))
+    )
+    evidence.append(
+        VerificationEvidence(
+            "rotations",
+            observed_rotations == expected.expected_rotations_deg,
+            f"observed={observed_rotations!r}, expected={expected.expected_rotations_deg!r}",
+        )
+    )
+    scene_list = sequence_value(oracle, "scene_list")
+    observed_scene_list = tuple(value for value in scene_list or [] if isinstance(value, str))
+    evidence.append(
+        VerificationEvidence(
+            "scene_list",
+            observed_scene_list == expected.expected_scene_list,
+            f"observed={observed_scene_list!r}, expected={expected.expected_scene_list!r}",
+        )
+    )
+    center_ray_hit = oracle.get("center_ray_hit")
+    evidence.append(
+        VerificationEvidence(
+            "center_channel",
+            center_ray_hit is False,
+            f"center_ray_hit={center_ray_hit!r}",
+        )
+    )
+
+    if expected.bore_probe_points_mm:
+        # A short list is a partial answer, and a partial answer must never read as a
+        # pass: the count is checked before the misses are.
+        hits = sequence_value(oracle, "bore_ray_hits")
+        opened = (
+            hits is not None
+            and len(hits) == len(expected.bore_probe_points_mm)
+            and all(hit is False for hit in hits)
+        )
+        evidence.append(
+            VerificationEvidence(
+                "open_bores",
+                opened,
+                f"bore_ray_hits={hits!r}, expected {len(expected.bore_probe_points_mm)} misses",
+            )
+        )
+
+    collision_records = mapping_value(oracle, "collision_groups")
+    for collision in expected.collision_groups:
+        record = (
+            mapping_value(collision_records, collision.prefix)
+            if collision_records is not None
+            else None
+        )
+        count = record.get("object_count") if record is not None else None
+        overlaps = sequence_value(record, "adjacent_overlap_pairs") if record is not None else None
+        overlap_values = [value for value in overlaps or [] if isinstance(value, int)]
+        collision_ok = (
+            count == collision.expected_count
+            and len(overlap_values) == collision.expected_count - 1
+            and all(value == 0 for value in overlap_values)
+        )
+        evidence.append(
+            VerificationEvidence(
+                f"collision:{collision.prefix}",
+                collision_ok,
+                f"objects={count!r}, adjacent_overlaps={overlap_values!r}",
+            )
+        )
+
+    selected_count = readiness.get("selected_count")
+    if expected.joint_sweep is not None:
+        sweep = mapping_value(oracle, "joint_sweep")
+        angles = sequence_value(sweep, "angles_deg") if sweep is not None else None
+        overlaps = sequence_value(sweep, "overlap_pairs") if sweep is not None else None
+        sweep_ok = (
+            angles == list(expected.joint_sweep.angles_deg)
+            and overlaps is not None
+            and len(overlaps) == len(expected.joint_sweep.angles_deg)
+            and all(type(value) is int and value == 0 for value in overlaps)
+        )
+        evidence.append(
+            VerificationEvidence(
+                "joint_sweep", sweep_ok, f"angles={angles!r}, overlaps={overlaps!r}"
+            )
+        )
+    evidence.append(
+        VerificationEvidence(
+            "readiness_selection",
+            selected_count == contract.readiness.expected_selection_count,
+            (
+                f"observed={selected_count!r}, "
+                f"expected={contract.readiness.expected_selection_count}"
+            ),
+        )
+    )
+    report = mapping_value(readiness, "report")
+    issues = sequence_value(report, "issues") if report is not None else None
+    issue_mappings = [m for m in (as_mapping(item) for item in issues or []) if m is not None]
+    issue_codes = {
+        code for item in issue_mappings for code in [as_str(item.get("code"))] if code is not None
+    }
+    forbidden = issue_codes & set(contract.readiness.forbidden_issue_codes)
+    evidence.append(
+        VerificationEvidence(
+            "readiness_issues",
+            report is not None
+            and report.get("status") in ("ready", "review")
+            and report.get("analysis_truncated") is not True
+            and issues is not None
+            and len(issue_mappings) == len(issues)
+            and len(issue_codes) == len(issues)
+            and not forbidden,
+            f"status={report.get('status') if report else None!r}, forbidden={sorted(forbidden)!r}",
+        )
+    )
+    return VerificationSummary(tuple(evidence))

@@ -67,6 +67,23 @@ PACKAGES: dict[str, Package] = {
             "scripts/verify/contracts/octopus_hand_tips.json",
         ),
     ),
+    "octopus-hand-v2": Package(
+        slug="octopus-hand-v2",
+        revision="octopus-hand-V2",
+        generator="scripts/model_octopus_hand_v2.py",
+        stl_files=(
+            "test_coupon_mm.stl",
+            "octopus_hand_v2_mm.stl",
+            "palm_mm.stl",
+            "arm_body_mm.stl",
+            "arm_tip_mm.stl",
+        ),
+        blend_file="octopus_hand_v2.blend",
+        contracts=(
+            "scripts/verify/contracts/octopus_hand_v2.json",
+            "scripts/verify/contracts/octopus_hand_v2_tips.json",
+        ),
+    ),
 }
 
 DEFAULT_PACKAGE = "biaxial-hinge-v6"

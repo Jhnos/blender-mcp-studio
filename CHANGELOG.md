@@ -5,6 +5,78 @@
 
 ## [Unreleased]
 
+### V01.07.000
+
+#### Added
+
+- Octopus hand V2, shipped as its own controlled package beside an untouched V1. The
+  pentagon is turned so a corner stands on each arm, which is the whole point: V1's
+  corners fell eighteen degrees off every arm — the phase Blender's five-sided cylinder
+  happens to start at, never a decision — so the thickest material sat in the empty
+  sectors and the thinnest against the socket carrying the load. Turning it lets the
+  edges clear a socket at 36° off the heading instead of along it, so `cos 36` comes off
+  the requirement: the plate shrinks from 151.8 mm across corners to 126.5 while the
+  material behind each socket grows from one wall to 3.7 mm, and that surplus becomes a
+  buttress. Also a wire bore per arm, both rims chamfered, the five points cut back, and
+  the bed declared as the machine that actually exists (256 mm, not 220).
+- Grip pads aimed rather than merely placed. V1 put them on the diagonals because "the
+  ears occupy the cardinals" — true inside the disc and false out at the rim, where the
+  pads live: measured on the real mesh, no ear or root reaches past 16.70 mm and the pad's
+  buried face starts at 17.20. Since a body's twist is 0 or 90 and the palm's centre lies
+  at `180 - twist`, both answers are cardinals, so every body now presents a pad to what
+  the hand is closing on — from one shared mesh, and with nearly three times the swept
+  clearance the diagonals had (0.553 mm against 0.204 at full travel).
+- `bore_probe_points_mm` in the generated-artifact oracle: the centre probe answers one
+  axis, and a plate carrying a bore per arm needs a ray each. A short list of results
+  fails closed, because two misses out of five reported as "all open" is exactly the
+  partial answer that reads as a pass.
+- `loft_rings` in the shared Blender primitives. Two hand-written ring-stack lofts already
+  existed; this would have been the third.
+
+#### Changed
+
+- `/api/health` derives its status from the dependency instead of asserting `ok` beside
+  it. See below for why that mattered on a live machine.
+- Four modules split rather than compressed when the file-budget gate fired twice: the
+  palm's outline, the stem's swept envelope, the aimed grip surfaces, and the verdict half
+  of the artifact contract each answer a different question from the module they left.
+
+#### Fixed
+
+- **`export_stl_mm` restored two visibility flags out of three.** Generators hide their
+  master bodies before exporting them and the STL exporter honours `hide_render`, so
+  `arm_body`, `arm_tip` and `test_coupon` were written as 84-byte STLs containing zero
+  triangles — valid files, non-zero bytes, past every existence check. Held everything
+  else constant: one 876-face body exported 84 bytes with the flag set and 168,984 with it
+  clear. **V1's own unmodified generator reproduces the empty files**; the copies shipped
+  in `models/octopus-hand-v1/` were built on a Blender that did not do this. An export
+  that writes no triangles now raises.
+- **A 45-degree cap flare grazes the disc rim.** With the flare's run equal to its rise,
+  the cap's radius at the trim plane is exactly the disc's, so the surface touches the
+  trimmed rim edge instead of crossing it; the next Boolean opened twelve boundary edges
+  and the tendon drills turned those into 204 non-manifold ones. V1 survives it only
+  because its diagonal pads happen to bury four of the six facet corners in solid
+  material — luck, and it ran out when the pads moved.
+- **The API never dialled Blender back.** `connect()` was only ever called at startup, so
+  a link dropped once stayed dropped for the life of the process: `/api/health` answered
+  `{"status": "ok", "blender": "disconnected"}` on the production machine for hours while
+  Blender sat alive and listening, every contract run died at the readiness step, and
+  restarting the service was the only cure. Detection was never the problem — `is_connected`
+  reads the peer's FIN correctly. Recovery did not exist. Redialling now happens at the one
+  chokepoint every command already funnels through, which also covers an API that started
+  before Blender was ready. Verified on the real machine by restarting Blender underneath a
+  running API: health went `degraded`, and the next call succeeded on the same process id.
+- `disconnect()` no longer raises when the peer already reset the socket — `wait_closed()`
+  re-raises whatever killed the transport, turning "the connection is gone" into "we failed
+  to let go of it", during teardown.
+- A dropped connection reaching a caller as `ConnectionResetError`. The module already
+  promised that a hang-up must never surface as a content error, but it only translated
+  FIN; a socket written to after the addon left gets RST instead. `TimeoutError` is
+  deliberately still not translated — a slow addon is not a gone one.
+- `ExportPanel`'s inspection test waited for `onInspect` to have been *called* and then
+  asserted on figures that had not rendered yet — the panel is still showing 檢查中 at that
+  point. It now waits for the paint, which is what the test was about.
+
 ### V01.06.001
 
 #### Changed

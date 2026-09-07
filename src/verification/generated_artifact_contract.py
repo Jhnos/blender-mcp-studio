@@ -9,11 +9,9 @@ from pathlib import Path
 
 from src.infrastructure.narrowing import (
     as_finite_number,
-    as_mapping,
     as_nonempty_str,
     as_positive_int,
     as_sequence,
-    as_str,
     as_str_keyed_exact,
     required,
 )
@@ -44,6 +42,10 @@ class OracleExpectation:
     center_probe_object: str
     collision_groups: tuple[CollisionExpectation, ...]
     joint_sweep: JointSweepExpectation | None = None
+    #: Extra bores to prove open, as (x, y) in the probe object's own coordinates.
+    #: The centre probe answers one axis; a palm that carries a bore per arm needs one
+    #: ray each, and an empty tuple means the contract makes no claim about them.
+    bore_probe_points_mm: tuple[tuple[float, float], ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -63,24 +65,8 @@ class GeneratedArtifactContract:
     readiness: ReadinessExpectation
 
 
-@dataclass(frozen=True, slots=True)
-class VerificationEvidence:
-    name: str
-    passed: bool
-    detail: str
-
-
-@dataclass(frozen=True, slots=True)
-class VerificationSummary:
-    evidence: tuple[VerificationEvidence, ...]
-
-    @property
-    def passed(self) -> bool:
-        return bool(self.evidence) and all(item.passed for item in self.evidence)
-
-
 def _required_mapping(source: Mapping[str, object], key: str) -> Mapping[str, object]:
-    value = _mapping_value(source, key)
+    value = mapping_value(source, key)
     if value is None:
         raise ValueError(f"{key} must be an object")
     return value
@@ -105,7 +91,7 @@ def _required_positive_int(source: Mapping[str, object], key: str) -> int:
 
 
 def _required_strings(source: Mapping[str, object], key: str) -> tuple[str, ...]:
-    value = _sequence_value(source, key)
+    value = sequence_value(source, key)
     if not value:
         raise ValueError(f"{key} must be a non-empty string array")
     if not all(isinstance(item, str) and item.strip() for item in value):
@@ -114,7 +100,7 @@ def _required_strings(source: Mapping[str, object], key: str) -> tuple[str, ...]
 
 
 def _required_numbers(source: Mapping[str, object], key: str) -> tuple[float, ...]:
-    value = _sequence_value(source, key)
+    value = sequence_value(source, key)
     if not value:
         raise ValueError(f"{key} must be a non-empty number array")
     narrowed = tuple(as_finite_number(item) for item in value)
@@ -144,9 +130,43 @@ def _joint_sweep(source: Mapping[str, object]) -> JointSweepExpectation | None:
     )
 
 
+def mapping_value(source: Mapping[str, object], key: str) -> Mapping[str, object] | None:
+    """A mapping under `key`, or None — narrowed through the SSOT, never `isinstance`."""
+    return as_str_keyed_exact(source.get(key))
+
+
+def sequence_value(source: Mapping[str, object], key: str) -> list[object] | None:
+    """A non-text sequence under `key`, or None. Absent and malformed look the same."""
+    narrowed = as_sequence(source.get(key))
+    return None if narrowed is None else list(narrowed)
+
+
 def _resolve_path(project_root: Path, raw_path: str) -> Path:
     path = Path(raw_path)
     return path if path.is_absolute() else project_root / path
+
+
+def _bore_probe_points(source: Mapping[str, object]) -> tuple[tuple[float, float], ...]:
+    """Optional list of (x, y) probe points. Absent means no claim; malformed raises.
+
+    Narrowed through the SSOT rather than `isinstance`, so a JSON list of anything is
+    rebuilt element by element instead of arriving as a silent `list[Any]`.
+    """
+    if "bore_probe_points_mm" not in source:
+        return ()
+    entries = sequence_value(source, "bore_probe_points_mm")
+    if not entries:
+        raise ValueError("bore_probe_points_mm must be a non-empty list when present")
+    points: list[tuple[float, float]] = []
+    for entry in entries:
+        pair = as_sequence(entry)
+        if pair is None or len(pair) != 2:
+            raise ValueError("each bore probe point must be a two-number list")
+        first, second = (as_finite_number(value) for value in pair)
+        if first is None or second is None:
+            raise ValueError("bore probe coordinates must be finite numbers")
+        points.append((first, second))
+    return tuple(points)
 
 
 def contract_from_mapping(
@@ -160,12 +180,12 @@ def contract_from_mapping(
     )
 
     oracle_source = _required_mapping(source, "oracle")
-    collision_source = _sequence_value(oracle_source, "collision_groups")
+    collision_source = sequence_value(oracle_source, "collision_groups")
     if not collision_source:
         raise ValueError("collision_groups must be a non-empty object array")
     collision_groups: list[CollisionExpectation] = []
     for item in collision_source:
-        record = _mapping_value({"record": item}, "record")
+        record = mapping_value({"record": item}, "record")
         if record is None:
             raise ValueError("collision_groups must contain only objects")
         collision_groups.append(
@@ -183,6 +203,7 @@ def contract_from_mapping(
         center_probe_object=_required_string(oracle_source, "center_probe_object"),
         collision_groups=tuple(collision_groups),
         joint_sweep=_joint_sweep(oracle_source),
+        bore_probe_points_mm=_bore_probe_points(oracle_source),
     )
     if len(oracle.expected_rotations_deg) != oracle.expected_count:
         raise ValueError("expected_rotations_deg length must match expected_count")
@@ -222,150 +243,3 @@ for module_name in {modules_json}:
     importlib.reload(module)
 runpy.run_path({script_json}, run_name='__main__')
 """
-
-
-def _mapping_value(source: Mapping[str, object], key: str) -> Mapping[str, object] | None:
-    return as_str_keyed_exact(source.get(key))
-
-
-def _sequence_value(source: Mapping[str, object], key: str) -> list[object] | None:
-    narrowed = as_sequence(source.get(key))
-    return None if narrowed is None else list(narrowed)
-
-
-def assess_verification(
-    contract: GeneratedArtifactContract,
-    artifact_state: Mapping[str, bool],
-    oracle: Mapping[str, object],
-    readiness: Mapping[str, object],
-) -> VerificationSummary:
-    evidence: list[VerificationEvidence] = []
-    missing_artifacts = [
-        str(path) for path in contract.artifacts if not artifact_state.get(str(path))
-    ]
-    evidence.append(
-        VerificationEvidence(
-            "artifacts",
-            not missing_artifacts,
-            "all generated files exist"
-            if not missing_artifacts
-            else f"missing: {missing_artifacts}",
-        )
-    )
-
-    expected = contract.oracle
-    object_count = oracle.get("object_count")
-    evidence.append(
-        VerificationEvidence(
-            "object_count",
-            object_count == expected.expected_count,
-            f"observed={object_count!r}, expected={expected.expected_count}",
-        )
-    )
-    shared_mesh_count = oracle.get("shared_mesh_count")
-    evidence.append(
-        VerificationEvidence(
-            "shared_mesh",
-            shared_mesh_count == 1,
-            f"observed={shared_mesh_count!r}, expected=1",
-        )
-    )
-    rotations = _sequence_value(oracle, "rotations_deg")
-    observed_rotations = tuple(
-        float(value) for value in rotations or [] if isinstance(value, (int, float))
-    )
-    evidence.append(
-        VerificationEvidence(
-            "rotations",
-            observed_rotations == expected.expected_rotations_deg,
-            f"observed={observed_rotations!r}, expected={expected.expected_rotations_deg!r}",
-        )
-    )
-    scene_list = _sequence_value(oracle, "scene_list")
-    observed_scene_list = tuple(value for value in scene_list or [] if isinstance(value, str))
-    evidence.append(
-        VerificationEvidence(
-            "scene_list",
-            observed_scene_list == expected.expected_scene_list,
-            f"observed={observed_scene_list!r}, expected={expected.expected_scene_list!r}",
-        )
-    )
-    center_ray_hit = oracle.get("center_ray_hit")
-    evidence.append(
-        VerificationEvidence(
-            "center_channel",
-            center_ray_hit is False,
-            f"center_ray_hit={center_ray_hit!r}",
-        )
-    )
-
-    collision_records = _mapping_value(oracle, "collision_groups")
-    for collision in expected.collision_groups:
-        record = (
-            _mapping_value(collision_records, collision.prefix)
-            if collision_records is not None
-            else None
-        )
-        count = record.get("object_count") if record is not None else None
-        overlaps = _sequence_value(record, "adjacent_overlap_pairs") if record is not None else None
-        overlap_values = [value for value in overlaps or [] if isinstance(value, int)]
-        collision_ok = (
-            count == collision.expected_count
-            and len(overlap_values) == collision.expected_count - 1
-            and all(value == 0 for value in overlap_values)
-        )
-        evidence.append(
-            VerificationEvidence(
-                f"collision:{collision.prefix}",
-                collision_ok,
-                f"objects={count!r}, adjacent_overlaps={overlap_values!r}",
-            )
-        )
-
-    selected_count = readiness.get("selected_count")
-    if expected.joint_sweep is not None:
-        sweep = _mapping_value(oracle, "joint_sweep")
-        angles = _sequence_value(sweep, "angles_deg") if sweep is not None else None
-        overlaps = _sequence_value(sweep, "overlap_pairs") if sweep is not None else None
-        sweep_ok = (
-            angles == list(expected.joint_sweep.angles_deg)
-            and overlaps is not None
-            and len(overlaps) == len(expected.joint_sweep.angles_deg)
-            and all(type(value) is int and value == 0 for value in overlaps)
-        )
-        evidence.append(
-            VerificationEvidence(
-                "joint_sweep", sweep_ok, f"angles={angles!r}, overlaps={overlaps!r}"
-            )
-        )
-    evidence.append(
-        VerificationEvidence(
-            "readiness_selection",
-            selected_count == contract.readiness.expected_selection_count,
-            (
-                f"observed={selected_count!r}, "
-                f"expected={contract.readiness.expected_selection_count}"
-            ),
-        )
-    )
-    report = _mapping_value(readiness, "report")
-    issues = _sequence_value(report, "issues") if report is not None else None
-    issue_mappings = [m for m in (as_mapping(item) for item in issues or []) if m is not None]
-    issue_codes = {
-        code for item in issue_mappings for code in [as_str(item.get("code"))] if code is not None
-    }
-    forbidden = issue_codes & set(contract.readiness.forbidden_issue_codes)
-    evidence.append(
-        VerificationEvidence(
-            "readiness_issues",
-            report is not None
-            and report.get("status") in ("ready", "review")
-            and report.get("analysis_truncated") is not True
-            and issues is not None
-            and len(issue_mappings) == len(issues)
-            and len(issue_codes) == len(issues)
-            and not forbidden,
-            f"status={report.get('status') if report else None!r}, forbidden={sorted(forbidden)!r}",
-        )
-    )
-    return VerificationSummary(tuple(evidence))

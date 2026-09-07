@@ -24,10 +24,10 @@ from src.infrastructure.narrowing import (  # noqa: E402
 from src.verification.artifact_files import binary_stl_metrics  # noqa: E402
 from src.verification.generated_artifact_contract import (  # noqa: E402
     GeneratedArtifactContract,
-    assess_verification,
     build_generator_code,
     contract_from_mapping,
 )
+from src.verification.generated_artifact_verdict import assess_verification  # noqa: E402
 
 
 class BlenderSocketOracle:
@@ -102,6 +102,7 @@ def oracle_code(contract: GeneratedArtifactContract) -> str:
         "object_prefix": expected.object_prefix,
         "scene_list_property": expected.scene_list_property,
         "center_probe_object": expected.center_probe_object,
+        "bore_probe_points_mm": [list(point) for point in expected.bore_probe_points_mm],
         "collision_groups": [item.prefix for item in expected.collision_groups],
         "selection_prefix": contract.readiness.selection_prefix,
         "joint_sweep": asdict(expected.joint_sweep) if expected.joint_sweep else None,
@@ -169,6 +170,12 @@ probe = bpy.data.objects.get(config['center_probe_object'])
 center_hit = None
 if probe is not None:
     center_hit, _, _, _ = probe.ray_cast(Vector((0.0, 0.0, -1.0)), Vector((0.0, 0.0, 1.0)))
+bore_hits = []
+if probe is not None:
+    for point in config['bore_probe_points_mm']:
+        start = Vector((point[0] / 1000.0, point[1] / 1000.0, -1.0))
+        hit, _, _, _ = probe.ray_cast(start, Vector((0.0, 0.0, 1.0)))
+        bore_hits.append(hit)
 for obj in bpy.context.selected_objects:
     obj.select_set(False)
 selected = []
@@ -185,6 +192,7 @@ print(json.dumps({{
     'rotations_deg': [round(math.degrees(obj.rotation_euler.z), 4) for obj in parts],
     'scene_list': list(scene_value),
     'center_ray_hit': center_hit,
+    'bore_ray_hits': bore_hits,
     'collision_groups': collision_results,
     'joint_sweep': sweep_result,
     'selected_count': len(selected),

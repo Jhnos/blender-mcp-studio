@@ -1,0 +1,152 @@
+{
+ "name": "octopus_hand_v2",
+ "generator_script": "scripts/model_octopus_hand_v2.py",
+ "reload_modules": [
+  "src.core.domain.inset_hinge",
+  "src.core.domain.biaxial_hinge",
+  "src.core.domain.octopus_grip",
+  "src.core.domain.octopus_grip_v2",
+  "src.core.domain.octopus_hand",
+  "src.core.domain.octopus_palm_outline",
+  "src.core.domain.octopus_stem",
+  "src.core.domain.octopus_hand_v2",
+  "scripts.blender_artifact_export",
+  "scripts.hollow_hinge_render",
+  "scripts.blender_mesh_primitives",
+  "scripts.model_inset_hinge",
+  "scripts.hinge_retention",
+  "scripts.biaxial_hinge_presentation",
+  "scripts.octopus_palm_geometry",
+  "scripts.octopus_palm_geometry_v2",
+  "scripts.octopus_grip_geometry_v2",
+  "scripts.octopus_tip_geometry",
+  "scripts.octopus_coupon",
+  "scripts.octopus_hand_presentation_v2"
+ ],
+ "artifacts": [
+  "tmp/octopus-hand-v2/octopus_hand_v2.blend",
+  "tmp/octopus-hand-v2/palm_mm.stl",
+  "tmp/octopus-hand-v2/arm_body_mm.stl",
+  "tmp/octopus-hand-v2/arm_tip_mm.stl",
+  "tmp/octopus-hand-v2/octopus_hand_v2_mm.stl",
+  "tmp/octopus-hand-v2/test_coupon_mm.stl",
+  "tmp/octopus-hand-v2/octopus_v2_assembly.png",
+  "tmp/octopus-hand-v2/octopus_v2_palm_top.png",
+  "tmp/octopus-hand-v2/octopus_v2_print_layout.png",
+  "tmp/octopus-hand-v2/octopus_v2_palm_bare.png",
+  "tmp/octopus-hand-v2/octopus_v2_palm_underside.png",
+  "tmp/octopus-hand-v2/octopus_v2_rim_from_below.png",
+  "tmp/octopus-hand-v2/octopus_v2_corner_rim.png",
+  "tmp/octopus-hand-v2/octopus_v2_stem_detail.png",
+  "tmp/octopus-hand-v2/octopus_v2_wire_bore.png",
+  "tmp/octopus-hand-v2/octopus_v2_socket_detail.png",
+  "tmp/octopus-hand-v2/octopus_v2_pad_aim.png",
+  "tmp/octopus-hand-v2/octopus_v2_arm_side.png",
+  "tmp/octopus-hand-v2/octopus_v2_pad_ring.png",
+  "tmp/octopus-hand-v2/octopus_v2_pad_to_centre.png",
+  "tmp/octopus-hand-v2/octopus_v2_pad_chamfer.png",
+  "tmp/octopus-hand-v2/octopus_v2_tip_detail.png"
+ ],
+ "oracle": {
+  "object_prefix": "HH_OCT2_SEG_1_",
+  "expected_count": 4,
+  "expected_rotations_deg": [
+   0,
+   90,
+   0,
+   90
+  ],
+  "scene_list_property": "HH_OCT2_ARM_NAMES",
+  "expected_scene_list": [
+   "ARM_1",
+   "ARM_2",
+   "ARM_3",
+   "ARM_4",
+   "ARM_5"
+  ],
+  "center_probe_object": "HH_OCT2_PALM",
+  "joint_sweep": {
+   "master_object": "HH_OCT2_MASTER_BODY",
+   "pivot_offset_mm": 9.5,
+   "axis": "X",
+   "mating_twist_deg": 90,
+   "angles_deg": [
+    -34,
+    -30,
+    -25,
+    -20,
+    -15,
+    -10,
+    -5,
+    0,
+    5,
+    10,
+    15,
+    20,
+    25,
+    30,
+    34
+   ]
+  },
+  "collision_groups": [
+   {
+    "prefix": "HH_OCT2_SEG_1_",
+    "expected_count": 4
+   },
+   {
+    "prefix": "HH_OCT2_SEG_2_",
+    "expected_count": 4
+   },
+   {
+    "prefix": "HH_OCT2_SEG_3_",
+    "expected_count": 4
+   },
+   {
+    "prefix": "HH_OCT2_SEG_4_",
+    "expected_count": 4
+   },
+   {
+    "prefix": "HH_OCT2_SEG_5_",
+    "expected_count": 4
+   },
+   {
+    "prefix": "HH_OCT2_SEG_",
+    "expected_count": 20
+   }
+  ],
+  "bore_probe_points_mm": [
+   [
+    30.0,
+    0.0
+   ],
+   [
+    9.27051,
+    28.531695
+   ],
+   [
+    -24.27051,
+    17.633558
+   ],
+   [
+    -24.27051,
+    -17.633558
+   ],
+   [
+    9.27051,
+    -28.531695
+   ]
+  ]
+ },
+ "readiness": {
+  "selection_prefix": "HH_OCT2_LAYOUT_PART_",
+  "expected_selection_count": 3,
+  "forbidden_issue_codes": [
+   "no_mesh",
+   "non_manifold_edges",
+   "inconsistent_normals",
+   "degenerate_geometry",
+   "zero_volume",
+   "intersections"
+  ]
+ }
+}

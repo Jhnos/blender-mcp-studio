@@ -3,10 +3,10 @@ from pathlib import Path
 import pytest
 
 from src.verification.generated_artifact_contract import (
-    assess_verification,
     build_generator_code,
     contract_from_mapping,
 )
+from src.verification.generated_artifact_verdict import assess_verification
 
 
 def _mapping() -> dict[str, object]:
@@ -184,3 +184,96 @@ def test_readiness_cannot_pass_when_invalid_incomplete_or_truncated(
     summary = assess_verification(contract, {}, {}, {"report": report})
 
     assert any(item.name == "readiness_issues" and not item.passed for item in summary.evidence)
+
+
+def _green_oracle() -> dict[str, object]:
+    return {
+        "object_count": 3,
+        "shared_mesh_count": 1,
+        "rotations_deg": [0, 90, 0],
+        "scene_list": ["J1_X", "J2_Y"],
+        "center_ray_hit": False,
+        "collision_groups": {
+            "FX_PART_": {"object_count": 3, "adjacent_overlap_pairs": [0, 0]},
+            "FX_BENT_": {"object_count": 3, "adjacent_overlap_pairs": [0, 0]},
+        },
+    }
+
+
+def test_optional_bore_probes_are_parsed_and_a_blocked_bore_fails(tmp_path: Path) -> None:
+    """The centre probe answers one axis. A plate with a bore per arm needs one ray each."""
+    mapping = _mapping()
+    oracle_mapping = mapping["oracle"]
+    assert isinstance(oracle_mapping, dict)
+    oracle_mapping["bore_probe_points_mm"] = [[30.0, 0.0], [-24.27, 17.63]]
+    contract = contract_from_mapping(mapping, tmp_path)
+    artifact_state = {str(path): True for path in contract.artifacts}
+    readiness = {"selected_count": 3, "report": {"status": "ready", "issues": []}}
+
+    assert contract.oracle.bore_probe_points_mm == ((30.0, 0.0), (-24.27, 17.63))
+
+    passing = assess_verification(
+        contract, artifact_state, _green_oracle() | {"bore_ray_hits": [False, False]}, readiness
+    )
+    assert passing.passed
+
+    blocked = assess_verification(
+        contract, artifact_state, _green_oracle() | {"bore_ray_hits": [False, True]}, readiness
+    )
+    assert not blocked.passed
+    assert any(item.name == "open_bores" and not item.passed for item in blocked.evidence)
+
+
+def test_bore_probes_fail_closed_when_the_scene_reports_too_few(tmp_path: Path) -> None:
+    """A short list is a partial answer, and a partial answer must never read as a pass.
+
+    This is the shape that bites: two of the five rays come back, both miss, and a
+    verdict that only checked `all(...)` would call an unmeasured bore open.
+    """
+    mapping = _mapping()
+    oracle_mapping = mapping["oracle"]
+    assert isinstance(oracle_mapping, dict)
+    oracle_mapping["bore_probe_points_mm"] = [[30.0, 0.0], [0.0, 30.0], [-30.0, 0.0]]
+    contract = contract_from_mapping(mapping, tmp_path)
+    artifact_state = {str(path): True for path in contract.artifacts}
+    readiness = {"selected_count": 3, "report": {"status": "ready", "issues": []}}
+
+    for hits in ([False, False], None, "no", []):
+        summary = assess_verification(
+            contract, artifact_state, _green_oracle() | {"bore_ray_hits": hits}, readiness
+        )
+        assert not summary.passed, hits
+
+
+def test_a_contract_without_bore_probes_claims_nothing_about_them(tmp_path: Path) -> None:
+    """Absent means no claim — the evidence list must not grow an item nobody asked for."""
+    contract = contract_from_mapping(_mapping(), tmp_path)
+    artifact_state = {str(path): True for path in contract.artifacts}
+    readiness = {"selected_count": 3, "report": {"status": "ready", "issues": []}}
+
+    summary = assess_verification(contract, artifact_state, _green_oracle(), readiness)
+
+    assert contract.oracle.bore_probe_points_mm == ()
+    assert summary.passed
+    assert not any(item.name == "open_bores" for item in summary.evidence)
+
+
+@pytest.mark.parametrize(
+    "points",
+    [
+        pytest.param([], id="an empty list claims nothing but says it does"),
+        pytest.param([[1.0]], id="a probe point needs two coordinates"),
+        pytest.param([[1.0, 2.0, 3.0]], id="a probe point is not three coordinates"),
+        pytest.param([[1.0, "2"]], id="a probe coordinate must be a number"),
+        pytest.param([[True, 2.0]], id="a bool is not a coordinate"),
+        pytest.param("30,0", id="the points are a list, not a string"),
+    ],
+)
+def test_malformed_bore_probe_points_fail_loudly(points: object, tmp_path: Path) -> None:
+    mapping = _mapping()
+    oracle_mapping = mapping["oracle"]
+    assert isinstance(oracle_mapping, dict)
+    oracle_mapping["bore_probe_points_mm"] = points
+
+    with pytest.raises(ValueError):
+        contract_from_mapping(mapping, tmp_path)

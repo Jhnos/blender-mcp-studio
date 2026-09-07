@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import math
+from collections.abc import Sequence
 
 import bmesh
 import bpy
@@ -73,6 +74,47 @@ def add_cylinder(
     obj = bpy.context.object
     obj.name = name
     apply_transform(obj)
+    return obj
+
+
+def loft_rings(
+    name: str, rings: Sequence[Sequence[tuple[float, float, float]]]
+) -> bpy.types.Object:
+    """Close a stack of equal-length rings into one solid: bottom cap, sides, top cap.
+
+    This shape has now been hand-written three times — `model_inset_hinge.root` builds
+    a four-cornered stack, `octopus_tip_geometry.create_cap` an N-faceted one — so it
+    lives here rather than being typed a third time. The earlier two are left where
+    they are: they are part of controlled deliveries and re-pointing them would change
+    files whose output is checksummed.
+
+    Rings run bottom to top and must all carry the same number of points, wound the
+    same way; a ring need not be planar, which is what lets a sloped rib be lofted the
+    same way as a flat plate. Coordinates are millimetres.
+    """
+    if len(rings) < 2:
+        raise ValueError("a loft needs at least two rings")
+    width = len(rings[0])
+    if width < 3 or any(len(ring) != width for ring in rings):
+        raise ValueError("every ring in a loft needs the same three or more points")
+
+    vertices = [tuple(m(value) for value in point) for ring in rings for point in ring]
+    faces: list[tuple[int, ...]] = [tuple(reversed(range(width)))]
+    for level in range(len(rings) - 1):
+        base = level * width
+        for index in range(width):
+            following = (index + 1) % width
+            faces.append(
+                (base + index, base + following, base + following + width, base + index + width)
+            )
+    faces.append(tuple(range((len(rings) - 1) * width, len(rings) * width)))
+
+    mesh = bpy.data.meshes.new(f"{name}_mesh")
+    mesh.from_pydata(vertices, [], faces)
+    mesh.update()
+    obj = bpy.data.objects.new(name, mesh)
+    bpy.context.collection.objects.link(obj)
+    cleanup_mesh(obj)
     return obj
 
 

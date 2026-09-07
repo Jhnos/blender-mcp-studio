@@ -1,0 +1,65 @@
+{
+  "files": {
+    "arm_body_mm.stl": {
+      "bytes": 170484,
+      "dimensions_mm": [
+        42.0,
+        42.0,
+        29.599998474121094
+      ],
+      "sha256": "d38e466c86b097788478a4a7dac31a0c240e128dc966b24c2fa9b698feefc7b5",
+      "triangle_count": 3408
+    },
+    "arm_tip_mm.stl": {
+      "bytes": 175784,
+      "dimensions_mm": [
+        42.0,
+        42.0,
+        33.79999923706055
+      ],
+      "sha256": "dc38e0635b37030f2e5819b0c7a24bd9d42c9b2618daf689511dd2d5be9071e8",
+      "triangle_count": 3514
+    },
+    "octopus_hand_v2.blend": {
+      "bytes": 395053,
+      "sha256": "15b277b6e020d43d5a82c272674bb44a736b840e2b0fd27336d3a150876e4629"
+    },
+    "octopus_hand_v2_mm.stl": {
+      "bytes": 6591284,
+      "dimensions_mm": [
+        119.4423713684082,
+        124.93413925170898,
+        118.0
+      ],
+      "sha256": "67ed18d79c220131ea3844b864058c53e30c439da452b5ed04708684f91377a4",
+      "triangle_count": 131824
+    },
+    "palm_mm.stl": {
+      "bytes": 574784,
+      "dimensions_mm": [
+        116.61752700805664,
+        122.61892700195312,
+        18.799999237060547
+      ],
+      "sha256": "30e7dd4fa89b202373deb4c0a4d1fa4470b8c48d57ab0b61fd110ecedbd22bf7",
+      "triangle_count": 11494
+    },
+    "test_coupon_mm.stl": {
+      "bytes": 594784,
+      "dimensions_mm": [
+        45.62294578552246,
+        48.0,
+        56.79999923706055
+      ],
+      "sha256": "94273dc02792fdb165019f2b7e17b8b628863f066943eb074c4261a72c67a10c",
+      "triangle_count": 11894
+    }
+  },
+  "model_revision": "octopus-hand-V2",
+  "source_generator": "scripts/model_octopus_hand_v2.py",
+  "units": "mm",
+  "verification_contracts": [
+    "scripts/verify/contracts/octopus_hand_v2.json",
+    "scripts/verify/contracts/octopus_hand_v2_tips.json"
+  ]
+}
