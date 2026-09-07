@@ -221,14 +221,28 @@ def create_app(
 
     @app.get("/api/health")
     async def health() -> dict[str, str]:
-        blender_state = "unknown"
+        """Report the dependency, and let the dependency decide the status.
+
+        `status` used to be the literal "ok" beside whatever `blender` turned out to
+        be. On 2026-09-07 that shipped `{"status": "ok", "blender": "disconnected"}`
+        on the production machine for hours: Blender was alive and listening, only
+        this process's link to it was dead, and every verification run failed at the
+        readiness step while the health check kept saying everything was fine.
+
+        This API exists to front Blender. A status that reads `ok` when Blender
+        cannot be reached is not a weaker signal than none — it is a wrong one, and
+        it is the fourth time this project has booked the class (LESSONS_LEARNED.md,
+        2026-07-15, 2026-08-11, 2026-09-05). So the status is *derived* here rather
+        than asserted beside the field, which makes the wrong pairing unrepresentable.
+        """
         try:
-            blender_state = (
-                "connected" if await shared_runtime.blender.is_connected() else "disconnected"
-            )
+            connected = await shared_runtime.blender.is_connected()
         except Exception:
-            blender_state = "disconnected"
-        return {"status": "ok", "blender": blender_state}
+            connected = False
+        return {
+            "status": "ok" if connected else "degraded",
+            "blender": "connected" if connected else "disconnected",
+        }
 
     app.mount("/mcp", mcp_app)
     return app

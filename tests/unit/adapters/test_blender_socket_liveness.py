@@ -15,6 +15,7 @@ true while the peer is holding the socket.
 from __future__ import annotations
 
 import asyncio
+import json
 
 import pytest
 
@@ -79,6 +80,53 @@ async def test_is_connected_stays_true_while_the_addon_holds_the_socket() -> Non
         assert client.is_connected
         await asyncio.sleep(0.2)
         assert client.is_connected, "a live addon connection must not be reported as dead"
+    finally:
+        await client.disconnect()
+        server.close()
+        await server.wait_closed()
+
+
+def _hangs_up_once_then_answers() -> tuple[object, dict[str, int]]:
+    """Stands in for Blender being restarted underneath a long-lived API process."""
+    served = {"connections": 0}
+
+    async def handler(reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
+        served["connections"] += 1
+        if served["connections"] == 1:
+            writer.close()
+            await writer.wait_closed()
+            return
+        await reader.read(4096)
+        writer.write(json.dumps({"status": "success", "result": {}}).encode("utf-8"))
+        await writer.drain()
+        writer.close()
+        await writer.wait_closed()
+
+    return handler, served
+
+
+@pytest.mark.asyncio
+async def test_send_command_dials_back_after_the_addon_returns() -> None:
+    """Detecting a dead peer is not the same as recovering from one.
+
+    Observed on the production machine, 2026-09-07: `connect()` is only ever called
+    at API startup, so once the link dropped it stayed dropped for the life of the
+    process — `/api/health` reported `disconnected` for hours with Blender alive and
+    listening, and restarting the service was the only cure. The signal was right; the
+    recovery did not exist.
+    """
+    handler, served = _hangs_up_once_then_answers()
+    client, server = await _connected_client(handler)
+    try:
+        assert await _wait_until_not_connected(client), "test needs the first peer to hang up"
+
+        reply = await client.send_command({"type": "get_scene_info", "params": {}})
+
+        assert reply["status"] == "success"
+        assert served["connections"] == 2, (
+            "the client never dialled back — a dropped link stays dropped until the "
+            "whole process is restarted"
+        )
     finally:
         await client.disconnect()
         server.close()

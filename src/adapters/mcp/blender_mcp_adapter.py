@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import json
 import logging
 
@@ -47,11 +48,31 @@ class BlenderSocketClient:
             ) from e
 
     async def disconnect(self) -> None:
-        if self._writer:
-            self._writer.close()
-            await self._writer.wait_closed()
-            self._writer = None
-            self._reader = None
+        """Let go of the socket, tolerating a peer that already tore it down.
+
+        `wait_closed()` re-raises whatever killed the transport, so a socket the addon
+        reset raises `ConnectionResetError` *here* — turning "the connection is already
+        gone" into "we failed to let go of it", during teardown, where there is nothing
+        useful a caller could do about it. The references are dropped first so a raising
+        close cannot leave a dead reader and writer behind for the next call to find.
+        """
+        writer, self._writer, self._reader = self._writer, None, None
+        if writer is None:
+            return
+        writer.close()
+        with contextlib.suppress(OSError, ConnectionError):
+            await writer.wait_closed()
+
+    async def _redial(self) -> None:
+        """Drop whatever is left of the old socket and open a fresh one.
+
+        Closing first matters: `connect()` overwrites the reader and writer, so
+        redialling without it would leak the dead pair. `connect()` itself is *not*
+        forgiving — an addon that is still absent raises `BlenderConnectionError`
+        exactly as it did before any of this existed.
+        """
+        await self.disconnect()
+        await self.connect()
 
     @staticmethod
     def _decode_response(raw: bytes) -> dict[str, object]:
@@ -76,24 +97,44 @@ class BlenderSocketClient:
         writes/reads on the shared TCP socket.
         """
         async with self._lock:
+            # Detecting a dead peer is not the same as recovering from one. `connect()`
+            # is otherwise only ever called at API startup, so before this a dropped
+            # link stayed dropped for the life of the process: Blender restarting under
+            # a running API left /api/health reporting `disconnected` until the service
+            # itself was restarted (observed 2026-09-07). Redialling here rather than in
+            # each caller keeps it at the one place every command already funnels
+            # through, and also covers an API that started before Blender was ready.
+            if not self.is_connected:
+                await self._redial()
             if not self._writer or not self._reader:
                 raise BlenderConnectionError("Not connected to Blender.")
 
             data = json.dumps(payload).encode("utf-8")
-            self._writer.write(data)
-            await self._writer.drain()
-
             raw = b""
-            async with asyncio.timeout(self._timeout):
-                while True:
-                    chunk = await self._reader.read(4096)
-                    if not chunk:
-                        break
-                    raw += chunk
-                    try:
-                        return self._decode_response(raw)
-                    except json.JSONDecodeError:
-                        continue
+            try:
+                self._writer.write(data)
+                await self._writer.drain()
+
+                async with asyncio.timeout(self._timeout):
+                    while True:
+                        chunk = await self._reader.read(4096)
+                        if not chunk:
+                            break
+                        raw += chunk
+                        try:
+                            return self._decode_response(raw)
+                        except json.JSONDecodeError:
+                            continue
+            except ConnectionError as exc:
+                # A peer that hangs up politely sends FIN and the loop above sees EOF.
+                # One that is *reset* — which is what a socket written to after the
+                # addon went away gets — raises here instead, and letting that escape
+                # as a bare OSError breaks the same promise the EOF branch keeps: a
+                # dropped connection must never reach a caller as anything else.
+                # TimeoutError is deliberately not caught; a slow addon is not a gone one.
+                raise BlenderConnectionError(
+                    f"Blender at {self._host}:{self._port} dropped the connection ({exc})"
+                ) from exc
             # Only reachable via the `break` above: the addon sent EOF before a
             # complete reply. Decoding the stump would surface a dropped
             # connection as a *content* error and send the reader hunting for a
