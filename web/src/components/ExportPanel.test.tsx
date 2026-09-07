@@ -109,7 +109,11 @@ describe('ExportPanel', () => {
       minWallThicknessMm: 0.8,
       overhangAngleDeg: 45,
     }))
-    expect(screen.getByText('20 × 30 × 40 mm')).toBeInTheDocument()
+    // `onInspect` having been *called* is not the report having been *rendered* — the
+    // panel is still showing 檢查中 at that point, and the assertions below raced the
+    // re-render that follows the promise. Waiting on the first rendered figure is the
+    // signal this test is actually about, and it waits for the paint the user sees.
+    expect(await screen.findByText('20 × 30 × 40 mm')).toBeInTheDocument()
     expect(screen.getByText('12')).toBeInTheDocument()
     expect(screen.getByText('24,000 mm³')).toBeInTheDocument()
     expect(screen.getByText('5,200 mm²')).toBeInTheDocument()
