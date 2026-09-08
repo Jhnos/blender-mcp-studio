@@ -274,3 +274,42 @@ def test_frontend_productivity_boundaries_are_documented_and_exist() -> None:
     for path, documented_name in anchors.items():
         assert (PROJECT_ROOT / path).is_file(), f"missing frontend architecture anchor: {path}"
         assert documented_name in source, f"01-architecture.md must document {documented_name}"
+
+
+def _first_party_importers(package: str, roots: list[Path]) -> list[str]:
+    """Files under `roots` (outside the package itself) that import `src.<package>`."""
+    needle = f"src.{package}"
+    hits: list[str] = []
+    for root in roots:
+        for path in sorted(root.rglob("*.py")):
+            if path.is_relative_to(PROJECT_ROOT / "src" / package):
+                continue
+            tree = ast.parse(path.read_text(encoding="utf-8"))
+            for node in ast.walk(tree):
+                names: list[str] = []
+                if isinstance(node, ast.Import):
+                    names = [alias.name for alias in node.names]
+                elif isinstance(node, ast.ImportFrom) and node.module:
+                    names = [node.module]
+                if any(name == needle or name.startswith(needle + ".") for name in names):
+                    hits.append(str(path.relative_to(PROJECT_ROOT)))
+                    break
+    return hits
+
+
+def test_no_src_package_is_an_island() -> None:
+    """A package nothing in production imports is dead code wearing a scope label.
+
+    `src/workflows` shipped in the initial implementation, was never wired to
+    any REST, MCP or UI path, and stayed for months because its own unit test
+    kept it green. Production means api/, scripts/ and the other src packages;
+    a package's own tests do not count.
+    """
+    production = [PROJECT_ROOT / "api", PROJECT_ROOT / "scripts", PROJECT_ROOT / "src"]
+    islands = [
+        package.name
+        for package in sorted((PROJECT_ROOT / "src").iterdir())
+        if package.is_dir() and package.name != "__pycache__"
+        and not _first_party_importers(package.name, production)
+    ]
+    assert islands == [], f"src packages nothing in production imports: {islands}"
