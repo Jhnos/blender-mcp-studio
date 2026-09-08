@@ -175,3 +175,35 @@ def test_the_finger_doc_quotes_the_finger_that_shipped() -> None:
     quoted = [float(v) for v in re.findall(r"整指高 \*{0,2}(\d+(?:\.\d+)?)", line)]
     assert len(quoted) == 1, f"the sentence should quote one height, found {quoted}: {line}"
     assert quoted[0] == pytest.approx(finger.dimensions_mm[2], abs=0.5), line
+
+
+def test_the_population_the_docs_declare_is_the_prefix_the_generator_uses() -> None:
+    """A declared population that matches nothing is the vacuous case itself.
+
+    Five documents named the population `HH_V3_`; the generator namespaces its
+    objects `HJ_`, and did from the first commit — chosen deliberately, because
+    the default `HH_` collided with every earlier model and made the generator
+    fail to clear its own output. So the line that exists to stop empty
+    populations declared one.
+    """
+    import json
+    import re
+
+    prefix = re.search(
+        r'run_generator\(build, prefix="([^"]+)"\)',
+        (ROOT / "scripts" / "model_finger_v3.py").read_text(encoding="utf-8"),
+    )
+    assert prefix is not None, "the generator stopped naming its prefix where this can read it"
+    namespace = prefix.group(1)
+
+    contract = json.loads(
+        (ROOT / "scripts" / "verify" / "contracts" / "hand_v3.json").read_text(encoding="utf-8")
+    )
+    assert contract["oracle"]["object_prefix"].startswith(namespace)
+
+    declared = f"{namespace}V3_"
+    for name in ("02-requirements", "v1-scope", "v5-fixtures", "v7-matrix", "09-glossary"):
+        text = (ROOT / "docs" / "hand-v3" / f"{name}.md").read_text(encoding="utf-8")
+        assert declared in text, f"{name} names a population other than {declared}"
+        stale = re.findall(r"H[A-Z]_V3_", text)
+        assert set(stale) <= {declared}, f"{name} still names {set(stale) - {declared}}"
