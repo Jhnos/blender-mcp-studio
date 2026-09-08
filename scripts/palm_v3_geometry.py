@@ -23,6 +23,7 @@ import bpy
 from mathutils import Matrix, Vector
 
 from scripts.blender_mesh_primitives import add_cylinder, boolean, cleanup_mesh
+from scripts.finger_v3_geometry import _BORE_SEGMENTS
 from scripts.hollow_hinge_geometry import create_box
 from src.core.domain.palm_v3 import AnthropomorphicPalmSpec
 
@@ -51,6 +52,7 @@ def _male_tongue(spec: AnthropomorphicPalmSpec, name: str) -> bpy.types.Object:
         link.male_tongue_thickness_mm + 4.0,
         (0.0, 0.0, link.joint_center_offset_mm),
         axis=spec.finger.male_hinge_axis,
+        vertices=_BORE_SEGMENTS,
     )
     boolean(stem, bore, "DIFFERENCE")
     stem.name = name
@@ -122,6 +124,7 @@ def build_palm(spec: AnthropomorphicPalmSpec) -> bpy.types.Object:
                     link.tendon_hole_diameter_mm / 2,
                     plate_height + 8.0,
                     (x_mm, y_mm, -plate_height / 2),
+                    vertices=_BORE_SEGMENTS,
                 ),
                 "DIFFERENCE",
             )
@@ -136,6 +139,7 @@ def build_palm(spec: AnthropomorphicPalmSpec) -> bpy.types.Object:
             link.body_depth_mm + 8.0,
             (port_x, 0.0, -plate_height * 0.72),
             axis="Y",
+            vertices=_BORE_SEGMENTS,
         ),
         "DIFFERENCE",
     )

@@ -5,6 +5,16 @@
 
 ## [Unreleased]
 
+### V01.0E.001
+
+#### Fixed
+
+- **多開一條走線孔把就緒分析推爆了取樣預算**。三角面 21 228,`analysis_truncated` 變 True,
+  而截斷在契約裡是**自動 FAIL 而不是警告**。原因是我的每一個孔都吃 `add_cylinder` 的
+  預設 48 段——`octopus_tip_geometry` 早就為了同一件事把它降到 24,而我沒有沿用。
+  全部改成 24 段:指節從 1 487 降到 1 294 三角面,兩條孔照樣貫通、軸上照樣實心、零非流形邊。
+- ruff format 與 import 排序漏跑,Mac 的格式閘門翻紅。
+
 ### V01.0E.000
 
 #### Added

@@ -284,7 +284,9 @@ def test_the_finger_carries_a_wiring_bore_on_its_back() -> None:
     assert spec.wiring_bore_offset_mm > 0, "the wiring bore sits dorsal, the tendon palmar"
     assert spec.wiring_bore_offset_mm == pytest.approx(spec.moment_arms_mm[0])
 
-    to_pin = spec.wiring_bore_offset_mm - link.tendon_hole_diameter_mm / 2 - link.printed_pin_bore_mm / 2
+    to_pin = (
+        spec.wiring_bore_offset_mm - link.tendon_hole_diameter_mm / 2 - link.printed_pin_bore_mm / 2
+    )
     to_wall = link.body_depth_mm / 2 - spec.wiring_bore_offset_mm - link.tendon_hole_diameter_mm / 2
     assert to_pin >= link.minimum_wall_mm, f"only {to_pin:.2f} mm between wiring and pin"
     assert to_wall >= link.minimum_wall_mm, f"only {to_wall:.2f} mm to the outer wall"

@@ -28,6 +28,13 @@ from scripts.blender_mesh_primitives import add_cylinder, add_ellipsoid, boolean
 from scripts.hollow_hinge_geometry import create_box
 from src.core.domain.finger_v3 import SingleTendonFingerSpec
 
+#: Segments on every drilled bore. The readiness check samples a fixed triangle
+#: budget and reports truncation past it, which the contracts treat as failure —
+#: not a warning. `octopus_tip_geometry` dropped to this number for the same
+#: reason. Adding a second bore per part at the 48-segment default pushed the
+#: analysis to 21 228 triangles and truncated it.
+_BORE_SEGMENTS = 24
+
 
 def _cut_axial_bore(
     body: bpy.types.Object, spec: SingleTendonFingerSpec, offset_mm: float, name: str
@@ -53,6 +60,7 @@ def _cut_axial_bore(
             link.tendon_hole_diameter_mm / 2.0,
             reach,
             (0.0, -offset_mm, 0.0),
+            vertices=_BORE_SEGMENTS,
         ),
         "DIFFERENCE",
     )
@@ -81,6 +89,7 @@ def _add_male_end(body: bpy.types.Object, spec: SingleTendonFingerSpec) -> None:
             link.male_tongue_thickness_mm + 4.0,
             (0.0, 0.0, link.joint_center_offset_mm),
             axis=axis,
+            vertices=_BORE_SEGMENTS,
         ),
         "DIFFERENCE",
     )
@@ -128,6 +137,7 @@ def _add_female_end(body: bpy.types.Object, spec: SingleTendonFingerSpec) -> Non
             link.fork_total_width_mm + 4.0,
             (0.0, 0.0, centre_z),
             axis=spec.female_hinge_axis,
+            vertices=_BORE_SEGMENTS,
         ),
         "DIFFERENCE",
     )
@@ -142,6 +152,7 @@ def _add_female_end(body: bpy.types.Object, spec: SingleTendonFingerSpec) -> Non
                 link.bearing_width_mm,
                 (side * seat_centre, 0.0, centre_z),
                 axis=spec.female_hinge_axis,
+                vertices=_BORE_SEGMENTS,
             ),
             "DIFFERENCE",
         )
