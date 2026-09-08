@@ -183,15 +183,32 @@ def assess_verification(
         # Fail-closed: a declared bed with no measurement, or one that came back
         # short or unparseable, is a FAIL. A layout nobody measured is exactly
         # the state this expectation exists to end.
+        # Two measurements down independent paths, because one cannot catch
+        # itself measuring the wrong thing: the scene read-back once returned a
+        # stale `bound_box` and passed a bed check on a box 100 mm too small.
+        # The readiness report measures the same objects through the addon.
+        report_metrics = mapping_value(mapping_value(readiness, "report") or {}, "metrics")
+        second = sequence_value(report_metrics, "dimensions_mm") if report_metrics else None
+        second_sides = [as_finite_number(value) for value in (second or [])[:2]]
+        agree = (
+            len(sides) == 2
+            and len(second_sides) == 2
+            and all(value is not None for value in (*sides, *second_sides))
+            and all(
+                abs(a - b) <= 0.5  # type: ignore[operator]
+                for a, b in zip(sides, second_sides, strict=True)
+            )
+        )
         fits = (
             measured is not None
-            and len(sides) == 2
-            and all(side is not None for side in sides)
+            and agree
             and all(side <= limit for side, limit in zip(sides, bed, strict=True))  # type: ignore[operator]
         )
         evidence.append(
             VerificationEvidence(
-                "layout_fits_bed", fits, f"footprint={measured!r}, bed={list(bed)!r}"
+                "layout_fits_bed",
+                fits,
+                f"scene={measured!r}, readiness={second_sides!r}, bed={list(bed)!r}",
             )
         )
 
