@@ -2,8 +2,8 @@ from pathlib import Path
 
 import pytest
 
+from src.verification.generated_artifact_bootstrap import build_generator_code
 from src.verification.generated_artifact_contract import (
-    build_generator_code,
     contract_from_mapping,
 )
 from src.verification.generated_artifact_verdict import assess_verification

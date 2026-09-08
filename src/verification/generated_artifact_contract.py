@@ -367,22 +367,3 @@ def contract_from_mapping(
         oracle=oracle,
         readiness=readiness,
     )
-
-
-def build_generator_code(
-    contract: GeneratedArtifactContract,
-    project_root: Path,
-) -> str:
-    modules_json = json.dumps(list(contract.reload_modules))
-    script_json = json.dumps(str(contract.generator_script))
-    project_root_json = json.dumps(str(project_root))
-    return f"""\
-import importlib, runpy, sys
-project_root = {project_root_json}
-if project_root not in sys.path:
-    sys.path.insert(0, project_root)
-for module_name in {modules_json}:
-    module = importlib.import_module(module_name)
-    importlib.reload(module)
-runpy.run_path({script_json}, run_name='__main__')
-"""
