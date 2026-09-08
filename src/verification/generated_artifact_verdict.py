@@ -165,9 +165,7 @@ def assess_verification(
         disjoint = overlaps is not None and all(
             type(measured.get(key)) is int and measured.get(key) == 0 for key in wanted
         )
-        evidence.append(
-            VerificationEvidence("disjoint_groups", disjoint, f"overlaps={measured!r}")
-        )
+        evidence.append(VerificationEvidence("disjoint_groups", disjoint, f"overlaps={measured!r}"))
 
     selected_count = readiness.get("selected_count")
     if expected.joint_sweep is not None:
