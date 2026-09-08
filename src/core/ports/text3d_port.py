@@ -43,5 +43,5 @@ class Text3DGenerationPort(ABC):
             Text3DResult with raw GLB bytes ready for Blender import.
 
         Raises:
-            RuntimeError: if the endpoint is unavailable or generation fails.
+            TextTo3DError: if the endpoint is unavailable or generation fails.
         """

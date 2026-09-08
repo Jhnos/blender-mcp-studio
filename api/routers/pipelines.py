@@ -33,15 +33,13 @@ async def run_pipeline(body: PipelineRequest, request: Request) -> dict[str, obj
 
     use_case = request.app.state.modeling_pipeline
 
-    try:
-        result = await use_case.execute(
-            stages=stages,
-            context=body.context,
-            pipeline_name=body.pipeline_name,
-        )
-    except Exception as e:
-        logger.exception("Pipeline failed")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+    # Stage failures come back inside the result; a Blender outage propagates
+    # as BlenderConnectionError and is a 503, not a 500 (D-002).
+    result = await use_case.execute(
+        stages=stages,
+        context=body.context,
+        pipeline_name=body.pipeline_name,
+    )
 
     return {
         "pipeline": result.pipeline_name,

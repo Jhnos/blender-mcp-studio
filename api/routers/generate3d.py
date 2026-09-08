@@ -37,16 +37,13 @@ async def generate_3d(req: Generate3DRequest, request: Request) -> dict[str, obj
             detail="Hunyuan3D not configured. Set HUNYUAN3D_MODE or HUNYUAN3D_ENDPOINT.",
         )
 
-    try:
-        result = await text3d.generate(
-            req.prompt,
-            negative_prompt=req.negative_prompt,
-            steps=req.steps,
-            guidance_scale=req.guidance_scale,
-        )
-    except Exception as e:
-        logger.exception("Text-to-3D generation failed")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+    # The adapter raises TextTo3DError; api/main.py answers 502 (D-002).
+    result = await text3d.generate(
+        req.prompt,
+        negative_prompt=req.negative_prompt,
+        steps=req.steps,
+        guidance_scale=req.guidance_scale,
+    )
 
     # Save GLB to disk
     import pathlib

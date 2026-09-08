@@ -11,6 +11,7 @@ import re
 
 import httpx
 
+from src.core.domain.exceptions import VisionAnalysisError
 from src.core.ports.vision_port import VisionAnalysis, VisionPort
 
 _SUGGESTION_RE = re.compile(r"[-•*]\s*(.+)")
@@ -51,14 +52,17 @@ class GPT4oVisionAdapter(VisionPort):
                 }
             ],
         }
-        async with httpx.AsyncClient(timeout=60.0) as client:
-            resp = await client.post(
-                self.API_URL,
-                json=payload,
-                headers={"Authorization": f"Bearer {self._api_key}"},
-            )
-            resp.raise_for_status()
-            data = resp.json()
+        try:
+            async with httpx.AsyncClient(timeout=60.0) as client:
+                resp = await client.post(
+                    self.API_URL,
+                    json=payload,
+                    headers={"Authorization": f"Bearer {self._api_key}"},
+                )
+                resp.raise_for_status()
+                data = resp.json()
+        except Exception as exc:  # the boundary: a foreign failure becomes a domain error
+            raise VisionAnalysisError(f"OpenAI vision failed: {exc}") from exc
 
         text: str = data["choices"][0]["message"]["content"]
         suggestions = tuple(m.group(1).strip() for m in _SUGGESTION_RE.finditer(text))

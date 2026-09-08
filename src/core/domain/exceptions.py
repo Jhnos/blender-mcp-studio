@@ -29,6 +29,24 @@ class LLMConnectionError(DomainError):
     """Raised when the LLM is unreachable."""
 
 
+class ExternalServiceError(DomainError):
+    """An external service the studio depends on answered with a failure.
+
+    Vision, text-to-3D and LLM providers are outside this process. When one
+    of them fails, the request was well-formed and Blender was fine: the
+    honest HTTP status is 502, not the 500 a blanket ``except`` used to
+    manufacture, and not the 422 a generic domain error would imply.
+    """
+
+
+class VisionAnalysisError(ExternalServiceError):
+    """The vision provider could not analyse the image."""
+
+
+class TextTo3DError(ExternalServiceError):
+    """The text-to-3D provider could not produce a mesh."""
+
+
 class BlenderConnectionError(DomainError):
     """Raised when Blender MCP socket is unreachable."""
 

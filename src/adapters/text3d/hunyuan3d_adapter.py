@@ -17,6 +17,7 @@ import logging
 import os
 import time
 
+from src.core.domain.exceptions import TextTo3DError
 from src.core.ports.text3d_port import Text3DGenerationPort, Text3DResult
 from src.infrastructure.narrowing import as_str, dig
 
@@ -29,8 +30,8 @@ _DEFAULT_LOCAL_URL = "http://localhost:8080"
 class Hunyuan3DAdapter(Text3DGenerationPort):
     """Adapter for Hunyuan3D-2 text-to-3D generation.
 
-    Gracefully returns RuntimeError if the service is unavailable —
-    callers should catch and surface a friendly error to the user.
+    Every provider failure — HTTP, transport, an unexpected reply shape —
+    surfaces as ``TextTo3DError``, the domain error api/main.py maps to 502.
     """
 
     def __init__(
@@ -54,10 +55,19 @@ class Hunyuan3DAdapter(Text3DGenerationPort):
         guidance_scale: float = 7.5,
     ) -> Text3DResult:
         t0 = time.monotonic()
-        if self._mode == "local":
-            glb_bytes = await self._generate_local(prompt, negative_prompt, steps, guidance_scale)
-        else:
-            glb_bytes = await self._generate_gradio(prompt, negative_prompt, steps, guidance_scale)
+        try:
+            if self._mode == "local":
+                glb_bytes = await self._generate_local(
+                    prompt, negative_prompt, steps, guidance_scale
+                )
+            else:
+                glb_bytes = await self._generate_gradio(
+                    prompt, negative_prompt, steps, guidance_scale
+                )
+        except TextTo3DError:
+            raise
+        except Exception as exc:  # the boundary: a foreign failure becomes a domain error
+            raise TextTo3DError(f"Hunyuan3D failed: {exc}") from exc
         elapsed = time.monotonic() - t0
         return Text3DResult(
             glb_bytes=glb_bytes,
@@ -94,7 +104,7 @@ class Hunyuan3DAdapter(Text3DGenerationPort):
                     dl = await client.get(data["glb_url"])
                     dl.raise_for_status()
                     return dl.content
-                raise RuntimeError(f"Unexpected JSON response: {list(data.keys())}")
+                raise TextTo3DError(f"Unexpected JSON response: {list(data.keys())}")
             return resp.content
 
     async def _generate_gradio(
@@ -104,7 +114,7 @@ class Hunyuan3DAdapter(Text3DGenerationPort):
         try:
             from gradio_client import Client
         except ImportError as exc:
-            raise RuntimeError(
+            raise TextTo3DError(
                 "gradio_client not installed. Run: pip install gradio-client"
             ) from exc
 
@@ -136,7 +146,7 @@ class Hunyuan3DAdapter(Text3DGenerationPort):
             if not path_str:
                 # NO_SILENT_FALLBACK: an empty path would surface as a confusing
                 # FileNotFoundError on open(""); report the real upstream shape.
-                raise RuntimeError(
+                raise TextTo3DError(
                     "Hunyuan3D (gradio) returned an unexpected result; expected a "
                     f"file path or a dict with 'value'/'path', got {result!r}"
                 )

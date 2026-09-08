@@ -37,6 +37,7 @@ from src.adapters.mcp_server import create_mcp_server
 from src.core.domain.exceptions import (
     BlenderConnectionError,
     DomainError,
+    ExternalServiceError,
     LLMConnectionError,
 )
 
@@ -148,8 +149,15 @@ def _register_domain_error_handlers(app: FastAPI) -> None:
     async def _unprocessable(_: Request, exc: Exception) -> JSONResponse:
         return JSONResponse(status_code=422, content={"detail": str(exc)})
 
+    async def _bad_gateway(_: Request, exc: Exception) -> JSONResponse:
+        # A provider outside this process failed (D-002). Logged here, once,
+        # instead of in every router that used to catch Exception.
+        logger.warning("external service failed: %s", exc)
+        return JSONResponse(status_code=502, content={"detail": str(exc)})
+
     app.add_exception_handler(BlenderConnectionError, _unavailable)
     app.add_exception_handler(LLMConnectionError, _unavailable)
+    app.add_exception_handler(ExternalServiceError, _bad_gateway)
     app.add_exception_handler(DomainError, _unprocessable)
 
 

@@ -42,15 +42,13 @@ async def refine_model(body: RefineRequest, request: Request) -> dict[str, objec
 
         session = Session()
 
-    try:
-        result = await use_case.execute(
-            session,
-            user_request=body.user_request,
-            max_iterations=body.max_iterations,
-        )
-    except Exception as e:
-        logger.exception("Refinement failed")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+    # Domain errors (a provider failing, Blender unreachable) are mapped by
+    # api/main.py; nothing here turns them into a 500 (D-002).
+    result = await use_case.execute(
+        session,
+        user_request=body.user_request,
+        max_iterations=body.max_iterations,
+    )
 
     # Save updated session
     if session_store:
@@ -105,11 +103,7 @@ async def analyze_image(request: Request) -> dict[str, object]:
     )
     prompt = str(form.get("prompt", _DEFAULT_PROMPT))
 
-    try:
-        analysis = await vision.analyze_image(image_bytes, prompt=prompt)
-    except Exception as e:
-        logger.exception("Vision analysis failed")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+    analysis = await vision.analyze_image(image_bytes, prompt=prompt)
 
     return {
         "description": analysis.description,

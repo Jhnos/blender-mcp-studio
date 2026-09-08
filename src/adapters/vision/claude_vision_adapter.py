@@ -10,6 +10,7 @@ import re
 
 import anthropic
 
+from src.core.domain.exceptions import VisionAnalysisError
 from src.core.ports.vision_port import VisionAnalysis, VisionPort
 
 _SUGGESTION_RE = re.compile(r"[-•*]\s*(.+)")
@@ -32,26 +33,29 @@ class ClaudeVisionAdapter(VisionPort):
         prompt: str,
         max_tokens: int = 1024,
     ) -> VisionAnalysis:
-        response = await self._client.messages.create(
-            model=self._model,
-            max_tokens=max_tokens,
-            messages=[
-                {
-                    "role": "user",
-                    "content": [
-                        {
-                            "type": "image",
-                            "source": {
-                                "type": "base64",
-                                "media_type": "image/png",
-                                "data": __import__("base64").b64encode(image_bytes).decode(),
+        try:
+            response = await self._client.messages.create(
+                model=self._model,
+                max_tokens=max_tokens,
+                messages=[
+                    {
+                        "role": "user",
+                        "content": [
+                            {
+                                "type": "image",
+                                "source": {
+                                    "type": "base64",
+                                    "media_type": "image/png",
+                                    "data": __import__("base64").b64encode(image_bytes).decode(),
+                                },
                             },
-                        },
-                        {"type": "text", "text": prompt},
-                    ],
-                }
-            ],
-        )
+                            {"type": "text", "text": prompt},
+                        ],
+                    }
+                ],
+            )
+        except Exception as exc:  # the boundary: a foreign failure becomes a domain error
+            raise VisionAnalysisError(f"Claude vision failed: {exc}") from exc
         # response.content is a union of block types (text / thinking / tool_use / …).
         # Reading [0].text blindly raises AttributeError whenever the first block
         # isn't text — e.g. with extended thinking on. Keep the text blocks, in order.

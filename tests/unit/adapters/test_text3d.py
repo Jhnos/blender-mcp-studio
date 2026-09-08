@@ -116,16 +116,23 @@ async def test_local_mode_json_base64_response(respx_mock):
 
 
 @pytest.mark.asyncio
-async def test_local_mode_http_error_raises(respx_mock):
-    """HTTP 500 from server raises RuntimeError (via raise_for_status)."""
+async def test_local_mode_http_error_is_a_domain_error(respx_mock):
+    """HTTP 500 from the server surfaces as TextTo3DError, with the cause chained (D-002).
+
+    It used to escape as httpx.HTTPStatusError and the router turned it into a
+    500; now api/main.py answers 502 from the domain error alone.
+    """
     import httpx
+
+    from src.core.domain.exceptions import TextTo3DError
 
     adapter = Hunyuan3DAdapter(mode="local", endpoint="http://localhost:8080")
     respx_mock.post("http://localhost:8080/generate").mock(
         return_value=httpx.Response(500, text="Server error")
     )
-    with pytest.raises(httpx.HTTPStatusError):
+    with pytest.raises(TextTo3DError, match="Hunyuan3D failed") as caught:
         await adapter.generate("test")
+    assert isinstance(caught.value.__cause__, httpx.HTTPStatusError)
 
 
 # ---------------------------------------------------------------------------
@@ -135,11 +142,13 @@ async def test_local_mode_http_error_raises(respx_mock):
 
 @pytest.mark.asyncio
 async def test_gradio_mode_missing_package_raises():
-    """If gradio_client not installed, RuntimeError with helpful message."""
+    """If gradio_client not installed, TextTo3DError with the helpful message (D-002)."""
+    from src.core.domain.exceptions import TextTo3DError
+
     adapter = Hunyuan3DAdapter(mode="gradio", hf_space="tencent/Hunyuan3D-2")
     with (
         patch("builtins.__import__", side_effect=ImportError("gradio_client")),
-        pytest.raises(RuntimeError, match="gradio_client not installed"),
+        pytest.raises(TextTo3DError, match="gradio_client not installed"),
     ):
         await adapter._generate_gradio("test", "", 10, 7.5)
 
