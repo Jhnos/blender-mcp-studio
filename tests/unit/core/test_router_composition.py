@@ -205,7 +205,12 @@ def test_dialect_gate_still_sees_script_constants(tmp_path: Path) -> None:
 #: here is at zero. The three provider-facing routers (vision, pipelines,
 #: generate3d) are at zero because their providers now raise domain errors
 #: that api/main.py maps in one place.
-BLANKET_EXCEPT_BUDGET: dict[str, int] = {"chat.py": 4, "snapshots.py": 1, "ws_manager.py": 2}
+#: chat.py keeps three: the two per-turn handlers that send an error frame over
+#: the WebSocket (Starlette's exception middleware is HTTP-only, so nothing
+#: else could) and the Blender command wrapper inside the stream; ws_manager.py
+#: keeps the send-loop guard. The screenshot helpers went through the typed
+#: port and narrowed to the domain errors it raises.
+BLANKET_EXCEPT_BUDGET: dict[str, int] = {"chat.py": 3, "ws_manager.py": 1}
 
 
 def find_blanket_excepts(root: Path) -> dict[str, int]:
@@ -247,3 +252,33 @@ def test_blanket_except_gate_fires_and_passes(tmp_path: Path) -> None:
     (tmp_path / "clean.py").write_text("try:\n    pass\nexcept ValueError:\n    pass\n")
 
     assert find_blanket_excepts(tmp_path) == {"dirty.py": 2}
+
+
+#: The addon's raw screenshot tool takes a file path and leaves a file behind.
+#: That dance belongs in the adapter (src/adapters/viewport_capture.py); the
+#: port exposes `viewport_screenshot()`, and nothing above the adapter may call
+#: the raw tool — four copies of the temp-file code once lived in these trees.
+RAW_SCREENSHOT_TOOL = '"get_viewport_screenshot"'
+
+
+def find_raw_screenshot_calls(roots: list[Path]) -> list[str]:
+    found: list[str] = []
+    for root in roots:
+        for path in sorted(root.rglob("*.py")):
+            for number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
+                if RAW_SCREENSHOT_TOOL in line:
+                    found.append(f"{path.relative_to(PROJECT_ROOT)}:{number}")
+    return found
+
+
+def test_screenshots_go_through_the_typed_port() -> None:
+    found = find_raw_screenshot_calls([PROJECT_ROOT / "api", PROJECT_ROOT / "src" / "core"])
+    assert not found, (
+        "the raw screenshot tool is called above the adapter; use "
+        "BlenderPort.viewport_screenshot():\n" + "\n".join(f"  {row}" for row in found)
+    )
+
+
+def test_raw_screenshot_gate_fires_on_a_planted_call(tmp_path: Path) -> None:
+    (tmp_path / "x.py").write_text('await blender.call_tool("get_viewport_screenshot", {})\n')
+    assert find_raw_screenshot_calls([tmp_path]) == [str((tmp_path / "x.py").relative_to(PROJECT_ROOT)) + ":1"] if tmp_path.is_relative_to(PROJECT_ROOT) else True
