@@ -17,7 +17,7 @@ Population: 註冊表實例與其命名空間下的物件(hand-v3 = `HJ_V3_`);`m
 | HF-6 / ES-4 | SF-2 | footprint 清單 | 四件 242.0 × 103.5 | A 機器 | **PASS**(M2,離線算出 = 真機量到) |
 | PS-3 | SF-3 | 指列 4 vs 3 | 站台數、掌寬 | A 機器 | **PASS**(M4) |
 | HF-5 / ES-1, ES-2 | SF-4 | 凸出 22 vs 23 | 23 拒;22 不變 | A 機器 | **PASS**(M4;V3 契約與差分未動) |
-| HF-4 / PS-2 | SF-5 | 臂相等 vs 梯度 | 零件號 1 vs 2 | A 機器 | **PASS**(M3 規劃層);執行層與契約欄位 M5 |
+| HF-4 / PS-2 | SF-5 | 臂相等 vs 梯度 | 零件號 1 vs 2 | A 機器(真機) | **PASS**(M5:`hand-v3-gradient` 夾具,同連桿同掌盤只差力矩臂,真機 20/14,`shared_mesh` 觀測 2 = 宣告 2) |
 | FF-9 / ES-6 | SF-6 | import 圖 | 全在 `reload_modules` | A 機器 | **PASS**(M2;首跑紅:13/18,見 v8) |
 | FF-11 / ES-5 | SF-7 | 執行模組 | 字面值白名單 | A 機器 | **PASS**(M3) |
 | FF-12 / PS-1 | SF-8 | 兩實例 | 前綴互異、皆通過一致性 | A 機器 | TODO(M6) |

@@ -29,6 +29,8 @@
 | 2026-09-09 | hand_v3_finger.json(**由規劃生成**) | 舊產生器 | 14 | 0 | 同上 |
 | 2026-09-09 | hand_v3.json | **新產生器**(`hand_generator` 讀規劃) | 20 | 0 | 第一次 8 個 PHALANX_ 被 stale-scene 閘門擋下(見「推翻」) |
 | 2026-09-09 | hand_v3_finger.json | **新產生器** | 14 | 0 | |
+| 2026-09-09 | hand_v3_gradient.json(夾具,`expected_shared_mesh_count: 2`) | 新產生器 | 20 | 0 | 兩個零件號,`shared_mesh` 觀測 2 |
+| 2026-09-09 | hand_v3_gradient_finger.json | 新產生器 | 14 | 0 | |
 
 ## `--real` 計時(SF-13)
 
@@ -45,7 +47,7 @@
 | 實例 | 一致性套件 | 契約生成 | 真機契約 | 差分 | 發布 |
 |---|---|---|---|---|---|
 | `hand-v3` | vacuous | **生成 == 簽入** | **新產生器 20/14** | **新產生器 4/4** | 已發布 |
-| `hand-v3-gradient`(驗證夾具) | vacuous | 生成 == 簽入 | vacuous | 不適用(無包) | 永不發布 |
+| `hand-v3-gradient`(驗證夾具) | vacuous | 生成 == 簽入 | **真機 20/14,兩個零件號** | 不適用(無包) | 永不發布 |
 | `hand-compact` | vacuous | vacuous | vacuous | 不適用 | 未發布(D-008) |
 
 `vacuous` = 檢查存在但沒有對這個實例跑過;**永遠不併入 pass**。

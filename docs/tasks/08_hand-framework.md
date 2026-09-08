@@ -41,19 +41,21 @@
 
 ### Verified facts
 
-- M0–M3:文件樹與守衛;差分與 `--real` 閘門;契約由規劃生成(ES-6 抓到 5 個沒重載的模組);
-  執行層讀規劃並在真機逐面重現 V3(4/4、20/14),舊產生器已刪。D-004 done:全部 15 份契約在 `--real`。
-- **M4:掌盤四個新欄位(`row_finger_count`、三個 0 = 由連桿推導的 sentinel)與五條不變式;
-  V3 的 22.0 / 22.0 / 1.0 由連桿推導、逐位元組不變——契約只多一個 reload 模組,差分仍 4/4。
-  `opposition.py` 切出,`palm_v3.py` 369 行。八個新案例先紅後綠。**
+- M0–M4:文件樹與守衛;差分與全部契約在 `--real`;契約由規劃生成;執行層讀規劃並逐面重現 V3;
+  掌盤四欄位五不變式,V3 逐位元組不變。
+- **M5:契約欄位 `expected_shared_mesh_count`(預設 1)取代判準寫死的 1,should-fire 成對;
+  `hand-v3-gradient` 驗證夾具(V3 連桿、力矩臂 7.1/6.1、`HG_V3G_`)註冊、生成契約、進 `--real`,
+  真機 20/14,`shared_mesh` 觀測 2 = 宣告 2——零件號數是宣告值,不是產生器限制。
+  每零件號一個 STL;`probe_soundness` 在規劃時拒絕量到空氣的探針。**
+- import 掃描器修過一個洞:`from pkg import name` 要解析成子模組。
 
 ### Open failures
 
-- 沒有機器檢查在失敗。矩陣剩 4 個 `TODO_` ref:PS-1、VOC-4(M6)、PS-2 契約欄位(M5)、ES-3。
+- 沒有機器檢查在失敗。矩陣剩 2 個 `TODO_` ref:PS-1(一致性套件)、VOC-4(`hand_compact` 契約)——都是 M6。
 
 ### Next step
 
-- M5:先寫紅測試——契約新欄位 `expected_shared_mesh_count`(預設 1;判準 `shared_mesh` 觀測 ≠ 宣告即 FAIL,
-  附 should-fire)與 `build_finger` 對梯度手指建出 2 個 datablock(需真機);再讓 `contract_builder`
-  對 `phalanx_part_count != 1` 的實例寫該欄位。V3 契約不寫 → 逐位元組不變。
-- 然後 M6:掃精簡實例的拇指擺位(`strict=True`);註冊 `hand-compact`;生成契約;真機跑;登錄不發布。
+- M6:先寫紅測試 `tests/unit/core/test_hand_instance_conformance.py`(對 `HAND_INSTANCES` 參數化:
+  `strict=True` 重建掌盤不拒、前綴互異、`phalanx_stls` 數量對);再掃精簡實例的拇指擺位
+  (`thumb_offset/drop/palmar ≤ 15/pinch ≤ 15`,照 `palm_v3.py` 註解的掃法),`strict=True` 下無解就停下回報;
+  有解才註冊 `hand-compact`、建 `scripts/model_hand_compact.py`、生成契約、真機跑、登錄 `PACKAGES` 不發布。

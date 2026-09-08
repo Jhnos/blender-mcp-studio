@@ -34,7 +34,7 @@ M2 的紅測試就是這一條。重生後與手打版的差異只有三種:`rel
 | `closure_trajectory` | `closure_trajectory` | 步數不符或任一非 0 即 FAIL |
 | `joint_sweep` | `joint_sweep` | 角度序列不符即 FAIL |
 | `readiness.max_footprint_mm` | `layout_fits_bed` | 兩條獨立量測不一致即 FAIL |
-| **新** `expected_shared_mesh_count`(預設 1) | `shared_mesh` | 觀測 ≠ 宣告即 FAIL;V3 契約不寫 → 判決不變 |
+| `expected_shared_mesh_count`(預設 1;M5 起) | `shared_mesh` | 觀測 ≠ 宣告即 FAIL;V3 契約不寫 → 判決不變;夾具宣告 2 |
 
 ## `reload_modules` 是失效點(ES-6)
 

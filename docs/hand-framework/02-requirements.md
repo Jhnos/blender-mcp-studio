@@ -11,8 +11,8 @@
 本表由 `trace_check.py`(R1–R6)與 `tests/unit/core/test_docs_hand_framework_figures.py`
 (ref 解析得到、`TODO_` 名字不得已存在於程式碼)兩者機器驗。
 
-Population: 註冊表 `HAND_INSTANCES` 裡的每個實例與其命名空間下的物件——目前 hand-v3 的
-`HJ_V3_`;`models/hand-v3/` 是重現差分的參考母數;`models/octopus-hand-v1|v2/`、
+Population: 註冊表 `HAND_INSTANCES` 裡的每個實例與其命名空間下的物件——hand-v3 的 `HJ_V3_`,
+驗證夾具 hand-v3-gradient 的 `HG_V3G_`(有契約、無包);`models/hand-v3/` 是重現差分的參考母數;`models/octopus-hand-v1|v2/`、
 `models/biaxial-hinge-v6/` 排除,由各自契約獨立驗證;未跑的列標 vacuous,**永遠不併入 pass**。
 
 | ID | Requirement | Tier | User-visible | Kind | Verified-by |
@@ -22,13 +22,13 @@ Population: 註冊表 `HAND_INSTANCES` 裡的每個實例與其命名空間下�
 | VOC-3 | 使用者不必開 Blender 就知道每個實例過了哪些檢查 | voc | yes | feature | artifact:test_the_results_template_marks_each_instance |
 | VOC-4 | 人手尺寸的手是同一套程式的一個實例,不是分叉 | voc | yes | feature | artifact:TODO_hand_compact_contract; static:test_bpy_modules_read_plans_only |
 | PS-1 | 任何滿足 `FingerLinkSpec` 的連桿都能組成手且生成契約 | product | yes | feature | unit:TODO_test_every_registered_instance_conforms; artifact:build_hand_contracts |
-| PS-2 | 力矩臂有梯度的手指建得出,零件號數是宣告值不是產生器限制 | product | yes | feature | artifact:TODO_expected_shared_mesh_count; unit:test_a_gradient_finger_plans_one_part_per_distinct_arm |
+| PS-2 | 力矩臂有梯度的手指建得出,零件號數是宣告值不是產生器限制 | product | yes | feature | artifact:expected_shared_mesh_count; unit:test_a_gradient_finger_plans_one_part_per_distinct_arm |
 | PS-3 | 指列數是欄位不是常數 | product | no | feature | unit:test_a_three_finger_row_is_narrower_by_one_pitch |
 | PS-4 | 契約由規格生成;V3 的兩份契約可被完整重現 | product | no | constraint | unit:test_the_builder_reproduces_the_committed_hand_v3_contracts |
 | PS-5 | `ci.sh --real` 跑手契約與 V3 重現差分 | product | no | constraint | static:test_real_ci_gates_the_hand_contracts |
 | ES-1 | 拇指根凸出量 ≤ 掌盤厚度 | engineering | no | constraint | unit:test_a_thumb_root_proud_of_the_palm_is_refused |
 | ES-2 | 接觸判準與拇指凸出量由連桿推導;V3 推出來仍是 22.0 | engineering | no | constraint | unit:test_derived_palm_defaults_equal_the_v3_literals |
-| ES-3 | 探針點落在實體內且避開銷孔壁 | engineering | no | constraint | unit:TODO_test_probe_points_lie_inside_the_body_and_clear_the_pin |
+| ES-3 | 探針點落在實體內且避開銷孔壁 | engineering | no | constraint | unit:test_probe_points_lie_inside_the_body_and_clear_the_pin |
 | ES-4 | 佈局規劃是純函式,離線可驗,放得進床身 | engineering | no | constraint | unit:test_a_fifth_part_wraps_to_a_second_row_instead_of_overrunning_the_bed; artifact:layout_fits_bed |
 | ES-5 | 執行層不做算術,名字全來自命名策略 | engineering | no | constraint | static:test_bpy_modules_read_plans_only |
 | ES-6 | 產生器可達的每個模組都在契約 `reload_modules` 裡 | engineering | no | constraint | static:test_every_reachable_module_is_reloaded |

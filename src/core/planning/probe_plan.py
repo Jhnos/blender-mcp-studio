@@ -105,7 +105,7 @@ def probe_soundness(palm: AnthropomorphicPalmSpec, plan: ProbePlan) -> list[str]
     hole = link.tendon_hole_diameter_mm / 2
     wall = link.minimum_wall_mm
 
-    for x_mm, y_mm in plan.bore_probe_points_mm:
+    for _, y_mm in plan.bore_probe_points_mm:
         if abs(y_mm) + hole > link.body_depth_mm / 2 - wall:
             findings.append(f"finger bore at y={y_mm} breaks the body wall")
         if abs(y_mm) - hole < link.printed_pin_bore_mm / 2 + wall:

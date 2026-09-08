@@ -30,7 +30,9 @@
 
 M3 狀態:規劃層 `finger_plan` 每相異臂一份 `PhalanxPlan`、每單元記零件號;`hand_geometry.build_finger`
 按**位置**認主體(Blender 對重名加 `.001`,按名字認會落單)、同零件共用 datablock;`refuse_extra_part_numbers`
-比對 `phalanx_part_count`。V3 = 1;梯度實例的執行驗證與契約欄位在 M5。
+比對 `phalanx_part_count`。V3 = 1。**M5:契約欄位 `expected_shared_mesh_count`(預設 1,V3 契約不寫)取代判準
+寫死的 1;`hand-v3-gradient` 夾具(同連桿同掌盤,只差力矩臂 7.1/6.1)在真機以宣告 2 過 20/14。
+每個零件號各匯出一個 STL(`phalanx_stls`),註冊表拒絕數量對不上的實例。**
 
 ## shim 政策(已完成,M3)
 
