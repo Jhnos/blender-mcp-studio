@@ -16,7 +16,7 @@ from __future__ import annotations
 from collections.abc import Mapping
 from dataclasses import dataclass
 
-from src.infrastructure.narrowing import as_mapping, as_str
+from src.infrastructure.narrowing import as_finite_number, as_mapping, as_str
 from src.verification.generated_artifact_contract import (
     GeneratedArtifactContract,
     mapping_value,
@@ -176,6 +176,25 @@ def assess_verification(
             ),
         )
     )
+    bed = contract.readiness.max_footprint_mm
+    if bed is not None:
+        measured = sequence_value(readiness, "layout_footprint_mm")
+        sides = [as_finite_number(value) for value in measured or []]
+        # Fail-closed: a declared bed with no measurement, or one that came back
+        # short or unparseable, is a FAIL. A layout nobody measured is exactly
+        # the state this expectation exists to end.
+        fits = (
+            measured is not None
+            and len(sides) == 2
+            and all(side is not None for side in sides)
+            and all(side <= limit for side, limit in zip(sides, bed, strict=True))  # type: ignore[operator]
+        )
+        evidence.append(
+            VerificationEvidence(
+                "layout_fits_bed", fits, f"footprint={measured!r}, bed={list(bed)!r}"
+            )
+        )
+
     report = mapping_value(readiness, "report")
     issues = sequence_value(report, "issues") if report is not None else None
     issue_mappings = [m for m in (as_mapping(item) for item in issues or []) if m is not None]

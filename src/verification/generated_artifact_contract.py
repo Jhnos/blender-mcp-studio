@@ -60,6 +60,11 @@ class ReadinessExpectation:
     selection_prefix: str
     expected_selection_count: int
     forbidden_issue_codes: tuple[str, ...]
+    #: Bed the print layout has to fit inside, (x, y) in mm. Absent means the
+    #: contract makes no claim about how big the plate is; present means a
+    #: missing measurement is a FAIL, because a layout that overruns the bed is
+    #: found by a person at the slicer and by nobody before them.
+    max_footprint_mm: tuple[float, float] | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -168,6 +173,19 @@ def _optional_flag(source: Mapping[str, object], key: str, *, default: bool) -> 
     return value
 
 
+def _max_footprint(source: Mapping[str, object]) -> tuple[float, float] | None:
+    """Optional (x, y) bed size in mm. Absent means no claim; malformed raises."""
+    if "max_footprint_mm" not in source:
+        return None
+    pair = as_sequence(source.get("max_footprint_mm"))
+    if pair is None or len(pair) != 2:
+        raise ValueError("max_footprint_mm must be a two-number list when present")
+    x, y = (as_finite_number(value) for value in pair)
+    if x is None or y is None or x <= 0 or y <= 0:
+        raise ValueError("max_footprint_mm must be two positive finite numbers")
+    return (x, y)
+
+
 def _bore_probe_points(source: Mapping[str, object]) -> tuple[tuple[float, float], ...]:
     """Optional list of (x, y) probe points. Absent means no claim; malformed raises.
 
@@ -240,6 +258,7 @@ def contract_from_mapping(
             readiness_source, "expected_selection_count"
         ),
         forbidden_issue_codes=_required_strings(readiness_source, "forbidden_issue_codes"),
+        max_footprint_mm=_max_footprint(readiness_source),
     )
     return GeneratedArtifactContract(
         name=name,
