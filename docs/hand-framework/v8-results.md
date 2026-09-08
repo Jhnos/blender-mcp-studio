@@ -38,6 +38,7 @@
 | 2026-09-08 | hand-v3 finger contract(同場景) | 1 | |
 | 2026-09-08 | regenerated package matches shipped | 0.2 | 直接計時 0.16 s |
 | 2026-09-08 | 整個 T3(含既有五條) | 13 | 整支 `ci.sh --real` 約 35 s |
+| 2026-09-09 | 十三份非手契約(D-004) | 59 | 依文件順序、同場景重用;三份 probe 走 mesh_probe |
 
 ## 每個實例過了哪些檢查(VOC-3)
 

@@ -89,6 +89,25 @@ if (( REAL )); then
     _run hard "MCP protocol (nonce + independent oracle)" "$PY" scripts/verify/mcp_verify_real.py
     _run hard "print readiness (real Blender fixtures)" "$PY" scripts/verify/print_readiness_verify_real.py
     _run hard "batch transform (one Undo, independent oracle)" "$PY" scripts/verify/batch_transform_verify_real.py
+    # Every contract under scripts/verify/contracts runs here (DEFERRALS D-004,
+    # resolved 2026-09-09 once the hand gates measured seconds, not minutes).
+    # Scenes are reused in the documented order: a base contract generates, the
+    # contracts after it read that scene with --skip-generate, and the probe
+    # contracts measure it read-only. About a minute in total; the pin test
+    # refuses a contract file that is not listed here.
+    _run hard "inset hinge contract"                "$PY" scripts/verify/generated_artifact_verify_real.py scripts/verify/contracts/inset_hinge.json
+    _run hard "inset hinge pins (same scene)"       "$PY" scripts/verify/generated_artifact_verify_real.py scripts/verify/contracts/inset_hinge_pins.json --skip-generate
+    _run hard "inset hinge probe (read-only)"       "$PY" scripts/verify/mesh_probe_verify_real.py scripts/verify/contracts/inset_hinge_probe.json
+    _run hard "biaxial hinge contract"              "$PY" scripts/verify/generated_artifact_verify_real.py scripts/verify/contracts/biaxial_hinge.json
+    _run hard "biaxial hinge PIP (same scene)"      "$PY" scripts/verify/generated_artifact_verify_real.py scripts/verify/contracts/biaxial_hinge_pip.json --skip-generate
+    _run hard "biaxial hinge split (same scene)"    "$PY" scripts/verify/generated_artifact_verify_real.py scripts/verify/contracts/biaxial_hinge_split.json --skip-generate
+    _run hard "biaxial hinge probe (read-only)"     "$PY" scripts/verify/mesh_probe_verify_real.py scripts/verify/contracts/biaxial_hinge_probe.json
+    _run hard "biaxial hinge split probe (read-only)" "$PY" scripts/verify/mesh_probe_verify_real.py scripts/verify/contracts/biaxial_hinge_split_probe.json
+    _run hard "hollow side hinge contract"          "$PY" scripts/verify/generated_artifact_verify_real.py scripts/verify/contracts/hollow_side_hinge.json
+    _run hard "octopus hand V1 contract"            "$PY" scripts/verify/generated_artifact_verify_real.py scripts/verify/contracts/octopus_hand.json
+    _run hard "octopus hand V1 tips (same scene)"   "$PY" scripts/verify/generated_artifact_verify_real.py scripts/verify/contracts/octopus_hand_tips.json --skip-generate
+    _run hard "octopus hand V2 contract"            "$PY" scripts/verify/generated_artifact_verify_real.py scripts/verify/contracts/octopus_hand_v2.json
+    _run hard "octopus hand V2 tips (same scene)"   "$PY" scripts/verify/generated_artifact_verify_real.py scripts/verify/contracts/octopus_hand_v2_tips.json --skip-generate
     # The hand contracts caught ten defects in one campaign while being run by hand;
     # a gate outside ci.sh is a gate that is not run. Order matters: the finger
     # contract reuses the scene the hand contract generated, and the differential

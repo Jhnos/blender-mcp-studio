@@ -47,15 +47,14 @@
 - 舊產生器三個模組與 `finger_mount_frames` 已刪;`test_script_primitive_ssot` 綠;ES-5 字面值掃描綠。
 - 第一次真機跑抓到一個真缺陷:按名字認主體在第二條鏈起落單(Blender `.001`),已改按位置並記入 LESSONS。
 - 親驗:`palm_v3.py` 372/380 行(M4 要切 `opposition.py`)。
+- D-004 `done`:十三份非手契約在真機各跑一次全過(59 s),接進 `--real`;`test_real_ci_runs_every_contract`
+  釘住 `contracts/` 下每個檔案(先紅:13 個沒被跑)。
 
 ### Open failures
 
 - 沒有機器檢查在失敗。矩陣剩 8 個 `TODO_` ref:PS-1、VOC-4(M6)、PS-2 契約欄位(M5)、PS-3、ES-1、ES-2、DS-2(M4)、ES-3。
-- D-004 已 `due`:V1/V2/V6 七份契約接進 `--real`——先在真機各跑一次確認仍過,再接。
 
 ### Next step
 
-- D-004(小片):Mac 上逐一跑 `biaxial_hinge*.json`(5)、`octopus_hand*.json`(2)與 V2 的契約;全過就在 `ci.sh` 加 `_run hard`,
-  CI-pin 測試擴成列出全部;記秒數到 `30-verification`。
-- 然後 M4:先寫 `test_palm_v3` 的紅案例(拇指凸出 23 被拒、三指列窄一節距、推導預設 = 22.0、取樣跟著上限),
+- M4:先寫 `test_palm_v3` 的紅案例(拇指凸出 23 被拒、三指列窄一節距、推導預設 = 22.0、取樣跟著上限),
   再切 `opposition.py`、加五條不變式。

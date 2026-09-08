@@ -5,6 +5,17 @@
 
 ## [Unreleased]
 
+### V01.0P.006 — 每一份契約都在 CI 裡(D-004 done)
+
+#### Added
+
+- `ci.sh --real` 多十三條硬閘門:V4/V5 的 inset/hollow、V6 的 biaxial(含兩份 probe)、V1、V2,
+  依各自文件記載的場景重用順序(生成 → `--skip-generate` → 讀取式 probe)。真機各跑一次全過,合計約 59 s;
+  整個 T3 約 75 s。
+- `test_real_ci_runs_every_contract`:`scripts/verify/contracts/` 下**任何一個**檔案沒被 `--real` 跑、
+  走錯 checker、或 `--skip-generate` 前面沒有同產生器的生成,就紅。先紅(13 個沒被跑)後綠。
+  D-004 由 `due` 改 `done`。
+
 ### V01.0P.005 — 執行層只讀規劃,新產生器在真機逐面重現 V3,舊產生器刪除
 
 #### Added
