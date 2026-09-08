@@ -454,3 +454,30 @@ def test_opposition_is_a_function_of_the_palm_and_the_palm_only_delegates() -> N
     spec = AnthropomorphicPalmSpec()
 
     assert thumb_index_tip_gap_mm(spec) == spec.thumb_index_tip_gap_mm
+
+
+# --- M6: the thumb at rest must clear the row, not only reach it ---------------
+
+
+def test_the_resting_thumb_clears_every_row_finger() -> None:
+    """The compact hand's first real build: the straight thumb brushed the third finger.
+
+    Reachability asks whether the tips can meet; nothing asked whether the
+    thumb, straight, passes through a finger on the way. With the root at the
+    plate's depth both bodies' equators are tangent wherever the thumb crosses a
+    finger body in projection, so the rest pose has to be checked, offline.
+    """
+    from src.core.domain.opposition import thumb_rest_clearance_mm
+
+    assert thumb_rest_clearance_mm(AnthropomorphicPalmSpec()) > 0.0
+
+
+def test_a_thumb_laid_across_the_row_is_reported_as_overlapping() -> None:
+    from src.core.domain.opposition import thumb_rest_clearance_mm
+
+    # Parallel to the row and one body width from the index: straight through it.
+    across = dataclasses.replace(
+        AnthropomorphicPalmSpec(), thumb_offset_mm=12.0, thumb_opposition_deg=0.0
+    )
+
+    assert thumb_rest_clearance_mm(across) < 0.0
