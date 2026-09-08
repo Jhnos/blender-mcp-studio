@@ -90,7 +90,10 @@ Dependency rule：外層依賴內層；domain/application 不 import FastAPI、F
 
 `SceneOperationsService` 同時實作這兩個 incoming port，且**只**依賴 `BlenderPort`。
 Domain record 一律是 frozen/slots dataclass。外部 Blender JSON 逐欄窄化，
-不做隱性的 `str`／`int`／`bool` 強制轉型。
+不做隱性的 `str`／`int`／`bool` 強制轉型——而且**窄化只在 adapter 做**：
+`BlenderPort` 的查詢（`scene_summary`／`object_details`／`viewport_screenshot`）回傳 typed DTO，
+解碼在 `src/adapters/blender_scene_decoding.py`；use case 不認識 Blender 的方言，也不認識截圖暫存檔
+（`test_the_use_case_decodes_nothing` 釘住；DEFERRALS D-001）。
 
 `PrintReadinessQueryPort.check(spec)` 由共用的 `PrintReadinessService` 實作；
 它獨立的 outgoing `PrintReadinessPort.inspect` 由 `BlenderPrintReadinessAdapter` 實作。

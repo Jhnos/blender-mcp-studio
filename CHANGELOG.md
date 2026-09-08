@@ -5,6 +5,21 @@
 
 ## [Unreleased]
 
+### V01.0Q.004 — Blender port 回傳 typed DTO,解碼只在 adapter(D-001 done)
+
+#### Changed
+
+- `BlenderPort` 多三個查詢 `scene_summary`／`object_details`／`viewport_screenshot`,回傳 domain DTO;
+  拿掉回傳原始 mapping 的 `get_scene_info`。兩個 adapter 各自解碼(`src/adapters/blender_scene_decoding.py`),
+  422 訊息逐字保留;截圖的暫存檔搬到 `src/adapters/viewport_capture.py`。
+- `SceneOperationsService` 不再有任何 narrowing 或 `tempfile`——`test_the_use_case_decodes_nothing` 釘住,
+  D-001 記錄的「第三份重複」不可能再出現。真機 REST／MCP 閘門走真 adapter 的解碼,全過。
+- 非 mapping 的場景回覆從「警告 + 回空 dict」改成 `SceneOperationError`:沒人要的空場景是更安靜的謊。
+
+#### Added
+
+- 任務 `09_core-boundaries.md`(ACTIVE):核心側三條延後逐條收債;D-002 是下一步。
+
 ### V01.0Q.003 — 試片由機器判、精簡實例的發布路徑先證明
 
 #### Added
