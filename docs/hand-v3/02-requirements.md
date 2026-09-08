@@ -29,7 +29,7 @@ Population: V3 自己產生的物件(前綴 `HJ_V3_`)與 `models/hand-v3/` 的�
 | VOC-4 | 使用者看得到手長什麼樣子與它的握姿,不必自己開 Blender | voc | yes | feature | artifact:TODO_render_set_present_and_uncropped |
 | VOC-5 | 使用者看得到哪些主張還沒被量過 | voc | yes | constraint | artifact:TODO_results_template_marks_vacuous |
 | PS-1 | 一條腱能把三個指節從全伸帶到全屈 | product | yes | feature | artifact:test_the_finger_that_shipped_carries_three_phalanges; unit:test_the_shipped_finger_closes_within_its_actuator_stroke |
-| PS-2 | 指節依序閉合:近端先動,遠端後動 | product | yes | feature | artifact:TODO_closure_order_from_sweep_samples; unit:TODO_test_spring_gradient_orders_joints |
+| PS-2 | 指節依序閉合:近端先動,遠端後動 | product | yes | feature | artifact:TODO_closure_order_from_sweep_samples; unit:test_the_spring_gradient_is_what_orders_the_joints_now |
 | PS-3 | 手掌是四指一排加一個對生拇指 | product | yes | feature | artifact:scene_list; unit:test_the_thumb_can_touch_the_index_fingertip |
 | PS-4 | 夾層充氣後的外形不擋住手指閉合 | product | yes | constraint | artifact:test_the_finger_that_shipped_carries_three_phalanges; unit:test_the_interlayer_has_a_thickness_the_finger_cannot_exceed |
 | PS-5 | 整隻手裝得進宣告的床身,且列印姿態可行 | product | yes | constraint | artifact:layout_fits_bed; unit:test_the_assembled_hand_is_deliberately_too_tall_for_the_bed |
@@ -37,7 +37,7 @@ Population: V3 自己產生的物件(前綴 `HJ_V3_`)與 `models/hand-v3/` 的�
 | PS-7 | 加壓與抽真空共用同一組介面,兩種都能跑 | product | yes | flag | differential:TODO_pressure_vs_vacuum_slip_force; artifact:channel_probes |
 | ES-1 | 腱從全伸到全屈的路徑長變化不超過致動器行程 | engineering | no | constraint | unit:test_the_shipped_finger_closes_within_its_actuator_stroke |
 | ES-2 | 各關節力矩臂落在可用窗內,且不向指尖增大 | engineering | no | constraint | unit:test_moment_arms_outside_the_usable_window_are_refused; unit:test_the_moment_arms_never_grow_towards_the_fingertip |
-| ES-3 | 彈簧勁度梯度與力矩臂比值兩者共同決定閉合順序 | engineering | no | constraint | unit:TODO_test_order_is_a_function_of_both; integration:TODO_test_sweep_matches_prediction |
+| ES-3 | 彈簧勁度梯度與力矩臂比值兩者共同決定閉合順序 | engineering | no | constraint | unit:test_the_order_is_a_function_of_both_arms_and_springs; unit:test_the_spring_gradient_is_what_orders_the_joints_now |
 | ES-4 | 袖口夾與進氣口存在,且壁厚不低於最小值 | engineering | no | constraint | artifact:channel_probes; unit:test_the_air_port_clears_the_cuff_clamp_band |
 | ES-5 | 所有 V3 幾何水密、零非流形邊、零件數正確 | engineering | no | constraint | artifact:hand_v3.json |
 | ES-6 | V1／V2／V6 的交付物一個位元組都沒被改動 | engineering | no | constraint | artifact:test_versioned_octopus_print_package_matches_verified_meshes; artifact:test_versioned_octopus_v2_print_package_matches_verified_meshes |

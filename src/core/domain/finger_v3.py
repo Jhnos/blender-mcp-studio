@@ -251,9 +251,7 @@ class SingleTendonFingerSpec:
         """
         shares = [
             arm / stiffness
-            for arm, stiffness in zip(
-                self.moment_arms_mm, self.spring_stiffness_ratio, strict=True
-            )
+            for arm, stiffness in zip(self.moment_arms_mm, self.spring_stiffness_ratio, strict=True)
         ]
         return tuple(share / shares[0] for share in shares)
 
