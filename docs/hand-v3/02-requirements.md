@@ -10,6 +10,12 @@
 
 矩陣用 requirement-traceability 的 `trace_check.py` 機器驗(R1–R6)。
 
+**`Verified-by` 的每個 ref 必須是 repo 裡真的找得到的字串**——測試函式名、契約證據名、
+或檔名。還沒建的檢查一律寫 `TODO_` 開頭,**看得見**。
+這條規則本身由 `test_docs_hand_v3_figures.py` 機器驗:曾經整欄 22 個 ref 有 21 個
+在 repo 裡不存在,而 `trace_check.py` 回報「all 22 traced」——因為 R1–R6 只驗格式
+`tier:ref`,不驗那個 ref 指得到東西。**格式對的死連結,和沒有連結一樣糟,而且看起來更安全。**
+
 Population: V3 自己產生的物件(前綴 `HJ_V3_`)與 `models/hand-v3/` 的檔案;
 實體台架的母數為 10 件 YCB 級物體 × 每組 10 次;`models/octopus-hand-v1|v2/`、
 `models/biaxial-hinge-v6/` 排除在 V3 的掃描之外,它們由各自的迴歸契約獨立驗證;
@@ -17,28 +23,28 @@ Population: V3 自己產生的物件(前綴 `HJ_V3_`)與 `models/hand-v3/` 的�
 
 | ID | Requirement | Tier | User-visible | Kind | Verified-by |
 |---|---|---|---|---|---|
-| VOC-1 | 使用者看得到「充氣後抓得更牢」的實測數字,含母數、效果量與信賴區間 | voc | yes | feature | artifact:bench_slip_report_has_n_and_ci; differential:inflated_vs_deflated |
-| VOC-2 | 使用者拿得到可直接送切片的檔案,並看得到每個檔的尺寸與三角面數 | voc | yes | feature | artifact:print_package_manifest_matches_meshes |
-| VOC-3 | 每個引用的外部設計,使用者看得到它的出處與授權條款 | voc | yes | constraint | artifact:notice_lists_every_external_source; static:notice_file_exists |
-| VOC-4 | 使用者看得到手長什麼樣子與它的握姿,不必自己開 Blender | voc | yes | feature | artifact:render_set_present_and_uncropped |
-| VOC-5 | 使用者看得到哪些主張還沒被量過 | voc | yes | constraint | artifact:results_template_marks_vacuous |
-| PS-1 | 一條腱能把三個指節從全伸帶到全屈 | product | yes | feature | artifact:finger_sweep_reaches_full_flexion; unit:test_tendon_travel_covers_range |
-| PS-2 | 指節依序閉合:近端先動,遠端後動 | product | yes | feature | artifact:closure_order_from_sweep_samples; unit:test_spring_gradient_orders_joints |
-| PS-3 | 手掌是四指一排加一個對生拇指 | product | yes | feature | artifact:palm_topology_station_check; unit:test_palm_has_opposed_thumb |
-| PS-4 | 夾層充氣後的外形不擋住手指閉合 | product | yes | constraint | artifact:inflated_envelope_sweep_no_overlap |
-| PS-5 | 整隻手裝得進宣告的床身,且列印姿態可行 | product | yes | constraint | artifact:print_layout_within_bed; unit:test_upright_footprint |
-| PS-6 | 外層改用不可延展手套時,夾層壓力才建得起來 | product | yes | flag | differential:outer_layer_elastic_vs_work_glove; artifact:bench_report_records_both_outer_layers |
-| PS-7 | 加壓與抽真空共用同一組介面,兩種都能跑 | product | yes | flag | differential:pressure_vs_vacuum_slip_force; artifact:single_port_serves_both |
-| ES-1 | 腱從全伸到全屈的路徑長變化不超過致動器行程 | engineering | no | constraint | unit:test_tendon_path_length_within_stroke |
-| ES-2 | 各關節力矩臂比值單調遞減(近端最大) | engineering | no | constraint | unit:test_moment_arm_gradient_monotonic |
-| ES-3 | 彈簧勁度梯度與力矩臂比值兩者共同決定閉合順序 | engineering | no | constraint | unit:test_order_is_a_function_of_both; integration:test_sweep_matches_prediction |
-| ES-4 | 袖口夾與進氣口存在,且壁厚不低於最小值 | engineering | no | constraint | artifact:geometry_probe_cuff_and_port |
-| ES-5 | 所有 V3 幾何水密、零非流形邊、零件數正確 | engineering | no | constraint | artifact:generated_artifact_contract_v3 |
-| ES-6 | V1／V2／V6 的交付物一個位元組都沒被改動 | engineering | no | constraint | static:frozen_package_checksums; artifact:v1_v2_regression_contracts |
-| ES-7 | V3 的域模型不繼承章魚手的規格 | engineering | no | constraint | static:test_v3_does_not_subclass_octopus |
+| VOC-1 | 使用者看得到「充氣後抓得更牢」的實測數字,含母數、效果量與信賴區間 | voc | yes | feature | artifact:TODO_bench_slip_report_has_n_and_ci; differential:TODO_inflated_vs_deflated |
+| VOC-2 | 使用者拿得到可直接送切片的檔案,並看得到每個檔的尺寸與三角面數 | voc | yes | feature | artifact:test_versioned_hand_v3_print_package_matches_verified_meshes |
+| VOC-3 | 每個引用的外部設計,使用者看得到它的出處與授權條款 | voc | yes | constraint | static:NOTICE; artifact:TODO_notice_lists_every_external_source |
+| VOC-4 | 使用者看得到手長什麼樣子與它的握姿,不必自己開 Blender | voc | yes | feature | artifact:TODO_render_set_present_and_uncropped |
+| VOC-5 | 使用者看得到哪些主張還沒被量過 | voc | yes | constraint | artifact:TODO_results_template_marks_vacuous |
+| PS-1 | 一條腱能把三個指節從全伸帶到全屈 | product | yes | feature | artifact:test_the_finger_that_shipped_carries_three_phalanges; unit:test_the_shipped_finger_closes_within_its_actuator_stroke |
+| PS-2 | 指節依序閉合:近端先動,遠端後動 | product | yes | feature | artifact:TODO_closure_order_from_sweep_samples; unit:TODO_test_spring_gradient_orders_joints |
+| PS-3 | 手掌是四指一排加一個對生拇指 | product | yes | feature | artifact:scene_list; unit:test_the_thumb_can_touch_the_index_fingertip |
+| PS-4 | 夾層充氣後的外形不擋住手指閉合 | product | yes | constraint | artifact:TODO_inflated_envelope_sweep_no_overlap |
+| PS-5 | 整隻手裝得進宣告的床身,且列印姿態可行 | product | yes | constraint | artifact:layout_fits_bed; unit:test_the_assembled_hand_is_deliberately_too_tall_for_the_bed |
+| PS-6 | 外層改用不可延展手套時,夾層壓力才建得起來 | product | yes | flag | differential:TODO_outer_layer_elastic_vs_work_glove; artifact:TODO_bench_report_records_both_outer_layers |
+| PS-7 | 加壓與抽真空共用同一組介面,兩種都能跑 | product | yes | flag | differential:TODO_pressure_vs_vacuum_slip_force; artifact:channel_probes |
+| ES-1 | 腱從全伸到全屈的路徑長變化不超過致動器行程 | engineering | no | constraint | unit:test_the_shipped_finger_closes_within_its_actuator_stroke |
+| ES-2 | 各關節力矩臂落在可用窗內,且不向指尖增大 | engineering | no | constraint | unit:test_moment_arms_outside_the_usable_window_are_refused; unit:test_the_moment_arms_never_grow_towards_the_fingertip |
+| ES-3 | 彈簧勁度梯度與力矩臂比值兩者共同決定閉合順序 | engineering | no | constraint | unit:TODO_test_order_is_a_function_of_both; integration:TODO_test_sweep_matches_prediction |
+| ES-4 | 袖口夾與進氣口存在,且壁厚不低於最小值 | engineering | no | constraint | artifact:channel_probes; unit:test_the_air_port_clears_the_cuff_clamp_band |
+| ES-5 | 所有 V3 幾何水密、零非流形邊、零件數正確 | engineering | no | constraint | artifact:hand_v3.json |
+| ES-6 | V1／V2／V6 的交付物一個位元組都沒被改動 | engineering | no | constraint | artifact:test_versioned_octopus_print_package_matches_verified_meshes; artifact:test_versioned_octopus_v2_print_package_matches_verified_meshes |
+| ES-7 | V3 的域模型不繼承章魚手的規格 | engineering | no | constraint | static:test_the_v3_finger_is_not_a_subtype_of_the_octopus_hand |
 | DS-1 | 指節鏈沿用 `HingePhalanxSpec` 既有的全部不變式 | detail | no | constraint | unit:test_hinge_chain |
-| DS-2 | 不可製造的 V3 規格必須大聲失敗,不得靜默通過 | detail | no | constraint | unit:test_finger_v3_rejects_bad_specs |
-| DS-3 | 域層不匯入 `bpy`、FastAPI、FastMCP | detail | no | constraint | static:architecture_ssot_gate |
+| DS-2 | 不可製造的 V3 規格必須大聲失敗,不得靜默通過 | detail | no | constraint | unit:test_a_finger_that_cannot_work_is_refused_at_construction |
+| DS-3 | 域層不匯入 `bpy`、FastAPI、FastMCP | detail | no | constraint | static:test_architecture_ssot |
 
 ## 怎麼讀這張表
 

@@ -207,3 +207,60 @@ def test_the_population_the_docs_declare_is_the_prefix_the_generator_uses() -> N
         assert declared in text, f"{name} names a population other than {declared}"
         stale = re.findall(r"H[A-Z]_V3_", text)
         assert set(stale) <= {declared}, f"{name} still names {set(stale) - {declared}}"
+
+
+def test_every_verifier_the_matrix_names_can_be_found() -> None:
+    """A dead link in the format's shape is worse than no link: it looks safe.
+
+    The traceability matrix once named 22 verifiers and 21 of them did not
+    exist anywhere in the repository — `test_moment_arm_gradient_monotonic`,
+    `print_layout_within_bed`, `geometry_probe_cuff_and_port` and the rest were
+    descriptive slugs nobody had ever resolved. `trace_check.py` reported "all
+    22 requirement(s) traced" throughout, because R1-R6 check the shape of
+    `tier:ref`, not whether the ref points at anything.
+
+    So each ref must be a literal string that occurs somewhere in `tests/`,
+    `scripts/` or `src/` — a test function, a contract evidence name, a file.
+    Checks not yet built carry a `TODO_` prefix and are exempt, which is the
+    point: an unbuilt check is allowed to be visible and not allowed to hide.
+    """
+    import re
+
+    matrix = (ROOT / "docs" / "hand-v3" / "02-requirements.md").read_text(encoding="utf-8")
+    tiers = "static|unit|integration|artifact|differential|monitor"
+    refs = set(re.findall(rf"(?:{tiers}):([A-Za-z0-9_./|-]+)", matrix))
+    assert len(refs) > 15, f"the matrix stopped naming verifiers: {refs}"
+
+    haystack = "\n".join(
+        path.read_text(encoding="utf-8", errors="ignore")
+        for tree in ("tests", "scripts", "src")
+        for path in (ROOT / tree).rglob("*")
+        if path.is_file() and path.suffix in {".py", ".json"}
+    )
+    missing = sorted(
+        ref for ref in refs if not ref.startswith("TODO_") and ref not in haystack
+    )
+    assert not missing, f"the matrix names verifiers that do not exist: {missing}"
+
+
+def test_the_matrix_does_not_hide_an_unbuilt_check_behind_a_real_looking_name() -> None:
+    """The `TODO_` escape hatch has to stay an escape hatch.
+
+    Its whole value is that an unbuilt check reads as unbuilt, so a `TODO_` ref
+    that happens to exist in the tree means the name was recycled and the row
+    is now lying in the other direction.
+    """
+    import re
+
+    matrix = (ROOT / "docs" / "hand-v3" / "02-requirements.md").read_text(encoding="utf-8")
+    todos = {ref for ref in re.findall(r"(?:\w+):(TODO_[A-Za-z0-9_]+)", matrix)}
+    assert todos, "every check is built, so this guard should have been deleted with the last one"
+
+    for ref in todos:
+        found = [
+            path
+            for tree in ("tests", "src")
+            for path in (ROOT / tree).rglob("*.py")
+            if ref in path.read_text(encoding="utf-8", errors="ignore")
+        ]
+        assert not found, f"{ref} is marked TODO but exists in {found}"
