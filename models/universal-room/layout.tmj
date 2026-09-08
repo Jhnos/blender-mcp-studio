@@ -1,0 +1,1802 @@
+{
+  "type": "map",
+  "version": "1.10",
+  "orientation": "orthogonal",
+  "renderorder": "right-down",
+  "infinite": false,
+  "width": 20,
+  "height": 15,
+  "tilewidth": 64,
+  "tileheight": 64,
+  "tilesets": [],
+  "properties": [
+    {
+      "name": "atlas",
+      "type": "string",
+      "value": "wood-stone"
+    },
+    {
+      "name": "completion_flag",
+      "type": "string",
+      "value": "flag.explored"
+    },
+    {
+      "name": "instructions",
+      "type": "string",
+      "value": "走到發光圓圈：讀告示、開箱取鑰匙，再沿右側走廊前往出口。"
+    }
+  ],
+  "layers": [
+    {
+      "id": 1,
+      "name": "ground",
+      "type": "tilelayer",
+      "width": 20,
+      "height": 15,
+      "data": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 2,
+      "name": "blocking",
+      "type": "tilelayer",
+      "width": 20,
+      "height": 15,
+      "data": [
+        0,
+        0,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        0,
+        1,
+        1,
+        1,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        0,
+        0,
+        1,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        0,
+        0,
+        1,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        0,
+        0,
+        1,
+        1,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        0,
+        1,
+        1,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "id": 3,
+      "name": "decorations",
+      "type": "objectgroup",
+      "objects": [
+        {
+          "id": 1,
+          "name": "1",
+          "x": 160,
+          "y": 32,
+          "properties": [
+            {
+              "name": "frame",
+              "type": "int",
+              "value": 1
+            }
+          ]
+        },
+        {
+          "id": 2,
+          "name": "1",
+          "x": 224,
+          "y": 32,
+          "properties": [
+            {
+              "name": "frame",
+              "type": "int",
+              "value": 1
+            }
+          ]
+        },
+        {
+          "id": 3,
+          "name": "1",
+          "x": 288,
+          "y": 32,
+          "properties": [
+            {
+              "name": "frame",
+              "type": "int",
+              "value": 1
+            }
+          ]
+        },
+        {
+          "id": 4,
+          "name": "1",
+          "x": 352,
+          "y": 32,
+          "properties": [
+            {
+              "name": "frame",
+              "type": "int",
+              "value": 1
+            }
+          ]
+        },
+        {
+          "id": 5,
+          "name": "1",
+          "x": 416,
+          "y": 32,
+          "properties": [
+            {
+              "name": "frame",
+              "type": "int",
+              "value": 1
+            }
+          ]
+        },
+        {
+          "id": 6,
+          "name": "1",
+          "x": 480,
+          "y": 32,
+          "properties": [
+            {
+              "name": "frame",
+              "type": "int",
+              "value": 1
+            }
+          ]
+        },
+        {
+          "id": 7,
+          "name": "1",
+          "x": 544,
+          "y": 32,
+          "properties": [
+            {
+              "name": "frame",
+              "type": "int",
+              "value": 1
+            }
+          ]
+        },
+        {
+          "id": 8,
+          "name": "1",
+          "x": 32,
+          "y": 736,
+          "properties": [
+            {
+              "name": "frame",
+              "type": "int",
+              "value": 1
+            }
+          ]
+        },
+        {
+          "id": 9,
+          "name": "1",
+          "x": 96,
+          "y": 736,
+          "properties": [
+            {
+              "name": "frame",
+              "type": "int",
+              "value": 1
+            }
+          ]
+        },
+        {
+          "id": 10,
+          "name": "1",
+          "x": 160,
+          "y": 736,
+          "properties": [
+            {
+              "name": "frame",
+              "type": "int",
+              "value": 1
+            }
+          ]
+        },
+        {
+          "id": 11,
+          "name": "1",
+          "x": 224,
+          "y": 736,
+          "properties": [
+            {
+              "name": "frame",
+              "type": "int",
+              "value": 1
+            }
+          ]
+        },
+        {
+          "id": 12,
+          "name": "1",
+          "x": 288,
+          "y": 736,
+          "properties": [
+            {
+              "name": "frame",
+              "type": "int",
+              "value": 1
+            }
+          ]
+        },
+        {
+          "id": 13,
+          "name": "1",
+          "x": 352,
+          "y": 736,
+          "properties": [
+            {
+              "name": "frame",
+              "type": "int",
+              "value": 1
+            }
+          ]
+        },
+        {
+          "id": 14,
+          "name": "1",
+          "x": 416,
+          "y": 736,
+          "properties": [
+            {
+              "name": "frame",
+              "type": "int",
+              "value": 1
+            }
+          ]
+        },
+        {
+          "id": 15,
+          "name": "1",
+          "x": 480,
+          "y": 736,
+          "properties": [
+            {
+              "name": "frame",
+              "type": "int",
+              "value": 1
+            }
+          ]
+        },
+        {
+          "id": 16,
+          "name": "1",
+          "x": 544,
+          "y": 736,
+          "properties": [
+            {
+              "name": "frame",
+              "type": "int",
+              "value": 1
+            }
+          ]
+        },
+        {
+          "id": 17,
+          "name": "1",
+          "x": 32,
+          "y": 160,
+          "properties": [
+            {
+              "name": "frame",
+              "type": "int",
+              "value": 14
+            }
+          ]
+        },
+        {
+          "id": 18,
+          "name": "1",
+          "x": 32,
+          "y": 224,
+          "properties": [
+            {
+              "name": "frame",
+              "type": "int",
+              "value": 14
+            }
+          ]
+        },
+        {
+          "id": 19,
+          "name": "1",
+          "x": 32,
+          "y": 288,
+          "properties": [
+            {
+              "name": "frame",
+              "type": "int",
+              "value": 14
+            }
+          ]
+        },
+        {
+          "id": 20,
+          "name": "1",
+          "x": 32,
+          "y": 352,
+          "properties": [
+            {
+              "name": "frame",
+              "type": "int",
+              "value": 14
+            }
+          ]
+        },
+        {
+          "id": 21,
+          "name": "1",
+          "x": 32,
+          "y": 416,
+          "properties": [
+            {
+              "name": "frame",
+              "type": "int",
+              "value": 14
+            }
+          ]
+        },
+        {
+          "id": 22,
+          "name": "1",
+          "x": 32,
+          "y": 480,
+          "properties": [
+            {
+              "name": "frame",
+              "type": "int",
+              "value": 14
+            }
+          ]
+        },
+        {
+          "id": 23,
+          "name": "1",
+          "x": 32,
+          "y": 544,
+          "properties": [
+            {
+              "name": "frame",
+              "type": "int",
+              "value": 14
+            }
+          ]
+        },
+        {
+          "id": 24,
+          "name": "1",
+          "x": 32,
+          "y": 608,
+          "properties": [
+            {
+              "name": "frame",
+              "type": "int",
+              "value": 14
+            }
+          ]
+        },
+        {
+          "id": 25,
+          "name": "1",
+          "x": 32,
+          "y": 672,
+          "properties": [
+            {
+              "name": "frame",
+              "type": "int",
+              "value": 14
+            }
+          ]
+        },
+        {
+          "id": 26,
+          "name": "1",
+          "x": 544,
+          "y": 96,
+          "properties": [
+            {
+              "name": "frame",
+              "type": "int",
+              "value": 14
+            }
+          ]
+        },
+        {
+          "id": 27,
+          "name": "1",
+          "x": 544,
+          "y": 160,
+          "properties": [
+            {
+              "name": "frame",
+              "type": "int",
+              "value": 14
+            }
+          ]
+        },
+        {
+          "id": 28,
+          "name": "1",
+          "x": 544,
+          "y": 224,
+          "properties": [
+            {
+              "name": "frame",
+              "type": "int",
+              "value": 14
+            }
+          ]
+        },
+        {
+          "id": 29,
+          "name": "1",
+          "x": 544,
+          "y": 288,
+          "properties": [
+            {
+              "name": "frame",
+              "type": "int",
+              "value": 14
+            }
+          ]
+        },
+        {
+          "id": 30,
+          "name": "1",
+          "x": 544,
+          "y": 352,
+          "properties": [
+            {
+              "name": "frame",
+              "type": "int",
+              "value": 14
+            }
+          ]
+        },
+        {
+          "id": 31,
+          "name": "1",
+          "x": 544,
+          "y": 480,
+          "properties": [
+            {
+              "name": "frame",
+              "type": "int",
+              "value": 14
+            }
+          ]
+        },
+        {
+          "id": 32,
+          "name": "1",
+          "x": 544,
+          "y": 544,
+          "properties": [
+            {
+              "name": "frame",
+              "type": "int",
+              "value": 14
+            }
+          ]
+        },
+        {
+          "id": 33,
+          "name": "1",
+          "x": 544,
+          "y": 608,
+          "properties": [
+            {
+              "name": "frame",
+              "type": "int",
+              "value": 14
+            }
+          ]
+        },
+        {
+          "id": 34,
+          "name": "1",
+          "x": 544,
+          "y": 672,
+          "properties": [
+            {
+              "name": "frame",
+              "type": "int",
+              "value": 14
+            }
+          ]
+        },
+        {
+          "id": 35,
+          "name": "1",
+          "x": 608,
+          "y": 352,
+          "properties": [
+            {
+              "name": "frame",
+              "type": "int",
+              "value": 1
+            }
+          ]
+        },
+        {
+          "id": 36,
+          "name": "1",
+          "x": 608,
+          "y": 480,
+          "properties": [
+            {
+              "name": "frame",
+              "type": "int",
+              "value": 1
+            }
+          ]
+        },
+        {
+          "id": 37,
+          "name": "1",
+          "x": 672,
+          "y": 352,
+          "properties": [
+            {
+              "name": "frame",
+              "type": "int",
+              "value": 1
+            }
+          ]
+        },
+        {
+          "id": 38,
+          "name": "1",
+          "x": 672,
+          "y": 480,
+          "properties": [
+            {
+              "name": "frame",
+              "type": "int",
+              "value": 1
+            }
+          ]
+        },
+        {
+          "id": 39,
+          "name": "1",
+          "x": 736,
+          "y": 352,
+          "properties": [
+            {
+              "name": "frame",
+              "type": "int",
+              "value": 1
+            }
+          ]
+        },
+        {
+          "id": 40,
+          "name": "1",
+          "x": 736,
+          "y": 480,
+          "properties": [
+            {
+              "name": "frame",
+              "type": "int",
+              "value": 1
+            }
+          ]
+        },
+        {
+          "id": 41,
+          "name": "1",
+          "x": 800,
+          "y": 352,
+          "properties": [
+            {
+              "name": "frame",
+              "type": "int",
+              "value": 1
+            }
+          ]
+        },
+        {
+          "id": 42,
+          "name": "1",
+          "x": 800,
+          "y": 480,
+          "properties": [
+            {
+              "name": "frame",
+              "type": "int",
+              "value": 1
+            }
+          ]
+        },
+        {
+          "id": 43,
+          "name": "1",
+          "x": 864,
+          "y": 352,
+          "properties": [
+            {
+              "name": "frame",
+              "type": "int",
+              "value": 1
+            }
+          ]
+        },
+        {
+          "id": 44,
+          "name": "1",
+          "x": 864,
+          "y": 480,
+          "properties": [
+            {
+              "name": "frame",
+              "type": "int",
+              "value": 1
+            }
+          ]
+        },
+        {
+          "id": 45,
+          "name": "1",
+          "x": 928,
+          "y": 352,
+          "properties": [
+            {
+              "name": "frame",
+              "type": "int",
+              "value": 1
+            }
+          ]
+        },
+        {
+          "id": 46,
+          "name": "1",
+          "x": 928,
+          "y": 480,
+          "properties": [
+            {
+              "name": "frame",
+              "type": "int",
+              "value": 1
+            }
+          ]
+        },
+        {
+          "id": 47,
+          "name": "1",
+          "x": 992,
+          "y": 352,
+          "properties": [
+            {
+              "name": "frame",
+              "type": "int",
+              "value": 1
+            }
+          ]
+        },
+        {
+          "id": 48,
+          "name": "1",
+          "x": 992,
+          "y": 480,
+          "properties": [
+            {
+              "name": "frame",
+              "type": "int",
+              "value": 1
+            }
+          ]
+        },
+        {
+          "id": 49,
+          "name": "1",
+          "x": 1056,
+          "y": 224,
+          "properties": [
+            {
+              "name": "frame",
+              "type": "int",
+              "value": 1
+            }
+          ]
+        },
+        {
+          "id": 50,
+          "name": "1",
+          "x": 1056,
+          "y": 672,
+          "properties": [
+            {
+              "name": "frame",
+              "type": "int",
+              "value": 1
+            }
+          ]
+        },
+        {
+          "id": 51,
+          "name": "1",
+          "x": 1120,
+          "y": 224,
+          "properties": [
+            {
+              "name": "frame",
+              "type": "int",
+              "value": 1
+            }
+          ]
+        },
+        {
+          "id": 52,
+          "name": "1",
+          "x": 1120,
+          "y": 672,
+          "properties": [
+            {
+              "name": "frame",
+              "type": "int",
+              "value": 1
+            }
+          ]
+        },
+        {
+          "id": 53,
+          "name": "1",
+          "x": 1184,
+          "y": 224,
+          "properties": [
+            {
+              "name": "frame",
+              "type": "int",
+              "value": 1
+            }
+          ]
+        },
+        {
+          "id": 54,
+          "name": "1",
+          "x": 1184,
+          "y": 672,
+          "properties": [
+            {
+              "name": "frame",
+              "type": "int",
+              "value": 1
+            }
+          ]
+        },
+        {
+          "id": 55,
+          "name": "1",
+          "x": 1248,
+          "y": 224,
+          "properties": [
+            {
+              "name": "frame",
+              "type": "int",
+              "value": 1
+            }
+          ]
+        },
+        {
+          "id": 56,
+          "name": "1",
+          "x": 1248,
+          "y": 672,
+          "properties": [
+            {
+              "name": "frame",
+              "type": "int",
+              "value": 1
+            }
+          ]
+        },
+        {
+          "id": 57,
+          "name": "1",
+          "x": 1248,
+          "y": 288,
+          "properties": [
+            {
+              "name": "frame",
+              "type": "int",
+              "value": 14
+            }
+          ]
+        },
+        {
+          "id": 58,
+          "name": "1",
+          "x": 1056,
+          "y": 288,
+          "properties": [
+            {
+              "name": "frame",
+              "type": "int",
+              "value": 14
+            }
+          ]
+        },
+        {
+          "id": 59,
+          "name": "1",
+          "x": 1248,
+          "y": 352,
+          "properties": [
+            {
+              "name": "frame",
+              "type": "int",
+              "value": 14
+            }
+          ]
+        },
+        {
+          "id": 60,
+          "name": "1",
+          "x": 1056,
+          "y": 352,
+          "properties": [
+            {
+              "name": "frame",
+              "type": "int",
+              "value": 14
+            }
+          ]
+        },
+        {
+          "id": 61,
+          "name": "1",
+          "x": 1248,
+          "y": 416,
+          "properties": [
+            {
+              "name": "frame",
+              "type": "int",
+              "value": 14
+            }
+          ]
+        },
+        {
+          "id": 62,
+          "name": "1",
+          "x": 1248,
+          "y": 480,
+          "properties": [
+            {
+              "name": "frame",
+              "type": "int",
+              "value": 14
+            }
+          ]
+        },
+        {
+          "id": 63,
+          "name": "1",
+          "x": 1056,
+          "y": 480,
+          "properties": [
+            {
+              "name": "frame",
+              "type": "int",
+              "value": 14
+            }
+          ]
+        },
+        {
+          "id": 64,
+          "name": "1",
+          "x": 1248,
+          "y": 544,
+          "properties": [
+            {
+              "name": "frame",
+              "type": "int",
+              "value": 14
+            }
+          ]
+        },
+        {
+          "id": 65,
+          "name": "1",
+          "x": 1056,
+          "y": 544,
+          "properties": [
+            {
+              "name": "frame",
+              "type": "int",
+              "value": 14
+            }
+          ]
+        },
+        {
+          "id": 66,
+          "name": "1",
+          "x": 1248,
+          "y": 608,
+          "properties": [
+            {
+              "name": "frame",
+              "type": "int",
+              "value": 14
+            }
+          ]
+        },
+        {
+          "id": 67,
+          "name": "1",
+          "x": 1056,
+          "y": 608,
+          "properties": [
+            {
+              "name": "frame",
+              "type": "int",
+              "value": 14
+            }
+          ]
+        },
+        {
+          "id": 68,
+          "name": "11",
+          "x": 224,
+          "y": 160,
+          "properties": [
+            {
+              "name": "frame",
+              "type": "int",
+              "value": 11
+            }
+          ]
+        },
+        {
+          "id": 69,
+          "name": "7",
+          "x": 224,
+          "y": 352,
+          "properties": [
+            {
+              "name": "frame",
+              "type": "int",
+              "value": 7
+            },
+            {
+              "name": "state_flag",
+              "type": "string",
+              "value": "flag.chest_open"
+            },
+            {
+              "name": "active_frame",
+              "type": "int",
+              "value": 13
+            }
+          ]
+        },
+        {
+          "id": 70,
+          "name": "5",
+          "x": 352,
+          "y": 224,
+          "properties": [
+            {
+              "name": "frame",
+              "type": "int",
+              "value": 5
+            }
+          ]
+        },
+        {
+          "id": 71,
+          "name": "6",
+          "x": 352,
+          "y": 288,
+          "properties": [
+            {
+              "name": "frame",
+              "type": "int",
+              "value": 6
+            }
+          ]
+        },
+        {
+          "id": 72,
+          "name": "8",
+          "x": 416,
+          "y": 544,
+          "properties": [
+            {
+              "name": "frame",
+              "type": "int",
+              "value": 8
+            }
+          ]
+        },
+        {
+          "id": 73,
+          "name": "9",
+          "x": 160,
+          "y": 608,
+          "properties": [
+            {
+              "name": "frame",
+              "type": "int",
+              "value": 9
+            }
+          ]
+        },
+        {
+          "id": 74,
+          "name": "10",
+          "x": 480,
+          "y": 96,
+          "properties": [
+            {
+              "name": "frame",
+              "type": "int",
+              "value": 10
+            }
+          ]
+        },
+        {
+          "id": 75,
+          "name": "10",
+          "x": 1120,
+          "y": 608,
+          "properties": [
+            {
+              "name": "frame",
+              "type": "int",
+              "value": 10
+            }
+          ]
+        },
+        {
+          "id": 76,
+          "name": "3",
+          "x": 1184,
+          "y": 288,
+          "properties": [
+            {
+              "name": "frame",
+              "type": "int",
+              "value": 3
+            }
+          ]
+        },
+        {
+          "id": 77,
+          "name": "4",
+          "x": 1184,
+          "y": 288,
+          "properties": [
+            {
+              "name": "frame",
+              "type": "int",
+              "value": 4
+            },
+            {
+              "name": "state_flag",
+              "type": "string",
+              "value": "flag.explored"
+            },
+            {
+              "name": "active_frame",
+              "type": "int",
+              "value": 12
+            }
+          ]
+        },
+        {
+          "id": 78,
+          "name": "2",
+          "x": 96,
+          "y": 672,
+          "properties": [
+            {
+              "name": "frame",
+              "type": "int",
+              "value": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "name": "zones",
+      "type": "objectgroup",
+      "objects": [
+        {
+          "id": 100,
+          "name": "倉儲房間",
+          "x": 0,
+          "y": 0,
+          "width": 576,
+          "height": 768,
+          "properties": [
+            {
+              "name": "zone.type",
+              "type": "string",
+              "value": "room"
+            }
+          ]
+        },
+        {
+          "id": 101,
+          "name": "連接走廊",
+          "x": 576,
+          "y": 320,
+          "width": 448,
+          "height": 192,
+          "properties": [
+            {
+              "name": "zone.type",
+              "type": "string",
+              "value": "corridor"
+            }
+          ]
+        },
+        {
+          "id": 102,
+          "name": "出口房間",
+          "x": 1024,
+          "y": 192,
+          "width": 256,
+          "height": 512,
+          "properties": [
+            {
+              "name": "zone.type",
+              "type": "string",
+              "value": "room"
+            }
+          ]
+        },
+        {
+          "id": 103,
+          "name": "閱讀告示牌",
+          "x": 192,
+          "y": 192,
+          "width": 64,
+          "height": 64,
+          "properties": [
+            {
+              "name": "zone.type",
+              "type": "string",
+              "value": "board"
+            },
+            {
+              "name": "action_label",
+              "type": "string",
+              "value": "閱讀告示牌"
+            }
+          ]
+        },
+        {
+          "id": 104,
+          "name": "打開補給箱",
+          "x": 192,
+          "y": 384,
+          "width": 64,
+          "height": 64,
+          "properties": [
+            {
+              "name": "zone.type",
+              "type": "string",
+              "value": "chest"
+            },
+            {
+              "name": "action_label",
+              "type": "string",
+              "value": "打開補給箱"
+            }
+          ]
+        },
+        {
+          "id": 105,
+          "name": "離開倉庫",
+          "x": 1152,
+          "y": 320,
+          "width": 64,
+          "height": 64,
+          "properties": [
+            {
+              "name": "zone.type",
+              "type": "string",
+              "value": "exit"
+            },
+            {
+              "name": "action_label",
+              "type": "string",
+              "value": "離開倉庫"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
