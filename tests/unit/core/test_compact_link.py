@@ -13,8 +13,9 @@ the pin outright — `100_fingers` uses living hinges, `RoninHand` prints its
 joints in place. Keeping a pin and shrinking it is the smaller step, and it is
 the one whose checks this repo already owns.
 
-What makes it a swap rather than a rewrite is that the V3 stack touches exactly
-nineteen link attributes. Those are the interface; both specs satisfy it.
+What makes it a swap rather than a rewrite is that the V3 stack touches a fixed
+set of link attributes, written down as `FingerLinkSpec`. That is the interface;
+both specs satisfy it, and the count lives in the Protocol, not in prose.
 """
 
 import dataclasses

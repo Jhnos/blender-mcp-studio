@@ -41,21 +41,21 @@
 
 ### Verified facts
 
-- M0:樹守衛先在空目錄上紅,文件寫完綠;第一稿被守衛抓到四件事。
-- M1:差分對舊產生器 4/4 PASS;`--real` 三條新閘門 7 s + 1 s + 0.2 s;should-fire 親驗 exit 1。
-- M2:規劃層 83 個測試綠;兩份契約由規劃生成並簽入,真機仍 20/14;ES-6 首跑抓到 5 個從未重載的模組;
-  佈局算法離線算出 242.0 × 103.5 = 真機量到的數。DS-1 現在有真守衛。
-- 親驗:`finger_mount_frames` 零呼叫者;`palm_v3.py` 372/380 行;`build_finger` 等臂守衛在 `:221-225`。
+- M0:樹守衛先紅後綠;M1:差分 + 三條 `--real` 閘門(7 s + 1 s + 0.2 s);M2:契約由規劃生成,ES-6 首跑抓到 5 個沒重載的模組。
+- **M3:新產生器(`scripts/hand_*.py` 讀規劃)在真機重現 V3:差分 4/4(3434/2686/10302/54196,STL 時戳在同一次跑內),
+  契約 20/14,`ci.sh --real` 全綠;三張渲染圖親眼看過(手立在地板上、圖說在旁、佈局三節加掌盤)。**
+- 舊產生器三個模組與 `finger_mount_frames` 已刪;`test_script_primitive_ssot` 綠;ES-5 字面值掃描綠。
+- 第一次真機跑抓到一個真缺陷:按名字認主體在第二條鏈起落單(Blender `.001`),已改按位置並記入 LESSONS。
+- 親驗:`palm_v3.py` 372/380 行(M4 要切 `opposition.py`)。
 
 ### Open failures
 
-- 沒有機器檢查在失敗。矩陣剩 10 個 `TODO_` ref(M3–M6),每個都有名字。
-- D-004 已 `due`:V1/V2/V6 七份契約排進 M3 一起接進 `--real`。
+- 沒有機器檢查在失敗。矩陣剩 8 個 `TODO_` ref:PS-1、VOC-4(M6)、PS-2 契約欄位(M5)、PS-3、ES-1、ES-2、DS-2(M4)、ES-3。
+- D-004 已 `due`:V1/V2/V6 七份契約接進 `--real`——先在真機各跑一次確認仍過,再接。
 
 ### Next step
 
-- M3:先寫 `tests/unit/planning/test_phalanx_plan.py` 與 `test_route_plan.py`(紅:模組不存在)釘住
-  `04-plans` 帳本 P-1…P-6、R-1;再寫 `tests/unit/scripts/test_bpy_modules_read_plans_only`(ES-5)。
-  然後建 `scripts/hand_{geometry,presentation,gates,generator}.py`,`model_finger_v3.py` 縮成 shim,
-  Mac 上跑 `v6-scripts` 的三條差分指令;綠了才刪 `finger_v3_geometry.py`、`palm_v3_geometry.py`、
-  `finger_v3_presentation.py` 與 `finger_mount_frames`。
+- D-004(小片):Mac 上逐一跑 `biaxial_hinge*.json`(5)、`octopus_hand*.json`(2)與 V2 的契約;全過就在 `ci.sh` 加 `_run hard`,
+  CI-pin 測試擴成列出全部;記秒數到 `30-verification`。
+- 然後 M4:先寫 `test_palm_v3` 的紅案例(拇指凸出 23 被拒、三指列窄一節距、推導預設 = 22.0、取樣跟著上限),
+  再切 `opposition.py`、加五條不變式。

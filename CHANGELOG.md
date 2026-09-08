@@ -5,6 +5,33 @@
 
 ## [Unreleased]
 
+### V01.0P.005 — 執行層只讀規劃,新產生器在真機逐面重現 V3,舊產生器刪除
+
+#### Added
+
+- `scripts/hand_geometry.py`、`hand_presentation.py`、`hand_gates.py`、`hand_generator.py`:執行層。
+  實體與布林照 `PhalanxPlan`/`PalmPlan` 的清單與順序;佈局照 `LayoutPlan` 的槽位烘進網格;
+  視角、框選、調色盤、圖說來自 `PresentationPlan`;閘門的每個門檻與場景鍵都來自 `HandPlan`。
+  ES-5 靜態掃描(`test_hand_execution_reads_plans_only`)證明這四個模組沒有任何尺寸字面值或名字型字串。
+- `src/core/planning/{csg,phalanx_plan,route_plan,palm_plan,presentation_plan}.py`:帳本 P-1…P-6、R-1 的家。
+  梯度手指在規劃層就是「每相異臂一份零件、每單元記零件號」——V3 一份,精簡連桿兩份,離線測。
+- `scripts/model_finger_v3.py` 縮成入口:兩個 `"HJ_"` 字面值,一個被 regex 釘、一個在建構時對註冊表核對。
+- VOC-3 守衛:v8 對每個註冊實例恰有一列狀態。
+
+#### Changed
+
+- **重現差分對新產生器 4/4**:3434 / 2686 / 10302 / 54196 面,尺寸全在 ±0.1 內,STL 時戳在同一次跑內;
+  契約 20/14;`ci.sh --real` 全綠。HF-1 成立。
+- 據此刪除 `scripts/finger_v3_geometry.py`、`palm_v3_geometry.py`、`finger_v3_presentation.py`(含零呼叫者
+  `finger_mount_frames`)。不留兩套。
+- 產生器一開始就刪掉自己上一次的全部輸出,差分不可能讀到殘留。
+
+#### Fixed
+
+- 第一次真機跑就抓到:`build_finger` 按**名字**認主體,Blender 對重名加 `.001`,第二條鏈起主體全落單,
+  場景 8 個 `PHALANX_`——stale-scene 閘門擋下。改按位置認主體。
+- `finger_link.py` 與 `test_compact_link.py` 的「十九個屬性」散文拿掉:散文裡的計數沒人驗,已錯過一次。
+
 ### V01.0P.004 — 契約由規劃生成,而且第一次生成就抓到五個從未重載的模組
 
 #### Added

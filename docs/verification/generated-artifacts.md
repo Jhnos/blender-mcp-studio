@@ -117,10 +117,12 @@ saved output files for the other version are retained.
 | `src/core/domain/finger_v3.py` | Single-tendon finger: travel, moment-arm window, planar stacking |
 | `src/core/domain/palm_v3.py` | Anthropomorphic palm, thumb frame and opposition reachability |
 | `scripts/presentation_profile.py` | Render furniture as data; one constant per model line |
-| `scripts/finger_v3_geometry.py` | Phalanx body, both hinge ends on one axis, tendon bore |
-| `scripts/palm_v3_geometry.py` | Knuckle roots, thenar boss, tendon channels, cuff clamp, air port |
-| `scripts/finger_v3_presentation.py` | V3 views and the bed-nested print layout |
-| `scripts/model_finger_v3.py` | V3 assembly, export and stale-scene refusal |
+| `src/core/planning/` | Plans: naming, counts, stations, phalanx and palm solids, probes, layout, presentation — pure, no bpy |
+| `scripts/hand_geometry.py` | Realises a plan's solids and Booleans in the plan's order |
+| `scripts/hand_presentation.py` | Bakes LayoutPlan slots into copies; frames PresentationPlan views |
+| `scripts/hand_gates.py` | Compares built objects to the plan: shells, part numbers, knuckle reach, footprints, stale scene |
+| `scripts/hand_generator.py` | Composes geometry, gates, exports and views for one registered instance |
+| `scripts/model_finger_v3.py` | V3 entry point: binds the instance and its namespace, nothing else |
 | `src/verification/generated_artifact_contract.py` | Contract parsing and evidence assessment |
 | `src/verification/artifact_files.py` | Binary STL length/coordinate validation without Blender |
 | `src/verification/mesh_measurements.py` | Fail-closed dimensions, slopes, bores and pin evidence |

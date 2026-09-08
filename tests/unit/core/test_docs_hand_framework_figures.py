@@ -197,3 +197,17 @@ def test_the_instance_table_quotes_what_the_specs_compute() -> None:
             f"{slug}: the table says {quoted[: len(expected)]}, the spec computes "
             f"{[round(v, 2) for v in expected]}"
         )
+
+
+def test_the_results_template_marks_each_instance() -> None:
+    """VOC-3: a reader learns what each registered instance passed from v8 alone.
+
+    Exactly one status row per slug, and it says PASS or vacuous — never blank.
+    """
+    from src.core.domain.hand_instances import HAND_INSTANCES
+
+    doc = (TREE / "v8-results.md").read_text(encoding="utf-8")
+    for slug in HAND_INSTANCES:
+        rows = [line for line in doc.splitlines() if line.startswith("|") and f"`{slug}`" in line]
+        assert len(rows) == 1, f"v8-results must carry exactly one status row for {slug}"
+        assert "PASS" in rows[0] or "vacuous" in rows[0], rows[0]

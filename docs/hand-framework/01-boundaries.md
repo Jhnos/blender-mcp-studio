@@ -26,9 +26,12 @@
 | `src/core/domain/opposition.py` | domain | 新 | 對生可達性函式(從掌盤切出,因 372/380 行預算) |
 | `src/core/domain/hand_instances.py` | domain | 已建(M2) | `HAND_INSTANCES` 註冊表——**唯一**命名實例的地方 |
 | `src/core/planning/naming.py` | planning | 已建(M2) | `NamingPolicy`,見 [[hand-framework/06-naming]] |
-| `src/core/planning/phalanx_plan.py` | planning | M3 | 每節的名字、孔、座、公母端尺寸 |
+| `src/core/planning/phalanx_plan.py` | planning | 已建(M3) | 每節的名字、孔、座、公母端尺寸 |
 | `src/core/planning/station_plan.py` | planning | 已建(M2) | 站台原點、基底、鏈;拇指基底算一次 |
-| `src/core/planning/route_plan.py` | planning | M3 | 站台 × 路徑 → 孔 |
+| `src/core/planning/route_plan.py` | planning | 已建(M3) | 站台 × 路徑 → 孔 |
+| `src/core/planning/palm_plan.py` | planning | 已建(M3) | 板、拇指丘、根、進氣口、袖口夾的具名實體與順序 |
+| `src/core/planning/csg.py` | planning | 已建(M3) | 規劃可要求的實體詞彙:Box、Cylinder、Ellipsoid、HollowBox |
+| `src/core/planning/presentation_plan.py` | planning | 已建(M3) | 視角、框選、調色盤、圖說 |
 | `src/core/planning/layout_plan.py` | planning | 已建(M2) | 換行擺盤算術 |
 | `src/core/planning/expected_counts.py` | planning | 已建(M2) | 節數、單元數、佈局件數、站台清單 |
 | `src/core/planning/probe_plan.py` | planning | 已建(M2) | 探針點、掃掠角、閉合軌跡參數 |
@@ -36,10 +39,10 @@
 | `src/verification/generator_imports.py` | verification | 已建(M2) | 讀原始碼推導產生器的 import 閉包(ES-6) |
 | `src/verification/contract_builder.py` | verification | 已建(M2) | 規劃 → 契約 JSON,見 [[hand-framework/07-contracts]] |
 | `src/verification/package_reproduction.py` | verification | 已建(M1) | 重現差分的純核心 |
-| `scripts/hand_{geometry,presentation,gates,generator}.py` | execution | 新 | 只執行規劃 |
-| `scripts/model_finger_v3.py` | execution | 保留為 shim | 契約、manifest、測試、regex 都指名它 |
+| `scripts/hand_{geometry,presentation,gates,generator}.py` | execution | 已建(M3) | 只執行規劃;ES-5 掃描綠 |
+| `scripts/model_finger_v3.py` | execution | 已縮成 shim(M3) | 契約、manifest、測試、regex 都指名它 |
 | `scripts/model_hand_compact.py` | execution | 新 | 精簡實例入口 |
-| `scripts/finger_v3_geometry.py`、`palm_v3_geometry.py`、`finger_v3_presentation.py` | execution | **差分綠後刪除** | 不留兩套 |
+| `scripts/finger_v3_geometry.py`、`palm_v3_geometry.py`、`finger_v3_presentation.py` | execution | **已刪除**(M3,差分綠後) | 不留兩套 |
 
 ## 必須重用、不得重造(親驗)
 

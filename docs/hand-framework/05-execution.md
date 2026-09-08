@@ -28,15 +28,19 @@
 與契約新欄位 `expected_shared_mesh_count`(預設 1;V3 契約不寫 → 判決不變;梯度實例寫 N)。
 產生器自己的守衛(`model_finger_v3.py:164-168`)也改成比對宣告值。
 
-## shim 政策
+M3 狀態:規劃層 `finger_plan` 每相異臂一份 `PhalanxPlan`、每單元記零件號;`hand_geometry.build_finger`
+按**位置**認主體(Blender 對重名加 `.001`,按名字認會落單)、同零件共用 datablock;`refuse_extra_part_numbers`
+比對 `phalanx_part_count`。V3 = 1;梯度實例的執行驗證與契約欄位在 M5。
+
+## shim 政策(已完成,M3)
 
 `scripts/model_finger_v3.py` **保留**,縮成 ≤15 行:選實例、輸出目錄、呼叫 `hand_generator.build`,
 並維持字面呼叫 `run_generator(build, prefix="HJ_")`。理由:`hand_v3.json:3`、`models/hand-v3/manifest.json`、
 `test_hand_v3_print_package.py:42`、`test_docs_hand_v3_figures.py:192-196` 都指名這個檔與這行。
 
-## 刪除清單(M3 差分綠之後)
+## 刪除清單(M3 差分綠之後)——已執行 2026-09-09
 
-`scripts/finger_v3_geometry.py`、`scripts/palm_v3_geometry.py`、`scripts/finger_v3_presentation.py`。
+`scripts/finger_v3_geometry.py`、`scripts/palm_v3_geometry.py`、`scripts/finger_v3_presentation.py` 已刪。
 它們不是凍結交付物(只有 V1 的產生器凍結);留著就是兩套。
 `tests/unit/scripts/test_script_primitive_ssot.py` 會確認刪完沒有 primitive 被重打。
 

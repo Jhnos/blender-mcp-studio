@@ -17,12 +17,12 @@ Population: 註冊表實例與其命名空間下的物件(hand-v3 = `HJ_V3_`);`m
 | HF-6 / ES-4 | SF-2 | footprint 清單 | 四件 242.0 × 103.5 | A 機器 | **PASS**(M2,離線算出 = 真機量到) |
 | PS-3 | SF-3 | 指列 4 vs 3 | 站台數、掌寬 | A 機器 | TODO(M4) |
 | HF-5 / ES-1, ES-2 | SF-4 | 凸出 22 vs 23 | 23 拒;22 不變 | A 機器 | TODO(M4) |
-| HF-4 / PS-2 | SF-5 | 臂相等 vs 梯度 | 零件號 1 vs 2 | A 機器 | TODO(M5) |
+| HF-4 / PS-2 | SF-5 | 臂相等 vs 梯度 | 零件號 1 vs 2 | A 機器 | **PASS**(M3 規劃層);執行層與契約欄位 M5 |
 | FF-9 / ES-6 | SF-6 | import 圖 | 全在 `reload_modules` | A 機器 | **PASS**(M2;首跑紅:13/18,見 v8) |
-| FF-11 / ES-5 | SF-7 | 執行模組 | 字面值白名單 | A 機器 | TODO(M3) |
+| FF-11 / ES-5 | SF-7 | 執行模組 | 字面值白名單 | A 機器 | **PASS**(M3) |
 | FF-12 / PS-1 | SF-8 | 兩實例 | 前綴互異、皆通過一致性 | A 機器 | TODO(M6) |
-| HF-1 / VOC-1 | SF-10 | `tmp/` vs `models/` | 面數精確、尺寸 ±0.1 | A 機器(真機) | **PASS**(M1,對舊產生器 4/4);M3 換新產生器後重驗 |
-| HF-1 | SF-11 | 兩份 V3 契約 | 20 / 14 全 PASS | A 機器(真機) | **PASS**(M1 起在 `--real`,20/14);M3 後重驗 |
+| HF-1 / VOC-1 | SF-10 | `tmp/` vs `models/` | 面數精確、尺寸 ±0.1 | A 機器(真機) | **PASS**(M3,新產生器 4/4:3434/2686/10302/54196) |
+| HF-1 | SF-11 | 兩份 V3 契約 | 20 / 14 全 PASS | A 機器(真機) | **PASS**(M3,新產生器 20/14) |
 | HF-3 / VOC-4 | SF-12 | 精簡契約 | 全 PASS | A 機器(真機) | TODO(M6) |
 | HF-7 / PS-5 | SF-13 | `--real` | 秒數;釘住測試 | A 機器 | **PASS**(M1:8 s,`test_real_ci_gates_the_hand_contracts`) |
 | FF-17 | SF-14 | 每個新閘門 | 已知會紅的輸入真的紅 | A 機器 | 持續 |

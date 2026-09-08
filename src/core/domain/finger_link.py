@@ -1,7 +1,9 @@
 """What a finger link owes the V3 stack, and nothing more.
 
-The finger, the palm and both generators between them read exactly nineteen
-attributes off whatever link they are handed. Writing those down as an interface
+The finger, the palm and the plans between them read a fixed set of attributes
+off whatever link they are handed — the members below, and no count in prose,
+because a count in prose is a claim nobody verifies and this one was wrong
+once. Writing those down as an interface
 is what turns "a hand at human scale" from a fork into a parameter: any spec
 that provides them drops into `SingleTendonFingerSpec` and the geometry, the
 contracts and the print package all keep working.
@@ -21,8 +23,8 @@ from typing import Protocol
 class FingerLinkSpec(Protocol):
     """One printable phalanx: its body, its joint, and what the joint needs.
 
-    Every member here is read somewhere in `finger_v3`, `palm_v3`,
-    `finger_v3_geometry` or `palm_v3_geometry`. Adding one means a new
+    Every member here is read somewhere in `finger_v3`, `palm_v3` or the
+    planning layer under `src/core/planning`. Adding one means a new
     obligation on every link; the list is short on purpose.
     """
 

@@ -12,13 +12,13 @@
 | SF-1 | `tests/unit/verification/test_contract_builder.py` | **已建**(M2):生成 == 簽入,兩份 |
 | SF-2 | `tests/unit/planning/test_layout_plan.py` | **已建**(M2):四件 242.0 × 103.5 離線算出 |
 | SF-3 | `tests/unit/planning/test_expected_counts.py` 新增案例 | 待建(M4,要先有 `row_finger_count` 欄位) |
-| SF-5 | `tests/unit/planning/test_phalanx_plan.py` | 待建(M3 建 `PhalanxPlan`,M5 加梯度案例) |
+| SF-5 | `tests/unit/planning/test_phalanx_plan.py` | **已建**(M3):梯度手指離線規劃出 2 個零件號;執行層驗證 M5 |
 | SF-4 | `tests/unit/core/test_palm_v3.py` 新增案例 | 待建(M4) |
 | SF-6 | `tests/unit/verification/test_generator_imports.py` | **已建**(M2):首跑抓到 5 個沒重載的模組 |
-| SF-7 | `tests/unit/scripts/test_bpy_modules_read_plans_only` | 待建(M3) |
+| SF-7 | `tests/unit/scripts/test_hand_execution_reads_plans_only.py` | **已建**(M3):浮點白名單 + 名字型字串,附植入夾具 |
 | SF-8 | `tests/unit/core/test_hand_instance_conformance.py` | 待建(M6) |
-| SF-10 | `scripts/verify/regenerated_package_matches_shipped.py --package hand-v3` | **已建**(M1);對舊產生器 4/4 PASS;M3 換新產生器後重跑 |
-| SF-11 | `scripts/verify/generated_artifact_verify_real.py scripts/verify/contracts/hand_v3.json`(+ `hand_v3_finger.json --skip-generate`) | **既有**;M1 起在 `--real` 裡 |
+| SF-10 | `scripts/verify/regenerated_package_matches_shipped.py --package hand-v3` | **PASS**(M3):新產生器 4/4,面數逐一相等 |
+| SF-11 | `scripts/verify/generated_artifact_verify_real.py scripts/verify/contracts/hand_v3.json`(+ `hand_v3_finger.json --skip-generate`) | **既有**;M3 起驗的是新產生器(20/14) |
 | SF-12 | 同上,`hand_compact*.json` | 待建(M6) |
 | SF-13 | `scripts/ci.sh --real` 首跑計時 | **已量**(M1):三條閘門合計 8 s,見 [[hand-framework/v8-results]] |
 | SF-17 | `checkpoint_check.sh .` | **既有** |
@@ -53,4 +53,4 @@ ssh blendermac 'cd ~/Blender_MCP_drawer && P=$HOME/miniconda3/envs/blender-mcp/b
   $P scripts/verify/regenerated_package_matches_shipped.py --package hand-v3'
 ```
 
-三條都綠 = HF-1 成立 = 舊產生器可以刪。
+三條都綠 = HF-1 成立 = 舊產生器可以刪。**2026-09-09 三條綠,三個舊模組已刪。**
