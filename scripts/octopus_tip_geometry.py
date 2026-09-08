@@ -41,10 +41,14 @@ def create_cap(spec: OctopusHandSpec) -> bpy.types.Object:
         (spec.tip_cap_top_diameter_mm / 2, spec.tip_cap_top_z_mm),
     )
     facets = spec.tip_facet_count
+    # Where the first vertex sits. V1 answers zero, so its cap is built from exactly
+    # the coordinates it always was; a successor that aims its pads elsewhere turns
+    # the cap by half a facet, so the pads meet material face-on instead of edge-on.
+    phase = math.radians(spec.grip.tip_facet_phase_deg)
     vertices: list[tuple[float, float, float]] = []
     for radius, height in rings:
         for index in range(facets):
-            angle = 2 * math.pi * index / facets
+            angle = phase + 2 * math.pi * index / facets
             vertices.append((m(radius * math.cos(angle)), m(radius * math.sin(angle)), m(height)))
 
     faces: list[tuple[int, ...]] = [

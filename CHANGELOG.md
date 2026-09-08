@@ -5,6 +5,39 @@
 
 ## [Unreleased]
 
+### V01.07.001
+
+#### Fixed
+
+- The V2 tip cap now meets every grip direction on a flat face. Aiming the pads at the
+  cardinals had left the cap where V1 put it, and a hexagon cannot face four directions
+  at any rotation: measured on the built tip, two of the four bending axes ended their
+  finger on a corner, 30° off square. Face centres reach all four cardinals only when the
+  facet count is a multiple of four *and* the ring is turned half a facet — so eight
+  facets at 22.5°, which is the count that fixes it without narrowing the contact face as
+  far as twelve would. Rebuilt, all four now read 0.0° off a face, the tip gains 24
+  triangles and no dimension moves.
+- The rotation is a property on the grip spec rather than a constant in the cap builder,
+  and V1 answers zero, so V1's cap is built from exactly the coordinates it always was.
+
+#### Added
+
+- A generator gate that measures the built tip instead of the spec that described it. The
+  first attempt at the fix changed the facet count, left `create_cap` building at phase
+  zero, and passed every domain test with a wrong mesh — arithmetic about a spec cannot
+  see that. The first version of the gate scanned polygon normals and was **not
+  discriminating**: the centre channel and cable bores are drilled with twenty-four
+  segments, so their walls supply a normal within half a degree of any heading, and the
+  scan passed a cap deliberately turned off-aim. Replaced with a ray, which can only see
+  the surface a finger would touch, and proved by turning the built mesh half a facet.
+
+#### Changed
+
+- The V2 package's manifest revision is now `octopus-hand-V2.1`. `octopus-hand-V2` already
+  names a published set of bits, and one set of bits gets exactly one name; the corrected
+  geometry ships in the same directory because nothing has been printed from either and
+  git history still holds the six-sided cap.
+
 ### V01.07.000
 
 #### Added

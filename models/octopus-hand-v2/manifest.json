@@ -11,28 +11,28 @@
       "triangle_count": 3408
     },
     "arm_tip_mm.stl": {
-      "bytes": 175784,
+      "bytes": 176984,
       "dimensions_mm": [
         42.0,
         42.0,
         33.79999923706055
       ],
-      "sha256": "dc38e0635b37030f2e5819b0c7a24bd9d42c9b2618daf689511dd2d5be9071e8",
-      "triangle_count": 3514
+      "sha256": "85431a6b4159e27eac8647a51b15c6a58448cf611a0b2752202b381974c581bd",
+      "triangle_count": 3538
     },
     "octopus_hand_v2.blend": {
-      "bytes": 395053,
-      "sha256": "15b277b6e020d43d5a82c272674bb44a736b840e2b0fd27336d3a150876e4629"
+      "bytes": 393791,
+      "sha256": "402c1d3562f3cf59ab668b1928e1c625eda0714dd379f1fc2e77f6c3315ff454"
     },
     "octopus_hand_v2_mm.stl": {
-      "bytes": 6591284,
+      "bytes": 6597284,
       "dimensions_mm": [
         119.4423713684082,
         124.93413925170898,
         118.0
       ],
-      "sha256": "67ed18d79c220131ea3844b864058c53e30c439da452b5ed04708684f91377a4",
-      "triangle_count": 131824
+      "sha256": "dbc69432c3b7c1e1abb6f8b1e6c58dbdebbe6843f35bb033660c05ebda918692",
+      "triangle_count": 131944
     },
     "palm_mm.stl": {
       "bytes": 574784,
@@ -55,7 +55,7 @@
       "triangle_count": 11894
     }
   },
-  "model_revision": "octopus-hand-V2",
+  "model_revision": "octopus-hand-V2.1",
   "source_generator": "scripts/model_octopus_hand_v2.py",
   "units": "mm",
   "verification_contracts": [

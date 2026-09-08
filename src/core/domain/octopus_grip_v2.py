@@ -60,6 +60,17 @@ class AimedGripSurfaceSpec(GripSurfaceSpec):
         if abs(at_trim - rim) < self._RIM_TANGENCY_MARGIN_MM:
             raise ValueError("the cap's flare grazes the disc rim at the trim plane")
 
+        # The pads aim; the cap has to aim with them. A fingertip that meets an object
+        # on a corner grips it along a line. Measured on the built mesh while the cap
+        # was still six-sided: rays along 0 and 180 hit the circumradius with the
+        # surface thirty degrees off, while 90 and 270 hit a face dead on — one of the
+        # two bending axes ended every finger on an edge.
+        faces = self.tip_facet_face_headings_deg
+        for heading in self.grip_pad_angles_deg:
+            off = min(abs((face - heading + 180.0) % 360.0 - 180.0) for face in faces)
+            if off > 1e-9:
+                raise ValueError("the cap meets a grip direction on an edge, not a face")
+
     # ------------------------------------------------------------ where they aim
 
     @property
@@ -75,6 +86,17 @@ class AimedGripSurfaceSpec(GripSurfaceSpec):
     def pad_inner_radius_mm(self) -> float:
         """Where the pad's buried face sits, one fuse depth inside the disc rim."""
         return self.arm.body_outer_diameter_mm / 2 - self.pad_fuse_mm
+
+    @property
+    def tip_facet_phase_deg(self) -> float:
+        """Half a facet, which is what puts face centres where the pads point.
+
+        Turning it is not optional and the count is not free: face centres land on all
+        four cardinals only when the facet count is a multiple of four, and only after
+        this rotation. Eight facets without the turn sit 22.5 degrees off — better than
+        the hexagon's 30 and still an edge, which is why "make it eight" is half of it.
+        """
+        return 180.0 / self.tip_facet_count
 
     @property
     def pad_span_deg(self) -> tuple[float, float]:

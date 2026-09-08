@@ -24,16 +24,16 @@ PACKAGE = ROOT / "models" / "octopus-hand-v2"
 V1_PACKAGE = ROOT / "models" / "octopus-hand-v1"
 EXPECTED = {
     "test_coupon_mm.stl": (11894, (45.623, 48.0, 56.8)),
-    "octopus_hand_v2_mm.stl": (131824, (119.442, 124.934, 118.0)),
+    "octopus_hand_v2_mm.stl": (131944, (119.442, 124.934, 118.0)),
     "palm_mm.stl": (11494, (116.618, 122.619, 18.8)),
     "arm_body_mm.stl": (3408, (42.0, 42.0, 29.6)),
-    "arm_tip_mm.stl": (3514, (42.0, 42.0, 33.8)),
+    "arm_tip_mm.stl": (3538, (42.0, 42.0, 33.8)),
 }
 
 
 def test_versioned_octopus_v2_print_package_matches_verified_meshes() -> None:
     manifest = json.loads((PACKAGE / "manifest.json").read_text())
-    assert manifest["model_revision"] == "octopus-hand-V2"
+    assert manifest["model_revision"] == "octopus-hand-V2.1"
     assert manifest["units"] == "mm"
     assert manifest["source_generator"] == "scripts/model_octopus_hand_v2.py"
     assert set(manifest["files"]) == {*EXPECTED, "octopus_hand_v2.blend"}

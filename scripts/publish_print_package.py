@@ -69,7 +69,11 @@ PACKAGES: dict[str, Package] = {
     ),
     "octopus-hand-v2": Package(
         slug="octopus-hand-v2",
-        revision="octopus-hand-V2",
+        # V2.1, not V2, because "octopus-hand-V2" already names a published set of bits
+        # and one set of bits gets exactly one name. Same directory rather than a new
+        # one: nothing has been printed from either, and git still holds the six-sided
+        # cap for anyone who fetched it.
+        revision="octopus-hand-V2.1",
         generator="scripts/model_octopus_hand_v2.py",
         stl_files=(
             "test_coupon_mm.stl",

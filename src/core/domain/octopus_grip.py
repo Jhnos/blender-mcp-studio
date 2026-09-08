@@ -122,6 +122,32 @@ class GripSurfaceSpec:
         return self.arm.body_length_mm / 2 - self.tip_feature_fuse_mm
 
     @property
+    def tip_facet_phase_deg(self) -> float:
+        """Rotation of the cap's facets about the arm axis. Zero, and staying zero.
+
+        The cap has always been built with a vertex at zero degrees. Nothing here needs
+        that to change — V1's pads sit on the diagonals and its cap's face centres fall
+        at 30, 90, 150 …, which is the arrangement it was judged with. The property
+        exists so a successor whose pads point somewhere else can turn the cap to match
+        without either forking this module or moving V1's geometry: at zero the
+        arithmetic below is exactly what it was.
+        """
+        return 0.0
+
+    @property
+    def tip_facet_face_headings_deg(self) -> tuple[float, ...]:
+        """Where the cap's flat faces point — the middles, not the corners.
+
+        A facet's *vertices* are what a naive reading of the facet count gives you, and
+        they are half a facet away from where the material actually presses.
+        """
+        step = 360.0 / self.tip_facet_count
+        return tuple(
+            (self.tip_facet_phase_deg + (index + 0.5) * step) % 360.0
+            for index in range(self.tip_facet_count)
+        )
+
+    @property
     def tip_cap_base_z_mm(self) -> float:
         """Where the cap's closed bottom sits — buried inside the disc, not on it.
 

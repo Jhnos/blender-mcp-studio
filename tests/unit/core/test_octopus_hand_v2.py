@@ -399,6 +399,47 @@ def test_stem_stays_under_everything_the_base_joint_sweeps_over_it() -> None:
     assert spec.base_joint_swept_floor_mm(spec.palm_circumradius_mm) is None
 
 
+def test_the_tip_presents_a_face_where_every_pad_presents_one() -> None:
+    """A fingertip that meets the object on a corner grips along a line, not a face.
+
+    The pads moved to the cardinals; the cap did not follow. A hexagon with a vertex at
+    zero puts face centres at 30, 90, 150 … — so two of the four grip directions got a
+    flat face and the other two got an edge, thirty degrees off. Measured on the built
+    mesh before this was fixed: rays along 0 and 180 hit at 16.000 mm, the circumradius,
+    with the surface normal 30 degrees off the ray; along 90 and 270 they hit a face at
+    13.856 mm, dead on.
+
+    A face centre can only land on all four cardinals when the facet count is a multiple
+    of four, and only after half a facet of rotation — eight without the turn is still
+    22.5 degrees off, which is why "make it eight" is half the fix.
+    """
+    spec = OctopusHandV2Spec()
+
+    assert spec.tip_facet_count % 4 == 0, "an odd multiple cannot serve four grip directions"
+    assert spec.grip.tip_facet_phase_deg == pytest.approx(180.0 / spec.tip_facet_count)
+
+    faces = spec.grip.tip_facet_face_headings_deg
+    assert len(faces) == spec.tip_facet_count
+    for heading in spec.grip_pad_angles_deg:
+        off = min(abs((face - heading + 180.0) % 360.0 - 180.0) for face in faces)
+        assert off == pytest.approx(0.0, abs=1e-9), (
+            f"the cap meets the {heading:.0f} degree grip direction {off:.1f} degrees "
+            "off a flat face — that finger presses on an edge"
+        )
+
+
+def test_the_cap_still_tapers_and_prints_the_way_it_did_with_six_facets() -> None:
+    """Widening the cap must not quietly cost the printability the six-sided one had."""
+    spec = OctopusHandV2Spec()
+
+    assert 0 < spec.tip_cap_flare_slope_deg <= 45
+    assert spec.tip_cap_taper_slope_deg < 90
+    assert spec.tip_cap_max_radius_mm <= spec.grip_outer_diameter_mm / 2
+    # More facets push the flat faces outward; the corners must not follow them past
+    # the envelope the arm stations were spaced for.
+    assert spec.tip_cap_max_radius_mm <= spec.grip_envelope_radius_mm
+
+
 def test_v1_is_untouched_by_everything_v2_does() -> None:
     """V1 is a checksum-controlled delivery whose contracts must stay green.
 
@@ -450,6 +491,8 @@ def test_v1_is_untouched_by_everything_v2_does() -> None:
         ),
         pytest.param({"stem_length_mm": 15.0}, id="stem runs off the chamfered edge"),
         pytest.param({"tip_cap_flare_mm": 3.0}, id="cap flare grazes the disc rim"),
+        pytest.param({"tip_facet_count": 6}, id="a six-sided cap cannot face four directions"),
+        pytest.param({"tip_facet_count": 10}, id="ten facets miss the cardinals too"),
     ],
 )
 def test_v2_spec_rejects_geometry_that_cannot_be_built_or_printed(changes) -> None:

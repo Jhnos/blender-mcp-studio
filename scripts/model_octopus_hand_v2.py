@@ -26,7 +26,10 @@ from scripts.hinge_retention import create_captive_pin, cut_retainer_seats  # no
 from scripts.hollow_hinge_render import m  # noqa: E402
 from scripts.model_inset_hinge import create_body  # noqa: E402
 from scripts.octopus_coupon import build_coupon, coupon_note  # noqa: E402
-from scripts.octopus_grip_geometry_v2 import add_grip_pads  # noqa: E402
+from scripts.octopus_grip_geometry_v2 import (  # noqa: E402
+    add_grip_pads,
+    assert_cap_faces_the_pads,
+)
 from scripts.octopus_hand_presentation_v2 import present_octopus_v2  # noqa: E402
 from scripts.octopus_palm_geometry_v2 import create_palm  # noqa: E402
 from scripts.octopus_tip_geometry import build_tip  # noqa: E402
@@ -154,6 +157,7 @@ def build() -> None:
     tip_master.name = "HH_OCT2_MASTER_TIP"
     hand.objects.link(tip_master)
     build_tip(tip_master, SPEC)
+    assert_cap_faces_the_pads(tip_master, SPEC)
     if len(tip_master.data.polygons) == len(master.data.polygons):
         raise RuntimeError(
             "the tip is still a plain body: "

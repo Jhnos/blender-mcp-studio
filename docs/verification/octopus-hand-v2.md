@@ -13,9 +13,52 @@ hinge underneath both.
 | Stems | One buttress per arm, radius 48.0 → 60.0 mm, 8.0 → 1.2 mm tall, ramp at 29.5° |
 | Wiring | Central Ø10 channel **plus one Ø6 bore per arm** at palm radius 30.0 mm |
 | Grip pads | Four, on the **cardinals** — every body presents one to the palm centre |
-| Tip | V1's faceted cap, flare raised 3.0 → 4.0 mm (see "the graze" below) |
-| Whole hand | 119.442 × 124.934 × 118.000 mm, 131 824 triangles, 76 shells |
+| Tip | V1's faceted cap, **eight sides turned 22.5°** so a face meets every grip direction, flare raised 3.0 → 4.0 mm (see "the graze" below) |
+| Whole hand | 119.442 × 124.934 × 118.000 mm, 131 944 triangles, 76 shells |
 | Bed | Declared 256 mm (Bambu Lab P2S). Upright footprint 129.342 mm, set by the **arms**, no longer by the plate |
+
+## The cap had to turn with the pads
+
+Aiming the pads at the cardinals left the cap behind. Measured on the built
+`HH_OCT2_MASTER_TIP` at the cap's mid-height, ray-cast along each grip direction:
+
+| heading | radius mm | surface off square | what a finger meets |
+|---|---|---|---|
+| 0 | 16.000 | 30.0° | a corner |
+| 90 | 13.856 | 0.0° | a face |
+| 180 | 16.000 | 30.0° | a corner |
+| 270 | 13.856 | 0.0° | a face |
+
+One of the two bending axes ended every finger on an edge. Six facets cannot fix that at
+any rotation: face centres land on all four cardinals only when the facet count is a
+multiple of four **and** the ring is turned half a facet. Eight facets left at phase zero
+is 22.5° off — better than 30 and still an edge, which is why "make it eight" is half the
+fix. Twelve would work too, at the cost of narrowing each contact face.
+
+| facets | phase | worst grip direction | contact face width at r = 21 mm |
+|---|---|---|---|
+| 6 (V1, V2.0) | 0° | 30.0° off | 21.000 mm |
+| 8 | 0° | 22.5° off | 16.073 mm |
+| **8** | **22.5°** | **0.0°** | **16.073 mm** |
+| 12 | 15° | 0.0° | 10.870 mm |
+
+Rebuilt and re-measured, all four grip directions read 0.0° off a flat face at radius
+14.782 mm, and every V2 object still counts zero non-manifold edges. The tip gains 24
+triangles, the whole hand 120; no dimension moves.
+
+The rotation is a property on the grip spec, not a constant in the cap builder, and V1
+answers zero — so V1's cap is still built from the coordinates it always was.
+
+**The gate this needed, and the one that did not work.** The spec now refuses a facet
+count and phase that cannot face the pads, but that is arithmetic about a spec, and the
+first attempt at this fix passed it while shipping a wrong mesh: the count changed to
+eight and `create_cap` went on building at phase zero. So the generator also measures the
+built tip. The first version of that check scanned polygon normals and was **not
+discriminating** — the centre channel and cable bores are drilled with twenty-four
+segments, so their walls offer a normal within half a degree of any heading, and the scan
+passed a cap deliberately turned off-aim. It was replaced with a ray, which can only see
+the surface a finger would actually touch. Proved by turning the built mesh half a facet:
+normal-scan passed, ray fired.
 
 ## Why the plate got smaller and deeper at the same time
 

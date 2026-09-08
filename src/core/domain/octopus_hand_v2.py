@@ -72,6 +72,10 @@ class OctopusHandV2Spec(OctopusHandSpec):
     #: 3.0 puts the cap's flare at exactly 45 degrees, which makes its radius at the
     #: trim plane exactly the disc's radius — a graze the Boolean cannot resolve.
     tip_cap_flare_mm: float = 4.0
+    #: Eight, not V1's six: a cap's face centres reach all four grip directions only
+    #: when the facet count is a multiple of four. Twelve would too, at the cost of
+    #: narrowing each contact face from 16.07 mm to 10.87 mm.
+    tip_facet_count: int = 8
 
     def __post_init__(self) -> None:
         OctopusHandSpec.__post_init__(self)

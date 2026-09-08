@@ -1,5 +1,11 @@
 # Octopus hand V2 — controlled print package
 
+Manifest revision **`octopus-hand-V2.1`**. The first V2 shipped a six-sided cap that met
+two of the four grip directions on a corner; the cap is now eight-sided and turned half a
+facet, so every direction meets a flat face. Nothing else about the geometry moved. The
+earlier bits keep the name `octopus-hand-V2` and stay in git history — neither has been
+printed.
+
 Version-controlled manufacturing files. Working output under `tmp/octopus-hand-v2/` stays
 reproducible and is not source-controlled; these are the copies with recorded checksums.
 V1 is untouched and still shipped beside this, in `models/octopus-hand-v1/`.
@@ -16,6 +22,7 @@ or release claim.
 | Plate across corners | 151.8 mm | **126.5 mm** |
 | Material behind a socket | 2.0 mm (one wall) | **3.7 mm**, plus an 8 mm buttress |
 | Grip pads | four diagonals, none aimed | **four cardinals, one aimed per body** |
+| Tip cap | six sides, two grip directions on a corner | **eight sides turned 22.5°, a face down every direction** |
 | Pad-to-pad clearance at full travel | 0.204 mm | **0.553 mm** |
 | Wiring to a finger | central Ø10 channel only | **+ one Ø6 bore per arm** |
 | Square edges on the plate | top rim, bottom rim, five points | **none — 1.5 mm 45° chamfers, corners cut back** |
@@ -34,7 +41,7 @@ socket at 36° off the heading rather than along it.
 | `octopus_hand_v2_mm.stl` | The whole hand, print-in-place — 119.4 × 124.9 × 118.0 mm, 76 shells |
 | `palm_mm.stl` | Palm alone, for inspection — 116.6 × 122.6 × 18.8 mm |
 | `arm_body_mm.stl` | One repeated body, aimed grip pads included — 42.0 × 42.0 × 29.6 mm |
-| `arm_tip_mm.stl` | One terminal tip with its faceted cap — 42.0 × 42.0 × 33.8 mm |
+| `arm_tip_mm.stl` | One terminal tip with its eight-sided cap, turned so a flat face meets each grip direction — 42.0 × 42.0 × 33.8 mm |
 | `octopus_hand_v2.blend` | Editable Blender source and the complete assembly |
 
 The coupon exists because the whole hand is 118 mm tall with twenty-five live joints, and
