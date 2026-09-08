@@ -76,7 +76,10 @@ class SingleTendonFingerSpec:
     #: The moment arms used to carry the ordering and no longer can — they were
     #: made equal so fifteen phalanges share one part number — so this is the
     #: only thing left that decides which joint closes first.
-    spring_stiffness_ratio: tuple[float, ...] = field(default=(1.0, 1.6))
+    #: Empty means "derive one for however many joints there are". A fixed-length
+    #: default would silently mismatch a link with a different joint count, which
+    #: is the shape of latent bug this file already carries scars from.
+    spring_stiffness_ratio: tuple[float, ...] = field(default=())
 
     def __post_init__(self) -> None:
         numbers = (self.actuator_stroke_mm, *self.moment_arms_mm)
@@ -91,6 +94,13 @@ class SingleTendonFingerSpec:
             raise ValueError(
                 "moment arms must never grow towards the tip, or the finger curls "
                 f"from the fingertip and rolls objects out of the hand: {arms}"
+            )
+        if not self.spring_stiffness_ratio:
+            step = 1.6
+            object.__setattr__(
+                self,
+                "spring_stiffness_ratio",
+                tuple(step**index for index in range(self.link.joint_count)),
             )
         springs = self.spring_stiffness_ratio
         if len(springs) != self.link.joint_count:
