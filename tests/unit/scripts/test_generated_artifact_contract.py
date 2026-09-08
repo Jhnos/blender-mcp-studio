@@ -385,7 +385,9 @@ def test_a_layout_that_overruns_the_bed_fails_and_a_silent_one_fails_too() -> No
             },
         }
 
-    fits = assess_verification(contract, artifact_state, _green_oracle(), _readiness([242.0, 103.5]))
+    fits = assess_verification(
+        contract, artifact_state, _green_oracle(), _readiness([242.0, 103.5])
+    )
     assert fits.passed
     assert any(item.name == "layout_fits_bed" and item.passed for item in fits.evidence)
 
