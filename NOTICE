@@ -37,6 +37,23 @@ Used for: consulted as a reference for underactuated differential and floating
           pulley-tree tendon topologies. No geometry or code taken.
 
 
+RUKA-v2
+-------
+Licence:  MIT (reported; not verified first-hand as of 2026-09-08)
+Used for: recorded as the alternative route if this project ever needs a
+          permissive licence, because InMoov's CC BY-NC cannot be used
+          commercially. No geometry or code taken.
+
+
+AmazingHand
+-----------
+Licence:  Apache-2.0 for code, CC BY 4.0 for hardware (reported; not verified
+          first-hand as of 2026-09-08)
+Used for: consulted as a bill-of-materials and cost reference only. It is a
+          parallel-linkage hand with two phalanges per finger, not a tendon
+          hand, so nothing of its mechanism is used here.
+
+
 Referenced literature
 ---------------------
 Method sources for the pneumatic interlayer and for grasp measurement are
