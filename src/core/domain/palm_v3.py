@@ -129,6 +129,13 @@ class AnthropomorphicPalmSpec:
             raise ValueError("the thumb root must sit outboard of and below the row")
         if self.thumb_base_palmar_mm < 0:
             raise ValueError("the thumb root cannot sit behind the back of the hand")
+        clearance = self.finger.link.printed_radial_clearance_mm * 4
+        if self.thumb_chain_lowest_z_mm < self.thenar_top_z_mm + clearance:
+            raise ValueError(
+                "the thumb's first phalanx swings down into the boss carrying its own "
+                f"root: lowest point {self.thumb_chain_lowest_z_mm:.1f} mm against a boss "
+                f"top at {self.thenar_top_z_mm:.1f} mm"
+            )
         overhang = self.thenar_overhang_mm
         if overhang > self.palm_width_mm / 2:
             raise ValueError(
@@ -244,10 +251,38 @@ class AnthropomorphicPalmSpec:
         high_x = -self.palm_width_mm / 2 + link.body_width_mm
         low_y = root_y - link.body_depth_mm / 2
         high_y = link.body_depth_mm / 2
+        height = link.body_length_mm
         return (
-            ((low_x + high_x) / 2, (low_y + high_y) / 2, root_z),
-            (high_x - low_x, high_y - low_y, link.body_length_mm),
+            ((low_x + high_x) / 2, (low_y + high_y) / 2, self.thenar_top_z_mm - height / 2),
+            (high_x - low_x, high_y - low_y, height),
         )
+
+    @property
+    def thumb_chain_lowest_z_mm(self) -> float:
+        """Lowest point of the thumb's first phalanx, corner included.
+
+        The axial bottom of a tilted body is not its lowest point: the body has
+        width and depth across that axis, and tilting swings a corner below the
+        end. Measured the difference the hard way — deriving the boss top from
+        the axial bottom alone left the boss and the first unit sharing a face
+        at exactly that plane, 114 pairs of it, after the first version had
+        shared 219.
+        """
+        link = self.finger.link
+        overhang = link.joint_center_offset_mm + link.lug_outer_diameter_mm / 2
+        along = 2 * link.joint_center_offset_mm - overhang
+        across = math.hypot(link.body_width_mm, link.body_depth_mm) / 2
+        swing = math.radians(self.thumb_opposition_deg)
+        return self.thumb_root_mm[2] + along * math.cos(swing) - across * math.sin(swing)
+
+    @property
+    def thenar_top_z_mm(self) -> float:
+        """The boss stops at the root, so the thumb's knuckle rises out of it.
+
+        Which is what a thenar eminence is: the bulge sits below the joint, not
+        beside it.
+        """
+        return self.thumb_root_mm[2]
 
     @property
     def thenar_overhang_mm(self) -> float:

@@ -24,7 +24,7 @@ from scripts.blender_generator_runner import run_generator  # noqa: E402
 from scripts.blender_mesh_primitives import assign, collection, material  # noqa: E402
 from scripts.finger_v3_geometry import build_finger  # noqa: E402
 from scripts.finger_v3_presentation import build_print_layout, present_finger  # noqa: E402
-from scripts.palm_v3_geometry import build_palm  # noqa: E402
+from scripts.palm_v3_geometry import assemble_hand, build_palm  # noqa: E402
 from src.core.domain.finger_v3 import SingleTendonFingerSpec  # noqa: E402
 from src.core.domain.palm_v3 import AnthropomorphicPalmSpec  # noqa: E402
 
@@ -98,7 +98,17 @@ def build() -> None:
         )
     export_stl_mm([palm], OUTPUT / "palm_mm.stl")
 
-    layout = build_print_layout(parts, SPEC)
+    hand = assemble_hand(PALM, palm)
+    for unit in hand:
+        if unit is not palm:
+            finger.objects.link(unit)
+            if scene.collection in unit.users_collection:
+                scene.collection.objects.unlink(unit)
+            assign(unit, bone)
+    export_stl_mm(hand, OUTPUT / "hand_v3_mm.stl")
+    scene["HJ_V3_HAND_STATIONS"] = ["F1", "F2", "F3", "F4", "T"]
+
+    layout = build_print_layout([*parts, palm], SPEC)
 
     scene["HJ_V3_PHALANX_NAMES"] = [part.name for part in parts]
     scene["HJ_V3_DESIGN_NOTE"] = (

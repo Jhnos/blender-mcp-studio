@@ -194,3 +194,44 @@ def finger_mount_frames(
     ]
     frames.append(("THUMB", spec.thumb_root_mm, math.radians(spec.thumb_opposition_deg)))
     return frames
+
+
+def assemble_hand(spec: AnthropomorphicPalmSpec, palm: bpy.types.Object) -> list[bpy.types.Object]:
+    """Palm plus five chains, each hung on the root that carries it.
+
+    A chain's base unit meets the palm's root at the same joint every other unit
+    uses, so the first phalanx sits one joint centre above the root's lug — the
+    same pitch that separates every pair further up. That is the payoff of making
+    the knuckle an ordinary joint instead of a special case.
+    """
+    from scripts.finger_v3_geometry import build_finger
+
+    link = spec.finger.link
+    placed: list[bpy.types.Object] = [palm]
+    axis, pad = spec.thumb_frame
+    across = Vector(axis).cross(Vector(pad))
+    thumb_basis = Matrix(
+        (
+            (across.x, pad[0], axis[0], 0.0),
+            (across.y, pad[1], axis[1], 0.0),
+            (across.z, pad[2], axis[2], 0.0),
+            (0.0, 0.0, 0.0, 1.0),
+        )
+    )
+
+    stations: list[tuple[str, tuple[float, float, float], Matrix, object]] = [
+        (f"F{index}", (x_mm, 0.0, 0.0), Matrix.Identity(4), spec.finger)
+        for index, x_mm in enumerate(spec.row_finger_x_mm, start=1)
+    ]
+    stations.append(("T", spec.thumb_root_mm, thumb_basis, spec.thumb))
+
+    for label, origin_mm, basis, chain_spec in stations:
+        units = build_finger(chain_spec)  # type: ignore[arg-type]
+        lift = Matrix.Translation((0.0, 0.0, 2 * link.joint_center_offset_mm * M))
+        base = Matrix.Translation(tuple(v * M for v in origin_mm)) @ basis @ lift
+        for index, unit in enumerate(units, start=1):
+            unit.name = f"HJ_V3_HAND_{label}_{index}"
+            unit.matrix_world = base @ unit.matrix_world
+            placed.append(unit)
+    bpy.context.view_layer.update()
+    return placed

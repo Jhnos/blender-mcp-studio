@@ -32,7 +32,13 @@ _LAY_FLAT = Matrix.Rotation(1.5707963267948966, 4, "X")
 def build_print_layout(
     parts: list[bpy.types.Object], spec: SingleTendonFingerSpec
 ) -> list[bpy.types.Object]:
-    """Four copies, flat and spaced, under the prefix the readiness check reads."""
+    """Every distinct printed part, flat and spaced, under the readiness prefix.
+
+    The palm belongs here as much as the phalanges do: it is the part most likely
+    to have a thin wall or an unsupported overhang, and leaving it out of the
+    layout would leave it out of the readiness check entirely — a gap that reads
+    exactly like a clean result.
+    """
     layout = collection("HJ_V3_LAYOUT")
     pitch = spec.link.body_width_mm + 8.0
     copies: list[bpy.types.Object] = []
