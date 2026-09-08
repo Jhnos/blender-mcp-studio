@@ -10,6 +10,7 @@ known joint limits, so where its tip can go is arithmetic, and whether two such
 sets meet is arithmetic too.
 """
 
+import dataclasses
 import math
 
 import pytest
@@ -301,12 +302,15 @@ def test_a_port_wide_enough_to_meet_a_tendon_channel_is_caught() -> None:
 def test_no_two_routes_through_the_palm_can_touch() -> None:
     """F10: two tendons that cross rub each other until one parts.
 
-    Eleven bores run through this plate — five tendon channels on the palmar
-    side, five wiring channels on the back, and the air port across all of them
-    — and the failure-mode table asked for a pairwise clearance that nothing
-    ever computed. They are parallel lines and a crossing bore, so it is
-    arithmetic, and it was sitting in the matrix as TODO next to the rows that
-    genuinely need a printed part.
+    Ten bores run down this plate — a tendon and a wiring channel at each of
+    five stations — and the failure-mode table asked for a pairwise clearance
+    that nothing ever computed. It is arithmetic, and it sat in the matrix as
+    TODO beside the rows that genuinely need a printed part.
+
+    The first draft asserted the clearance alone and passed on the first run,
+    which is the shape of a test worth distrusting. Nothing legal can make it
+    fail: every way of crowding the routes trips an invariant in the link spec
+    first. So the clearance is recorded and the *refusal* is what is asserted.
     """
     spec = AnthropomorphicPalmSpec()
     link = spec.finger.link
@@ -320,12 +324,37 @@ def test_no_two_routes_through_the_palm_can_touch() -> None:
     ]
     assert len(routes) == 10
 
-    worst = min(
-        math.dist(first, second) - 2 * radius
-        for index, first in enumerate(routes)
-        for second in routes[index + 1 :]
-    )
-    assert worst > link.minimum_wall_mm, f"two routes leave only {worst:.2f} mm between them"
+    def worst_clearance(candidate: AnthropomorphicPalmSpec) -> float:
+        stations_mm = [*candidate.row_finger_x_mm, candidate.thumb_root_mm[0]]
+        paths = [
+            (x_mm, y_mm)
+            for x_mm in stations_mm
+            for y_mm in (
+                candidate.finger.tendon_bore_offset_mm,
+                candidate.finger.wiring_bore_offset_mm,
+            )
+        ]
+        return min(
+            math.dist(first, second) - candidate.finger.link.tendon_hole_diameter_mm
+            for index, first in enumerate(paths)
+            for second in paths[index + 1 :]
+        )
+
+    assert worst_clearance(spec) == pytest.approx(10.4, abs=0.1)
+    assert worst_clearance(spec) > link.minimum_wall_mm
+
+    # And the reason it cannot go wrong, which is the part worth pinning. Every
+    # way of crowding these routes is refused by an invariant that fires first:
+    # the binding pair is a station's own tendon and wiring bores, and walking
+    # them together drives the wiring bore into the pin. A guard that no legal
+    # spec can make fire is indistinguishable from `assert True`, so what is
+    # asserted here is the refusal, not the clearance.
+    for crowded in (3.5, 2.5):
+        with pytest.raises(ValueError):
+            dataclasses.replace(
+                spec, finger=dataclasses.replace(spec.finger, wiring_bore_offset_mm=crowded)
+            )
+    assert radius > 0
 
 
 def test_a_tendon_turns_on_the_radius_its_moment_arm_sets() -> None:
