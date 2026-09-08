@@ -129,6 +129,13 @@ class AnthropomorphicPalmSpec:
             raise ValueError("the thumb root must sit outboard of and below the row")
         if self.thumb_base_palmar_mm < 0:
             raise ValueError("the thumb root cannot sit behind the back of the hand")
+        overhang = self.thenar_overhang_mm
+        if overhang > self.palm_width_mm / 2:
+            raise ValueError(
+                f"the thenar boss carrying the thumb root would cantilever {overhang:.1f} mm "
+                f"past a plate only {self.palm_width_mm:.1f} mm wide — that is an arm, not "
+                "the bulge at the base of a thumb"
+            )
         if self.strict and self.thumb_index_tip_gap_mm >= self.pinch_contact_mm:
             raise ValueError(
                 "the thumb cannot reach the index fingertip: closest approach is "
@@ -218,6 +225,42 @@ class AnthropomorphicPalmSpec:
             self.thumb_palmar_tilt_deg,
         )
         return (axis, pad)
+
+    @property
+    def thenar_bridge_mm(self) -> tuple[Vector3, Vector3]:
+        """Centre and size of the boss that carries the thumb root to the plate.
+
+        A hand has a thenar eminence for exactly this reason: the thumb's root
+        needs something to stand on. Without it the root is a separate solid
+        sitting in space beside the palm — watertight, manifold, and a loose part
+        the moment it comes off the bed. Measured on the first build: two shells,
+        the smaller 88 faces, joined to nothing.
+        """
+        link = self.finger.link
+        root_x, root_y, root_z = self.thumb_root_mm
+        low_x = root_x - link.body_width_mm / 2
+        # Reaches a body width into the plate, so the union has real overlap to
+        # work with rather than a coincident face.
+        high_x = -self.palm_width_mm / 2 + link.body_width_mm
+        low_y = root_y - link.body_depth_mm / 2
+        high_y = link.body_depth_mm / 2
+        return (
+            ((low_x + high_x) / 2, (low_y + high_y) / 2, root_z),
+            (high_x - low_x, high_y - low_y, link.body_length_mm),
+        )
+
+    @property
+    def thenar_overhang_mm(self) -> float:
+        """How far the boss reaches past the plate's own edge.
+
+        The boss is *defined* to span from the root back into the plate, so
+        asking whether it reaches is asking whether arithmetic is arithmetic —
+        a guard with no teeth. What can actually go wrong is the length: push the
+        thumb far enough out and the "bulge at the base of the thumb" becomes a
+        cantilevered arm carrying a joint at its end.
+        """
+        link = self.finger.link
+        return -self.palm_width_mm / 2 - (self.thumb_root_mm[0] - link.body_width_mm / 2)
 
     @property
     def thumb_root_mm(self) -> Vector3:

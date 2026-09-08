@@ -24,10 +24,31 @@ from scripts.blender_generator_runner import run_generator  # noqa: E402
 from scripts.blender_mesh_primitives import assign, collection, material  # noqa: E402
 from scripts.finger_v3_geometry import build_finger  # noqa: E402
 from scripts.finger_v3_presentation import build_print_layout, present_finger  # noqa: E402
+from scripts.palm_v3_geometry import build_palm  # noqa: E402
 from src.core.domain.finger_v3 import SingleTendonFingerSpec  # noqa: E402
+from src.core.domain.palm_v3 import AnthropomorphicPalmSpec  # noqa: E402
 
 SPEC = SingleTendonFingerSpec()
+PALM = AnthropomorphicPalmSpec()
 OUTPUT = PROJECT_ROOT / "tmp" / "hand-v3"
+
+
+def _shell_count(obj: bpy.types.Object) -> int:
+    """How many disconnected solids this mesh actually contains."""
+    mesh = obj.data
+    parent = list(range(len(mesh.vertices)))
+
+    def find(node: int) -> int:
+        while parent[node] != node:
+            parent[node] = parent[parent[node]]
+            node = parent[node]
+        return node
+
+    for edge in mesh.edges:
+        left, right = (find(index) for index in edge.vertices)
+        if left != right:
+            parent[left] = right
+    return len({find(index) for index in range(len(mesh.vertices))})
 
 
 def build() -> None:
@@ -60,6 +81,22 @@ def build() -> None:
 
     export_stl_mm(parts, OUTPUT / "finger_v3_mm.stl")
     export_stl_mm([parts[0]], OUTPUT / "phalanx_mm.stl")
+
+    palm = build_palm(PALM)
+    finger.objects.link(palm)
+    if palm.users_collection and scene.collection in palm.users_collection:
+        scene.collection.objects.unlink(palm)
+    assign(palm, bone)
+    # A printed part that is two shells is two parts, and a watertightness check
+    # cannot see the difference: a detached solid is perfectly manifold. The
+    # thumb root shipped as a loose 88-face object beside the palm until this
+    # existed, passing every other check on the way out.
+    if _shell_count(palm) != 1:
+        raise RuntimeError(
+            f"the palm came out as {_shell_count(palm)} disconnected solids; "
+            "something is not joined to the plate"
+        )
+    export_stl_mm([palm], OUTPUT / "palm_mm.stl")
 
     layout = build_print_layout(parts, SPEC)
 

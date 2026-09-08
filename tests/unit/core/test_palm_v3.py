@@ -134,3 +134,41 @@ def test_rolling_the_thumb_does_not_move_its_axis() -> None:
 
     assert upright.thumb_frame[0] == pytest.approx(rolled.thumb_frame[0])
     assert upright.thumb_frame[1] != pytest.approx(rolled.thumb_frame[1])
+
+
+def test_the_thumb_root_is_carried_back_to_the_plate() -> None:
+    """A root outboard of the plate is a loose part, not a thumb.
+
+    Measured on the built palm before this existed: two connected shells, the
+    smaller one 88 faces sitting from x=-82.8 to -56.1 with nothing joining it to
+    a plate that stops at -57. It was watertight and had zero non-manifold edges,
+    because a detached shell is perfectly manifold — that check cannot see this
+    at all. It would have printed as a small loose object.
+
+    A hand has a thenar eminence for the same reason: the thumb's root needs
+    something to stand on.
+    """
+    spec = AnthropomorphicPalmSpec()
+    (centre_x, _, _), (size_x, _, _) = spec.thenar_bridge_mm
+
+    reaches_plate = centre_x + size_x / 2 > -spec.palm_width_mm / 2
+    reaches_root = centre_x - size_x / 2 < spec.thumb_root_mm[0]
+    assert reaches_plate, "the bridge never touches the plate"
+    assert reaches_root, "the bridge never reaches the thumb root"
+
+
+def test_a_thumb_on_a_cantilevered_arm_is_refused() -> None:
+    """The guard measures the boss's length, because its reach is a tautology.
+
+    Written first as "does the bridge reach the root", which the bridge is
+    *defined* to do — a guard that can never fire. What can go wrong is the boss
+    becoming an arm: push the thumb far enough out and the bulge at the base of
+    a thumb turns into a cantilever carrying a joint at its end.
+    """
+    with pytest.raises(ValueError, match="cantilever"):
+        AnthropomorphicPalmSpec(thumb_offset_mm=200.0)
+
+    # And the shipped hand is comfortably inside the limit, so the guard is not
+    # simply always-on.
+    spec = AnthropomorphicPalmSpec()
+    assert 0 < spec.thenar_overhang_mm < spec.palm_width_mm / 2
