@@ -181,11 +181,24 @@ def build_finger(spec: SingleTendonFingerSpec) -> list[bpy.types.Object]:
     """
     link = spec.link
     offsets = (*spec.moment_arms_mm, spec.moment_arms_mm[-1])
-    parts: list[bpy.types.Object] = []
-    for index, rotation_deg in enumerate(spec.joint_rotations_deg, start=1):
-        unit = create_phalanx(spec, index, offsets[index - 1])
-        unit.location.z = 0.001 * ((index - 1) * link.unit_pitch_mm)
-        unit.rotation_euler.z = math.radians(rotation_deg)
-        parts.append(unit)
+    if spec.phalanx_part_count != 1:
+        raise RuntimeError(
+            "this builder copies one master, so the moment arms must be equal; "
+            f"got {spec.moment_arms_mm}"
+        )
+
+    master = create_phalanx(spec, 1, offsets[0])
+    parts = [master]
+    # Copies share the master's mesh datablock on purpose. It is what makes the
+    # four units one part number rather than four, and it is the thing the
+    # contract oracle checks when it asks for a shared mesh.
+    for index, rotation_deg in enumerate(spec.joint_rotations_deg[1:], start=2):
+        copy = master.copy()
+        copy.data = master.data
+        copy.name = f"HJ_V3_PHALANX_{index}"
+        bpy.context.collection.objects.link(copy)
+        copy.location.z = 0.001 * ((index - 1) * link.unit_pitch_mm)
+        copy.rotation_euler.z = math.radians(rotation_deg)
+        parts.append(copy)
     bpy.context.view_layer.update()
     return parts

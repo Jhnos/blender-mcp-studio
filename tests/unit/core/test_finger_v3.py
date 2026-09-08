@@ -41,6 +41,21 @@ def test_a_finger_whose_tendon_outruns_its_actuator_is_refused() -> None:
         SingleTendonFingerSpec(actuator_stroke_mm=1.0)
 
 
+def test_every_phalanx_is_the_same_part(  # noqa: D103
+) -> None:
+    """Equal arms mean one printed part, and one shared mesh for the oracle.
+
+    The contract oracle asks that repeated units share a mesh datablock, and it
+    is right to: units that differ are units someone has to keep track of. Here
+    the two facts are the same fact -- the arms are equal, so the bores land in
+    the same place, so the parts are identical.
+    """
+    spec = SingleTendonFingerSpec()
+
+    assert len(set(spec.moment_arms_mm)) == 1
+    assert spec.phalanx_part_count == 1
+
+
 def test_the_shipped_finger_closes_within_its_actuator_stroke() -> None:
     """The should-pass half. Without it, an always-raising guard looks identical."""
     spec = SingleTendonFingerSpec()
@@ -68,33 +83,41 @@ def test_the_finger_bends_in_one_plane_unlike_the_chain_it_borrows_from() -> Non
     assert spec.joint_rotations_deg != spec.link.assembly_rotations_deg
 
 
-def test_the_moment_arms_shrink_towards_the_fingertip() -> None:
-    """Proximal joint gets the largest arm, so the finger curls base-first.
+def test_the_moment_arms_never_grow_towards_the_fingertip() -> None:
+    """Reversed arms curl the finger from the wrong end; equal arms are fine.
 
-    Reverse the order and the fingertip curls before the knuckle does: the
-    finger closes into a hook from the wrong end and rolls objects out of the
-    hand instead of wrapping them. Nothing in the mesh is wrong when that
-    happens, which is why it is checked on the numbers.
+    **Amended deliberately, 2026-09-08, after measuring the window.** This test
+    originally demanded *strictly* decreasing arms and rejected equal ones on
+    the grounds that they "leave the closing order undetermined". The measurement
+    says otherwise: the pin bore and the body wall squeeze the usable window to
+    6.05-7.20 mm, so the steepest gradient available is a ratio of 1.19, which
+    cannot sequence three joints at all. Closing order comes from the spring
+    stiffness gradient; the arms only trim force distribution.
+
+    Equal arms are therefore the better default -- one printed part instead of
+    three for a 16% effect the springs have to deliver anyway. What still has to
+    be refused is arms that *grow* towards the tip, which closes the finger into
+    a hook from the wrong end and rolls objects out of the hand.
     """
     spec = SingleTendonFingerSpec()
 
     arms = spec.moment_arms_mm
-    assert all(nearer > further for nearer, further in zip(arms, arms[1:], strict=False)), arms
+    assert all(nearer >= further for nearer, further in zip(arms, arms[1:], strict=False)), arms
 
 
 @pytest.mark.parametrize(
     "overrides",
     [
         pytest.param(
-            {"moment_arms_mm": (4.0, 5.5, 7.0)},
+            {"moment_arms_mm": (6.1, 6.6, 7.2)},
             id="arms growing towards the tip curl the finger from the wrong end",
         ),
         pytest.param(
-            {"moment_arms_mm": (5.5, 5.5, 5.5)},
-            id="equal arms leave the closing order undetermined",
+            {"moment_arms_mm": (6.1, 6.6, 7.1)},
+            id="arms growing towards the tip, stated the other way round",
         ),
         pytest.param(
-            {"moment_arms_mm": (7.0, 5.5)},
+            {"moment_arms_mm": (6.6, 6.6)},
             id="one arm short of the joint count",
         ),
         pytest.param(
@@ -206,3 +229,37 @@ def test_a_moment_arm_stays_inside_the_body_it_is_drilled_through() -> None:
 def test_moment_arms_outside_the_usable_window_are_refused(arms: tuple[float, ...]) -> None:
     with pytest.raises(ValueError, match="moment arm"):
         SingleTendonFingerSpec(moment_arms_mm=arms)
+
+
+def test_a_units_lug_does_not_reach_into_the_next_units_body() -> None:
+    """Two separately printed parts may not occupy the same millimetres.
+
+    Inherited defect, found by measuring the built stack: the borrowed link puts
+    its joint centre 24 mm out with a 6.5 mm lug radius, so the lug reaches
+    30.5 mm — while the next body, one 48 mm pitch away and 40 mm long, already
+    starts at 28.0. The two parts interpenetrate by 2.5 mm at rest. The borrowed
+    spec permits it: its own rule only asks that the joint centre clear the body
+    *centre*, and the archived generator that shipped this arrangement never had
+    a contract to fail.
+
+    Measured on the built mesh before this guard existed: 303, 302 and 302
+    overlapping faces on the three adjacent pairs.
+    """
+    spec = SingleTendonFingerSpec()
+    link = spec.link
+
+    lug_reach = link.joint_center_offset_mm + link.lug_outer_diameter_mm / 2
+    next_body_starts = link.unit_pitch_mm - link.body_length_mm / 2
+    assert lug_reach < next_body_starts, (
+        f"the lug reaches {lug_reach} mm and the next body starts at "
+        f"{next_body_starts} mm — the two printed parts overlap"
+    )
+    assert spec.adjacent_body_clearance_mm > 0
+
+
+def test_a_pitch_that_buries_the_lug_in_the_next_body_is_refused() -> None:
+    """The borrowed default is exactly this case, so the guard has a real target."""
+    from src.core.domain.hinge_chain import HingePhalanxSpec
+
+    with pytest.raises(ValueError, match="next unit's body"):
+        SingleTendonFingerSpec(link=HingePhalanxSpec(joint_count=3))

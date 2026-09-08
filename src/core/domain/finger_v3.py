@@ -35,7 +35,14 @@ class SingleTendonFingerSpec:
     #: The link geometry is borrowed whole — fork, tongue, bearing seats, pin,
     #: tendon holes and every printability rule that comes with them. Three
     #: joints means four units: the one bolted into the palm, then three phalanges.
-    link: HingePhalanxSpec = HingePhalanxSpec(joint_count=3)
+    #:
+    #: The joint centre is pushed out from the borrowed default of 24.0 mm.
+    #: At 24.0 the lug reaches 30.5 mm while the next body starts at 28.0, so the
+    #: two separately printed parts share 2.5 mm of space. The borrowed spec
+    #: allows it — its own rule only asks that the joint centre clear the body
+    #: *centre* — and the archived generator that shipped that arrangement never
+    #: had a contract to fail. Measured on the built stack: 303 overlapping faces.
+    link: HingePhalanxSpec = HingePhalanxSpec(joint_count=3, joint_center_offset_mm=27.0)
 
     #: How far the actuator can pull the cable. The finger is refused if the
     #: three joints together want more than this.
@@ -45,12 +52,15 @@ class SingleTendonFingerSpec:
     #: once: it sets how much cable that joint eats, and how much torque the same
     #: cable tension delivers there.
     #:
-    #: The window these live in is far narrower than it looks — see
-    #: `smallest_usable_moment_arm_mm` and `largest_usable_moment_arm_mm`, which
-    #: on the borrowed link leave barely a millimetre between them. The first
-    #: draft of this spec used (7.0, 5.5, 4.0) and two of those three ran the
-    #: tendon through the pin's wall.
-    moment_arms_mm: tuple[float, ...] = field(default=(7.1, 6.6, 6.1))
+    #: Equal by default, which is a measured conclusion rather than a
+    #: simplification. The window these can live in is 6.05-7.20 mm — the pin bore
+    #: bounds one end and the body wall the other — so the steepest gradient
+    #: available is a ratio of 1.19, nowhere near enough to sequence three joints.
+    #: Order comes from the spring stiffness gradient; the arms only trim force.
+    #: Equal arms therefore buy one printed part instead of three for nothing
+    #: given up. A future link with a thinner pin reopens the window, which is why
+    #: this stays a tuple.
+    moment_arms_mm: tuple[float, ...] = field(default=(6.6, 6.6, 6.6))
 
     def __post_init__(self) -> None:
         numbers = (self.actuator_stroke_mm, *self.moment_arms_mm)
@@ -61,10 +71,10 @@ class SingleTendonFingerSpec:
         if len(self.moment_arms_mm) != self.link.joint_count:
             raise ValueError("every joint needs exactly one moment arm")
         arms = self.moment_arms_mm
-        if not all(nearer > further for nearer, further in zip(arms, arms[1:], strict=False)):
+        if not all(nearer >= further for nearer, further in zip(arms, arms[1:], strict=False)):
             raise ValueError(
-                "moment arms must shrink towards the tip, so the finger curls from "
-                f"the knuckle rather than from the fingertip: {arms}"
+                "moment arms must never grow towards the tip, or the finger curls "
+                f"from the fingertip and rolls objects out of the hand: {arms}"
             )
         floor = self.smallest_usable_moment_arm_mm
         ceiling = self.largest_usable_moment_arm_mm
@@ -80,11 +90,40 @@ class SingleTendonFingerSpec:
                     f"moment arm {arm:.2f} mm breaks the tendon bore out through the "
                     f"body wall; {ceiling:.2f} mm is the ceiling"
                 )
+        if self.adjacent_body_clearance_mm <= 0:
+            link = self.link
+            raise ValueError(
+                "the lug reaches "
+                f"{link.joint_center_offset_mm + link.lug_outer_diameter_mm / 2:.2f} mm "
+                "and the next unit's body starts at "
+                f"{link.unit_pitch_mm - link.body_length_mm / 2:.2f} mm, so two "
+                "separately printed parts would occupy the same space"
+            )
         if self.tendon_travel_mm > self.actuator_stroke_mm:
             raise ValueError(
                 "the tendon this finger needs is longer than the actuator stroke: "
                 f"{self.tendon_travel_mm:.2f} mm wanted, {self.actuator_stroke_mm:.2f} available"
             )
+
+    @property
+    def adjacent_body_clearance_mm(self) -> float:
+        """Gap between one unit's lug and the next unit's body, along the stack.
+
+        Nothing in the borrowed link measures this: it checks that the joint
+        centre clears the body centre, which says nothing about whether the lug
+        standing proud of that centre reaches into the neighbour a whole pitch
+        away. Two separately printed parts sharing millimetres is not a Boolean
+        problem — each mesh is watertight — it is an assembly that cannot exist.
+        """
+        link = self.link
+        lug_reach = link.joint_center_offset_mm + link.lug_outer_diameter_mm / 2
+        next_body_starts = link.unit_pitch_mm - link.body_length_mm / 2
+        return next_body_starts - lug_reach
+
+    @property
+    def phalanx_part_count(self) -> int:
+        """How many distinct parts have to be printed and kept track of."""
+        return len(set(self.moment_arms_mm))
 
     @property
     def smallest_usable_moment_arm_mm(self) -> float:
