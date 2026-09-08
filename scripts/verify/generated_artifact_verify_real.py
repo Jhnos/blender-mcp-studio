@@ -105,6 +105,16 @@ def oracle_code(contract: GeneratedArtifactContract) -> str:
         "bore_probe_points_mm": [list(point) for point in expected.bore_probe_points_mm],
         "collision_groups": [item.prefix for item in expected.collision_groups],
         "disjoint_groups": list(expected.disjoint_groups),
+        "channel_probes": [
+            {
+                "key": probe.key,
+                "object": probe.object_name,
+                "axis": probe.axis,
+                "open": [list(point) for point in probe.open_points_mm],
+                "solid": [list(point) for point in probe.solid_points_mm],
+            }
+            for probe in expected.channel_probes
+        ],
         "selection_prefix": contract.readiness.selection_prefix,
         "joint_sweep": asdict(expected.joint_sweep) if expected.joint_sweep else None,
     }
@@ -186,6 +196,35 @@ for obj in bpy.data.objects:
         obj.hide_set(False)
         obj.select_set(True)
         selected.append(obj.name)
+channel_probe_results = {{}}
+for probe in config['channel_probes']:
+    target = bpy.data.objects.get(probe['object'])
+    if target is None or not target.data.polygons:
+        channel_probe_results[probe['key']] = None
+        continue
+    axis = probe['axis']
+    span = max(target.dimensions) / m(1.0) + 20.0
+    def _cast(a_mm, b_mm, axis=axis, target=target, span=span):
+        # The two given coordinates are the ones the axis does not run along,
+        # in the order x, y, z with the axis dropped.
+        if axis == 'Z':
+            start = Vector((a_mm / 1000.0, b_mm / 1000.0, -span / 1000.0))
+            direction = Vector((0.0, 0.0, 1.0))
+        elif axis == 'Y':
+            start = Vector((a_mm / 1000.0, -span / 1000.0, b_mm / 1000.0))
+            direction = Vector((0.0, 1.0, 0.0))
+        else:
+            start = Vector((-span / 1000.0, a_mm / 1000.0, b_mm / 1000.0))
+            direction = Vector((1.0, 0.0, 0.0))
+        local = target.matrix_world.inverted() @ start
+        local_dir = (target.matrix_world.inverted().to_3x3() @ direction).normalized()
+        hit, _, _, _ = target.ray_cast(local, local_dir)
+        return hit
+    channel_probe_results[probe['key']] = {{
+        'open': [_cast(a, b) for a, b in probe['open']],
+        'solid': [_cast(a, b) for a, b in probe['solid']],
+    }}
+
 cross_group_overlaps = {{}}
 for first_index, first_prefix in enumerate(config['disjoint_groups']):
     for second_prefix in config['disjoint_groups'][first_index + 1:]:
@@ -231,6 +270,7 @@ print(json.dumps({{
     'bore_ray_hits': bore_hits,
     'collision_groups': collision_results,
     'cross_group_overlaps': cross_group_overlaps,
+    'channel_probe_results': channel_probe_results,
     'joint_sweep': sweep_result,
     'selected_count': len(selected),
     'layout_footprint_mm': layout_footprint,
