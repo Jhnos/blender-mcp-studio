@@ -185,30 +185,94 @@ def _adapter_with(output: object) -> BlenderMCPAdapter:
     return adapter
 
 
-@pytest.mark.asyncio
-async def test_get_scene_info_returns_mapping_unchanged() -> None:
-    """A str-keyed mapping is returned as-is."""
-    scene = {"objects": ["Cube"], "description": "one cube"}
-    info = await _adapter_with(scene).get_scene_info()
-    assert info == scene
+SCENE_REPLY: dict[str, object] = {
+    "name": "Scene",
+    "object_count": 1,
+    "materials_count": 0,
+    "objects": [{"name": "Cube", "type": "MESH", "location": [0.0, 0.0, 0.0]}],
+}
 
 
 @pytest.mark.asyncio
-async def test_get_scene_info_drops_non_string_keys() -> None:
-    """Keys are actually checked — non-str keys are dropped, not smuggled through.
+async def test_scene_summary_is_decoded_from_the_socket_reply() -> None:
+    """The adapter decodes the addon's dialect; the use case never sees a dict (D-001)."""
+    scene = await _adapter_with(SCENE_REPLY).scene_summary()
 
-    This is the exact difference from the old isinstance-only code, which
-    returned a dict[Any, Any] as dict[str, object] without ever looking at keys.
-    """
-    info = await _adapter_with({"objects": [], True: "yes"}).get_scene_info()
-    assert info == {"objects": []}
+    assert scene.name == "Scene"
+    assert scene.objects[0].name == "Cube"
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("bad", [None, ["not", "a", "map"], "raw string", 42])
-async def test_get_scene_info_returns_empty_and_warns_on_non_mapping(bad, caplog) -> None:
-    """Non-mapping output → {} with a warning (NO_SILENT_FALLBACK), never a lie-typed dict."""
-    with caplog.at_level(logging.WARNING):
-        info = await _adapter_with(bad).get_scene_info()
-    assert info == {}
-    assert any("get_scene_info" in record.message for record in caplog.records)
+@pytest.mark.parametrize("bad", [None, ["not", "a", "map"], "raw string", 42, {"objects": []}])
+async def test_an_unusable_scene_reply_is_an_error_not_an_empty_scene(bad: object) -> None:
+    """It used to warn and return {}. An empty scene nobody asked for is the quieter lie."""
+    from src.core.domain.exceptions import SceneOperationError
+
+    with pytest.raises(SceneOperationError):
+        await _adapter_with(bad).scene_summary()
+
+
+@pytest.mark.asyncio
+async def test_object_details_are_decoded_from_the_socket_reply() -> None:
+    reply = {
+        "name": "Cube",
+        "type": "MESH",
+        "location": [0.0, 0.0, 0.0],
+        "rotation": [0.0, 0.0, 0.0],
+        "scale": [1.0, 1.0, 1.0],
+        "visible": False,
+        "materials": [],
+    }
+
+    details = await _adapter_with(reply).object_details("Cube")
+
+    assert details.visible is False and details.materials == ()
+
+
+class _ScreenshotMCP:
+    """Behaves like the addon: writes the PNG where it was told to, reports its size."""
+
+    def __init__(self, write_file: bool = True) -> None:
+        self.write_file = write_file
+        self.calls: list[tuple[str, dict[str, object]]] = []
+
+    async def call_tool(self, tool_name: str, arguments: dict[str, object]) -> ToolResult:
+        self.calls.append((tool_name, arguments))
+        if self.write_file:
+            from pathlib import Path
+
+            Path(str(arguments["filepath"])).write_bytes(
+                b"\x89PNG\r\n\x1a\n" + b"\x00" * 16
+            )
+        return ToolResult(success=True, output={"width": 1, "height": 1}, error=None)
+
+
+@pytest.mark.asyncio
+async def test_viewport_screenshot_reads_and_removes_the_temp_file() -> None:
+    from pathlib import Path
+
+    adapter = BlenderMCPAdapter("localhost", 9999)
+    mcp = _ScreenshotMCP()
+    adapter._mcp = mcp  # type: ignore[assignment]
+
+    shot = await adapter.viewport_screenshot(640)
+
+    assert shot.png_bytes.startswith(b"\x89PNG") and (shot.width, shot.height) == (1, 1)
+    tool, arguments = mcp.calls[-1]
+    assert tool == "get_viewport_screenshot" and arguments["max_size"] == 640
+    assert not Path(str(arguments["filepath"])).exists()
+
+
+@pytest.mark.asyncio
+async def test_a_screenshot_reply_without_a_file_is_an_error_and_leaves_nothing_behind() -> None:
+    from pathlib import Path
+
+    from src.core.domain.exceptions import SceneOperationError
+
+    adapter = BlenderMCPAdapter("localhost", 9999)
+    mcp = _ScreenshotMCP(write_file=False)
+    adapter._mcp = mcp  # type: ignore[assignment]
+
+    with pytest.raises(SceneOperationError, match="created no PNG file"):
+        await adapter.viewport_screenshot(640)
+    assert not Path(str(mcp.calls[-1][1]["filepath"])).exists()
