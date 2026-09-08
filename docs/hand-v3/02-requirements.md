@@ -29,7 +29,7 @@ Population: V3 自己產生的物件(前綴 `HJ_V3_`)與 `models/hand-v3/` 的�
 | VOC-4 | 使用者看得到手長什麼樣子與它的握姿,不必自己開 Blender | voc | yes | feature | artifact:test_the_package_carries_the_pictures_a_person_judges_it_by |
 | VOC-5 | 使用者看得到哪些主張還沒被量過 | voc | yes | constraint | artifact:test_the_results_template_marks_what_has_not_been_measured |
 | PS-1 | 一條腱能把三個指節從全伸帶到全屈 | product | yes | feature | artifact:test_the_finger_that_shipped_carries_three_phalanges; unit:test_the_shipped_finger_closes_within_its_actuator_stroke |
-| PS-2 | 指節依序閉合:近端先動,遠端後動 | product | yes | feature | artifact:TODO_closure_order_from_sweep_samples; unit:test_the_spring_gradient_is_what_orders_the_joints_now |
+| PS-2 | 指節依序閉合:近端先動,遠端後動 | product | yes | feature | artifact:closure_trajectory; unit:test_the_spring_gradient_is_what_orders_the_joints_now |
 | PS-3 | 手掌是四指一排加一個對生拇指 | product | yes | feature | artifact:scene_list; unit:test_the_thumb_can_touch_the_index_fingertip |
 | PS-4 | 夾層充氣後的外形不擋住手指閉合 | product | yes | constraint | artifact:test_the_finger_that_shipped_carries_three_phalanges; unit:test_the_interlayer_has_a_thickness_the_finger_cannot_exceed |
 | PS-5 | 整隻手裝得進宣告的床身,且列印姿態可行 | product | yes | constraint | artifact:layout_fits_bed; unit:test_the_assembled_hand_is_deliberately_too_tall_for_the_bed |

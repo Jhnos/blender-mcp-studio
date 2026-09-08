@@ -3,8 +3,32 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
-from dataclasses import dataclass
 from pathlib import Path
+
+from src.verification.generated_artifact_expectations import (
+    ChannelProbe,
+    ClosureTrajectory,
+    CollisionExpectation,
+    GeneratedArtifactContract,
+    JointSweepExpectation,
+    OracleExpectation,
+    ReadinessExpectation,
+)
+
+# Re-exported so no caller had to move when the shapes did. Named explicitly
+# rather than left implicit, because an implicit re-export is not one.
+__all__ = [
+    "ChannelProbe",
+    "ClosureTrajectory",
+    "CollisionExpectation",
+    "GeneratedArtifactContract",
+    "JointSweepExpectation",
+    "OracleExpectation",
+    "ReadinessExpectation",
+    "contract_from_mapping",
+    "mapping_value",
+    "sequence_value",
+]
 
 from src.infrastructure.narrowing import (
     as_finite_number,
@@ -15,115 +39,6 @@ from src.infrastructure.narrowing import (
     as_str_keyed_exact,
     required,
 )
-
-
-@dataclass(frozen=True, slots=True)
-class CollisionExpectation:
-    prefix: str
-    expected_count: int
-
-
-@dataclass(frozen=True, slots=True)
-class JointSweepExpectation:
-    master_object: str
-    pivot_offset_mm: float
-    axis: str
-    mating_twist_deg: float
-    angles_deg: tuple[float, ...]
-
-
-@dataclass(frozen=True, slots=True)
-class OracleExpectation:
-    object_prefix: str
-    expected_count: int
-    expected_rotations_deg: tuple[float, ...]
-    scene_list_property: str
-    expected_scene_list: tuple[str, ...]
-    center_probe_object: str
-    collision_groups: tuple[CollisionExpectation, ...]
-    #: Whether a ray up the probe object's axis should find a clear channel.
-    #: True for every hollow body — V5, V6 and both octopus hands carry a cable
-    #: channel down the middle. A finger does not, and cannot: a channel there
-    #: would cut through the pin bores. The expectation moves rather than the
-    #: check disappearing, because a measurement nobody makes is a failure here,
-    #: not a skip, and "solid on the axis" is itself an assertion worth holding.
-    center_channel_expected_open: bool = True
-    joint_sweep: JointSweepExpectation | None = None
-    #: Extra bores to prove open, as (x, y) in the probe object's own coordinates.
-    #: The centre probe answers one axis; a palm that carries a bore per arm needs one
-    #: ray each, and an empty tuple means the contract makes no claim about them.
-    bore_probe_points_mm: tuple[tuple[float, float], ...] = ()
-    #: Prefixes whose objects must not touch any object of another listed
-    #: prefix. Collision groups only compare adjacent units inside one group,
-    #: so the digit that crosses in front of the others was measured against
-    #: nobody. Absent means no claim; declared and unmeasured is a FAIL.
-    disjoint_groups: tuple[str, ...] = ()
-    channel_probes: tuple[ChannelProbe, ...] = ()
-    #: How many separate solids each prefixed object is allowed to be. Absent
-    #: means no claim. This is the quantity no per-face check can see: two
-    #: disconnected pieces are each watertight, each manifold, and together they
-    #: are not a part.
-    expected_shells_per_object: int | None = None
-    closure_trajectory: ClosureTrajectory | None = None
-
-
-@dataclass(frozen=True, slots=True)
-class ClosureTrajectory:
-    """One coordinated closing motion, not one joint's arc.
-
-    The per-joint sweep proves each arc is clear on its own. A finger closes
-    every joint at once, and two joints each half-flexed reach places neither
-    visits alone, so the trajectory is swept as a whole and the shares say how
-    the motion is distributed.
-    """
-
-    chain_prefix: str
-    pivot_offset_mm: float
-    axis: str
-    travel_shares: tuple[float, ...]
-    full_travel_deg: float
-    steps: int
-
-
-@dataclass(frozen=True, slots=True)
-class ChannelProbe:
-    """Rays down one object's bores, with the control that makes them mean something.
-
-    `open_points_mm` must all miss and `solid_points_mm` must all hit. A miss
-    alone says nothing — a ray aimed past the part misses too, which is how
-    this project once reported five open bores through empty air.
-    """
-
-    object_name: str
-    axis: str
-    open_points_mm: tuple[tuple[float, float], ...]
-    solid_points_mm: tuple[tuple[float, float], ...]
-
-    @property
-    def key(self) -> str:
-        return f"{self.object_name}|{self.axis}"
-
-
-@dataclass(frozen=True, slots=True)
-class ReadinessExpectation:
-    selection_prefix: str
-    expected_selection_count: int
-    forbidden_issue_codes: tuple[str, ...]
-    #: Bed the print layout has to fit inside, (x, y) in mm. Absent means the
-    #: contract makes no claim about how big the plate is; present means a
-    #: missing measurement is a FAIL, because a layout that overruns the bed is
-    #: found by a person at the slicer and by nobody before them.
-    max_footprint_mm: tuple[float, float] | None = None
-
-
-@dataclass(frozen=True, slots=True)
-class GeneratedArtifactContract:
-    name: str
-    generator_script: Path
-    reload_modules: tuple[str, ...]
-    artifacts: tuple[Path, ...]
-    oracle: OracleExpectation
-    readiness: ReadinessExpectation
 
 
 def _required_mapping(source: Mapping[str, object], key: str) -> Mapping[str, object]:
@@ -260,14 +175,13 @@ def _closure_trajectory(source: Mapping[str, object]) -> ClosureTrajectory | Non
     if axis not in ("X", "Y", "Z"):
         raise ValueError("a closure trajectory's axis must be X, Y or Z")
     raw = sequence_value(mapping, "travel_shares")
-    shares = tuple(as_finite_number(value) for value in raw or [])
-    if len(shares) < 2 or any(value is None or value <= 0 for value in shares):
+    narrowed = [as_finite_number(value) for value in raw or []]
+    if len(narrowed) < 2 or any(value is None or value <= 0 for value in narrowed):
         raise ValueError("travel_shares needs at least two positive numbers")
+    shares = tuple(value for value in narrowed if value is not None)
     # The base joint leads. A trajectory that inverts the ordering is not a
     # slower grasp, it is the fingertip-first motion the spec exists to refuse.
-    if not all(
-        nearer > further for nearer, further in zip(shares, shares[1:], strict=False)
-    ):
+    if not all(nearer > further for nearer, further in zip(shares, shares[1:], strict=False)):
         raise ValueError(f"travel shares must lead from the base joint: {shares}")
     travel = as_finite_number(mapping.get("full_travel_deg"))
     if travel is None or travel <= 0:
@@ -276,7 +190,7 @@ def _closure_trajectory(source: Mapping[str, object]) -> ClosureTrajectory | Non
         chain_prefix=_required_string(mapping, "chain_prefix"),
         pivot_offset_mm=_required_finite(mapping, "pivot_offset_mm"),
         axis=axis,
-        travel_shares=shares,  # type: ignore[arg-type]
+        travel_shares=shares,
         full_travel_deg=travel,
         steps=_required_positive_int(mapping, "steps"),
     )

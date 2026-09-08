@@ -170,18 +170,18 @@ def assess_verification(
 
     trajectory = expected.closure_trajectory
     if trajectory is not None:
-        swept = sequence_value(oracle, "closure_overlaps")
-        counts = list(swept) if swept is not None else []
+        closure_steps = sequence_value(oracle, "closure_overlaps")
+        step_overlaps = list(closure_steps) if closure_steps is not None else []
         closes = (
-            swept is not None
-            and len(counts) == trajectory.steps
-            and all(type(value) is int and value == 0 for value in counts)
+            closure_steps is not None
+            and len(step_overlaps) == trajectory.steps
+            and all(type(value) is int and value == 0 for value in step_overlaps)
         )
         evidence.append(
             VerificationEvidence(
                 "closure_trajectory",
                 closes,
-                f"overlaps={counts!r}, steps={trajectory.steps}",
+                f"overlaps={step_overlaps!r}, steps={trajectory.steps}",
             )
         )
 
