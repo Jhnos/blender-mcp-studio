@@ -168,6 +168,23 @@ def assess_verification(
             )
         )
 
+    trajectory = expected.closure_trajectory
+    if trajectory is not None:
+        swept = sequence_value(oracle, "closure_overlaps")
+        counts = list(swept) if swept is not None else []
+        closes = (
+            swept is not None
+            and len(counts) == trajectory.steps
+            and all(type(value) is int and value == 0 for value in counts)
+        )
+        evidence.append(
+            VerificationEvidence(
+                "closure_trajectory",
+                closes,
+                f"overlaps={counts!r}, steps={trajectory.steps}",
+            )
+        )
+
     for probe in expected.channel_probes:
         results = mapping_value(oracle, "channel_probe_results")
         record = mapping_value(results, probe.key) if results is not None else None

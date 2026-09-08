@@ -64,6 +64,25 @@ class OracleExpectation:
     #: disconnected pieces are each watertight, each manifold, and together they
     #: are not a part.
     expected_shells_per_object: int | None = None
+    closure_trajectory: ClosureTrajectory | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class ClosureTrajectory:
+    """One coordinated closing motion, not one joint's arc.
+
+    The per-joint sweep proves each arc is clear on its own. A finger closes
+    every joint at once, and two joints each half-flexed reach places neither
+    visits alone, so the trajectory is swept as a whole and the shares say how
+    the motion is distributed.
+    """
+
+    chain_prefix: str
+    pivot_offset_mm: float
+    axis: str
+    travel_shares: tuple[float, ...]
+    full_travel_deg: float
+    steps: int
 
 
 @dataclass(frozen=True, slots=True)
@@ -223,6 +242,39 @@ def _point_pairs(
     return tuple(points)
 
 
+def _closure_trajectory(source: Mapping[str, object]) -> ClosureTrajectory | None:
+    """Optional coordinated closing sweep. Absent means no claim."""
+    if "closure_trajectory" not in source:
+        return None
+    mapping = as_mapping(source.get("closure_trajectory"))
+    if mapping is None:
+        raise ValueError("closure_trajectory must be a mapping")
+    axis = _required_string(mapping, "axis").upper()
+    if axis not in ("X", "Y", "Z"):
+        raise ValueError("a closure trajectory's axis must be X, Y or Z")
+    raw = sequence_value(mapping, "travel_shares")
+    shares = tuple(as_finite_number(value) for value in raw or [])
+    if len(shares) < 2 or any(value is None or value <= 0 for value in shares):
+        raise ValueError("travel_shares needs at least two positive numbers")
+    # The base joint leads. A trajectory that inverts the ordering is not a
+    # slower grasp, it is the fingertip-first motion the spec exists to refuse.
+    if not all(
+        nearer > further for nearer, further in zip(shares, shares[1:], strict=False)
+    ):
+        raise ValueError(f"travel shares must lead from the base joint: {shares}")
+    travel = as_finite_number(mapping.get("full_travel_deg"))
+    if travel is None or travel <= 0:
+        raise ValueError("full_travel_deg must be a positive number")
+    return ClosureTrajectory(
+        chain_prefix=_required_string(mapping, "chain_prefix"),
+        pivot_offset_mm=required(as_finite_number(mapping.get("pivot_offset_mm")), "pivot_offset_mm"),
+        axis=axis,
+        travel_shares=shares,  # type: ignore[arg-type]
+        full_travel_deg=travel,
+        steps=_required_positive_int(mapping, "steps"),
+    )
+
+
 def _channel_probes(source: Mapping[str, object]) -> tuple[ChannelProbe, ...]:
     """Optional bore probes. Both halves are required per probe, by design."""
     if "channel_probes" not in source:
@@ -340,6 +392,7 @@ def contract_from_mapping(
         bore_probe_points_mm=_bore_probe_points(oracle_source),
         disjoint_groups=_disjoint_groups(oracle_source),
         channel_probes=_channel_probes(oracle_source),
+        closure_trajectory=_closure_trajectory(oracle_source),
         expected_shells_per_object=(
             _required_positive_int(oracle_source, "expected_shells_per_object")
             if "expected_shells_per_object" in oracle_source
