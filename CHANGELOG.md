@@ -5,6 +5,13 @@
 
 ## [Unreleased]
 
+### V01.0Q.001 — 收尾:圖表守衛改讀註冊表後移除四個未用 import
+
+#### Changed
+
+- `test_docs_hand_framework_figures` 的精簡規格改從 `HAND_INSTANCES` 讀,不在測試裡再打一次;Mac 端 ruff 移除四個未用 import。
+  這一版只為讓最後一個 commit 同時帶 VERSION、CHANGELOG 與任務交接(checkpoint C1–C3),沒有行為變更。
+
 ### V01.0Q.000 — 人手尺寸的手是同一套程式的一個實例;框架 M0–M6 完成
 
 #### Added
