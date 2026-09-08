@@ -72,7 +72,12 @@ def test_the_confidence_interval_brackets_the_median_and_is_reproducible() -> No
 
     assert low < 5.5 < high
     assert (low, high) == again, "a verdict that changes between runs is not a verdict"
-    assert bootstrap_median_ci(values, seed=8) != (low, high)
+    # An interval that spans the whole sample is the sample, not an interval.
+    assert min(values) < low and high < max(values)
+    # The first draft asserted a different seed gives a different interval. It does
+    # not have to: ten integers make the resampled median coarse enough that two
+    # seeds land in the same bin, and asserting otherwise tests the data, not the
+    # code. Reproducibility is the property that matters.
 
 
 def test_a_family_of_comparisons_is_corrected_before_anything_is_claimed() -> None:
