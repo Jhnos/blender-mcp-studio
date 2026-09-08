@@ -71,7 +71,12 @@ class SingleTendonFingerSpec:
     #: to have no wiring path at all, which is what the first version of this spec
     #: quietly meant. Mirroring the tendon puts it clear of the pin and clear of
     #: the wall, at the same diameter, on the side nothing else uses.
-    wiring_bore_offset_mm: float = 6.6
+    #: Zero means "mirror the tendon", which is what this has always described in
+    #: prose. It was a literal 6.6 — a number sized for a 22 mm body — so a link
+    #: with a shallower body drove it into the outer wall while every other
+    #: dimension scaled fine. A default that only works for one link is not a
+    #: default. Deriving it leaves V3 at 6.6 exactly, to the byte.
+    wiring_bore_offset_mm: float = 0.0
     #: Relative return-spring stiffness per joint, base first. Relative because
     #: which spring to buy is a purchase; which way the gradient runs is not.
     #: The moment arms used to carry the ordering and no longer can — they were
@@ -138,6 +143,8 @@ class SingleTendonFingerSpec:
                 f"{link.unit_pitch_mm - link.body_length_mm / 2:.2f} mm, so two "
                 "separately printed parts would occupy the same space"
             )
+        if not self.wiring_bore_offset_mm:
+            object.__setattr__(self, "wiring_bore_offset_mm", self.moment_arms_mm[0])
         link = self.link
         if self.wiring_bore_offset_mm <= 0:
             raise ValueError(
