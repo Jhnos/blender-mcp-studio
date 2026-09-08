@@ -22,7 +22,7 @@ from src.infrastructure.narrowing import (  # noqa: E402
     required,
 )
 from src.verification.artifact_files import binary_stl_metrics  # noqa: E402
-from src.verification.generated_artifact_bootstrap import build_generator_code
+from src.verification.generated_artifact_bootstrap import build_generator_code  # noqa: E402
 from src.verification.generated_artifact_contract import (  # noqa: E402
     GeneratedArtifactContract,
     contract_from_mapping,
