@@ -4,7 +4,7 @@ Read this file first after a new conversation, compaction, or terminal restart.
 
 | State | Task | Priority |
 |---|---|---|
-| **ACTIVE** | [`08_hand-framework.md`](08_hand-framework.md) | 靈巧手框架:規格→規劃→執行三層,契約由規格生成,先逐面數重現 `models/hand-v3/`,再讓精簡連桿以同一套程式產生整手;契約閘門進 `--real`。M0 文件樹已建 |
+| AWAITING-ACCEPTANCE | [`08_hand-framework.md`](08_hand-framework.md) | 靈巧手框架 M0–M6 全部完成:規格→規劃→執行三層,契約由規劃生成,新產生器逐面重現 V3,17 份契約 + 差分在 `--real`;人手尺寸 `hand-compact` 真機 20/14。**待使用者 Lane B 裁決三張圖,通過才發布**(D-008) |
 | WAITING-ON-USER | [`07_hand-v3-coupon.md`](07_hand-v3-coupon.md) | **印一件指節、量七項公差**——幾何側全部完成且真機驗證通過,往下每一件事都要從這一件實體反推。**使用者執行** |
 | AWAITING-ACCEPTANCE | [`06_hand-v3.md`](06_hand-v3.md) | 靈巧手 V3:文件樹 21 檔 + 追溯矩陣 22 條;域規格、手指、掌盤、整手、佈局全部做完,兩份真機契約 11/11 全綠,印製包已發布;**實體列印與台架量測未做** |
 | AWAITING-ACCEPTANCE | [`05_octopus-hand-v2.md`](05_octopus-hand-v2.md) | 章魚手 V2:角點對齊手臂 + 加強莖 + 瞄準式抓取墊 + 每臂電線孔 + 全面倒角;兩份契約真機全綠,包已發布;實體列印未做,視覺 rubric 未判 |

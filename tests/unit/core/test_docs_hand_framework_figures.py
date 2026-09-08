@@ -167,13 +167,12 @@ def test_the_instance_table_quotes_what_the_specs_compute() -> None:
     """
     doc = _tree_file("08-instances")
 
-    v3 = AnthropomorphicPalmSpec().finger
-    compact = SingleTendonFingerSpec(
-        link=CompactHingeLinkSpec(),
-        moment_arms_mm=(5.5, 3.6),
-        spring_stiffness_ratio=(1.0, 1.6),
-    )
-    for slug, finger in (("hand-v3", v3), ("hand-compact", compact)):
+    from src.core.domain.hand_instances import HAND_INSTANCES
+
+    # From the registry, not rebuilt here: a spec typed a second time in a test
+    # is the drift this guard exists to catch.
+    for slug in ("hand-v3", "hand-compact"):
+        finger = HAND_INSTANCES[slug].palm.finger
         link = finger.link
         rows = [line for line in doc.splitlines() if line.startswith("|") and f"`{slug}`" in line]
         assert len(rows) == 1, f"expected one instance row for {slug}, found {len(rows)}"

@@ -31,6 +31,9 @@
 | 2026-09-09 | hand_v3_finger.json | **新產生器** | 14 | 0 | |
 | 2026-09-09 | hand_v3_gradient.json(夾具,`expected_shared_mesh_count: 2`) | 新產生器 | 20 | 0 | 兩個零件號,`shared_mesh` 觀測 2 |
 | 2026-09-09 | hand_v3_gradient_finger.json | 新產生器 | 14 | 0 | |
+| 2026-09-09 | hand_compact.json(第一次擺位) | 新產生器 | 19 | 1 | `disjoint_groups`:直伸拇指擦過 F3,8 個面 |
+| 2026-09-09 | hand_compact.json(重掃擺位) | 新產生器 | 20 | 0 | 整手 110 × 30.1 × 234.5,佈局 191 × 90.5 |
+| 2026-09-09 | hand_compact_finger.json | 新產生器 | 14 | 0 | 兩個零件號 |
 
 ## `--real` 計時(SF-13)
 
@@ -41,6 +44,7 @@
 | 2026-09-08 | regenerated package matches shipped | 0.2 | 直接計時 0.16 s |
 | 2026-09-08 | 整個 T3(含既有五條) | 13 | 整支 `ci.sh --real` 約 35 s |
 | 2026-09-09 | 十三份非手契約(D-004) | 59 | 依文件順序、同場景重用;三份 probe 走 mesh_probe |
+| 2026-09-09 | 拇指擺位掃描(離線) | 6 + 216 | 第一次 7168 候選只算可達;第二次 879 候選加算靜止淨距(每個 0.27 s) |
 
 ## 每個實例過了哪些檢查(VOC-3)
 
@@ -48,7 +52,7 @@
 |---|---|---|---|---|---|
 | `hand-v3` | vacuous | **生成 == 簽入** | **新產生器 20/14** | **新產生器 4/4** | 已發布 |
 | `hand-v3-gradient`(驗證夾具) | vacuous | 生成 == 簽入 | **真機 20/14,兩個零件號** | 不適用(無包) | 永不發布 |
-| `hand-compact` | vacuous | vacuous | vacuous | 不適用 | 未發布(D-008) |
+| `hand-compact` | **PASS** | **生成 == 簽入** | **真機 20/14** | 不適用(尚無包) | 未發布(D-008,等 Lane B) |
 
 `vacuous` = 檢查存在但沒有對這個實例跑過;**永遠不併入 pass**。
 
@@ -60,6 +64,7 @@
 |---|---|---|---|
 | 2026-09-09 | 兩份 V3 契約的 `reload_modules` 是完整的 | import 圖 18 個模組,契約列 13 個;`finger_link`(擁有 `bearing_seat_cuts`)、`rotation`、runner、兩個 domain 規格從未被重載 | [[hand-framework/07-contracts]];契約重生並簽入 |
 | 2026-09-09 | v4 猜的「五件換行成 182.5 × 100.5」 | 算法給 242.0 × 217.0 | [[hand-framework/v4-scenarios]] |
+| 2026-09-09 | 「拇指可達性掃出來的最佳解就是好擺位」 | 第一次擺位真機 19/20:直伸拇指擦過 F3(8 面)。根在掌盤深度時兩橢球赤道在投影交叉處相切;V3 沒撞是因為交叉落在關節上 | `opposition.thumb_rest_clearance_mm` + I6;重掃;[[LESSONS_LEARNED]] |
 | 2026-09-09 | 「import 閉包掃描器看得到每個模組」 | `from pkg import submodule` 被列成 `pkg`;`opposition` 切出來當天契約就列錯 | `generator_imports._from_import_targets`;[[LESSONS_LEARNED]] |
 | 2026-09-09 | 「零件的主體就是叫那個名字的物件」 | Blender 對重名加 `.001`;第二條鏈起主體全落單,場景 8 個 PHALANX_ | `hand_geometry.build_finger` 按位置認主體;[[LESSONS_LEARNED]] |
 

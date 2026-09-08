@@ -5,6 +5,25 @@
 
 ## [Unreleased]
 
+### V01.0Q.000 — 人手尺寸的手是同一套程式的一個實例;框架 M0–M6 完成
+
+#### Added
+
+- `hand-compact` 註冊為第三個實例:精簡連桿(2 mm 銷、無軸承、15 mm 深)、力矩臂 5.5 / 3.6(兩個零件號)、
+  `HK_COMPACT_` 命名空間、入口 `scripts/model_hand_compact.py`。掌盤擺位在 `strict=True` 下掃出;契約由規劃生成,
+  進 `--real`,真機 20/14。整手 110 × 30 × 234.5 mm,佈局 191 × 90.5 放得進床身。`PACKAGES` 已登錄,
+  **`models/hand-compact/` 不存在**——等使用者對三張渲染圖做 Lane B(D-008)。
+- 一致性套件 `test_hand_instance_conformance.py`:對註冊表參數化,每個實例 `strict=True` 重建、探針健全、
+  佈局進床、零件號與 STL 數對得上、命名空間互不相含;`PACKAGES` 的手包由註冊表推導(`hand_package`)。
+- `opposition.thumb_rest_clearance_mm` + 不變式 I6:直伸的拇指與每根直伸的手指表面淨距,`strict` 下必須 > 0。
+
+#### Fixed
+
+- **第一次擺位在真機 19/20**:`disjoint_groups` 抓到直伸拇指擦過第三指(8 個面)。只對可達性掃描的最佳解,
+  撞上沒被掃的那條閘門;V3 沒撞純屬交叉落在關節上。加 I6 重掃(879 候選):offset 24、drop 22、對生 25°、
+  tilt −10°,淨距 3.48 mm(V3 2.49),指尖 1.08 mm。教訓已入 LESSONS。
+- 追溯矩陣 19 列 `TODO_` 歸零。
+
 ### V01.0P.008 — 零件號數是宣告值:梯度手指在真機以兩個零件號通過契約
 
 #### Added

@@ -31,6 +31,7 @@
 | I3 | `row_finger_count: int = 4` 欄位 + `station_labels` 屬性 | 4 | 0 → 拒絕 |
 | I4 | `thumb_boss_clearance_mm` 具名,預設 = 4 × 徑向間隙 | 1.0 | 小於連桿間隙 → 拒絕 |
 | I5 | `_SAMPLES_DEG` 改為由 `maximum_articulation_deg` 每 10° 推導 | 同一個元組 | 上限 60 → 元組多一格 |
+| I6(M6 加) | `strict` 下拇指**靜止**時與每根直伸的手指表面淨距 > 0(`opposition.thumb_rest_clearance_mm`) | 2.49 mm | 平行、只離指面 5 mm 的拇指 → 拒絕 |
 
 `thumb_base_palmar_mm`、`pinch_contact_mm`、`thumb_boss_clearance_mm` 都是「0 = 由連桿推導」,沿用 `finger_v3.py`
 裡 `wiring_bore_offset_mm` 的 sentinel 模式;V3 推出來剛好 22.0 / 22.0 / 1.0——ES-2 的測試斷言這件事,
@@ -49,3 +50,8 @@
 `thumb_offset_mm`、`thumb_base_drop_mm`、`thumb_base_palmar_mm ≤ 15`、`pinch_contact_mm ≤ 15`
 ——這些是**輸入**,照 `palm_v3.py:72-73` 描述的掃法重掃,不是新規格。
 掃出來若在 `strict=True` 下被拒,**那是發現,停下回報**;不做平放拇指的 fallback。
+
+M6 結果:第一次只對可達性掃(2823/7168 合格),選出的擺位在真機被 `disjoint_groups` 抓到——直伸的拇指擦過第三指
+(8 個面)。根在掌盤深度上時,兩個橢球的赤道在投影交叉處恰好相切;V3 沒撞是因為它唯一的交叉落在關節上。
+於是加了 I6,第二次掃(879 個候選)選 offset 24、drop 22、對生 25°、tilt −10°:靜止淨距 3.48 mm,指尖 1.08 mm,比例 1.14;
+真機 20/14 全過。

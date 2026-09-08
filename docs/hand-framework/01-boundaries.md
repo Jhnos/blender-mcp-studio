@@ -42,7 +42,7 @@
 | `scripts/hand_{geometry,presentation,gates,generator}.py` | execution | 已建(M3) | 只執行規劃;ES-5 掃描綠 |
 | `scripts/model_finger_v3.py` | execution | 已縮成 shim(M3) | 契約、manifest、測試、regex 都指名它 |
 | `scripts/model_hand_v3_gradient.py` | execution | 已建(M5) | 驗證夾具入口:V3 連桿、兩個零件號、`HG_` 命名空間 |
-| `scripts/model_hand_compact.py` | execution | M6 | 精簡實例入口 |
+| `scripts/model_hand_compact.py` | execution | 已建(M6) | 精簡實例入口:`HK_` 命名空間 |
 | `scripts/finger_v3_geometry.py`、`palm_v3_geometry.py`、`finger_v3_presentation.py` | execution | **已刪除**(M3,差分綠後) | 不留兩套 |
 
 ## 必須重用、不得重造(親驗)

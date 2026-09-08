@@ -123,6 +123,7 @@ saved output files for the other version are retained.
 | `scripts/hand_gates.py` | Compares built objects to the plan: shells, part numbers, knuckle reach, footprints, stale scene |
 | `scripts/hand_generator.py` | Composes geometry, gates, exports and views for one registered instance |
 | `scripts/model_finger_v3.py` | V3 entry point: binds the instance and its namespace, nothing else |
+| `scripts/model_hand_v3_gradient.py`, `scripts/model_hand_compact.py` | Entry points for the gradient fixture and the human-scale instance; same generator |
 | `src/verification/generated_artifact_contract.py` | Contract parsing and evidence assessment |
 | `src/verification/artifact_files.py` | Binary STL length/coordinate validation without Blender |
 | `src/verification/mesh_measurements.py` | Fail-closed dimensions, slopes, bores and pin evidence |

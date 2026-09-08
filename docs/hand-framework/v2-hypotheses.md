@@ -28,5 +28,7 @@
 | HF-8 | 精簡實例的拇指擺位掃得出通過對生判準的解 | 掃描空間內無任何組合滿足 `thumb_index_tip_gap_mm < pinch_contact_mm` |
 | HF-9 | 精簡實例的佈局(四件)放得進 256 床身 | `layout_fits_bed` FAIL |
 
+M6 結果:HF-3、HF-8、HF-9 全部成立(見 [[hand-framework/v8-results]]);HF-8 多了一層——可達不等於靜止時不撞。
+
 推翻 HF-8 是**發現**不是失敗:那表示 15 mm 深的掌盤需要不同的拇指幾何,寫進 [[hand-framework/v8-results]]
 的「推翻了什麼」,不做 fallback。

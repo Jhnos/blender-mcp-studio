@@ -1,6 +1,6 @@
 # 靈巧手框架 — 把「換連桿」變成參數
 
-**Status:** ACTIVE
+**Status:** AWAITING-ACCEPTANCE
 
 ## Goal
 
@@ -41,21 +41,22 @@
 
 ### Verified facts
 
-- M0–M4:文件樹與守衛;差分與全部契約在 `--real`;契約由規劃生成;執行層讀規劃並逐面重現 V3;
-  掌盤四欄位五不變式,V3 逐位元組不變。
-- **M5:契約欄位 `expected_shared_mesh_count`(預設 1)取代判準寫死的 1,should-fire 成對;
-  `hand-v3-gradient` 驗證夾具(V3 連桿、力矩臂 7.1/6.1、`HG_V3G_`)註冊、生成契約、進 `--real`,
-  真機 20/14,`shared_mesh` 觀測 2 = 宣告 2——零件號數是宣告值,不是產生器限制。
-  每零件號一個 STL;`probe_soundness` 在規劃時拒絕量到空氣的探針。**
-- import 掃描器修過一個洞:`from pkg import name` 要解析成子模組。
+- M0–M5:文件樹與守衛;差分與全部契約在 `--real`;契約由規劃生成;執行層讀規劃並逐面重現 V3;
+  掌盤四欄位五不變式;零件號數是宣告值(夾具真機 20/14)。
+- **M6:`hand-compact` 已註冊(精簡連桿、力矩臂 5.5/3.6、兩個零件號、`HK_COMPACT_`),契約由規劃生成並在真機
+  20/14 全過;整手 110 × 30 × 234.5,佈局 191 × 90.5。第一次擺位真機 19/20——直伸拇指擦過 F3——
+  加了靜止淨距不變式 I6 重掃後全過(淨距 3.48 mm,V3 2.49)。三張渲染圖親眼看過並交使用者。**
+- 追溯矩陣 19 列 `TODO_` 歸零;`ci.sh --real` 跑 17 份契約 + 差分,約 2.5 分鐘,全綠。
 
 ### Open failures
 
-- 沒有機器檢查在失敗。矩陣剩 2 個 `TODO_` ref:PS-1(一致性套件)、VOC-4(`hand_compact` 契約)——都是 M6。
+- 沒有機器檢查在失敗。
+- checkpoint C1 會報「沒有 ACTIVE 任務」:這是真實狀態——機器側全部完成,剩下的每一步都在使用者手上
+  (Lane B 三題、印試片、台架)。不為了讓檢查器綠而捏造一個進行中的任務。
 
-### Next step
+### Next step(使用者)
 
-- M6:先寫紅測試 `tests/unit/core/test_hand_instance_conformance.py`(對 `HAND_INSTANCES` 參數化:
-  `strict=True` 重建掌盤不拒、前綴互異、`phalanx_stls` 數量對);再掃精簡實例的拇指擺位
-  (`thumb_offset/drop/palmar ≤ 15/pinch ≤ 15`,照 `palm_v3.py` 註解的掃法),`strict=True` 下無解就停下回報;
-  有解才註冊 `hand-compact`、建 `scripts/model_hand_compact.py`、生成契約、真機跑、登錄 `PACKAGES` 不發布。
+- **Lane B 三題**(看 `tmp/hand-compact/` 三張圖,或本對話附的檔案):像不像手?握姿順不順?針筒好不好推?
+  通過 → `python3 scripts/publish_print_package.py hand-compact`(D-008),包進 `models/hand-compact/`,
+  再把 `regenerated_package_matches_shipped.py --package hand-compact` 接進 `--real`。
+- 印 `models/hand-v3/phalanx_mm.stl` 試片(`07_hand-v3-coupon.md`,C1–C7)——所有實體判斷都從它反推。
