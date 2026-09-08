@@ -31,9 +31,19 @@ FORBIDDEN_ISSUE_CODES = (
 
 Mapping = dict[str, object]
 
+#: Contract numbers are rendered to this many decimals. The plan computes
+#: ratios like 6.6 / 1.6 / 6.6 and gets 0.6249999999999999; the oracle's own
+#: tolerances are coarser than a micron by orders of magnitude, and a committed
+#: file that flips its last digit on every rebuild is noise, not evidence.
+RENDER_DECIMALS = 6
+
+
+def _num(value: float) -> float:
+    return round(float(value), RENDER_DECIMALS)
+
 
 def _points(points: tuple[tuple[float, float], ...]) -> list[list[float]]:
-    return [[float(x), float(y)] for x, y in points]
+    return [[_num(x), _num(y)] for x, y in points]
 
 
 def _channel(probe: ChannelProbePlan) -> Mapping:
@@ -68,7 +78,7 @@ def _oracle_common(plan: HandPlan) -> Mapping:
     return {
         "object_prefix": naming.hand_chain_prefix(first.label),
         "expected_count": plan.counts.units_per_finger,
-        "expected_rotations_deg": [float(a) for a in first.chain.joint_rotations_deg],
+        "expected_rotations_deg": [_num(a) for a in first.chain.joint_rotations_deg],
         "scene_list_property": naming.scene_key("HAND_STATIONS"),
         "expected_scene_list": list(plan.counts.stations),
         "center_probe_object": naming.hand_unit(first.label, 1),
@@ -88,7 +98,7 @@ def _readiness(plan: HandPlan, *, with_bed: bool) -> Mapping:
         "forbidden_issue_codes": list(FORBIDDEN_ISSUE_CODES),
     }
     if with_bed:
-        readiness["max_footprint_mm"] = [plan.layout.bed_mm, plan.layout.bed_mm]
+        readiness["max_footprint_mm"] = [_num(plan.layout.bed_mm), _num(plan.layout.bed_mm)]
     return readiness
 
 
@@ -120,10 +130,10 @@ def finger_contract_mapping(plan: HandPlan, project_root: Path) -> Mapping:
     oracle = _oracle_common(plan)
     oracle["joint_sweep"] = {
         "master_object": naming.hand_unit(first.label, 1),
-        "pivot_offset_mm": probes.pivot_offset_mm,
+        "pivot_offset_mm": _num(probes.pivot_offset_mm),
         "axis": probes.hinge_axis,
-        "mating_twist_deg": probes.mating_twist_deg,
-        "angles_deg": list(probes.sweep_angles_deg),
+        "mating_twist_deg": _num(probes.mating_twist_deg),
+        "angles_deg": [_num(a) for a in probes.sweep_angles_deg],
     }
     oracle["collision_groups"] = [
         {"prefix": chain_prefix, "expected_count": first.chain.link.assembly_unit_count},
@@ -132,10 +142,10 @@ def finger_contract_mapping(plan: HandPlan, project_root: Path) -> Mapping:
     oracle["expected_shells_per_object"] = 1
     oracle["closure_trajectory"] = {
         "chain_prefix": chain_prefix,
-        "pivot_offset_mm": probes.pivot_offset_mm,
+        "pivot_offset_mm": _num(probes.pivot_offset_mm),
         "axis": probes.hinge_axis,
-        "travel_shares": [float(share) for share in probes.travel_shares],
-        "full_travel_deg": probes.full_travel_deg,
+        "travel_shares": [_num(share) for share in probes.travel_shares],
+        "full_travel_deg": _num(probes.full_travel_deg),
         "steps": probes.closure_steps,
     }
     return {

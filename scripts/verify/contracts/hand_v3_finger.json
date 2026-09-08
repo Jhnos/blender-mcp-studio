@@ -95,7 +95,7 @@
       "axis": "X",
       "travel_shares": [
         1.0,
-        0.6249999999999999
+        0.625
       ],
       "full_travel_deg": 50.0,
       "steps": 8

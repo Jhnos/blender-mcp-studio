@@ -22,11 +22,12 @@ def first_party_imports(path: Path) -> tuple[str, ...]:
     tree = ast.parse(path.read_text(encoding="utf-8"))
     found: list[tuple[int, str]] = []
     for node in ast.walk(tree):
-        names: list[str] = []
         if isinstance(node, ast.Import):
             names = [alias.name for alias in node.names]
         elif isinstance(node, ast.ImportFrom) and node.module and node.level == 0:
             names = [node.module]
+        else:
+            continue
         found.extend(
             (node.lineno, name) for name in names if name.split(".")[0] in FIRST_PARTY_ROOTS
         )
