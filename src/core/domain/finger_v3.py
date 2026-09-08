@@ -71,6 +71,12 @@ class SingleTendonFingerSpec:
     #: quietly meant. Mirroring the tendon puts it clear of the pin and clear of
     #: the wall, at the same diameter, on the side nothing else uses.
     wiring_bore_offset_mm: float = 6.6
+    #: Relative return-spring stiffness per joint, base first. Relative because
+    #: which spring to buy is a purchase; which way the gradient runs is not.
+    #: The moment arms used to carry the ordering and no longer can — they were
+    #: made equal so fifteen phalanges share one part number — so this is the
+    #: only thing left that decides which joint closes first.
+    spring_stiffness_ratio: tuple[float, ...] = field(default=(1.0, 1.6))
 
     def __post_init__(self) -> None:
         numbers = (self.actuator_stroke_mm, *self.moment_arms_mm)
@@ -85,6 +91,18 @@ class SingleTendonFingerSpec:
             raise ValueError(
                 "moment arms must never grow towards the tip, or the finger curls "
                 f"from the fingertip and rolls objects out of the hand: {arms}"
+            )
+        springs = self.spring_stiffness_ratio
+        if len(springs) != self.link.joint_count:
+            raise ValueError("every joint needs exactly one spring stiffness")
+        if any(
+            isinstance(value, bool) or not math.isfinite(value) or value <= 0 for value in springs
+        ):
+            raise ValueError("spring stiffnesses must be finite and positive")
+        if not all(nearer < further for nearer, further in zip(springs, springs[1:], strict=False)):
+            raise ValueError(
+                "the return springs must stiffen towards the tip, or the fingertip "
+                f"closes first and rolls the object out of the hand: {springs}"
             )
         floor = self.smallest_usable_moment_arm_mm
         ceiling = self.largest_usable_moment_arm_mm
@@ -211,6 +229,31 @@ class SingleTendonFingerSpec:
         glove purchase has to respect.
         """
         return self.palmar_surface_gap_at_full_flexion_mm / 2.0
+
+    @property
+    def joint_travel_shares(self) -> tuple[float, ...]:
+        """How far each joint turns, relative to the base joint, at one tension.
+
+        An underactuated joint turns until the tendon's torque meets its return
+        spring's, so at a given tension it sits at `arm / stiffness`. Reported
+        as a share of the base joint so the numbers stay comparable while the
+        springs are still relative.
+        """
+        shares = [
+            arm / stiffness
+            for arm, stiffness in zip(
+                self.moment_arms_mm, self.spring_stiffness_ratio, strict=True
+            )
+        ]
+        return tuple(share / shares[0] for share in shares)
+
+    @property
+    def closure_order(self) -> tuple[int, ...]:
+        """Which joint closes first, second, and so on. Base joint first, or the
+        finger curls from the tip and pushes the object away rather than holding
+        it. Both the arms and the springs feed this, which is what ES-3 asks."""
+        shares = self.joint_travel_shares
+        return tuple(sorted(range(len(shares)), key=lambda index: -shares[index]))
 
     @property
     def tendon_bore_offset_mm(self) -> float:
