@@ -114,9 +114,12 @@ def capture(
     # caption. The V3 joint detail is a vertical stack running through the top
     # of frame, and it hid its own title. Under an orthographic camera this
     # moves nothing on screen — same place, same size, drawn in front.
-    towards_camera = (camera.location - Vector(target)).normalized()
-    reach = min(m(scale), (camera.location - Vector(target)).length * 0.5)
-    label_position = label_position + towards_camera * reach
+    # In millimetres, like `target` and `scale`. `camera.location` is already in
+    # metres, and subtracting one from the other gave a direction that was mostly
+    # wrong and a distance of 0.11 mm — the caption stayed exactly where it was.
+    camera_mm = camera.location / m(1.0)
+    to_camera = camera_mm - Vector(target)
+    label_position = label_position + to_camera.normalized() * min(scale, to_camera.length * 0.5)
     label = add_text("HH_VIEW_LABEL", title, tuple(label_position), white, scale * 0.018)
     face_camera(label, camera)
     scene.render.filepath = str(output / name)
