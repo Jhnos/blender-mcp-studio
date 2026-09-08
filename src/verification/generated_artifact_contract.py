@@ -242,6 +242,13 @@ def _point_pairs(
     return tuple(points)
 
 
+def _required_finite(source: Mapping[str, object], key: str) -> float:
+    value = as_finite_number(source.get(key))
+    if value is None:
+        raise ValueError(f"{key} must be a finite number")
+    return value
+
+
 def _closure_trajectory(source: Mapping[str, object]) -> ClosureTrajectory | None:
     """Optional coordinated closing sweep. Absent means no claim."""
     if "closure_trajectory" not in source:
@@ -267,7 +274,7 @@ def _closure_trajectory(source: Mapping[str, object]) -> ClosureTrajectory | Non
         raise ValueError("full_travel_deg must be a positive number")
     return ClosureTrajectory(
         chain_prefix=_required_string(mapping, "chain_prefix"),
-        pivot_offset_mm=required(as_finite_number(mapping.get("pivot_offset_mm")), "pivot_offset_mm"),
+        pivot_offset_mm=_required_finite(mapping, "pivot_offset_mm"),
         axis=axis,
         travel_shares=shares,  # type: ignore[arg-type]
         full_travel_deg=travel,
