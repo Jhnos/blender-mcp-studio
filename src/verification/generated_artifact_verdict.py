@@ -152,8 +152,10 @@ def assess_verification(
 
     if expected.disjoint_groups:
         overlaps = mapping_value(oracle, "cross_group_overlaps")
+        # Sorted pairs, so the key is canonical and the order a contract happens
+        # to list its groups in never becomes a hidden part of the format.
         wanted = [
-            f"{a}|{b}"
+            "|".join(sorted((a, b)))
             for index, a in enumerate(expected.disjoint_groups)
             for b in expected.disjoint_groups[index + 1 :]
         ]
