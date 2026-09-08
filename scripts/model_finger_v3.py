@@ -14,6 +14,7 @@ import sys
 from pathlib import Path
 
 import bpy
+from mathutils import Vector
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
@@ -49,6 +50,24 @@ def _shell_count(obj: bpy.types.Object) -> int:
         if left != right:
             parent[left] = right
     return len({find(index) for index in range(len(mesh.vertices))})
+
+
+def _refuse_a_disconnected_knuckle(palm: bpy.types.Object) -> None:
+    """The palm's roots must reach the height the fingers' forks sit at.
+
+    Nothing else looks at this. The palm was watertight, one shell, and passed
+    both contracts while every knuckle sat 13.5 mm below its finger — the hand
+    simply could not be assembled. Height is the cheap, decisive test: a root
+    that does not reach cannot be coaxial with anything.
+    """
+    reach = PALM.finger.link.joint_center_offset_mm + PALM.finger.link.lug_outer_diameter_mm / 2
+    top = max((palm.matrix_world @ Vector(corner)).z for corner in palm.bound_box) / 0.001
+    if abs(top - reach) > 0.5:
+        raise RuntimeError(
+            f"the palm's knuckle roots reach {top:.2f} mm but the fingers' fork bores "
+            f"sit at {PALM.finger.link.joint_center_offset_mm:.2f} mm, needing {reach:.2f} mm "
+            "of root — the hand cannot be assembled"
+        )
 
 
 def _refuse_a_stale_scene() -> None:
@@ -104,6 +123,7 @@ def build() -> None:
     export_stl_mm([parts[0]], OUTPUT / "phalanx_mm.stl")
 
     palm = build_palm(PALM)
+    _refuse_a_disconnected_knuckle(palm)
     finger.objects.link(palm)
     if palm.users_collection and scene.collection in palm.users_collection:
         scene.collection.objects.unlink(palm)

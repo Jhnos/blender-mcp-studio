@@ -56,6 +56,15 @@ def _male_tongue(spec: AnthropomorphicPalmSpec, name: str) -> bpy.types.Object:
     )
     boolean(stem, bore, "DIFFERENCE")
     stem.name = name
+    # Bake the object's own offset into its mesh before handing it back. The box
+    # this was built from keeps its centre height in the object transform —
+    # `create_box` applies scale and rotation but deliberately not location — and
+    # the caller then overwrites that transform to place the root. Every knuckle
+    # came out 13.5 mm low, which is exactly the stem's half height, and the palm
+    # topped out at 20.0 mm where the fingers' fork bores sit at 27.0. Watertight,
+    # one shell, contract-green, and the hand could not be assembled.
+    stem.data.transform(Matrix.Translation(stem.location))
+    stem.location = (0.0, 0.0, 0.0)
     return stem
 
 

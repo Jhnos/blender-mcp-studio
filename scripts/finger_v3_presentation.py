@@ -169,7 +169,11 @@ def present_finger(
         "finger_v3_print_layout.png",
         camera,
         layout,
-        (0.0, -430.0, 250.0),
+        # Straight down. A print layout seen from an angle projects one row onto
+        # the next, so parts that are 11 mm apart on the bed read as overlapping —
+        # a blind reviewer called it a collision, and the measurement said the
+        # geometry was clear. The view was the thing that was wrong.
+        (0.0, 0.0, 420.0),
         (0.0, 0.0, 0.0),
         320.0,
         "Print layout: one plate, four phalanges and the palm",
