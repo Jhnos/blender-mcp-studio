@@ -52,7 +52,7 @@ def test_a_missing_render_refuses_to_publish(tmp_path: Path) -> None:
     source, destination = tmp_path / "src", tmp_path / "dst"
     source.mkdir()
     _seed(source)
-    (source / PACKAGES["hand-compact"].layout_render).unlink()
+    (source / PACKAGES["hand-compact"].render_files[-1]).unlink()
 
     with pytest.raises(FileNotFoundError, match="missing"):
         publish(source, destination, PACKAGES["hand-compact"])
