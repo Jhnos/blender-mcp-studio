@@ -29,6 +29,7 @@ from src.adapters.events.in_memory_event_bus import InMemoryEventBus
 from src.core.domain.command import Command
 from src.core.domain.scene_operations import ObjectDetails, SceneSummary, ViewportImage
 from src.core.ports.adapter_factory_port import AdapterFactoryPort
+from src.core.domain.exceptions import SceneOperationError
 from src.core.ports.blender_port import BlenderPort
 from src.core.ports.llm_port import LLMChatPort, LLMResponse, LLMStreamPort
 from src.core.ports.mcp_port import ToolResult
@@ -60,7 +61,8 @@ class _FakeBlender(BlenderPort):
         raise NotImplementedError("this fake answers no scene queries")
 
     async def viewport_screenshot(self, max_size: int = 800) -> ViewportImage:
-        raise NotImplementedError("this fake answers no scene queries")
+        # A domain failure keeps the smoke test off the filesystem; the turn still completes.
+        raise SceneOperationError("no screenshot in smoke test")
 
     def __init__(self, output: object) -> None:
         self._output = output

@@ -20,6 +20,7 @@ from dataclasses import dataclass, field
 
 from src.core.domain.command import Command, CommandParser
 from src.core.domain.session import Session
+from src.core.domain.exceptions import BlenderConnectionError, SceneOperationError
 from src.core.ports.blender_port import BlenderPort
 from src.core.ports.llm_port import LLMChatPort, LLMToolChatPort
 from src.core.ports.vision_port import VisionPort
@@ -204,17 +205,12 @@ class IterativeRefinementUseCase:
         )
 
     async def _capture_screenshot(self) -> bytes | None:
+        """The port's typed screenshot; a domain failure means "no image", not a crash."""
         try:
-            tmp = tempfile.mktemp(suffix=".png")
-            result = await self._blender.call_tool("get_viewport_screenshot", {"filepath": tmp})
-            if result.success and os.path.exists(tmp):
-                with open(tmp, "rb") as f:
-                    data = f.read()
-                os.unlink(tmp)
-                return data
-        except Exception as e:
+            return (await self._blender.viewport_screenshot()).png_bytes
+        except (SceneOperationError, BlenderConnectionError) as e:
             logger.debug("Screenshot failed: %s", e)
-        return None
+            return None
 
     async def _get_commands(self, session: Session) -> list[Command]:
         """Get corrective commands from LLM — tool calling or regex fallback."""

@@ -23,6 +23,7 @@ import tempfile
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
 from src.core.domain.session import Session
+from src.core.domain.exceptions import BlenderConnectionError, SceneOperationError
 from src.core.ports.blender_port import BlenderPort
 from src.core.ports.llm_port import LLMStreamPort
 from src.core.ports.session_store_port import SessionStorePort
@@ -239,14 +240,12 @@ async def _capture_screenshot(blender: BlenderPort, blender_out: str | None) -> 
     """Take a viewport screenshot after a successful Blender command."""
     if not blender_out or blender_out.startswith("❌"):
         return None
+    # A missing screenshot is not a failed turn: the domain errors the port
+    # raises are logged and swallowed here on purpose. Anything else is a bug
+    # and propagates.
     try:
-        tmp = tempfile.mktemp(suffix=".png")
-        shot = await blender.call_tool("get_viewport_screenshot", {"filepath": tmp})
-        if shot.success and os.path.exists(tmp):
-            with open(tmp, "rb") as f:
-                b64 = base64.b64encode(f.read()).decode()
-            os.unlink(tmp)
-            return b64
-    except Exception as exc:
+        shot = await blender.viewport_screenshot()
+    except (SceneOperationError, BlenderConnectionError) as exc:
         logger.debug("Screenshot capture failed: %s", exc)
-    return None
+        return None
+    return base64.b64encode(shot.png_bytes).decode()

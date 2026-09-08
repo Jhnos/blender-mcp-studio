@@ -113,7 +113,7 @@ async def test_broadcast_loop_skips_when_no_connections():
         with pytest.raises(asyncio.CancelledError):
             await viewport_broadcast_loop(state, interval=0.01)
 
-    blender.call_tool.assert_not_called()
+    blender.viewport_screenshot.assert_not_called()
 
 
 @pytest.mark.asyncio
@@ -126,7 +126,9 @@ async def test_broadcast_loop_sends_when_connected(tmp_path):
     png_bytes = b"\x89PNG\r\n\x1a\n" + b"\x00" * 8
 
     blender = AsyncMock()
-    blender.call_tool.return_value = FakeShot()
+    from src.core.domain.scene_operations import ViewportImage
+
+    blender.viewport_screenshot.return_value = ViewportImage(png_bytes=png_bytes, width=1, height=1)
 
     state = FakeAppState(blender, mgr)
 
@@ -140,19 +142,11 @@ async def test_broadcast_loop_sends_when_connected(tmp_path):
 
     with (
         patch("asyncio.sleep", new_callable=AsyncMock, side_effect=sleep_side_effect),
-        patch("tempfile.mktemp", return_value=str(tmp_path / "shot.png")),
-        patch("builtins.open", create=True) as mock_open,
-        patch("os.path.exists", return_value=True),
-        patch("os.unlink"),
+        pytest.raises(asyncio.CancelledError),
     ):
-        mock_open.return_value.__enter__ = lambda s: s
-        mock_open.return_value.__exit__ = MagicMock(return_value=False)
-        mock_open.return_value.read = MagicMock(return_value=png_bytes)
+        await viewport_broadcast_loop(state, interval=0.01)
 
-        with pytest.raises(asyncio.CancelledError):
-            await viewport_broadcast_loop(state, interval=0.01)
-
-    blender.call_tool.assert_called_once()
+    blender.viewport_screenshot.assert_called_once()
     ws.send_json.assert_awaited_once()
     sent = ws.send_json.call_args[0][0]
     assert sent["type"] == "viewport_update"
@@ -167,7 +161,7 @@ async def test_broadcast_loop_continues_after_blender_error():
     mgr.register(ws)
 
     blender = AsyncMock()
-    blender.call_tool.side_effect = RuntimeError("Blender offline")
+    blender.viewport_screenshot.side_effect = RuntimeError("Blender offline")
 
     state = FakeAppState(blender, mgr)
     call_count = 0

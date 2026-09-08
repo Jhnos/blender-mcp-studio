@@ -345,6 +345,11 @@ class _FakeBlender:
     async def call_tool(self, tool_name: str, arguments):
         return ToolResult(success=False, output=None, error="screenshot off in tests")
 
+    async def viewport_screenshot(self, max_size: int = 800):
+        from src.core.domain.exceptions import SceneOperationError
+
+        raise SceneOperationError("screenshot off in tests")
+
 
 class _FakeWebSocket:
     def __init__(self) -> None:

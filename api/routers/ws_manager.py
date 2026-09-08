@@ -103,12 +103,7 @@ async def viewport_broadcast_loop(
             continue
 
         try:
-            tmp = tempfile.mktemp(suffix=".png")
-            shot = await blender.call_tool("get_viewport_screenshot", {"filepath": tmp})
-            if shot.success and os.path.exists(tmp):
-                with open(tmp, "rb") as fh:
-                    b64 = base64.b64encode(fh.read()).decode()
-                os.unlink(tmp)
-                await ws_manager.broadcast_viewport(b64)
-        except Exception as exc:
+            shot = await blender.viewport_screenshot()
+            await ws_manager.broadcast_viewport(base64.b64encode(shot.png_bytes).decode())
+        except Exception as exc:  # a background loop must survive anything and keep ticking
             logger.debug("Viewport broadcast failed: %s", exc)

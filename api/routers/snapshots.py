@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import base64
 import logging
+
+from src.core.domain.exceptions import BlenderConnectionError, SceneOperationError
 import os
 from datetime import UTC
 
@@ -44,16 +46,10 @@ async def create_snapshot(body: SnapshotCreateRequest, request: Request) -> dict
 
     # Capture thumbnail
     thumbnail_b64 = ""
-    import tempfile
-
     try:
-        tmp = tempfile.mktemp(suffix=".png")
-        shot = await blender.call_tool("get_viewport_screenshot", {"filepath": tmp})
-        if shot.success and os.path.exists(tmp):
-            with open(tmp, "rb") as f:
-                thumbnail_b64 = base64.b64encode(f.read()).decode()
-            os.unlink(tmp)
-    except Exception as exc:
+        thumbnail_b64 = base64.b64encode((await blender.viewport_screenshot()).png_bytes).decode()
+    except (SceneOperationError, BlenderConnectionError) as exc:
+        # A snapshot without a thumbnail is still a snapshot; a bug is not swallowed.
         logger.debug("Thumbnail capture failed: %s", exc)
 
     from src.core.ports.snapshot_store_port import SceneSnapshot
