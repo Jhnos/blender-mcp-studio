@@ -80,11 +80,14 @@ class AnthropomorphicPalmSpec:
         link=HingePhalanxSpec(joint_count=2, joint_center_offset_mm=27.0),
         moment_arms_mm=(6.6, 6.6),
     )
-    #: The thumb is a shorter chain, not a fifth copy of the finger. Measured
-    #: rather than assumed: a three-joint thumb is 168.5 mm long, and swinging
-    #: that across a 114 mm palm carries the tip 78 mm out the far side — it
-    #: overshoots the fingers instead of meeting them, at every posture. Two
-    #: joints give 114.5 mm, which is also what a hand has: two phalanges.
+    #: Identical to the finger — the current state, not the original one. The
+    #: thumb was cut short back when the finger was four units: copying a
+    #: 168.5 mm chain across a 114 mm palm carried the tip 78 mm out the far
+    #: side, overshooting the fingers at every posture. The whole hand then
+    #: dropped to three units, so both chains are 114.5 mm and this is a fifth
+    #: copy of the finger — kept that way deliberately, because it holds all
+    #: fifteen phalanges on one part number. What makes it a thumb is the
+    #: opposition angle and the palmar boss below, never a shorter chain.
     thumb: SingleTendonFingerSpec = SingleTendonFingerSpec(
         link=HingePhalanxSpec(joint_count=2, joint_center_offset_mm=27.0),
         moment_arms_mm=(6.6, 6.6),

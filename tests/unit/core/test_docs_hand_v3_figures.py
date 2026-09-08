@@ -84,10 +84,38 @@ def test_the_palm_doc_counts_the_parts_the_spec_asks_for() -> None:
     """The count a person prints against, and the one that was wrong by four."""
     doc = PALM_DOC.read_text(encoding="utf-8")
     spec = AnthropomorphicPalmSpec()
-    per_finger = len(spec.finger_segment_lengths_mm)
-    per_thumb = len(spec.thumb_segment_lengths_mm)
+    # Printed units, not kinematic segments. The two are equal in this hand and
+    # that is a coincidence of the numbers, not a relation: a chain of n units
+    # has n-1 joints between them, and the segment list counts from the knuckle.
+    per_finger = spec.finger.link.joint_count + 1
+    per_thumb = spec.thumb.link.joint_count + 1
     fingers = len(spec.row_finger_x_mm)
 
     cell = _row(doc, "零件")
     counts = [int(v) for v in re.findall(r"\d+", cell)]
     assert counts == [1, fingers * per_finger + per_thumb, fingers, per_finger, per_thumb], cell
+
+
+def test_every_current_state_doc_quotes_the_same_reach() -> None:
+    """The matrix and the task file quote the reach too, and drifted further.
+
+    They still held 17.6 mm — a value one fix older than the README's 18.2 —
+    which is the tell that this is a class and not an oversight: prose is
+    copied forward, and each copy stops tracking at a different commit. Located
+    by a stable label rather than by the number, so the check keeps working
+    after the number moves again.
+    """
+    spec = AnthropomorphicPalmSpec()
+    flat = dataclasses.replace(spec, thumb_opposition_deg=0.0, thumb_palmar_tilt_deg=0.0)
+    expected = [spec.thumb_index_tip_gap_mm, spec.pinch_contact_mm, flat.thumb_index_tip_gap_mm]
+
+    sources = {
+        ROOT / "docs" / "hand-v3" / "v7-matrix.md": "兩指可達區域",
+        ROOT / "docs" / "tasks" / "06_hand-v3.md": "對指可達性",
+    }
+    for path, label in sources.items():
+        document = path.read_text(encoding="utf-8")
+        lines = [line for line in document.splitlines() if label in line]
+        assert len(lines) == 1, f"{path.name}: expected one line saying {label!r}"
+        quoted = [float(v) for v in DECIMAL.findall(lines[0])]
+        assert quoted[:3] == pytest.approx(expected, abs=0.1), f"{path.name}: {lines[0].strip()}"
