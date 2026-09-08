@@ -38,7 +38,9 @@ V1／V2／V6 是凍結交付物,一個位元組都不動。
 
 - `SingleTendonFingerSpec` 已交(`src/core/domain/finger_v3.py`),10 條測試綠。
   實測腱行程需求 14.40 mm vs 致動器行程 30.0 mm。
-- 手指契約 `scripts/verify/contracts/hand_v3_finger.json` 已寫,尚未在真機跑過。
+- 手指契約 `hand_v3_finger.json` **真機 12/12 全 PASS**。
+- `AnthropomorphicPalmSpec` 已交,對指可達性 17.6 mm < 22.0 接觸判準(拇指不轉為 29.9)。
+  拇指改成兩關節,根部站在掌面前方——兩者都是量測推翻假設後的結果。
 - oracle 新增 `center_channel_expected_open`:不是每個重複件都是空心觸手。手指沒有中央
   通道,而且不能有——那會切穿銷孔。做成**契約宣告期望值**而不是跳過檢查,因為本專案的
   規則是「量不到就是失敗,不是跳過」;而且「軸上是實心的」本身就是一條斷言。
@@ -74,5 +76,5 @@ V1／V2／V6 是凍結交付物,一個位元組都不動。
 
 - Track 1:依 [`../hand-v3/08-inmoov.md`](../hand-v3/08-inmoov.md) 下載並列印 InMoov 右手,
   同時採購兩隻外層手套與針筒。**使用者執行。**
-- Track 2 下一片:在 Mac 上跑 `hand_v3_finger.json` 契約(需要 Blender addon 就緒),
-  把本機探針量到的東西換成真機管線的判定。之後才是擬人掌盤與對生拇指。
+- Track 2 下一片:掌盤幾何產生器(四個指根座 + 拇指座 + 五條腱路徑 + 袖口夾 + 進氣口),
+  然後整手契約與印製包發布。
