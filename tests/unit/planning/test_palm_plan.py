@@ -84,10 +84,9 @@ def test_the_port_and_the_clamp_sit_where_the_spec_puts_them() -> None:
 def test_the_operation_order_is_boss_roots_routes_port_clamp() -> None:
     """The boss comes before the roots so the thumb root has something to land on."""
     plan = palm_plan(PALM, NAMING, STATIONS)
-    kinds = [op.solid.name.split("_")[2] if op.solid.name.count("_") > 2 else op.solid.name for op in plan.operations]
 
-    assert kinds[0] == "THENAR"
-    assert [op.mode for op in plan.operations[:1]] == ["UNION"]
+    assert plan.operations[0].solid.name == "HJ_V3_THENAR"
+    assert plan.operations[0].mode == "UNION"
     assert plan.operations[1].solid.name.startswith("HJ_V3_CUT_TENDON")
     assert plan.operations[-2].solid.name == "HJ_V3_CUT_AIR_PORT"
     assert plan.operations[-1].solid.name == "HJ_V3_CUT_CLAMP_OUTER"
