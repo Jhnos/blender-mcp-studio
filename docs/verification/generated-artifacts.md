@@ -55,6 +55,15 @@ body, the tip, the one-piece hand `.stl`, the `.blend` source and four PNGs. Run
 printed with the arms **upright** and the palm flat; see the
 [V1 target and manufacturing limits](octopus-hand-v1.md) before slicing.
 
+Hand V3 outputs: `tmp/hand-v3/` contains the shared phalanx, the palm, one assembled
+finger, the whole assembled hand, the `.blend` source and three PNGs. Run `hand_v3.json`
+first, then `hand_v3_finger.json` with `--skip-generate`. The generator namespaces its
+objects `HJ_`, **not** `HH_`, and passes that prefix to `run_generator` explicitly — left
+at the default, `clear_previous` removes nothing and a long-lived Blender accumulates one
+hand per run. The parts are printed **flat and separately**; the assembled
+`hand_v3_mm.stl` is 319.5 mm and is a reference, not a print. See the
+[V3 target and manufacturing limits](../hand-v3/00-context.md) before slicing.
+
 ## Promote a controlled print package
 
 ```bash
@@ -105,6 +114,13 @@ saved output files for the other version are retained.
 | `scripts/octopus_tip_geometry.py` | Cross-drilled cable eyelets and the inward claw |
 | `scripts/octopus_hand_presentation.py` | Hand views and the distinct-part print layout |
 | `scripts/model_octopus_hand.py` | V1 hand assembly and artifact orchestration |
+| `src/core/domain/finger_v3.py` | Single-tendon finger: travel, moment-arm window, planar stacking |
+| `src/core/domain/palm_v3.py` | Anthropomorphic palm, thumb frame and opposition reachability |
+| `scripts/presentation_profile.py` | Render furniture as data; one constant per model line |
+| `scripts/finger_v3_geometry.py` | Phalanx body, both hinge ends on one axis, tendon bore |
+| `scripts/palm_v3_geometry.py` | Knuckle roots, thenar boss, tendon channels, cuff clamp, air port |
+| `scripts/finger_v3_presentation.py` | V3 views and the bed-nested print layout |
+| `scripts/model_finger_v3.py` | V3 assembly, export and stale-scene refusal |
 | `src/verification/generated_artifact_contract.py` | Contract parsing and evidence assessment |
 | `src/verification/artifact_files.py` | Binary STL length/coordinate validation without Blender |
 | `src/verification/mesh_measurements.py` | Fail-closed dimensions, slopes, bores and pin evidence |
@@ -124,6 +140,13 @@ saved output files for the other version are retained.
 5. Run the same CLI, then obtain a fresh-context visual rubric on the actual output PNGs.
    The CLI does not replace visual inspection or claim that images were AI-graded.
 6. Run `scripts/ci.sh --real` before committing the completed slice.
+7. If the model does not have a clear channel down its probe object's axis, declare
+   `"center_channel_expected_open": false` rather than leaving the check out. A missing
+   measurement is a failure here, never a skip, and "solid on the axis" is itself a claim.
+8. Give the generator its own object prefix and **pass it to `run_generator`**. The
+   default is `HH_`; a generator that uses another prefix and takes the default clears
+   nothing, which is invisible in any `--factory-startup` run and only appears on the
+   long-lived machine.
 
 ## Evidence boundaries and safety
 

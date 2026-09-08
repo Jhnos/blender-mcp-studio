@@ -62,6 +62,16 @@ class SingleTendonFingerSpec:
     #: this stays a tuple.
     moment_arms_mm: tuple[float, ...] = field(default=(6.6, 6.6, 6.6))
 
+    #: Where the wiring runs, on the back of the finger. V1 and V2 sent sensor
+    #: wiring down a channel on the body's own axis and forbade the pin from
+    #: intruding on it. This link is a different hinge — its pin passes straight
+    #: through the axis — so a central channel would open into the pin bore, and
+    #: the contract declares the axis solid for that reason. That is not a reason
+    #: to have no wiring path at all, which is what the first version of this spec
+    #: quietly meant. Mirroring the tendon puts it clear of the pin and clear of
+    #: the wall, at the same diameter, on the side nothing else uses.
+    wiring_bore_offset_mm: float = 6.6
+
     def __post_init__(self) -> None:
         numbers = (self.actuator_stroke_mm, *self.moment_arms_mm)
         if any(
@@ -99,6 +109,30 @@ class SingleTendonFingerSpec:
                 f"{link.unit_pitch_mm - link.body_length_mm / 2:.2f} mm, so two "
                 "separately printed parts would occupy the same space"
             )
+        link = self.link
+        if self.wiring_bore_offset_mm <= 0:
+            raise ValueError(
+                "the wiring bore belongs on the back of the finger; a negative offset "
+                "puts it on the tendon's own side, where it would meet the cable"
+            )
+        to_pin = (
+            self.wiring_bore_offset_mm
+            - link.tendon_hole_diameter_mm / 2
+            - link.printed_pin_bore_mm / 2
+        )
+        to_wall = (
+            link.body_depth_mm / 2 - self.wiring_bore_offset_mm - link.tendon_hole_diameter_mm / 2
+        )
+        if to_pin < link.minimum_wall_mm:
+            raise ValueError(
+                f"the wiring bore leaves {to_pin:.2f} mm against the pin bore, under the "
+                f"{link.minimum_wall_mm:.2f} mm minimum wall"
+            )
+        if to_wall < link.minimum_wall_mm:
+            raise ValueError(
+                f"the wiring bore leaves {to_wall:.2f} mm to the outer wall, under the "
+                f"{link.minimum_wall_mm:.2f} mm minimum"
+            )
         if self.tendon_travel_mm > self.actuator_stroke_mm:
             raise ValueError(
                 "the tendon this finger needs is longer than the actuator stroke: "
@@ -119,6 +153,11 @@ class SingleTendonFingerSpec:
         lug_reach = link.joint_center_offset_mm + link.lug_outer_diameter_mm / 2
         next_body_starts = link.unit_pitch_mm - link.body_length_mm / 2
         return next_body_starts - lug_reach
+
+    @property
+    def tendon_bore_offset_mm(self) -> float:
+        """Where the tendon runs, palmar, hence negative."""
+        return -self.moment_arms_mm[0]
 
     @property
     def phalanx_part_count(self) -> int:

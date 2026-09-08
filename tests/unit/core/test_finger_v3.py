@@ -263,3 +263,50 @@ def test_a_pitch_that_buries_the_lug_in_the_next_body_is_refused() -> None:
 
     with pytest.raises(ValueError, match="next unit's body"):
         SingleTendonFingerSpec(link=HingePhalanxSpec(joint_count=3))
+
+
+def test_the_finger_carries_a_wiring_bore_on_its_back() -> None:
+    """A hand with no path for wiring is a hand nobody can put a sensor in.
+
+    V1 and V2 ran sensor wiring down a Ø10 channel on the body's own axis, and
+    their spec has an invariant forbidding the pin from intruding on it. The link
+    V3 borrows is a different hinge: its pin passes straight through the axis, so
+    a central channel would open into the pin bore. That is true, and it is why
+    the contract declares the axis solid — but "no central channel" is not the
+    same as "no wiring", and the first version of this spec quietly made it so.
+
+    The answer is a second bore on the dorsal side, mirroring the tendon. Same
+    diameter, opposite sign, clear of both the pin and the outer wall.
+    """
+    spec = SingleTendonFingerSpec()
+    link = spec.link
+
+    assert spec.wiring_bore_offset_mm > 0, "the wiring bore sits dorsal, the tendon palmar"
+    assert spec.wiring_bore_offset_mm == pytest.approx(spec.moment_arms_mm[0])
+
+    to_pin = spec.wiring_bore_offset_mm - link.tendon_hole_diameter_mm / 2 - link.printed_pin_bore_mm / 2
+    to_wall = link.body_depth_mm / 2 - spec.wiring_bore_offset_mm - link.tendon_hole_diameter_mm / 2
+    assert to_pin >= link.minimum_wall_mm, f"only {to_pin:.2f} mm between wiring and pin"
+    assert to_wall >= link.minimum_wall_mm, f"only {to_wall:.2f} mm to the outer wall"
+
+
+def test_the_wiring_bore_and_the_tendon_bore_are_on_opposite_sides() -> None:
+    """They must not become the same hole, or the cable and the wire share a path."""
+    spec = SingleTendonFingerSpec()
+
+    assert spec.wiring_bore_offset_mm > 0
+    assert spec.tendon_bore_offset_mm < 0
+    assert spec.wiring_bore_offset_mm == pytest.approx(-spec.tendon_bore_offset_mm)
+
+
+@pytest.mark.parametrize(
+    "offset",
+    [
+        pytest.param(2.0, id="a wiring bore that opens into the pin bore"),
+        pytest.param(10.0, id="a wiring bore that breaks out through the back"),
+        pytest.param(-6.6, id="a wiring bore on the tendon's own side"),
+    ],
+)
+def test_an_unusable_wiring_bore_is_refused(offset: float) -> None:
+    with pytest.raises(ValueError, match="wiring"):
+        SingleTendonFingerSpec(wiring_bore_offset_mm=offset)

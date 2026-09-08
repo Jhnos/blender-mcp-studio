@@ -103,32 +103,28 @@ def build_palm(spec: AnthropomorphicPalmSpec) -> bpy.types.Object:
     for root in roots:
         boolean(plate, root, "UNION")
 
-    # One tendon channel per finger, straight down the plate behind each root.
-    for index, x_mm in enumerate(spec.row_finger_x_mm, start=1):
-        boolean(
-            plate,
-            add_cylinder(
-                f"HJ_V3_CUT_TENDON_{index}",
-                link.tendon_hole_diameter_mm / 2,
-                plate_height + 8.0,
-                (x_mm, -spec.finger.moment_arms_mm[0], -plate_height / 2),
-            ),
-            "DIFFERENCE",
-        )
-    boolean(
-        plate,
-        add_cylinder(
-            "HJ_V3_CUT_TENDON_THUMB",
-            link.tendon_hole_diameter_mm / 2,
-            plate_height + 8.0,
-            (
-                spec.thumb_root_mm[0],
-                -spec.finger.moment_arms_mm[0],
-                -plate_height / 2,
-            ),
-        ),
-        "DIFFERENCE",
+    # Two channels per finger, straight down the plate: the tendon on the palmar
+    # side and the wiring on the back, mirrored. The palm has no central channel
+    # for the same reason the phalanx has none — this hinge's pin runs through
+    # the axis — so wiring gets its own path rather than no path.
+    stations = [(f"{index}", x_mm) for index, x_mm in enumerate(spec.row_finger_x_mm, start=1)]
+    stations.append(("THUMB", spec.thumb_root_mm[0]))
+    routes = (
+        ("TENDON", -spec.finger.moment_arms_mm[0]),
+        ("WIRING", spec.finger.wiring_bore_offset_mm),
     )
+    for label, x_mm in stations:
+        for route, y_mm in routes:
+            boolean(
+                plate,
+                add_cylinder(
+                    f"HJ_V3_CUT_{route}_{label}",
+                    link.tendon_hole_diameter_mm / 2,
+                    plate_height + 8.0,
+                    (x_mm, y_mm, -plate_height / 2),
+                ),
+                "DIFFERENCE",
+            )
 
     # Air port, on the back of the hand and clear of anything that grips.
     port_x, port_y = spec.air_port_center_mm

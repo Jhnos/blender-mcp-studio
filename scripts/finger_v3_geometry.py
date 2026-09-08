@@ -29,13 +29,15 @@ from scripts.hollow_hinge_geometry import create_box
 from src.core.domain.finger_v3 import SingleTendonFingerSpec
 
 
-def _cut_tendon_bore(
-    body: bpy.types.Object, spec: SingleTendonFingerSpec, offset_mm: float
+def _cut_axial_bore(
+    body: bpy.types.Object, spec: SingleTendonFingerSpec, offset_mm: float, name: str
 ) -> None:
-    """One bore, on the palmar side, at this phalanx's own distance from the axis.
+    """One bore running the length of the unit, `offset_mm` towards the palm.
 
     V1 and V2 drilled four bores per body because four cables ran the arm. One
-    cable needs one bore, and where that bore sits *is* the joint's moment arm.
+    cable needs one, and where the tendon's bore sits *is* the joint's moment arm.
+    The wiring's bore is the same hole mirrored to the back, which is why this
+    takes an offset and a name rather than knowing about either.
     """
     link = spec.link
     # Sized off the whole unit, not off the body. The lugs stand a lug radius
@@ -47,7 +49,7 @@ def _cut_tendon_bore(
     boolean(
         body,
         add_cylinder(
-            "HJ_CUT_TENDON",
+            name,
             link.tendon_hole_diameter_mm / 2.0,
             reach,
             (0.0, -offset_mm, 0.0),
@@ -167,7 +169,11 @@ def create_phalanx(
     # survived; the other three units came out solid, watertight and blind.
     # `octopus_tip_geometry._open_cable_paths` already carries this lesson —
     # re-drill everything the added feature covered.
-    _cut_tendon_bore(body, spec, tendon_offset_mm)
+    _cut_axial_bore(body, spec, tendon_offset_mm, "HJ_CUT_TENDON")
+    # The wiring path, mirrored onto the back. There is no central channel to put
+    # it in: this link's pin runs through the axis, so a channel there would open
+    # into the pin bore. Dorsal is the side nothing else uses.
+    _cut_axial_bore(body, spec, -spec.wiring_bore_offset_mm, "HJ_CUT_WIRING")
     cleanup_mesh(body)
     return body
 
