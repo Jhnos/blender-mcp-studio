@@ -440,3 +440,44 @@ def test_the_bed_check_needs_two_measurements_that_agree() -> None:
     assert _assess([242.0, 103.5], [242.0, 103.5, 44.0])
     assert not _assess([140.0, 44.0], [242.0, 103.5, 44.0]), "the two disagree; believe neither"
     assert not _assess([242.0, 103.5], None), "no second opinion is not a pass"
+
+
+def test_groups_declared_disjoint_must_be_measured_disjoint() -> None:
+    """Collision groups compare adjacent units inside one digit — and nothing else.
+
+    The thumb crosses in front of the whole finger row, and the only things
+    standing behind "no interference between any two fingers" were a per-digit
+    adjacency check and an analytic pitch-versus-width assertion that the thumb
+    is not part of. The layout's `intersections` code covers the print plate,
+    not the assembled hand. So the one digit that can hit another was the one
+    digit nothing measured against another.
+
+    Declared pairs are measured on the real mesh; a pair that comes back
+    missing is a FAIL, because an unmeasured pair is the state this exists to
+    end.
+    """
+    mapping = _mapping()
+    mapping["oracle"]["disjoint_groups"] = ["FX_PART_", "FX_BENT_"]  # type: ignore[index]
+    contract = contract_from_mapping(mapping, Path("/tmp"))
+    artifact_state = {str(path): True for path in contract.artifacts}
+    assert contract.oracle.disjoint_groups == ("FX_PART_", "FX_BENT_")
+
+    def _assess(overlaps: object) -> bool:
+        oracle = _green_oracle() | {"cross_group_overlaps": overlaps}
+        return assess_verification(contract, artifact_state, oracle, _green_readiness()).passed
+
+    assert _assess({"FX_BENT_|FX_PART_": 0})
+    assert not _assess({"FX_BENT_|FX_PART_": 7}), "touching digits are not disjoint"
+    assert not _assess({}), "a declared pair with no measurement is a FAIL"
+    assert not _assess(None), "no measurement at all is a FAIL"
+
+
+def test_a_contract_declaring_no_disjoint_groups_claims_nothing() -> None:
+    contract = contract_from_mapping(_mapping(), Path("/tmp"))
+    artifact_state = {str(path): True for path in contract.artifacts}
+
+    summary = assess_verification(contract, artifact_state, _green_oracle(), _green_readiness())
+
+    assert contract.oracle.disjoint_groups == ()
+    assert summary.passed
+    assert not any(item.name == "disjoint_groups" for item in summary.evidence)
