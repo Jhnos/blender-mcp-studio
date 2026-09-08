@@ -211,3 +211,41 @@ def test_a_hand_with_rake_proportions_is_refused() -> None:
     )
     with pytest.raises(ValueError, match="times the palm"):
         AnthropomorphicPalmSpec(finger=four, strict=True)
+
+
+def test_the_air_port_is_placed_by_the_spec_and_not_by_the_generator() -> None:
+    """Where the port sits was a magic number in the generator, not a decision.
+
+    `air_port_center_mm` returned an (x, y) whose y the generator threw away —
+    `_ = port_y` — while the height that actually places the bore lived in
+    `palm_v3_geometry` as `-plate_height * 0.72`. So the one value the spec
+    published about the port was unused, and the one value that mattered was
+    unreviewable. A unit test asserted the unused half and passed.
+
+    The port is a through-bore along Y (`07-interfaces`: 一個貫穿孔), so what
+    places it is x and z. That is what the spec says now.
+    """
+    spec = AnthropomorphicPalmSpec()
+
+    x_mm, z_mm = spec.air_port_center_mm
+    assert x_mm == pytest.approx(0.0), "centred across the plate"
+    assert -spec.plate_height_mm < z_mm < 0.0, "inside the plate, below its top"
+
+
+def test_the_air_port_misses_every_tendon_and_wiring_channel() -> None:
+    """F12: a port blocked by internal structure looks identical from outside.
+
+    The channels run down the plate at each digit's x; the port crosses it at
+    x = 0. Nothing was checking that those two never meet — the failure mode
+    was written down and the check next to it was never built.
+    """
+    spec = AnthropomorphicPalmSpec()
+
+    port_x, _ = spec.air_port_center_mm
+    port_radius = spec.air_port_diameter_mm / 2
+    channel_radius = spec.finger.link.tendon_hole_diameter_mm / 2
+    stations = [*spec.row_finger_x_mm, spec.thumb_root_mm[0]]
+
+    for x_mm in stations:
+        gap = abs(x_mm - port_x) - port_radius - channel_radius
+        assert gap > 0.0, f"the port meets the channel at x={x_mm}: {gap:.2f} mm"
