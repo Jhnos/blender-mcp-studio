@@ -53,6 +53,11 @@ class OracleExpectation:
     #: The centre probe answers one axis; a palm that carries a bore per arm needs one
     #: ray each, and an empty tuple means the contract makes no claim about them.
     bore_probe_points_mm: tuple[tuple[float, float], ...] = ()
+    #: Prefixes whose objects must not touch any object of another listed
+    #: prefix. Collision groups only compare adjacent units inside one group,
+    #: so the digit that crosses in front of the others was measured against
+    #: nobody. Absent means no claim; declared and unmeasured is a FAIL.
+    disjoint_groups: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -173,6 +178,18 @@ def _optional_flag(source: Mapping[str, object], key: str, *, default: bool) -> 
     return value
 
 
+def _disjoint_groups(source: Mapping[str, object]) -> tuple[str, ...]:
+    """Optional list of object prefixes that must not intersect one another."""
+    if "disjoint_groups" not in source:
+        return ()
+    groups = _required_strings(source, "disjoint_groups")
+    if len(groups) < 2:
+        raise ValueError("disjoint_groups needs at least two prefixes to compare")
+    if len(set(groups)) != len(groups):
+        raise ValueError("disjoint_groups must not repeat a prefix")
+    return groups
+
+
 def _max_footprint(source: Mapping[str, object]) -> tuple[float, float] | None:
     """Optional (x, y) bed size in mm. Absent means no claim; malformed raises."""
     if "max_footprint_mm" not in source:
@@ -247,6 +264,7 @@ def contract_from_mapping(
         collision_groups=tuple(collision_groups),
         joint_sweep=_joint_sweep(oracle_source),
         bore_probe_points_mm=_bore_probe_points(oracle_source),
+        disjoint_groups=_disjoint_groups(oracle_source),
     )
     if len(oracle.expected_rotations_deg) != oracle.expected_count:
         raise ValueError("expected_rotations_deg length must match expected_count")

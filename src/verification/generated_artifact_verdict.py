@@ -150,6 +150,23 @@ def assess_verification(
             )
         )
 
+    if expected.disjoint_groups:
+        overlaps = mapping_value(oracle, "cross_group_overlaps")
+        wanted = [
+            f"{a}|{b}"
+            for index, a in enumerate(expected.disjoint_groups)
+            for b in expected.disjoint_groups[index + 1 :]
+        ]
+        measured = {key: overlaps.get(key) for key in wanted} if overlaps is not None else {}
+        # Every declared pair present, and every one of them zero. A pair that
+        # never came back is a FAIL: unmeasured is the condition this ends.
+        disjoint = overlaps is not None and all(
+            type(measured.get(key)) is int and measured.get(key) == 0 for key in wanted
+        )
+        evidence.append(
+            VerificationEvidence("disjoint_groups", disjoint, f"overlaps={measured!r}")
+        )
+
     selected_count = readiness.get("selected_count")
     if expected.joint_sweep is not None:
         sweep = mapping_value(oracle, "joint_sweep")
