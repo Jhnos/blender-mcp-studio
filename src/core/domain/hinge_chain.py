@@ -97,6 +97,17 @@ class HingePhalanxSpec:
         return ("4mm_pin", "MR84_4x8x3_bearing")
 
     @property
+    def has_bearing_seat(self) -> bool:
+        """Yes, and that is what sets this link's floor on every moment arm.
+
+        Read-only and additive: it moves no dimension and cannot move a vertex.
+        It exists so a generator can ask which kind of joint it is holding
+        instead of inferring it from a seat diameter, now that a bearingless
+        link shares this shape. See `compact_link`.
+        """
+        return True
+
+    @property
     def printed_pin_bore_mm(self) -> float:
         return self.pin_diameter_mm + 2.0 * self.printed_radial_clearance_mm
 

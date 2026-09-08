@@ -25,6 +25,7 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass, field
 
+from src.core.domain.finger_link import FingerLinkSpec
 from src.core.domain.hinge_chain import HingePhalanxSpec
 
 
@@ -42,7 +43,7 @@ class SingleTendonFingerSpec:
     #: allows it — its own rule only asks that the joint centre clear the body
     #: *centre* — and the archived generator that shipped that arrangement never
     #: had a contract to fail. Measured on the built stack: 303 overlapping faces.
-    link: HingePhalanxSpec = HingePhalanxSpec(joint_count=3, joint_center_offset_mm=27.0)
+    link: FingerLinkSpec = HingePhalanxSpec(joint_count=3, joint_center_offset_mm=27.0)
 
     #: How far the actuator can pull the cable. The finger is refused if the
     #: three joints together want more than this.
