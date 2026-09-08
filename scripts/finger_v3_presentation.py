@@ -180,6 +180,9 @@ def present_finger(
         110.0,
         "Both hinge ends on one axis",
         white,
+        # This view is a vertical stack up the middle of frame, so a centred
+        # caption sits behind it. The empty space is to the side.
+        label_offset=-0.30,
     )
     capture(
         output,

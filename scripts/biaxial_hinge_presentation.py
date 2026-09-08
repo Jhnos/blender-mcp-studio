@@ -100,6 +100,7 @@ def capture(
     scale: float,
     title: str,
     white: bpy.types.Material,
+    label_offset: float = 0.0,
 ) -> None:
     scene = bpy.context.scene
     for obj in objects:
@@ -109,17 +110,16 @@ def capture(
     look_at(camera, target)
     scene.render.resolution_x, scene.render.resolution_y = 1400, 1100
     up = camera.rotation_euler.to_matrix() @ Vector((0, 1, 0))
-    label_position = Vector(target) + up * (scale * 1100 / 1400 * 0.43)
-    # Pulled towards the camera so the subject cannot stand in front of the
-    # caption. The V3 joint detail is a vertical stack running through the top
-    # of frame, and it hid its own title. Under an orthographic camera this
-    # moves nothing on screen — same place, same size, drawn in front.
-    # In millimetres, like `target` and `scale`. `camera.location` is already in
-    # metres, and subtracting one from the other gave a direction that was mostly
-    # wrong and a distance of 0.11 mm — the caption stayed exactly where it was.
-    camera_mm = camera.location / m(1.0)
-    to_camera = camera_mm - Vector(target)
-    label_position = label_position + to_camera.normalized() * min(scale, to_camera.length * 0.5)
+    # Sideways, not towards the camera. Pulling the caption forward did clear the
+    # subject, and put it between the light and the model: Workbench draws that
+    # shadow onto the palm, and it has no per-object shadow switch to turn off.
+    # Moving it within its own plane changes what it overlaps and nothing else.
+    right = camera.rotation_euler.to_matrix() @ Vector((1, 0, 0))
+    label_position = (
+        Vector(target)
+        + up * (scale * 1100 / 1400 * 0.43)
+        + right * (scale * label_offset)
+    )
     label = add_text("HH_VIEW_LABEL", title, tuple(label_position), white, scale * 0.018)
     face_camera(label, camera)
     scene.render.filepath = str(output / name)
