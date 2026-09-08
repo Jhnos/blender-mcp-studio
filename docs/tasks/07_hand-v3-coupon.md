@@ -1,6 +1,6 @@
 # 靈巧手 V3 — 第一件實體:列印試片並量七項
 
-**Status:** ACTIVE
+**Status:** WAITING-ON-USER
 
 ## Goal
 

@@ -1,0 +1,57 @@
+# 01 — 模組邊界與層規則
+
+> 回導航 [[hand-framework]] · 相關 [[hand-framework/04-plans]]、[[hand-framework/05-execution]]、[[01-architecture]]
+
+## 三層,方向只有一個
+
+```
+規格(domain,純)  →  規劃(planning,純)  →  執行(bpy)
+   算數字               把數字變成具名指令      只執行,不算術
+```
+
+- **domain** 不匯入 bpy、FastAPI、FastMCP(`test_architecture_ssot` 擋)。
+- **planning** 是新層:純函式與凍結 dataclass,輸入規格、輸出「要建什麼、叫什麼、擺哪裡、量哪裡」。
+  它存在的理由是**可以在沒有 Blender 的機器上測**——目前佈局換行、站台、探針點全困在 `import bpy` 後面。
+- **execution** 只讀規劃:mm→m、呼叫 primitive、跑布林。**執行層裡出現算術就是違規**(ES-5)。
+
+## 模組地圖
+
+| 模組 | 層 | 狀態 | 職責 |
+|---|---|---|---|
+| `src/core/domain/finger_link.py` | domain | 既有 | `FingerLinkSpec` Protocol、`bearing_seat_cuts` |
+| `src/core/domain/hinge_chain.py` | domain | 既有,凍結 | 借來的連桿;只允許**加法式**唯讀屬性 |
+| `src/core/domain/compact_link.py` | domain | 既有 | 精簡連桿 |
+| `src/core/domain/finger_v3.py` | domain | 既有 | 單腱手指:力矩臂、彈簧梯度、行程、夾層上界 |
+| `src/core/domain/palm_v3.py` | domain | 泛化 | 見 [[hand-framework/03-domain-spec]];類名不變 |
+| `src/core/domain/opposition.py` | domain | 新 | 對生可達性函式(從掌盤切出,因 372/380 行預算) |
+| `src/core/domain/hand_instances.py` | domain | 新 | `HAND_INSTANCES` 註冊表——**唯一**命名實例的地方 |
+| `src/core/planning/naming.py` | planning | 新 | `NamingPolicy`,見 [[hand-framework/06-naming]] |
+| `src/core/planning/phalanx_plan.py` | planning | 新 | 每節的名字、孔、座、公母端尺寸 |
+| `src/core/planning/station_plan.py` | planning | 新 | 站台原點、基底、鏈;拇指基底算一次 |
+| `src/core/planning/route_plan.py` | planning | 新 | 站台 × 路徑 → 孔 |
+| `src/core/planning/layout_plan.py` | planning | 新 | 換行擺盤算術 |
+| `src/core/planning/expected_counts.py` | planning | 新 | 節數、單元數、佈局件數、站台清單 |
+| `src/core/planning/probe_plan.py` | planning | 新 | 探針點、掃掠角、閉合軌跡參數 |
+| `src/verification/contract_builder.py` | verification | 新 | 規劃 → 契約 JSON,見 [[hand-framework/07-contracts]] |
+| `src/verification/package_reproduction.py` | verification | 新 | 重現差分的純核心 |
+| `scripts/hand_{geometry,presentation,gates,generator}.py` | execution | 新 | 只執行規劃 |
+| `scripts/model_finger_v3.py` | execution | 保留為 shim | 契約、manifest、測試、regex 都指名它 |
+| `scripts/model_hand_compact.py` | execution | 新 | 精簡實例入口 |
+| `scripts/finger_v3_geometry.py`、`palm_v3_geometry.py`、`finger_v3_presentation.py` | execution | **差分綠後刪除** | 不留兩套 |
+
+## 必須重用、不得重造(親驗)
+
+- `scripts/presentation_profile.py`:`PresentationProfile`、`StackedAssembly`、`FINGER_PROFILE`
+- `scripts/hollow_hinge_render.py:setup_render`
+- `scripts/blender_generator_runner.py:run_generator(build, prefix)`
+- `scripts/blender_mesh_primitives.py`:`add_cylinder`、`add_ellipsoid`、`boolean`、`cleanup_mesh`
+- `scripts/hollow_hinge_geometry.py:create_box`
+- `src/verification/artifact_files.py:binary_stl_metrics`
+- `tests/unit/scripts/test_script_primitive_ssot.py`:新 bpy 模組不得重打 primitive
+- `docs/DEFERRALS.md` 的延後格式
+
+## 三條層規則
+
+1. **規劃層的每個物件都要能不開 Blender 就測**——測試放 `tests/unit/planning/`。
+2. **執行層不出現字面尺寸、字面名字**——全部來自規劃與 `NamingPolicy`。
+3. **凍結的東西只能加法式擴充**——`HingePhalanxSpec` 加唯讀屬性可以,改任何欄位不行。

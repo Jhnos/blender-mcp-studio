@@ -77,3 +77,80 @@ callback，讓規則在分析到那裡時就停住、沒往下看。移除自我
 
 **目前的防護**：豁免是定點的（`eslint-disable-next-line`，不是整檔關閉），且
 理由寫在程式碼旁供 review。
+
+---
+
+## D-004 · V1／V2／V6 的契約進 `ci.sh --real`
+
+**狀態**：`deferred`（2026-09-08 記錄）
+
+**現況**：`scripts/ci.sh` 目前完全不跑 `generated_artifact_verify_real.py`。框架 M1 只把
+**hand-v3 的兩份契約 + 重現差分**接進 `--real`；V1／V2／V6 的四份契約仍是手動跑。
+
+**為何不一起接**：每份契約要在常駐 Blender 裡重建模型；四份加進來的秒數沒量過。
+凍結交付物另有位元組層的包測試（`test_versioned_*_print_package.py`）在每次 CI 保護。
+
+**觸發條件（任一成立就升為 `due`）**：
+- 動到 V1／V2／V6 任一產生器；或
+- 手契約閘門首跑實測 < 10 分鐘（`docs/hand-framework/v8-results.md` 的計時表）。
+
+**目前的防護**：包測試逐位元組重讀 `models/octopus-hand-v1|v2/`、`models/biaxial-hinge-v6/`。
+
+---
+
+## D-005 · 無銷關節的抽象層（`JointStyle`）
+
+**狀態**：`deferred`（2026-09-08 記錄，使用者裁決）
+
+**現況**：`FingerLinkSpec` 是「有銷」形狀（`pin_diameter_mm`、`bearing_*`）。先例查證
+（`100_fingers` 活動鉸鏈、`RoninHand` 原地列印，見 `docs/hand-framework/v9-references.md`）
+證明銷不是必需品。
+
+**為何不建**：活動鉸鏈靠**疲勞**失效，那是材料性質，本專案的幾何契約量不到——為一個驗不了的
+東西設計介面是投機的泛化。目前只有兩個有銷實作，沒有第二種關節型式可以逼出正確的抽象。
+
+**觸發條件（任一成立就升為 `due`）**：
+- 出現**第三種**連桿（任何無銷型式）；或
+- `docs/hand-v3/v6b-coupon.md` 的試片量到 2 mm 銷孔公差不可達。
+
+**目前的防護**：`docs/hand-framework/00-context.md` 的「明確不做」；本條。
+
+---
+
+## D-006 · 床身尺寸成為實例欄位
+
+**狀態**：`deferred`（2026-09-08 記錄）
+
+**現況**：`256.0` 是 `LayoutPlan.bed_mm` 的預設，也是 `hand_v3.json` `max_footprint_mm` 的來源。
+只有一台印表機（拓竹 P2S）。
+
+**觸發條件**：`layout_fits_bed` 在真機 FAIL；或出現非 256 mm 的床身。
+
+**目前的防護**：`layout_fits_bed` 用兩條獨立路徑量佔地並要求一致。
+
+---
+
+## D-007 · 活動鉸鏈的疲勞驗證方法
+
+**狀態**：`deferred`（2026-09-08 記錄）
+
+**現況**：不存在。幾何契約只量幾何。
+
+**觸發條件**：D-005 成立。
+
+**目前的防護**：無；這是刻意留白，不是遺漏——`docs/hand-framework/v1-scope.md` 的範圍外表寫明。
+
+---
+
+## D-008 · 發布 `models/hand-compact/`
+
+**狀態**：`deferred`（2026-09-08 記錄）
+
+**現況**：精簡實例存在規格，尚未生成、驗證。M6 登錄 `PACKAGES` 但**不發布**。
+
+**為何不發**：與 V3 同規則——發布前要有使用者對三張渲染圖的 Lane B 驗收
+（像不像手、握姿順不順、針筒好不好推）。
+
+**觸發條件**：使用者 Lane B 驗收通過。
+
+**目前的防護**：`publish_print_package.py` 不會自動跑；`08_hand-framework.md` 的驗收條件。
