@@ -577,3 +577,69 @@ def test_a_contract_that_declares_no_shell_count_claims_nothing() -> None:
     assert contract.oracle.expected_shells_per_object is None
     assert summary.passed
     assert not any(item.name == "one_solid_per_part" for item in summary.evidence)
+
+
+def test_a_closing_finger_is_swept_as_one_motion_not_one_joint_at_a_time() -> None:
+    """PS-2's artifact half: joints that are each clear can still meet together.
+
+    The existing sweep turns one joint through its whole travel and counts
+    overlaps. That proves each joint's arc is clear in isolation, which is not
+    the same claim as "the finger can close": two joints each half-flexed put
+    surfaces somewhere neither of them visits alone.
+
+    The trajectory is the one the spring gradient predicts — the base joint
+    leads, the distal follows at its travel share — so this also checks that the
+    ordering the spec computes describes a motion the geometry can actually
+    perform.
+    """
+    mapping = _mapping()
+    mapping["oracle"]["closure_trajectory"] = {  # type: ignore[index]
+        "chain_prefix": "FX_PART_",
+        "pivot_offset_mm": 27.0,
+        "axis": "X",
+        "travel_shares": [1.0, 0.625],
+        "full_travel_deg": 50.0,
+        "steps": 6,
+    }
+    contract = contract_from_mapping(mapping, Path("/tmp"))
+    artifact_state = {str(path): True for path in contract.artifacts}
+
+    trajectory = contract.oracle.closure_trajectory
+    assert trajectory is not None
+    assert trajectory.travel_shares == (1.0, 0.625)
+    assert trajectory.steps == 6
+
+    def _assess(overlaps: object) -> bool:
+        oracle = _green_oracle() | {"closure_overlaps": overlaps}
+        return assess_verification(contract, artifact_state, oracle, _green_readiness()).passed
+
+    assert _assess([0, 0, 0, 0, 0, 0])
+    assert not _assess([0, 0, 4, 0, 0, 0]), "the finger meets itself halfway through"
+    assert not _assess([0, 0, 0]), "three of six steps is not a swept trajectory"
+    assert not _assess([]), "declared and unmeasured is a FAIL"
+    assert not _assess(None)
+
+
+def test_a_trajectory_whose_shares_do_not_lead_from_the_base_is_refused() -> None:
+    """The ordering is the point, so a trajectory that inverts it is a mistake."""
+    mapping = _mapping()
+    mapping["oracle"]["closure_trajectory"] = {  # type: ignore[index]
+        "chain_prefix": "FX_PART_",
+        "pivot_offset_mm": 27.0,
+        "axis": "X",
+        "travel_shares": [0.625, 1.0],
+        "full_travel_deg": 50.0,
+        "steps": 6,
+    }
+    with pytest.raises(ValueError):
+        contract_from_mapping(mapping, Path("/tmp"))
+
+
+def test_a_contract_without_a_trajectory_claims_nothing_about_closing() -> None:
+    contract = contract_from_mapping(_mapping(), Path("/tmp"))
+    artifact_state = {str(path): True for path in contract.artifacts}
+
+    summary = assess_verification(contract, artifact_state, _green_oracle(), _green_readiness())
+
+    assert contract.oracle.closure_trajectory is None
+    assert not any(item.name == "closure_trajectory" for item in summary.evidence)
