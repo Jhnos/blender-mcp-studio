@@ -203,7 +203,7 @@ for probe in config['channel_probes']:
         channel_probe_results[probe['key']] = None
         continue
     axis = probe['axis']
-    span = max(target.dimensions) / m(1.0) + 20.0
+    span = max(target.dimensions) * 1000.0 + 20.0
     def _cast(a_mm, b_mm, axis=axis, target=target, span=span):
         # The two given coordinates are the ones the axis does not run along,
         # in the order x, y, z with the axis dropped.
