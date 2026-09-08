@@ -117,9 +117,7 @@ def scenario_pairs(
     return [(first[name], second[name]) for name in order if name in first and name in second]
 
 
-def decay_summary(
-    document: str, *, hold_fraction: float, planned_trials: int = 3
-) -> DecayVerdict:
+def decay_summary(document: str, *, hold_fraction: float, planned_trials: int = 3) -> DecayVerdict:
     """H8: does one inflation still hold at ten seconds?
 
     A time series, not a paired comparison, so it gets its own reader rather

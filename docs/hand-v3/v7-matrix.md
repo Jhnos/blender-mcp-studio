@@ -40,7 +40,7 @@ Population: 幾何列的母數是 V3 產生的 `HJ_V3_` 物件與 `models/hand-v
 | **H1 / VOC-1** | S9 | 10 物體 × 10 次 | 滑脫力配對差、效果量、信賴區間 | **A 人執行** | TODO(**分析已寫好**:填表後 `analyse_bench_results.py --sesoi <N>` 即出報告) |
 | **H2 / PS-6** | S10 | 兩隻獨立外層手套 | 同上,分兩組 | **A 人執行** | TODO(同上;手套編號只有一種時報 vacuous) |
 | H5 / PS-7 | S11 | 同一進氣口兩種方向 | 同上,分兩組 | **A 人執行** | TODO |
-| H8 | S12 | 壓力隨時間 | 衰減曲線 | A 人執行 | TODO |
+| H8 | S12 | 壓力隨時間 | 十秒時還剩起始壓力的比例,門檻由 `--hold-fraction` 給 | A 人執行 | TODO(**讀表與判準已寫好**;`v8-results` 已有欄位) |
 | VOC-2 | 發布流程 | `models/hand-v3/` | manifest 與網格逐一對得上,位元組重讀 | A 機器 | **PASS** |
 | VOC-4 | 呈現流程 | `models/hand-v3/` 三張圖 | 圖在交付包裡、雜湊相符、尺寸等於宣告的算圖解析度 | A 機器 | **PASS** |
 | VOC-5 | 記錄流程 | 結果表 | 母數為 0 的列一律標 vacuous,且明寫「永遠不併入 pass」 | A 機器 | **PASS** |
