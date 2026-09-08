@@ -14,9 +14,11 @@ from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).parents[3]
 
-#: Trees under the ratchet. ``scripts/`` is excluded for now — its generators
-#: are still being consolidated; it joins once that work lands.
-BUDGETED_TREES = ("api", "src")
+#: Trees under the ratchet. ``scripts/`` joined on 2026-09-09, once the hand
+#: generators were consolidated behind the planning layer; ``scripts/archive``
+#: is frozen history and stays out.
+BUDGETED_TREES = ("api", "src", "scripts")
+EXCLUDED_PARTS = ("__pycache__", "archive")
 
 MAX_LINES = 400
 
@@ -30,7 +32,7 @@ def oversized(roots: list[Path], limit: int) -> list[tuple[str, int]]:
     rows: list[tuple[str, int]] = []
     for root in roots:
         for path in sorted(root.rglob("*.py")):
-            if "__pycache__" in path.parts:
+            if any(part in EXCLUDED_PARTS for part in path.parts):
                 continue
             count = len(path.read_text(encoding="utf-8").splitlines())
             if count > limit:
