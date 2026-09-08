@@ -207,8 +207,8 @@ def build_finger(spec: SingleTendonFingerSpec) -> list[bpy.types.Object]:
     master = create_phalanx(spec, 1, offsets[0])
     parts = [master]
     # Copies share the master's mesh datablock on purpose. It is what makes the
-    # four units one part number rather than four, and it is the thing the
-    # contract oracle checks when it asks for a shared mesh.
+    # whole stack one part number instead of one per unit, and it is the thing
+    # the contract oracle checks when it asks for a shared mesh.
     for index, rotation_deg in enumerate(spec.joint_rotations_deg[1:], start=2):
         copy = master.copy()
         copy.data = master.data

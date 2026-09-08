@@ -402,3 +402,34 @@ def test_a_contract_without_a_bed_claims_nothing_about_the_layout_size() -> None
     assert contract.readiness.max_footprint_mm is None
     assert summary.passed
     assert not any(item.name == "layout_fits_bed" for item in summary.evidence)
+
+
+def test_the_bed_check_needs_two_measurements_that_agree() -> None:
+    """One measurement cannot catch itself measuring the wrong thing.
+
+    The first version of this gate read `bound_box`, which is a cache that an
+    in-place `data.transform()` does not invalidate. It returned 140 x 44 — the
+    palm's own box before it was laid flat — for a layout that is 242.0 x 103.5,
+    and the gate passed, which is worse than having no gate. The readiness
+    report measures the same objects down an independent path, so the two are
+    required to agree before either is believed.
+    """
+    mapping = _mapping()
+    mapping["readiness"]["max_footprint_mm"] = [256.0, 256.0]  # type: ignore[index]
+    contract = contract_from_mapping(mapping, Path("/tmp"))
+    artifact_state = {str(path): True for path in contract.artifacts}
+
+    def _assess(scene: list[float], report_dims: list[float] | None) -> bool:
+        report: dict[str, object] = {"status": "ready", "issues": []}
+        if report_dims is not None:
+            report["metrics"] = {"dimensions_mm": report_dims}
+        readiness = {
+            "selected_count": 3,
+            "layout_footprint_mm": scene,
+            "report": report,
+        }
+        return assess_verification(contract, artifact_state, _green_oracle(), readiness).passed
+
+    assert _assess([242.0, 103.5], [242.0, 103.5, 44.0])
+    assert not _assess([140.0, 44.0], [242.0, 103.5, 44.0]), "the two disagree; believe neither"
+    assert not _assess([242.0, 103.5], None), "no second opinion is not a pass"

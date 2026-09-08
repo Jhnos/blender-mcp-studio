@@ -4,8 +4,8 @@ Uses `setup_render` with `FINGER_PROFILE` rather than a fourth copy of the same
 camera-and-lights function — that is the whole reason the profile exists.
 `capture` is borrowed from the V6 presentation for the same reason.
 
-The print layout is what the readiness check reads: four copies laid flat and
-apart, which is the arrangement a slicer would actually see. It is a separate
+The print layout is what the readiness check reads: every distinct part laid
+flat and apart, which is the arrangement a slicer would actually see. It is a separate
 set of objects from the assembled finger so that measuring one never disturbs
 the other.
 """
@@ -150,7 +150,7 @@ def present_finger(
         frame,
         "V3 hand: four fingers, an opposed thumb, one tendon each"
         if hand
-        else "V3 finger: four units, one tendon",
+        else "V3 finger: three units, one tendon",
         white,
     )
     capture(
@@ -176,7 +176,7 @@ def present_finger(
         (0.0, 0.0, 420.0),
         (0.0, 0.0, 0.0),
         320.0,
-        "Print layout: one plate, four phalanges and the palm",
+        "Print layout: one plate, three phalanges and the palm",
         white,
     )
 

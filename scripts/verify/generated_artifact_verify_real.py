@@ -190,8 +190,12 @@ if selected:
     xs, ys = [], []
     for obj in bpy.data.objects:
         if obj.name.startswith(config['selection_prefix']):
-            for corner in obj.bound_box:
-                world = obj.matrix_world @ Vector(corner)
+            # Mesh vertices, not `bound_box`. The layout bakes its placement
+            # into each copy's vertices, and `bound_box` is a cache that a
+            # `data.transform()` does not invalidate — it returned the palm's
+            # own un-laid-flat box, 140 x 44, and the bed check passed on it.
+            for vertex in obj.data.vertices:
+                world = obj.matrix_world @ vertex.co
                 xs.append(world.x)
                 ys.append(world.y)
     # World units are metres here, the same convention the bore probes use when
