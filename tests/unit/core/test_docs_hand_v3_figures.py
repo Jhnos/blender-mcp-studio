@@ -237,8 +237,14 @@ def test_every_verifier_the_matrix_names_can_be_found() -> None:
         for path in (ROOT / tree).rglob("*")
         if path.is_file() and path.suffix in {".py", ".json"}
     )
+    # A ref also resolves by naming a file: `NOTICE`, or a test module's stem.
+    names = {path.name for path in ROOT.rglob("*") if path.is_file()}
+    names |= {path.stem for path in ROOT.rglob("*.py")}
+
     missing = sorted(
-        ref for ref in refs if not ref.startswith("TODO_") and ref not in haystack
+        ref
+        for ref in refs
+        if not ref.startswith("TODO_") and ref not in haystack and ref not in names
     )
     assert not missing, f"the matrix names verifiers that do not exist: {missing}"
 
