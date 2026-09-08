@@ -24,9 +24,9 @@ PACKAGE = ROOT / "models" / "hand-v3"
 V2_PACKAGE = ROOT / "models" / "octopus-hand-v2"
 EXPECTED = {
     "phalanx_mm.stl": (3494, (24.0, 22.0, 67.0)),
-    "palm_mm.stl": (2710, (140.0, 44.0, 90.0)),
+    "palm_mm.stl": (2714, (140.0, 44.0, 103.5)),
     "finger_v3_mm.stl": (13976, (24.0, 22.0, 229.0)),
-    "hand_v3_mm.stl": (69096, (140.0, 44.1, 319.5)),
+    "hand_v3_mm.stl": (69100, (140.0, 44.1, 319.5)),
 }
 
 
@@ -45,6 +45,20 @@ def test_versioned_hand_v3_print_package_matches_verified_meshes() -> None:
     blend = (PACKAGE / "finger_v3.blend").read_bytes()
     assert len(blend) > 100_000
     assert manifest["files"]["finger_v3.blend"]["sha256"] == hashlib.sha256(blend).hexdigest()
+
+
+def test_the_palm_roots_reach_the_height_the_fingers_hang_at() -> None:
+    """The palm must be tall enough for its knuckles to meet anything.
+
+    It was not, for several commits: every root sat 13.5 mm low, the palm topped
+    out at 20.0 mm against fork bores at 27.0, and the package shipped watertight
+    and contract-green while the hand could not be assembled. The palm's own
+    height is the cheapest thing that would have caught it.
+    """
+    palm = binary_stl_metrics((PACKAGE / "palm_mm.stl").read_bytes())
+
+    # Plate depth below plus the root standing above: 70 + 27 + 6.5.
+    assert palm.dimensions_mm[2] == pytest.approx(103.5, abs=0.1)
 
 
 def test_the_assembled_hand_is_deliberately_too_tall_for_the_bed() -> None:
