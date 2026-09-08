@@ -1,96 +1,100 @@
 {
- "name": "hand_v3",
- "generator_script": "scripts/model_finger_v3.py",
- "reload_modules": [
-  "src.core.domain.inset_hinge",
-  "src.core.domain.hinge_chain",
-  "src.core.domain.finger_v3",
-  "scripts.blender_artifact_export",
-  "scripts.blender_mesh_primitives",
-  "scripts.presentation_profile",
-  "scripts.hollow_hinge_render",
-  "scripts.hollow_hinge_geometry",
-  "scripts.biaxial_hinge_presentation",
-  "scripts.finger_v3_geometry",
-  "scripts.finger_v3_presentation",
-  "src.core.domain.palm_v3",
-  "scripts.palm_v3_geometry"
- ],
- "artifacts": [
-  "tmp/hand-v3/finger_v3.blend",
-  "tmp/hand-v3/hand_v3_mm.stl",
-  "tmp/hand-v3/palm_mm.stl",
-  "tmp/hand-v3/phalanx_mm.stl",
-  "tmp/hand-v3/finger_v3_mm.stl",
-  "tmp/hand-v3/finger_v3_assembly.png",
-  "tmp/hand-v3/finger_v3_joint_detail.png",
-  "tmp/hand-v3/finger_v3_print_layout.png"
- ],
- "oracle": {
-  "object_prefix": "HJ_V3_HAND_F1_",
-  "expected_count": 3,
-  "expected_rotations_deg": [
-   0,
-   0,
-   0
+  "name": "hand_v3",
+  "generator_script": "scripts/model_finger_v3.py",
+  "reload_modules": [
+    "src.core.domain.inset_hinge",
+    "src.core.domain.hinge_chain",
+    "src.core.domain.finger_v3",
+    "scripts.blender_artifact_export",
+    "scripts.blender_mesh_primitives",
+    "scripts.presentation_profile",
+    "scripts.hollow_hinge_render",
+    "scripts.hollow_hinge_geometry",
+    "scripts.biaxial_hinge_presentation",
+    "scripts.finger_v3_geometry",
+    "scripts.finger_v3_presentation",
+    "src.core.domain.palm_v3",
+    "scripts.palm_v3_geometry"
   ],
-  "scene_list_property": "HJ_V3_HAND_STATIONS",
-  "expected_scene_list": [
-   "F1",
-   "F2",
-   "F3",
-   "F4",
-   "T"
+  "artifacts": [
+    "tmp/hand-v3/finger_v3.blend",
+    "tmp/hand-v3/hand_v3_mm.stl",
+    "tmp/hand-v3/palm_mm.stl",
+    "tmp/hand-v3/phalanx_mm.stl",
+    "tmp/hand-v3/finger_v3_mm.stl",
+    "tmp/hand-v3/finger_v3_assembly.png",
+    "tmp/hand-v3/finger_v3_joint_detail.png",
+    "tmp/hand-v3/finger_v3_print_layout.png"
   ],
-  "center_probe_object": "HJ_V3_HAND_F1_1",
-  "center_channel_expected_open": false,
-  "bore_probe_points_mm": [
-   [
-    0.0,
-    -6.6
-   ],
-   [
-    0.0,
-    6.6
-   ]
-  ],
-  "collision_groups": [
-   {
-    "prefix": "HJ_V3_HAND_F1_",
-    "expected_count": 3
-   },
-   {
-    "prefix": "HJ_V3_HAND_F2_",
-    "expected_count": 3
-   },
-   {
-    "prefix": "HJ_V3_HAND_F3_",
-    "expected_count": 3
-   },
-   {
-    "prefix": "HJ_V3_HAND_F4_",
-    "expected_count": 3
-   },
-   {
-    "prefix": "HJ_V3_HAND_T_",
-    "expected_count": 3
-   },
-   {
-    "prefix": "HJ_V3_LAYOUT_PART_",
-    "expected_count": 4
-   }
-  ]
- },
- "readiness": {
-  "selection_prefix": "HJ_V3_LAYOUT_PART_",
-  "expected_selection_count": 4,
-  "forbidden_issue_codes": [
-   "no_mesh",
-   "non_manifold_edges",
-   "inconsistent_normals",
-   "degenerate_geometry",
-   "zero_volume",
-   "intersections"
-  ]
- }
+  "oracle": {
+    "object_prefix": "HJ_V3_HAND_F1_",
+    "expected_count": 3,
+    "expected_rotations_deg": [
+      0,
+      0,
+      0
+    ],
+    "scene_list_property": "HJ_V3_HAND_STATIONS",
+    "expected_scene_list": [
+      "F1",
+      "F2",
+      "F3",
+      "F4",
+      "T"
+    ],
+    "center_probe_object": "HJ_V3_HAND_F1_1",
+    "center_channel_expected_open": false,
+    "bore_probe_points_mm": [
+      [
+        0.0,
+        -6.6
+      ],
+      [
+        0.0,
+        6.6
+      ]
+    ],
+    "collision_groups": [
+      {
+        "prefix": "HJ_V3_HAND_F1_",
+        "expected_count": 3
+      },
+      {
+        "prefix": "HJ_V3_HAND_F2_",
+        "expected_count": 3
+      },
+      {
+        "prefix": "HJ_V3_HAND_F3_",
+        "expected_count": 3
+      },
+      {
+        "prefix": "HJ_V3_HAND_F4_",
+        "expected_count": 3
+      },
+      {
+        "prefix": "HJ_V3_HAND_T_",
+        "expected_count": 3
+      },
+      {
+        "prefix": "HJ_V3_LAYOUT_PART_",
+        "expected_count": 4
+      }
+    ]
+  },
+  "readiness": {
+    "selection_prefix": "HJ_V3_LAYOUT_PART_",
+    "expected_selection_count": 4,
+    "forbidden_issue_codes": [
+      "no_mesh",
+      "non_manifold_edges",
+      "inconsistent_normals",
+      "degenerate_geometry",
+      "zero_volume",
+      "intersections"
+    ],
+    "max_footprint_mm": [
+      256.0,
+      256.0
+    ]
+  }
 }

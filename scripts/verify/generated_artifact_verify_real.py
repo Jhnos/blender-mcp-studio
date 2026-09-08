@@ -185,6 +185,21 @@ for obj in bpy.data.objects:
         obj.hide_set(False)
         obj.select_set(True)
         selected.append(obj.name)
+layout_footprint = None
+if selected:
+    xs, ys = [], []
+    for obj in bpy.data.objects:
+        if obj.name.startswith(config['selection_prefix']):
+            for corner in obj.bound_box:
+                world = obj.matrix_world @ Vector(corner)
+                xs.append(world.x)
+                ys.append(world.y)
+    # World units are metres here, the same convention the bore probes use when
+    # they divide their millimetre points by 1000.
+    layout_footprint = [
+        round((max(xs) - min(xs)) * 1000.0, 1),
+        round((max(ys) - min(ys)) * 1000.0, 1),
+    ]
 scene_value = bpy.context.scene.get(config['scene_list_property'], [])
 print(json.dumps({{
     'object_count': len(parts),
@@ -196,6 +211,7 @@ print(json.dumps({{
     'collision_groups': collision_results,
     'joint_sweep': sweep_result,
     'selected_count': len(selected),
+    'layout_footprint_mm': layout_footprint,
 }}))
 """
 
@@ -237,6 +253,7 @@ async def verify(args: argparse.Namespace) -> int:
     readiness_report = await mcp_readiness(args.mcp_url, args.identity)
     readiness = {
         "selected_count": observation.get("selected_count"),
+        "layout_footprint_mm": observation.get("layout_footprint_mm"),
         "report": readiness_report,
     }
     artifact_state = {
