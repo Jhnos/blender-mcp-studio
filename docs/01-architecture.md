@@ -88,6 +88,10 @@ Dependency rule：外層依賴內層；domain/application 不 import FastAPI、F
 `SceneCommandPort` 定義 `create_object(spec)`、`modify_object(spec)`、
 `delete_object(name)`、`apply_material(spec)`。
 
+錯誤對映只在 `api/main.py` 一處：`BlenderConnectionError`／`LLMConnectionError` → 503，
+`ExternalServiceError`（vision、text-3D 這類外部服務答了但失敗）→ 502，其餘 `DomainError` → 422。
+router 不自己把例外翻成 HTTP；`test_routers_do_not_translate_arbitrary_exceptions` 以預算棘輪擋住（D-002）。
+
 `SceneOperationsService` 同時實作這兩個 incoming port，且**只**依賴 `BlenderPort`。
 Domain record 一律是 frozen/slots dataclass。外部 Blender JSON 逐欄窄化，
 不做隱性的 `str`／`int`／`bool` 強制轉型——而且**窄化只在 adapter 做**：

@@ -19,7 +19,7 @@
 | 條 | 根因(親驗) | 正解 | 狀態 |
 |---|---|---|---|
 | D-001 | `BlenderPort` 回傳 `object`,use case 自己窄化 Blender 方言,與 adapter 重複 | port 回傳 typed DTO(`scene_summary`／`object_details`／`viewport_screenshot`),解碼在 `src/adapters/blender_scene_decoding.py`,截圖暫存檔在 `src/adapters/viewport_capture.py` | **done**(V01.0Q.004) |
-| D-002 | `api/routers/{vision,pipelines,generate3d}.py` 整包 `except Exception → 500`,因為 LLM／text-3D／pipeline 沒有 domain error 型別 | 為 `LLMPort`／`Text3DGenerationPort`／pipeline 定義 domain error,照 `BlenderConnectionError` 註冊到 `api/main.py` 的 handler,router 不再自己翻譯 | 下一步 |
+| D-002 | `api/routers/{vision,pipelines,generate3d}.py` 整包 `except Exception → 500`,因為 LLM／text-3D／pipeline 沒有 domain error 型別 | `ExternalServiceError` 家族由 adapter 在邊界拋出,`api/main.py` 對映 502;router 不再自己翻譯;預算棘輪擋回流 | **done**(V01.0Q.005) |
 | D-003 | `PreviewStage.tsx` 的 `react-hooks/refs` 定點豁免 | 觸發條件未成立時維持;若 D-002 之後仍有餘裕,評估把 ref 讀取移出 render 期 | 待評估 |
 
 ## Acceptance checks
@@ -33,16 +33,18 @@
 
 ### Verified facts
 
-- D-001 done:port 三個 typed 查詢、兩個 adapter 各自解碼、422 訊息逐字保留;921 個單元測試綠,
-  `ci.sh --real` 全綠(REST／MCP 閘門走真 adapter 的解碼)。非 mapping 的場景回覆從「警告 + 空 dict」改成錯誤。
-- 六個手寫 fake 補上三個 typed 方法;mock 的三個 REST 測試改成 mock typed 方法並證明 422 路徑。
+- D-001 done:port 三個 typed 查詢、兩個 adapter 各自解碼、422 訊息逐字保留;真機 REST／MCP 閘門走真 adapter 的解碼。
+- D-002 done:`ExternalServiceError`／`VisionAnalysisError`／`TextTo3DError`;vision 與 text-3D adapter 在邊界把外部失敗翻成
+  domain error(cause 串起來);`api/main.py` 一處對映 502;四個整包 `except Exception` 刪除。REST 契約測試新增:
+  provider 失敗 → 502、pipeline 內 Blender 斷線 → 503(原本是 500)。928 個單元測試綠,`ci.sh --real` 全綠。
+- 凍結的 endpoint 守衛清單少了四個手做的 500;上傳圖片的 provider 失敗改成 502。
 
 ### Open failures
 
-- 沒有機器檢查在失敗。
+- 沒有機器檢查在失敗。`chat.py`(4)、`snapshots.py`(1)、`ws_manager.py`(2)仍有整包 except,列在預算裡只能往下;
+  它們攔的是 LLM 串流與快照 I/O,尚無對應的 domain error 型別。
 
 ### Next step
 
-- D-002:先寫紅測試——`api/routers/vision.py` 等三處不得有 `except Exception`(靜態掃描),
-  且 `LLMPort` 拋出的 domain error 經 `api/main.py` handler 變 502/503(依 `test_rest_error_contract` 的極性表);
-  再在 `src/core/domain/exceptions.py` 加 `ExternalServiceError` 系列,adapter 把 provider 例外翻成它。
+- D-003:讀觸發條件,親驗 `PreviewStage.tsx` 的 `react-hooks/refs` 豁免是否仍成立;成立則維持並記錄日期,
+  否則把 ref 讀取移出 render 期。之後評估 `chat.py` 的四處整包 except 是否能用 `LLMConnectionError`／`ExternalServiceError` 收掉。

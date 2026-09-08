@@ -5,6 +5,21 @@
 
 ## [Unreleased]
 
+### V01.0Q.005 — 外部服務失敗是 domain error,一處對映 502(D-002 done)
+
+#### Added
+
+- `ExternalServiceError` 與其下的 `VisionAnalysisError`、`TextTo3DError`:vision 與 text-3D adapter 在邊界把
+  provider 的例外翻成 domain error(cause 串起來);`api/main.py` 對映 502,與既有的 503／422 並列。
+- `test_routers_do_not_translate_arbitrary_exceptions`:router 裡的整包 `except Exception` 有預算,只能往下;
+  vision／pipelines／generate3d 為零。REST 契約測試新增 provider 失敗 → 502、pipeline 內 Blender 斷線 → 503。
+
+#### Changed
+
+- `vision.py`／`pipelines.py`／`generate3d.py` 四個整包 `except Exception → 500` 刪除。pipeline 執行中 Blender 斷線
+  原本被翻成 500,現在是 503;未分類的 bug 是框架的 500,不再把例外訊息漏到回應裡。
+- 凍結的 endpoint 守衛清單少四個手做的 500;兩個 text-3D 測試與一個上傳測試改釘 domain error(有意識重錄)。
+
 ### V01.0Q.004 — Blender port 回傳 typed DTO,解碼只在 adapter(D-001 done)
 
 #### Changed
