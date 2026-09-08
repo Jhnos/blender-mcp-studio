@@ -117,7 +117,7 @@ def build() -> None:
         "moment arm. Unqualified fit prototype; no grip force, retention or "
         "strength claim. Never printed."
     )
-    present_finger(OUTPUT, SPEC, parts, layout)
+    present_finger(OUTPUT, SPEC, parts, layout, hand)
     bpy.ops.wm.save_as_mainfile(filepath=str(OUTPUT / "finger_v3.blend"))
     print("FINGER_V3_READY", str(OUTPUT))
 

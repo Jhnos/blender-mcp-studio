@@ -15,7 +15,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import bpy
-from mathutils import Matrix
+from mathutils import Matrix, Vector
 
 from scripts.biaxial_hinge_presentation import capture, duplicate
 from scripts.blender_mesh_primitives import assign, collection, material
@@ -88,6 +88,7 @@ def present_finger(
     spec: SingleTendonFingerSpec,
     parts: list[bpy.types.Object],
     layout: list[bpy.types.Object],
+    hand: list[bpy.types.Object] | None = None,
 ) -> None:
     """Three views: the assembled finger, its joints up close, and the print bed."""
     floor_material = material("HJ_V3_FLOOR", (0.05, 0.06, 0.08, 1))
@@ -99,17 +100,35 @@ def present_finger(
 
     # Millimetres, like every other argument `capture` takes. Passing metres here
     # aims the camera at the floor and the finger walks out of frame.
-    height = (spec.link.assembly_unit_count - 1) * spec.link.unit_pitch_mm
-    mid = (0.0, 0.0, height / 2)
+    # Framed from the measured extent rather than a number that looked right:
+    # at 260 the vertical field was 204 mm against a 229 mm finger, so the tips
+    # were outside the frame in every render taken so far.
+    subject = hand if hand else parts
+    zs = [
+        (obj.matrix_world @ Vector(corner)).z / m(1.0)
+        for obj in subject
+        for corner in obj.bound_box
+    ]
+    xs = [
+        (obj.matrix_world @ Vector(corner)).x / m(1.0)
+        for obj in subject
+        for corner in obj.bound_box
+    ]
+    mid = (0.0, 0.0, (min(zs) + max(zs)) / 2)
+    tall = max(zs) - min(zs)
+    wide = max(xs) - min(xs)
+    frame = 1.25 * max(wide, tall * 1400 / 1100)
     capture(
         output,
         "finger_v3_assembly.png",
         camera,
-        parts,
-        (250.0, -430.0, 150.0),
+        subject,
+        (frame * 0.9, -frame * 1.6, mid[2] + frame * 0.25),
         mid,
-        260.0,
-        "V3 finger: four units, one tendon",
+        frame,
+        "V3 hand: four fingers, an opposed thumb, one tendon each"
+        if hand
+        else "V3 finger: four units, one tendon",
         white,
     )
     capture(
