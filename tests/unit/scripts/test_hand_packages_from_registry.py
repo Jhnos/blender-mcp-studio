@@ -30,4 +30,9 @@ def test_the_shipped_v3_package_keeps_its_names() -> None:
 
     assert package.revision == "hand-V3"
     assert package.generator == "scripts/model_finger_v3.py"
-    assert package.stl_files == ("phalanx_mm.stl", "palm_mm.stl", "finger_v3_mm.stl", "hand_v3_mm.stl")
+    assert package.stl_files == (
+        "phalanx_mm.stl",
+        "palm_mm.stl",
+        "finger_v3_mm.stl",
+        "hand_v3_mm.stl",
+    )
