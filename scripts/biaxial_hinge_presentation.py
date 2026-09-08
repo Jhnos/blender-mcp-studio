@@ -116,9 +116,7 @@ def capture(
     # Moving it within its own plane changes what it overlaps and nothing else.
     right = camera.rotation_euler.to_matrix() @ Vector((1, 0, 0))
     label_position = (
-        Vector(target)
-        + up * (scale * 1100 / 1400 * 0.43)
-        + right * (scale * label_offset)
+        Vector(target) + up * (scale * 1100 / 1400 * 0.43) + right * (scale * label_offset)
     )
     label = add_text("HH_VIEW_LABEL", title, tuple(label_position), white, scale * 0.018)
     face_camera(label, camera)

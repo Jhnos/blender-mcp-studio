@@ -74,13 +74,29 @@ V1／V2／V6 是凍結交付物,一個位元組都不動。
 
 ### Open failures
 
-- 覆蓋矩陣 [`../hand-v3/v7-matrix.md`](../hand-v3/v7-matrix.md):域規格那四列已 PASS,
-  **其餘每一列仍是 TODO**。幾何尚未產生。
-- 抓持力無法由現有管線驗證,只能實體台架量。台架一次都還沒跑,
+沒有失敗中的機器檢查。仍是 TODO 的每一列,都需要**實體零件或氣囊**才能開始:
+
+- 抓持力(H1／H2／H5／H8)——現有管線量不到力,只能實體台架。
   [`../hand-v3/v8-results.md`](../hand-v3/v8-results.md) 全部空白。
+- 列印公差(C1–C7)與關節配合(J1–J4)——[`../hand-v3/v6b-coupon.md`](../hand-v3/v6b-coupon.md)
+  的協定已寫好、判準是數字,但一件都還沒印。
+- 夾層充氣後的包絡(H6／PS-4)——氣囊本體按裁決留給實體實驗,不產生幾何。
+- 閉合順序(PS-2／ES-3)——力矩臂改成相等後,順序由彈簧梯度決定,而彈簧尚未選型。
 
 ### Next step
 
-- Track 1:依 [`../hand-v3/08-inmoov.md`](../hand-v3/08-inmoov.md) 下載並列印 InMoov 右手,
-  同時採購兩隻外層手套與針筒。**使用者執行。**
-- Track 2 下一片:整手契約 `hand_v3.json` 在真機跑,然後發布印製包 `models/hand-v3/`。
+- **使用者執行,且只有實體才給得出答案**:印 `models/hand-v3/phalanx_mm.stl`,
+  照 [`../hand-v3/v6b-coupon.md`](../hand-v3/v6b-coupon.md) 量 C1–C7。建議印兩件,
+  第二件才量得到關節配合。數字填回 v8-results 的試片表。
+- **使用者裁決(Lane B)**:`models/hand-v3/` 裡的三張渲染圖——像不像一隻手、
+  握姿順不順、針筒好不好推。
+- Track 1 平行進行:依 [`../hand-v3/08-inmoov.md`](../hand-v3/08-inmoov.md) 印 InMoov 右手,
+  採購兩隻外層手套與針筒。
+
+### 這一輪(V01.0E → V01.0K.001)修掉的事
+
+機器閘門全綠但東西是錯的,一共八次。**其中三次是使用者看渲染圖發現的**:
+膝節低了 13.5 mm、比例不像人手(四節)、以及**每個指節都是兩塊分開的實體**。
+最後一項尤其說明問題:兩個殼各自水密、各自流形、相鄰重疊 0,合約 19/19 全過——
+沒有任何逐面檢查看得到「它是不是一整塊」。該量的量現在都進了合約:
+`expected_shells_per_object`、`disjoint_groups`、`channel_probes`、`max_footprint_mm`。
