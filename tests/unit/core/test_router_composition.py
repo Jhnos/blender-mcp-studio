@@ -282,4 +282,9 @@ def test_screenshots_go_through_the_typed_port() -> None:
 
 def test_raw_screenshot_gate_fires_on_a_planted_call(tmp_path: Path) -> None:
     (tmp_path / "x.py").write_text('await blender.call_tool("get_viewport_screenshot", {})\n')
-    assert find_raw_screenshot_calls([tmp_path]) == [str((tmp_path / "x.py").relative_to(PROJECT_ROOT)) + ":1"] if tmp_path.is_relative_to(PROJECT_ROOT) else True
+    assert (
+        find_raw_screenshot_calls([tmp_path])
+        == [str((tmp_path / "x.py").relative_to(PROJECT_ROOT)) + ":1"]
+        if tmp_path.is_relative_to(PROJECT_ROOT)
+        else True
+    )

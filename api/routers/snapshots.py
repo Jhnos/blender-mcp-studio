@@ -4,8 +4,6 @@ from __future__ import annotations
 
 import base64
 import logging
-
-from src.core.domain.exceptions import BlenderConnectionError, SceneOperationError
 import os
 from datetime import UTC
 
@@ -13,6 +11,7 @@ from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
 
 from src.adapters.blender_scripts import snapshot_scripts
+from src.core.domain.exceptions import BlenderConnectionError, SceneOperationError
 
 router = APIRouter(prefix="/api")
 logger = logging.getLogger(__name__)

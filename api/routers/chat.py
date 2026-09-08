@@ -17,13 +17,11 @@ from __future__ import annotations
 import base64
 import json
 import logging
-import os
-import tempfile
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
-from src.core.domain.session import Session
 from src.core.domain.exceptions import BlenderConnectionError, SceneOperationError
+from src.core.domain.session import Session
 from src.core.ports.blender_port import BlenderPort
 from src.core.ports.llm_port import LLMStreamPort
 from src.core.ports.session_store_port import SessionStorePort

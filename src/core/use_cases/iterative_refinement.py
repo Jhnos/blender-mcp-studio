@@ -14,13 +14,11 @@ Data-driven: iterations count and convergence signal controlled by config.
 from __future__ import annotations
 
 import logging
-import os
-import tempfile
 from dataclasses import dataclass, field
 
 from src.core.domain.command import Command, CommandParser
-from src.core.domain.session import Session
 from src.core.domain.exceptions import BlenderConnectionError, SceneOperationError
+from src.core.domain.session import Session
 from src.core.ports.blender_port import BlenderPort
 from src.core.ports.llm_port import LLMChatPort, LLMToolChatPort
 from src.core.ports.vision_port import VisionPort

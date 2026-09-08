@@ -88,8 +88,6 @@ async def viewport_broadcast_loop(
         interval:  Seconds between captures. Defaults to 3 s.
     """
     import base64
-    import os
-    import tempfile
 
     while True:
         await asyncio.sleep(interval)
