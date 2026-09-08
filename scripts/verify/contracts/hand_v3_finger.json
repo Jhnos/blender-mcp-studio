@@ -26,9 +26,8 @@
  ],
  "oracle": {
   "object_prefix": "HJ_V3_PHALANX_",
-  "expected_count": 4,
+  "expected_count": 3,
   "expected_rotations_deg": [
-   0,
    0,
    0,
    0
@@ -37,8 +36,7 @@
   "expected_scene_list": [
    "HJ_V3_PHALANX_1",
    "HJ_V3_PHALANX_2",
-   "HJ_V3_PHALANX_3",
-   "HJ_V3_PHALANX_4"
+   "HJ_V3_PHALANX_3"
   ],
   "center_probe_object": "HJ_V3_PHALANX_1",
   "center_channel_expected_open": false,
@@ -74,17 +72,17 @@
   "collision_groups": [
    {
     "prefix": "HJ_V3_PHALANX_",
-    "expected_count": 4
+    "expected_count": 3
    },
    {
     "prefix": "HJ_V3_LAYOUT_PART_",
-    "expected_count": 5
+    "expected_count": 4
    }
   ]
  },
  "readiness": {
   "selection_prefix": "HJ_V3_LAYOUT_PART_",
-  "expected_selection_count": 5,
+  "expected_selection_count": 4,
   "forbidden_issue_codes": [
    "no_mesh",
    "non_manifold_edges",

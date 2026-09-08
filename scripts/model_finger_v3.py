@@ -26,11 +26,13 @@ from scripts.blender_mesh_primitives import assign, collection, material  # noqa
 from scripts.finger_v3_geometry import build_finger  # noqa: E402
 from scripts.finger_v3_presentation import build_print_layout, present_finger  # noqa: E402
 from scripts.palm_v3_geometry import assemble_hand, build_palm  # noqa: E402
-from src.core.domain.finger_v3 import SingleTendonFingerSpec  # noqa: E402
 from src.core.domain.palm_v3 import AnthropomorphicPalmSpec  # noqa: E402
 
-SPEC = SingleTendonFingerSpec()
 PALM = AnthropomorphicPalmSpec()
+#: One spec, read from the palm. Kept as a separate name only because the
+#: single-finger exports read it; defining it independently is how the loose
+#: finger and the hand's fingers could have drifted apart.
+SPEC = PALM.finger
 OUTPUT = PROJECT_ROOT / "tmp" / "hand-v3"
 
 
@@ -70,6 +72,47 @@ def _refuse_a_disconnected_knuckle(palm: bpy.types.Object) -> None:
         )
 
 
+def _leave_only_the_hand_visible(hand: list[bpy.types.Object]) -> None:
+    """Hide everything that is not the hand, so opening the file shows the hand.
+
+    Runs last, after the renders, because the render pass creates its own floor
+    and lights and those are furniture too. What was in the delivered file before
+    this: the assembled hand, plus a loose finger stack standing straight through
+    the middle of it, plus the print layout, plus a backdrop — twenty-five visible
+    objects. Every render looked right, because `capture` shows one subject at a
+    time with `hide_render`; the pictures never contained the clutter, so the
+    pictures never showed the problem. The file is the deliverable, not the
+    pictures of it.
+    """
+    keep = {obj.name for obj in hand}
+    for obj in list(bpy.data.objects):
+        if obj.name in keep:
+            continue
+        if obj.type == "MESH":
+            obj.hide_viewport = True
+            obj.hide_render = True
+    # Hidden, not deleted. `run_generator` snapshots the visibility of every
+    # object outside its prefix and restores it in a `finally`; removing one out
+    # from under that bookkeeping makes the restore raise on a dead reference,
+    # which is how this was found.
+
+
+def _refuse_a_cluttered_file(hand: list[bpy.types.Object]) -> None:
+    """What is visible on open must be the hand, and only the hand.
+
+    Checked on the objects rather than on a render, because a render is a
+    filtered view and the file is what gets delivered.
+    """
+    visible = {obj.name for obj in bpy.data.objects if obj.type == "MESH" and not obj.hide_viewport}
+    expected = {obj.name for obj in hand}
+    if visible != expected:
+        raise RuntimeError(
+            "opening this file would show "
+            f"{sorted(visible - expected)} besides the hand, and would be missing "
+            f"{sorted(expected - visible)}"
+        )
+
+
 def _refuse_a_stale_scene() -> None:
     """Fail loudly if a previous run's objects are still in the scene.
 
@@ -77,9 +120,9 @@ def _refuse_a_stale_scene() -> None:
     round: the generator knows exactly how many of each thing it just made.
     """
     expected = {
-        "HJ_V3_PHALANX_": 4,
-        "HJ_V3_LAYOUT_PART_": 5,
-        "HJ_V3_HAND_": 19,
+        "HJ_V3_PHALANX_": SPEC.link.assembly_unit_count,
+        "HJ_V3_LAYOUT_PART_": SPEC.link.assembly_unit_count + 1,
+        "HJ_V3_HAND_": 4 * SPEC.link.assembly_unit_count + PALM.thumb.link.assembly_unit_count,
         "HJ_V3_PALM": 1,
     }
     for prefix, count in expected.items():
@@ -160,6 +203,8 @@ def build() -> None:
     )
     _refuse_a_stale_scene()
     present_finger(OUTPUT, SPEC, parts, layout, hand)
+    _leave_only_the_hand_visible(hand)
+    _refuse_a_cluttered_file(hand)
     bpy.ops.wm.save_as_mainfile(filepath=str(OUTPUT / "finger_v3.blend"))
     print("FINGER_V3_READY", str(OUTPUT))
 

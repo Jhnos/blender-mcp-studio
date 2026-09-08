@@ -172,3 +172,43 @@ def test_a_thumb_on_a_cantilevered_arm_is_refused() -> None:
     # simply always-on.
     spec = AnthropomorphicPalmSpec()
     assert 0 < spec.thenar_overhang_mm < spec.palm_width_mm / 2
+
+
+def test_the_hand_has_a_hands_proportions() -> None:
+    """A spec called anthropomorphic with no anthropometry in it is just a name.
+
+    This check did not exist, and its absence is why the design reached a print
+    package as a 320 mm hand with 169 mm fingers — 1.7 times human — carrying
+    four phalanges where a hand has three. Every check that did exist was
+    internally consistent, and scaling everything up together satisfies all of
+    them: reachability, clearance, collision and manifoldness are all blind to
+    absolute size. Only a comparison against something outside the design can
+    see it.
+
+    Bounds are loose on purpose. This is a robot hand, not a cast of one, and
+    the point is to catch a hand that is twice the size of a hand — not to
+    legislate millimetres.
+    """
+    spec = AnthropomorphicPalmSpec()
+
+    assert spec.finger.link.assembly_unit_count == 3, "a finger carries three phalanges"
+    assert spec.finger_to_palm_ratio == pytest.approx(
+        sum(spec.finger_segment_lengths_mm) / spec.palm_height_mm
+    )
+    assert 0.7 <= spec.finger_to_palm_ratio <= 1.4, (
+        f"fingers are {spec.finger_to_palm_ratio:.2f} times the palm's height; "
+        "a hand is about 1.0"
+    )
+
+
+def test_a_hand_with_rake_proportions_is_refused() -> None:
+    """The configuration that actually shipped has to be the thing that fires."""
+    from src.core.domain.finger_v3 import SingleTendonFingerSpec
+    from src.core.domain.hinge_chain import HingePhalanxSpec
+
+    four = SingleTendonFingerSpec(
+        link=HingePhalanxSpec(joint_count=3, joint_center_offset_mm=27.0),
+        moment_arms_mm=(6.6, 6.6, 6.6),
+    )
+    with pytest.raises(ValueError, match="times the palm"):
+        AnthropomorphicPalmSpec(finger=four, strict=True)

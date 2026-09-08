@@ -28,9 +28,8 @@
  ],
  "oracle": {
   "object_prefix": "HJ_V3_HAND_F1_",
-  "expected_count": 4,
+  "expected_count": 3,
   "expected_rotations_deg": [
-   0,
    0,
    0,
    0
@@ -58,19 +57,19 @@
   "collision_groups": [
    {
     "prefix": "HJ_V3_HAND_F1_",
-    "expected_count": 4
+    "expected_count": 3
    },
    {
     "prefix": "HJ_V3_HAND_F2_",
-    "expected_count": 4
+    "expected_count": 3
    },
    {
     "prefix": "HJ_V3_HAND_F3_",
-    "expected_count": 4
+    "expected_count": 3
    },
    {
     "prefix": "HJ_V3_HAND_F4_",
-    "expected_count": 4
+    "expected_count": 3
    },
    {
     "prefix": "HJ_V3_HAND_T_",
@@ -78,13 +77,13 @@
    },
    {
     "prefix": "HJ_V3_LAYOUT_PART_",
-    "expected_count": 5
+    "expected_count": 4
    }
   ]
  },
  "readiness": {
   "selection_prefix": "HJ_V3_LAYOUT_PART_",
-  "expected_selection_count": 5,
+  "expected_selection_count": 4,
   "forbidden_issue_codes": [
    "no_mesh",
    "non_manifold_edges",

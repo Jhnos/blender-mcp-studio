@@ -71,7 +71,15 @@ def _roll_about(vector: Vector3, axis: Vector3, degrees: float) -> Vector3:
 class AnthropomorphicPalmSpec:
     """No grip-force claim: reach, spacing and clearance, not a rated hand."""
 
-    finger: SingleTendonFingerSpec = SingleTendonFingerSpec()
+    #: Three phalanges, because a finger has three. The palm's own knuckle root
+    #: is the first joint, so a chain of three units hanging off it gives three
+    #: bones and three joints — the anatomy, not one more of each. Four units
+    #: shipped in a print package first, making a 320 mm hand with 169 mm
+    #: fingers, and nothing caught it because every check was internal.
+    finger: SingleTendonFingerSpec = SingleTendonFingerSpec(
+        link=HingePhalanxSpec(joint_count=2, joint_center_offset_mm=27.0),
+        moment_arms_mm=(6.6, 6.6),
+    )
     #: The thumb is a shorter chain, not a fifth copy of the finger. Measured
     #: rather than assumed: a three-joint thumb is 168.5 mm long, and swinging
     #: that across a 114 mm palm carries the tip 78 mm out the far side — it
@@ -142,6 +150,11 @@ class AnthropomorphicPalmSpec:
                 f"the thenar boss carrying the thumb root would cantilever {overhang:.1f} mm "
                 f"past a plate only {self.palm_width_mm:.1f} mm wide — that is an arm, not "
                 "the bulge at the base of a thumb"
+            )
+        if self.strict and not 0.7 <= self.finger_to_palm_ratio <= 1.4:
+            raise ValueError(
+                f"the fingers are {self.finger_to_palm_ratio:.2f} times the palm's height; "
+                "a hand is about 1.0, and every other check here is blind to scale"
             )
         if self.strict and self.thumb_index_tip_gap_mm >= self.pinch_contact_mm:
             raise ValueError(
@@ -283,6 +296,27 @@ class AnthropomorphicPalmSpec:
         beside it.
         """
         return self.thumb_root_mm[2]
+
+    @property
+    def palm_height_mm(self) -> float:
+        """Plate below the knuckles plus the knuckle roots standing above them."""
+        link = self.finger.link
+        return (
+            self.thumb_base_drop_mm
+            + link.body_length_mm
+            + link.joint_center_offset_mm
+            + link.lug_outer_diameter_mm / 2
+        )
+
+    @property
+    def finger_to_palm_ratio(self) -> float:
+        """How long the fingers are against the palm they grow from.
+
+        The one measurement that can see absolute size. Reachability, clearance,
+        collision and watertightness are all scale-invariant: enlarge the whole
+        design and every one of them still passes. A hand sits near 1.0.
+        """
+        return sum(self.finger_segment_lengths_mm) / self.palm_height_mm
 
     @property
     def thenar_overhang_mm(self) -> float:
