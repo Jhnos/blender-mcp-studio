@@ -140,7 +140,9 @@ def test_a_seal_that_still_holds_at_ten_seconds_says_so_with_a_fraction() -> Non
 
     assert not verdict.vacuous
     assert verdict.n == 3
-    assert verdict.retained_at_ten_seconds == pytest.approx(0.878, abs=0.01)
+    # 36/40, 38/42, 35/41 -> 0.900, 0.905, 0.854. The median, not the mean:
+    # one leaky run should not drag the summary down proportionally.
+    assert verdict.retained_at_ten_seconds == pytest.approx(0.900, abs=0.01)
     assert verdict.holds
     assert "10 s" in verdict.summary
 
