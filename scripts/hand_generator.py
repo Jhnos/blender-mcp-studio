@@ -82,7 +82,12 @@ def _build(plan: HandPlan, output: Path) -> None:
         part.material_slots[0].material = alt if index % 2 == 0 else bone
     refuse_extra_part_numbers(parts, plan)
     export_stl_mm(parts, output / instance.finger_stl)
-    export_stl_mm([parts[0]], output / instance.phalanx_stl)
+    # One mesh per part number: the first unit printed from each part.
+    first_of_part: dict[int, bpy.types.Object] = {}
+    for unit_plan, unit in zip(plan.loose_finger.units, parts, strict=True):
+        first_of_part.setdefault(unit_plan.part_index, unit)
+    for part_index, name in enumerate(instance.phalanx_stls):
+        export_stl_mm([first_of_part[part_index]], output / name)
 
     palm = build_palm(plan.palm)
     refuse_a_disconnected_knuckle(palm, plan)

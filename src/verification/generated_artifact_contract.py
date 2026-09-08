@@ -319,6 +319,11 @@ def contract_from_mapping(
             if "expected_shells_per_object" in oracle_source
             else None
         ),
+        expected_shared_mesh_count=(
+            _required_positive_int(oracle_source, "expected_shared_mesh_count")
+            if "expected_shared_mesh_count" in oracle_source
+            else 1
+        ),
     )
     if len(oracle.expected_rotations_deg) != oracle.expected_count:
         raise ValueError("expected_rotations_deg length must match expected_count")

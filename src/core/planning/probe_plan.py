@@ -73,7 +73,7 @@ def probe_plan(
     half_steps = round(limit / SWEEP_STEP_DEG)
     sweep = tuple(-limit + index * SWEEP_STEP_DEG for index in range(2 * half_steps + 1))
 
-    return ProbePlan(
+    plan = ProbePlan(
         bore_probe_points_mm=((0.0, tendon_y), (0.0, finger.wiring_bore_offset_mm)),
         center_channel_open=False,
         palm_tendon_probe=ChannelProbePlan(naming.palm(), "Z", open_z, solid_z),
@@ -86,3 +86,60 @@ def probe_plan(
         full_travel_deg=limit,
         closure_steps=CLOSURE_STEPS,
     )
+    findings = probe_soundness(palm, plan)
+    if findings:
+        raise ValueError("the probe plan would measure empty air: " + "; ".join(findings))
+    return plan
+
+
+def probe_soundness(palm: AnthropomorphicPalmSpec, plan: ProbePlan) -> list[str]:
+    """Every open point inside the solid it probes, every control on plate with no bore
+    under it, every finger bore between the pin and the wall. Empty means sound.
+
+    A ray aimed past the part misses too, which is how this project once
+    reported five open bores through empty air. The oracle's solid controls
+    guard that at run time; this guards the plan before anything is built.
+    """
+    link = palm.finger.link
+    findings: list[str] = []
+    hole = link.tendon_hole_diameter_mm / 2
+    wall = link.minimum_wall_mm
+
+    for x_mm, y_mm in plan.bore_probe_points_mm:
+        if abs(y_mm) + hole > link.body_depth_mm / 2 - wall:
+            findings.append(f"finger bore at y={y_mm} breaks the body wall")
+        if abs(y_mm) - hole < link.printed_pin_bore_mm / 2 + wall:
+            findings.append(f"finger bore at y={y_mm} runs into the pin's wall")
+
+    half_width = palm.palm_width_mm / 2
+    boss_centre, boss_size = palm.thenar_bridge_mm
+    boss_low = boss_centre[0] - boss_size[0] / 2
+    boss_high = boss_centre[0] + boss_size[0] / 2
+    station_x = (*palm.row_finger_x_mm, palm.thumb_root_mm[0])
+    for x_mm, _ in plan.palm_tendon_probe.open_points_mm:
+        on_plate = -half_width <= x_mm <= half_width
+        on_boss = boss_low <= x_mm <= boss_high
+        if not (on_plate or on_boss):
+            findings.append(f"palm channel probe at x={x_mm} is past the plate")
+    for x_mm, _ in plan.palm_tendon_probe.solid_points_mm:
+        if not -half_width <= x_mm <= half_width:
+            findings.append(f"palm control at x={x_mm} is past the plate")
+        if any(abs(x_mm - station) < hole + wall for station in station_x):
+            findings.append(f"palm control at x={x_mm} sits over a bore")
+
+    plate_height = palm.plate_height_mm
+    port_x, port_z = palm.air_port_center_mm
+    port_radius = palm.air_port_diameter_mm / 2
+    clamp_z = palm.cuff_clamp_center_z_mm
+    clamp_half = palm.cuff_clamp_wall_mm / 2
+    for _, z_mm in plan.air_port_probe.open_points_mm:
+        if not -plate_height <= z_mm <= 0.0:
+            findings.append(f"air port probe at z={z_mm} is past the plate")
+    for _, z_mm in plan.air_port_probe.solid_points_mm:
+        if not -plate_height <= z_mm <= 0.0:
+            findings.append(f"air port control at z={z_mm} is past the plate")
+        if abs(z_mm - port_z) < port_radius + wall:
+            findings.append(f"air port control at z={z_mm} sits over the port")
+        if abs(z_mm - clamp_z) < clamp_half + wall:
+            findings.append(f"air port control at z={z_mm} sits in the clamp groove")
+    return findings

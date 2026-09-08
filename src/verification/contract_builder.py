@@ -91,6 +91,16 @@ def _layout_group(plan: HandPlan) -> Mapping:
     return {"prefix": plan.naming.layout_prefix, "expected_count": plan.counts.layout_part_count}
 
 
+def _declare_part_numbers(plan: HandPlan, oracle: Mapping) -> None:
+    """An equal-arm finger says nothing and gets the verdict's default of one.
+
+    Omitting the field for the common case is what keeps every committed
+    contract byte-identical; a gradient finger states what it is.
+    """
+    if plan.counts.phalanx_part_count != 1:
+        oracle["expected_shared_mesh_count"] = plan.counts.phalanx_part_count
+
+
 def _readiness(plan: HandPlan, *, with_bed: bool) -> Mapping:
     readiness: Mapping = {
         "selection_prefix": plan.naming.layout_prefix,
@@ -116,6 +126,7 @@ def hand_contract_mapping(plan: HandPlan, project_root: Path) -> Mapping:
     oracle["disjoint_groups"] = chains
     oracle["channel_probes"] = [_channel(probes.palm_tendon_probe), _channel(probes.air_port_probe)]
     oracle["expected_shells_per_object"] = 1
+    _declare_part_numbers(plan, oracle)
     return {
         **_base(plan, project_root, plan.instance.contract_name),
         "oracle": oracle,
@@ -140,6 +151,7 @@ def finger_contract_mapping(plan: HandPlan, project_root: Path) -> Mapping:
         _layout_group(plan),
     ]
     oracle["expected_shells_per_object"] = 1
+    _declare_part_numbers(plan, oracle)
     oracle["closure_trajectory"] = {
         "chain_prefix": chain_prefix,
         "pivot_offset_mm": _num(probes.pivot_offset_mm),

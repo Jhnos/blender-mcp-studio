@@ -73,8 +73,8 @@ def assess_verification(
     evidence.append(
         VerificationEvidence(
             "shared_mesh",
-            shared_mesh_count == 1,
-            f"observed={shared_mesh_count!r}, expected=1",
+            shared_mesh_count == expected.expected_shared_mesh_count,
+            f"observed={shared_mesh_count!r}, expected={expected.expected_shared_mesh_count}",
         )
     )
     rotations = sequence_value(oracle, "rotations_deg")

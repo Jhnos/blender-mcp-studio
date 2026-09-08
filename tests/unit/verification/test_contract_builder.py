@@ -88,7 +88,12 @@ def test_a_gradient_finger_declares_its_part_numbers_and_v3_declares_nothing() -
 
     v3 = HAND_INSTANCES["hand-v3"]
     steeper = replace(v3.palm.finger, moment_arms_mm=(7.1, 6.1))
-    gradient = replace(v3, slug="hand-v3-gradient", palm=replace(v3.palm, finger=steeper))
+    gradient = replace(
+        v3,
+        slug="hand-v3-gradient",
+        palm=replace(v3.palm, finger=steeper),
+        phalanx_stls=("phalanx_base_mm.stl", "phalanx_distal_mm.stl"),
+    )
 
     for mapping in contract_mappings(hand_plan(gradient), ROOT).values():
         oracle = mapping["oracle"]

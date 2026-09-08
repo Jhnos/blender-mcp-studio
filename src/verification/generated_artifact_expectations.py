@@ -60,6 +60,11 @@ class OracleExpectation:
     #: are not a part.
     expected_shells_per_object: int | None = None
     closure_trajectory: ClosureTrajectory | None = None
+    #: How many distinct meshes the prefixed objects are — how many part numbers
+    #: the finger is. One for every contract that omits it, which is every
+    #: equal-arm finger; a gradient finger declares its own count, because being
+    #: two parts is what it claims, not a failure of the copy.
+    expected_shared_mesh_count: int = 1
 
 
 @dataclass(frozen=True, slots=True)

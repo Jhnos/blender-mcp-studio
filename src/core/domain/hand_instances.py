@@ -4,9 +4,15 @@ An instance is one palm spec, one namespace to build it under, and the files it
 ships as. The contract builder, the reproduction differential and the instance
 table guard all read from here, so there is one answer to "what is hand-v3".
 
-Only V3 is registered. The compact instance's spec exists (`CompactHingeLinkSpec`)
-but its palm placement has not been swept, and registering a palm that fails
-its own invariants is not registering an instance.
+Two instances are registered. `hand-v3` ships. `hand-v3-gradient` is a
+verification fixture: V3's own link with the steepest gradient its moment-arm
+window allows, so that "a finger can be two part numbers" is proved on the
+real machine by a controlled differential — same link, same palm, only the
+arms differ — rather than asserted. It has no package and never will.
+
+The compact instance's spec exists (`CompactHingeLinkSpec`) but its palm
+placement has not been swept; registering a palm that fails its own
+invariants is not registering an instance.
 """
 
 from __future__ import annotations
@@ -14,6 +20,8 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 
+from src.core.domain.finger_v3 import SingleTendonFingerSpec
+from src.core.domain.hinge_chain import HingePhalanxSpec
 from src.core.domain.palm_v3 import AnthropomorphicPalmSpec
 
 _SLUG = re.compile(r"^[a-z0-9]+(-[a-z0-9]+)*$")
@@ -30,7 +38,9 @@ class HandInstance:
     #: manifest and the package tests all pin it.
     generator_script: str
     blend_file: str
-    phalanx_stl: str
+    #: One mesh per part number, base part first. A gradient finger is two
+    #: prints; a package with one phalanx file would hide the second.
+    phalanx_stls: tuple[str, ...]
     palm_stl: str
     finger_stl: str
     hand_stl: str
@@ -45,12 +55,18 @@ class HandInstance:
             raise ValueError(
                 f"an instance slug is lowercase words joined by hyphens, not {self.slug!r}"
             )
+        parts = self.palm.finger.phalanx_part_count
+        if len(self.phalanx_stls) != parts:
+            raise ValueError(
+                f"{self.slug} is {parts} phalanx part number(s) but ships "
+                f"{len(self.phalanx_stls)} phalanx mesh(es); one file per part number"
+            )
         if len(set(self.stl_files)) != len(self.stl_files):
             raise ValueError("two meshes cannot ship under one file name")
 
     @property
     def stl_files(self) -> tuple[str, ...]:
-        return (self.phalanx_stl, self.palm_stl, self.finger_stl, self.hand_stl)
+        return (*self.phalanx_stls, self.palm_stl, self.finger_stl, self.hand_stl)
 
     @property
     def render_files(self) -> tuple[str, ...]:
@@ -65,6 +81,8 @@ class HandInstance:
         return self.slug.replace("-", "_")
 
 
+_V3_LINK = HingePhalanxSpec(joint_count=2, joint_center_offset_mm=27.0)
+
 HAND_INSTANCES: dict[str, HandInstance] = {
     "hand-v3": HandInstance(
         slug="hand-v3",
@@ -73,7 +91,7 @@ HAND_INSTANCES: dict[str, HandInstance] = {
         family="V3",
         generator_script="scripts/model_finger_v3.py",
         blend_file="finger_v3.blend",
-        phalanx_stl="phalanx_mm.stl",
+        phalanx_stls=("phalanx_mm.stl",),
         palm_stl="palm_mm.stl",
         finger_stl="finger_v3_mm.stl",
         hand_stl="hand_v3_mm.stl",
@@ -85,6 +103,30 @@ HAND_INSTANCES: dict[str, HandInstance] = {
             "goes together unrotated, and one tendon bore per unit at that joint's own "
             "moment arm. Unqualified fit prototype; no grip force, retention or "
             "strength claim. Never printed."
+        ),
+    ),
+    "hand-v3-gradient": HandInstance(
+        slug="hand-v3-gradient",
+        # The window on this link is 6.05–7.20 mm; 7.1 and 6.1 are the steepest
+        # gradient that clears both ends with a margin the float arithmetic keeps.
+        palm=AnthropomorphicPalmSpec(
+            finger=SingleTendonFingerSpec(link=_V3_LINK, moment_arms_mm=(7.1, 6.1)),
+        ),
+        namespace="HG_",
+        family="V3G",
+        generator_script="scripts/model_hand_v3_gradient.py",
+        blend_file="hand_v3_gradient.blend",
+        phalanx_stls=("phalanx_base_mm.stl", "phalanx_distal_mm.stl"),
+        palm_stl="palm_mm.stl",
+        finger_stl="finger_gradient_mm.stl",
+        hand_stl="hand_gradient_mm.stl",
+        assembly_render="gradient_assembly.png",
+        joint_render="gradient_joint_detail.png",
+        layout_render="gradient_print_layout.png",
+        design_note=(
+            "Verification fixture, not a deliverable: V3's link with moment arms 7.1 "
+            "and 6.1 mm, so the finger is two part numbers. Exists to prove the "
+            "generator and the contracts handle a gradient. Never printed, never published."
         ),
     ),
 }
