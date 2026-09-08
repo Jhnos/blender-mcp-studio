@@ -81,7 +81,18 @@
         "expected_count": 4
       }
     ],
-    "expected_shells_per_object": 1
+    "expected_shells_per_object": 1,
+    "closure_trajectory": {
+      "chain_prefix": "HJ_V3_HAND_F1_",
+      "pivot_offset_mm": 27.0,
+      "axis": "X",
+      "travel_shares": [
+        1.0,
+        0.625
+      ],
+      "full_travel_deg": 50.0,
+      "steps": 8
+    }
   },
   "readiness": {
     "selection_prefix": "HJ_V3_LAYOUT_PART_",

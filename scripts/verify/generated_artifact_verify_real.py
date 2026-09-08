@@ -106,6 +106,18 @@ def oracle_code(contract: GeneratedArtifactContract) -> str:
         "collision_groups": [item.prefix for item in expected.collision_groups],
         "disjoint_groups": list(expected.disjoint_groups),
         "count_shells": expected.expected_shells_per_object is not None,
+        "closure_trajectory": (
+            {
+                "chain_prefix": expected.closure_trajectory.chain_prefix,
+                "pivot_offset_mm": expected.closure_trajectory.pivot_offset_mm,
+                "axis": expected.closure_trajectory.axis,
+                "shares": list(expected.closure_trajectory.travel_shares),
+                "full_travel_deg": expected.closure_trajectory.full_travel_deg,
+                "steps": expected.closure_trajectory.steps,
+            }
+            if expected.closure_trajectory is not None
+            else None
+        ),
         "channel_probes": [
             {
                 "key": probe.key,
@@ -197,6 +209,50 @@ for obj in bpy.data.objects:
         obj.hide_set(False)
         obj.select_set(True)
         selected.append(obj.name)
+closure_overlaps = []
+_traj = config['closure_trajectory']
+if _traj is not None:
+    chain = sorted(
+        [o for o in bpy.data.objects if o.name.startswith(_traj['chain_prefix'])],
+        key=natural_key,
+    )
+    axis_vector = {{'X': Vector((1, 0, 0)), 'Y': Vector((0, 1, 0)), 'Z': Vector((0, 0, 1))}}[
+        _traj['axis']
+    ]
+    for step in range(_traj['steps']):
+        fraction = (step + 1) / _traj['steps']
+        trees = []
+        cumulative = 0.0
+        for index, part in enumerate(chain):
+            if index:
+                cumulative += fraction * _traj['full_travel_deg'] * _traj['shares'][index - 1]
+            if index == 0:
+                transform = part.matrix_world
+            else:
+                # Each joint turns about the pivot between this unit and the one
+                # before it, and the turns accumulate down the chain: that is
+                # what makes it a closing finger rather than three loose hinges.
+                pivot_z = (
+                    chain[index - 1].matrix_world.translation.z
+                    + _traj['pivot_offset_mm'] / 1000.0
+                )
+                pivot = Vector((0.0, 0.0, pivot_z))
+                rotation = Matrix.Rotation(math.radians(cumulative), 4, axis_vector)
+                transform = (
+                    Matrix.Translation(pivot)
+                    @ rotation
+                    @ Matrix.Translation(-pivot)
+                    @ part.matrix_world
+                )
+            trees.append(world_tree(part, transform))
+        total = 0
+        for first in range(len(trees)):
+            for second in range(first + 1, len(trees)):
+                total += len(trees[first][1].overlap(trees[second][1]))
+        for bm, _tree in trees:
+            bm.free()
+        closure_overlaps.append(total)
+
 shell_counts = {{}}
 if config['count_shells']:
     # Every object the contract names anywhere, not just the one prefix the
@@ -308,6 +364,7 @@ print(json.dumps({{
     'bore_ray_hits': bore_hits,
     'collision_groups': collision_results,
     'cross_group_overlaps': cross_group_overlaps,
+    'closure_overlaps': closure_overlaps,
     'shell_counts': shell_counts,
     'channel_probe_results': channel_probe_results,
     'joint_sweep': sweep_result,
