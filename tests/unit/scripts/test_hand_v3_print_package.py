@@ -122,3 +122,72 @@ def test_v3_is_not_a_copy_of_an_octopus_palm_under_a_new_name() -> None:
     # deep, where the octopus plate is nearly square.
     assert v3_palm.dimensions_mm[0] / v3_palm.dimensions_mm[1] > 2.0
     assert v2_palm.dimensions_mm[0] / v2_palm.dimensions_mm[1] < 1.2
+
+
+def test_the_readme_describes_the_package_that_shipped() -> None:
+    """The README is the only thing a human reads before printing the parts.
+
+    It said nineteen phalanges, a 90.0 mm palm and a 319.5 mm hand — the
+    four-phalanx hand, three commits after that hand stopped existing. Every
+    machine gate was green throughout: the meshes were watertight, contract
+    verified, and correctly measured. Nothing checked the prose that describes
+    them, so the one artifact a person reads before spending nineteen hours of
+    print time was the one artifact free to be wrong.
+
+    A dimension written in a sentence is a claim like any other, and it is
+    checkable against the bytes it claims to describe.
+    """
+    import re
+
+    from src.core.domain.palm_v3 import AnthropomorphicPalmSpec
+
+    readme = (PACKAGE / "README.md").read_text(encoding="utf-8")
+    triple = re.compile(r"(\d+\.\d+) × (\d+\.\d+) × (\d+\.\d+) mm")
+
+    quoted = 0
+    for name in EXPECTED:
+        measured = binary_stl_metrics((PACKAGE / name).read_bytes()).dimensions_mm
+        for line in readme.splitlines():
+            if name not in line:
+                continue
+            for found in triple.findall(line):
+                quoted += 1
+                assert tuple(float(v) for v in found) == pytest.approx(measured, abs=0.1), (
+                    f"{name}: the README says {found}, the file measures {measured}"
+                )
+    assert quoted >= 3, "the README stopped quoting dimensions; it is meant to quote them"
+
+    # How many of the one part number a person has to print. Wrong by four for
+    # three commits, and four wasted prints is the cheapest way this bites.
+    palm = AnthropomorphicPalmSpec()
+    total = len(palm.row_finger_x_mm) * len(palm.finger_segment_lengths_mm) + len(
+        palm.thumb_segment_lengths_mm
+    )
+    words = {13: "thirteen", 14: "fourteen", 15: "fifteen", 16: "sixteen", 19: "nineteen", 20: "twenty"}
+    assert words[total] in readme, f"the README never says how many parts to print ({total})"
+    for count, word in words.items():
+        if count != total:
+            assert word not in readme, f"the README still says {word}; the hand takes {total}"
+
+
+def test_the_readme_quotes_the_reach_the_spec_computes() -> None:
+    """The thumb's closest approach is a headline number, so it must be current.
+
+    It moved when the fingers went from four phalanges to three, and the README
+    kept the old figure. This is the same defect class as the dimensions above,
+    kept separate because it is computed from the spec rather than measured from
+    a mesh — two different sources of truth, both able to drift from prose.
+    """
+    import re
+
+    from src.core.domain.palm_v3 import AnthropomorphicPalmSpec
+
+    readme = (PACKAGE / "README.md").read_text(encoding="utf-8")
+    spec = AnthropomorphicPalmSpec()
+
+    line = next(l for l in readme.splitlines() if "closest approach" in l)
+    quoted = [float(v) for v in re.findall(r"(\d+\.\d+) mm", line)]
+    assert quoted, "the reach sentence stopped quoting a number"
+    assert quoted[0] == pytest.approx(spec.thumb_index_tip_gap_mm, abs=0.1), (
+        f"the README says {quoted[0]}, the spec computes {spec.thumb_index_tip_gap_mm:.1f}"
+    )
