@@ -6,6 +6,8 @@ would drift from the one that ships; the guard in `test_docs_hand_framework_figu
 reads this registry for the same reason.
 """
 
+import pytest
+
 from src.core.domain.hand_instances import HAND_INSTANCES, HandInstance
 from src.core.domain.palm_v3 import AnthropomorphicPalmSpec
 
@@ -40,3 +42,23 @@ def test_every_registered_instance_has_its_own_namespace() -> None:
 def test_the_registry_is_not_empty() -> None:
     """A conformance suite over an empty registry passes for nothing."""
     assert HAND_INSTANCES
+
+
+def test_an_instance_ships_one_phalanx_mesh_per_part_number() -> None:
+    """A gradient finger is two prints; a package with one phalanx file hides the second."""
+    from dataclasses import replace
+
+    v3 = HAND_INSTANCES["hand-v3"]
+    steeper = replace(v3.palm.finger, moment_arms_mm=(7.1, 6.1))
+
+    with pytest.raises(ValueError, match="part number"):
+        replace(v3, slug="hand-v3-gradient", palm=replace(v3.palm, finger=steeper))
+
+    two = replace(
+        v3,
+        slug="hand-v3-gradient",
+        palm=replace(v3.palm, finger=steeper),
+        phalanx_stls=("phalanx_1_mm.stl", "phalanx_2_mm.stl"),
+    )
+    assert two.stl_files[:2] == ("phalanx_1_mm.stl", "phalanx_2_mm.stl")
+    assert v3.phalanx_stls == ("phalanx_mm.stl",)
