@@ -23,14 +23,15 @@ ROOT = Path(__file__).resolve().parents[3]
 PACKAGE = ROOT / "models" / "hand-v3"
 V2_PACKAGE = ROOT / "models" / "octopus-hand-v2"
 EXPECTED = {
-    "phalanx_mm.stl": (3494, (24.0, 22.0, 67.0)),
+    "phalanx_mm.stl": (3434, (24.0, 22.0, 67.0)),
     # 2714 before the air port was lifted clear of the cuff clamp band. The
     # 28 triangles that went away were the intersection between a Ø6 bore
     # and the 3 mm groove it used to be cut straight through.
     "palm_mm.stl": (2686, (140.0, 44.0, 103.5)),
-    "finger_v3_mm.stl": (10482, (24.0, 22.0, 175.0)),
-    # Same 28 triangles as the palm, because the palm is part of this.
-    "hand_v3_mm.stl": (55096, (140.0, 44.1, 265.5)),
+    "finger_v3_mm.stl": (10302, (24.0, 22.0, 175.0)),
+    # Down again from 55096: the male tongue gained a neck, and unioning it to
+    # the body removed more surface than the neck added.
+    "hand_v3_mm.stl": (54196, (140.0, 44.1, 265.5)),
 }
 
 
@@ -39,7 +40,12 @@ def test_versioned_hand_v3_print_package_matches_verified_meshes() -> None:
     assert manifest["model_revision"] == "hand-V3"
     assert manifest["units"] == "mm"
     assert manifest["source_generator"] == "scripts/model_finger_v3.py"
-    assert set(manifest["files"]) == {*EXPECTED, "finger_v3.blend"}
+    renders = {
+        "finger_v3_assembly.png",
+        "finger_v3_joint_detail.png",
+        "finger_v3_print_layout.png",
+    }
+    assert set(manifest["files"]) == {*EXPECTED, "finger_v3.blend", *renders}
     for name, (triangles, dimensions) in EXPECTED.items():
         payload = (PACKAGE / name).read_bytes()
         measured = binary_stl_metrics(payload)
