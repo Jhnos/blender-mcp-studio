@@ -36,7 +36,8 @@ V3 是一隻**單自由度線驅動的擬人手**:四指一排加對生拇指,�
 | [[hand-v3/v3-failure-modes]] | 失效模式表(它會怎麼壞) | 同上 |
 | [[hand-v3/v4-scenarios]] | 場景矩陣 | 寫驗證腳本 |
 | [[hand-v3/v5-fixtures]] | 夾具規格 | 同上 |
-| [[hand-v3/v6-scripts]] | 可執行腳本 + **實體台架協定** | 要跑量測 |
+| [[hand-v3/v6-scripts]] | 可執行腳本 + **抓持力台架協定** | 要跑量測 |
+| [[hand-v3/v6b-coupon]] | **第一件實體:列印試片協定** | 要按下列印之前 |
 | [[hand-v3/v7-matrix]] | 假設 × 場景 × 證據 × Lane | 想知道哪裡還有洞 |
 | [[hand-v3/v8-results]] | 結果記錄模板 | 填數字 |
 | [[hand-v3/v9-references]] | 親自存取過的來源 | 要引用文獻 |

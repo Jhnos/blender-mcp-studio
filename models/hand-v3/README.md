@@ -28,8 +28,10 @@ Bambu Lab P2S, bed 256 mm. Units mm, 100%, **auto-arrange off** — the layout i
 nested and fits one plate at 242.0 × 103.5 mm — four parts, the three
 phalanges and the palm.
 
-Print `phalanx_mm.stl` first, once. Check the pin bore and the bearing seat before
-committing to fifteen of them.
+Print `phalanx_mm.stl` first, once. `docs/hand-v3/v6b-coupon.md` is the protocol:
+seven measurements with pass bands, what each failure means, and which of them
+is a printer setting rather than a design change. Do that before committing to
+fifteen of them.
 
 ## What is verified, and what is not
 
@@ -41,8 +43,14 @@ Verified by machine, on the real Blender the files were generated in:
 - Both bores are open and the axis between them is solid: this hinge's pin runs
   through the axis, so there is no central channel and the wiring runs dorsally
   instead — mirrored from the tendon, 2.95 mm of wall to the pin either side.
-- No interference between any two fingers at rest, and none across a joint's full
-  ±50° travel.
+- No interference between any two digits at rest: all ten cross-digit pairs are
+  measured on the real mesh and come back at zero overlapping faces. The thumb
+  crosses in front of the whole row, and until this was declared the only
+  things behind the claim were a per-digit adjacency check and an analytic
+  spacing assertion the thumb is not part of.
+- No interference across a joint's full ±50° travel.
+- The print plate is 242.0 × 103.5 mm against a 256 mm bed, measured twice down
+  independent paths and required to agree before either is believed.
 - The palm is a single connected solid; all five tendon channels and the air port are
   genuinely open, with material confirmed present before the claim.
 - The thumb can reach the index fingertip: closest approach 20.7 mm against a 22.0 mm

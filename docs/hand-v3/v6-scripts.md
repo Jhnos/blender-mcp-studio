@@ -12,8 +12,8 @@
 | 場景 | 腳本 | 狀態 |
 |---|---|---|
 | S1、S2、S6 | `tests/unit/core/test_finger_v3.py` | **已建,20 條綠** |
-| S3、S4 | `scripts/verify/contracts/hand_v3_finger.json` 走既有的產出物契約管線 | **已寫,真機未跑** |
-| S5 | 拇指對生的可達區域 | 待建(掌盤還沒做) |
+| S3、S4 | `scripts/verify/contracts/hand_v3_finger.json` 走既有的產出物契約管線 | **真機 12/12 綠** |
+| S5 | 拇指對生的可達區域 | **已建**,`tests/unit/core/test_palm_v3.py`;跨指不干涉由 `hand_v3.json` 的 `disjoint_groups` 在真機上量(十對全 0) |
 | S7 | V1／V2 的四份既有契約重跑 | **已存在,直接用** |
 | S8 | git 追蹤清單掃描 + `NOTICE` 文字檢查 | 待建 |
 
@@ -24,7 +24,9 @@
 只有前者的閘門,與「永遠報錯」在外觀上完全一樣;只有後者的,與「永遠通過」一樣。
 本專案已經因為缺這一半而放行過一個錯的網格(見 [[hand-v3/v3-failure-modes]] 的 F6)。
 
-## 實體台架協定
+## 實體台架協定(抓持力)
+
+> 第一件實體不是這一段——先看 [[hand-v3/v6b-coupon]]。這裡假設零件已經印得出來。
 
 這一段是人執行,但**判準是數字,不是感覺**。照著做就好,不必自己設計。
 

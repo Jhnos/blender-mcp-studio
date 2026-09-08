@@ -14,7 +14,8 @@
 | [[hand-v3/v3-failure-modes]] | **它會怎麼壞** | 同上;這一份最常被跳過,也最值錢 |
 | [[hand-v3/v4-scenarios]] | 場景矩陣 | 要寫腳本 |
 | [[hand-v3/v5-fixtures]] | 夾具與 dummy 規格 | 同上 |
-| [[hand-v3/v6-scripts]] | 可執行腳本 + **實體台架協定** | 要跑量測 |
+| [[hand-v3/v6-scripts]] | 可執行腳本 + **抓持力台架協定** | 要跑量測 |
+| [[hand-v3/v6b-coupon]] | **列印試片協定**(第一件實體) | 要按下列印之前 |
 | [[hand-v3/v7-matrix]] | 覆蓋矩陣 | 想知道哪裡還有洞 |
 | [[hand-v3/v8-results]] | 結果記錄模板 | 填數字 |
 | [[hand-v3/v9-references]] | 來源 | 要引用 |
