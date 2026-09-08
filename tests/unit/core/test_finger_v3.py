@@ -312,3 +312,30 @@ def test_the_wiring_bore_and_the_tendon_bore_are_on_opposite_sides() -> None:
 def test_an_unusable_wiring_bore_is_refused(offset: float) -> None:
     with pytest.raises(ValueError, match="wiring"):
         SingleTendonFingerSpec(wiring_bore_offset_mm=offset)
+
+
+def test_the_interlayer_has_a_thickness_the_finger_cannot_exceed() -> None:
+    """H6 / PS-4: an inflated layer that blocks closure defeats its own purpose.
+
+    The bladder's built thickness is a physical measurement and is deliberately
+    not asserted here. What geometry can settle without a printed part is the
+    other side of it: how thick the layer may become before the finger stops
+    closing. At full flexion the palmar faces of two adjacent bodies come to
+    3.4 mm of each other, so anything past about 1.7 mm per side is trading
+    away travel to gain surface.
+
+    This is the number a glove purchase has to respect, and it was sitting in
+    the matrix as TODO next to the rows that really do need a bench.
+    """
+    finger = SingleTendonFingerSpec(
+        link=HingePhalanxSpec(joint_count=2, joint_center_offset_mm=27.0),
+        moment_arms_mm=(6.6, 6.6),
+    )
+
+    room = finger.palmar_surface_gap_at_full_flexion_mm
+    assert room == pytest.approx(3.39, abs=0.05)
+    assert finger.maximum_interlayer_thickness_mm == pytest.approx(room / 2, abs=0.01)
+
+    # Straightened, the same faces are a whole body-depth apart, so the limit is
+    # set by the closed posture and by nothing else.
+    assert finger.palmar_surface_gap_at_rest_mm > room
