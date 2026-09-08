@@ -120,13 +120,19 @@ def test_image_upload_no_file_returns_422():
     assert resp.status_code == 422
 
 
-def test_image_upload_vision_error_returns_500():
+def test_image_upload_provider_failure_returns_502():
+    """The vision adapter raises VisionAnalysisError; api/main.py answers 502 (D-002).
+
+    This used to be a 500 manufactured by the router's own ``except Exception``.
+    """
+    from src.core.domain.exceptions import VisionAnalysisError
+
     vision_mock = AsyncMock()
-    vision_mock.analyze_image = AsyncMock(side_effect=RuntimeError("API error"))
+    vision_mock.analyze_image = AsyncMock(side_effect=VisionAnalysisError("API error"))
 
     client = _make_client_with_vision(vision_mock)
     resp = client.post(
         "/api/chat/image",
         files={"image": ("test.png", BytesIO(_fake_image_bytes()), "image/png")},
     )
-    assert resp.status_code == 500
+    assert (resp.status_code, resp.json()) == (502, {"detail": "API error"})

@@ -46,7 +46,6 @@ DOMAIN_EXCEPTIONS = frozenset(
 #: silence the gate.
 FROZEN_EXPLICIT_GUARDS = frozenset(
     {
-        ("generate3d.py", "generate_3d", 500),
         ("generate3d.py", "generate_3d", 503),
         ("materials.py", "apply_material", 400),
         ("materials.py", "apply_material", 404),
@@ -56,7 +55,6 @@ FROZEN_EXPLICIT_GUARDS = frozenset(
         ("objects.py", "select_object", 500),
         ("objects.py", "update_object", 500),
         ("pipelines.py", "run_pipeline", 404),
-        ("pipelines.py", "run_pipeline", 500),
         ("snapshots.py", "create_snapshot", 500),
         ("snapshots.py", "create_snapshot", 503),
         ("snapshots.py", "delete_snapshot", 404),
@@ -67,9 +65,7 @@ FROZEN_EXPLICIT_GUARDS = frozenset(
         ("snapshots.py", "restore_snapshot", 503),
         ("vision.py", "analyze_image", 413),
         ("vision.py", "analyze_image", 422),
-        ("vision.py", "analyze_image", 500),
         ("vision.py", "analyze_image", 503),
-        ("vision.py", "refine_model", 500),
         ("vision.py", "refine_model", 503),
     }
 )
