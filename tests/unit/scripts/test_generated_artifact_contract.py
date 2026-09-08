@@ -372,20 +372,25 @@ def test_a_layout_that_overruns_the_bed_fails_and_a_silent_one_fails_too() -> No
 
     assert contract.readiness.max_footprint_mm == (256.0, 256.0)
 
-    fits = assess_verification(
-        contract,
-        artifact_state,
-        _green_oracle(),
-        _green_readiness() | {"layout_footprint_mm": [242.0, 103.5]},
-    )
+    def _readiness(footprint: list[float]) -> dict[str, object]:
+        # Both measurements, because the check needs a second opinion — see
+        # `test_the_bed_check_needs_two_measurements_that_agree`.
+        return {
+            "selected_count": 3,
+            "layout_footprint_mm": footprint,
+            "report": {
+                "status": "ready",
+                "issues": [],
+                "metrics": {"dimensions_mm": [*footprint, 44.0]},
+            },
+        }
+
+    fits = assess_verification(contract, artifact_state, _green_oracle(), _readiness([242.0, 103.5]))
     assert fits.passed
     assert any(item.name == "layout_fits_bed" and item.passed for item in fits.evidence)
 
     overruns = assess_verification(
-        contract,
-        artifact_state,
-        _green_oracle(),
-        _green_readiness() | {"layout_footprint_mm": [256.1, 103.5]},
+        contract, artifact_state, _green_oracle(), _readiness([256.1, 103.5])
     )
     assert not overruns.passed
 
