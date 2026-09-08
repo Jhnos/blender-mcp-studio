@@ -5,6 +5,18 @@
 
 ## [Unreleased]
 
+### V01.0Q.002 — `scripts/` 納入檔案行數棘輪;兩個超標檔沿責任切開
+
+#### Changed
+
+- `test_file_budgets` 原本排除 `scripts/`,理由是「產生器還在整併」;手的產生器整併到規劃層之後這個理由不再成立,
+  `scripts/`(`archive/` 除外)納入 400 行硬上限、380 行預警。先紅:兩個檔超標。
+- 真機驗證器 275 行的 Blender 端 oracle 字串搬到 `src/verification/generated_artifact_oracle.py`
+  (只組字串、不匯入 Blender);驗證器 462 → 185 行。
+- 中空側鉸鏈產生器的銷、軸承、走線導引搬到 `scripts/hollow_side_hinge_hardware.py`,調色盤由產生器傳入;
+  409 → 334 行。該線的契約 `reload_modules` 是手打的,已補上新模組。
+- 行為不變:17 份真機契約與差分全過。
+
 ### V01.0Q.001 — 收尾:圖表守衛改讀註冊表後移除四個未用 import
 
 #### Changed
