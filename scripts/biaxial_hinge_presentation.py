@@ -110,6 +110,13 @@ def capture(
     scene.render.resolution_x, scene.render.resolution_y = 1400, 1100
     up = camera.rotation_euler.to_matrix() @ Vector((0, 1, 0))
     label_position = Vector(target) + up * (scale * 1100 / 1400 * 0.43)
+    # Pulled towards the camera so the subject cannot stand in front of the
+    # caption. The V3 joint detail is a vertical stack running through the top
+    # of frame, and it hid its own title. Under an orthographic camera this
+    # moves nothing on screen — same place, same size, drawn in front.
+    towards_camera = (camera.location - Vector(target)).normalized()
+    reach = min(m(scale), (camera.location - Vector(target)).length * 0.5)
+    label_position = label_position + towards_camera * reach
     label = add_text("HH_VIEW_LABEL", title, tuple(label_position), white, scale * 0.018)
     face_camera(label, camera)
     scene.render.filepath = str(output / name)
