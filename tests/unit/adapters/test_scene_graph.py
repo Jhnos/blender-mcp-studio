@@ -5,7 +5,6 @@ Uses TestClient with mocked Blender adapter — no Blender connection required.
 
 from __future__ import annotations
 
-from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock
 
 from fastapi.testclient import TestClient
@@ -14,7 +13,6 @@ from api.main import create_app
 from src.core.domain.command import Command
 from src.core.domain.exceptions import SceneOperationError
 from src.core.domain.scene_operations import SceneObjectSummary, SceneSummary, Vector3
-from src.core.ports.mcp_port import ToolResult
 from src.core.use_cases.scene_operations import SceneOperationsService
 
 
