@@ -1,6 +1,6 @@
 # 靈巧手 V3 — 單自由度線驅動 + 雙層充氣夾層
 
-**Status:** ACTIVE
+**Status:** AWAITING-ACCEPTANCE
 
 ## Goal
 
@@ -38,6 +38,7 @@ V1／V2／V6 是凍結交付物,一個位元組都不動。
 
 - `SingleTendonFingerSpec` 已交(`src/core/domain/finger_v3.py`),10 條測試綠。
   實測腱行程需求 14.40 mm vs 致動器行程 30.0 mm。
+- **兩份真機契約 11/11 全 PASS,印製包 `models/hand-v3/` 已發布(revision `hand-V3`)。**
 - 列印佈局已交:五件一盤,182.5 × 100.5 mm,相鄰重疊 0,放得進 256 mm 床身。
 - **整手組裝已交**:1 掌盤 + 19 指節,零非流形邊、指間零靜止干涉。
 - 掌盤幾何已交:一個殼、零非流形邊、五條腱道真的貫通、進氣口貫通、袖口夾槽已切。
