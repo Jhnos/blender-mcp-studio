@@ -25,7 +25,9 @@ class NamingPolicy:
     def __post_init__(self) -> None:
         stem = self.namespace[:-1]
         if not stem or not stem.isalnum() or not self.namespace.endswith("_"):
-            raise ValueError("a namespace is letters or digits ending in one underscore, like 'HJ_'")
+            raise ValueError(
+                "a namespace is letters or digits ending in one underscore, like 'HJ_'"
+            )
         if not self.family or not self.family.isalnum():
             raise ValueError("a family is letters or digits with no underscores, like 'V3'")
 

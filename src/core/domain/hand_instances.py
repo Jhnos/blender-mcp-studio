@@ -35,7 +35,9 @@ class HandInstance:
 
     def __post_init__(self) -> None:
         if not _SLUG.match(self.slug):
-            raise ValueError(f"an instance slug is lowercase words joined by hyphens, not {self.slug!r}")
+            raise ValueError(
+                f"an instance slug is lowercase words joined by hyphens, not {self.slug!r}"
+            )
         if not self.stl_files:
             raise ValueError("an instance ships at least one mesh")
 

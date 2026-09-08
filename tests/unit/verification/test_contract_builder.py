@@ -32,7 +32,10 @@ def test_the_builder_reproduces_the_committed_hand_v3_contracts(slug: str) -> No
 
     generated = contract_mappings(plan, ROOT)
 
-    assert set(generated) == {f"{plan.instance.contract_name}.json", f"{plan.instance.contract_name}_finger.json"}
+    assert set(generated) == {
+        f"{plan.instance.contract_name}.json",
+        f"{plan.instance.contract_name}_finger.json",
+    }
     for name, mapping in generated.items():
         assert mapping == _committed(name), name
         # And what the verifier parses from each is the same object.

@@ -51,7 +51,9 @@ def _base(plan: HandPlan, project_root: Path, name: str) -> Mapping:
     return {
         "name": name,
         "generator_script": instance.generator_script,
-        "reload_modules": list(reload_modules_for(project_root, project_root / instance.generator_script)),
+        "reload_modules": list(
+            reload_modules_for(project_root, project_root / instance.generator_script)
+        ),
         "artifacts": [
             f"{out}/{instance.blend_file}",
             *(f"{out}/{stl}" for stl in instance.stl_files),

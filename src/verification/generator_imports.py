@@ -27,7 +27,9 @@ def first_party_imports(path: Path) -> tuple[str, ...]:
             names = [alias.name for alias in node.names]
         elif isinstance(node, ast.ImportFrom) and node.module and node.level == 0:
             names = [node.module]
-        found.extend((node.lineno, name) for name in names if name.split(".")[0] in FIRST_PARTY_ROOTS)
+        found.extend(
+            (node.lineno, name) for name in names if name.split(".")[0] in FIRST_PARTY_ROOTS
+        )
     ordered: list[str] = []
     for _, name in sorted(found):
         if name not in ordered:

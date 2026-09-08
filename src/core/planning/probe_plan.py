@@ -60,7 +60,9 @@ def probe_plan(
     # stations, where the plate has no reason to be anything but solid.
     open_z = tuple((station.origin_mm[0], tendon_y) for station in stations)
     row_x = palm.row_finger_x_mm
-    solid_z = tuple(((left + right) / 2, tendon_y) for left, right in zip(row_x, row_x[1:], strict=False))
+    solid_z = tuple(
+        ((left + right) / 2, tendon_y) for left, right in zip(row_x, row_x[1:], strict=False)
+    )
 
     # The port goes through along Y; the controls are plate heights above it —
     # half a body below the knuckle line, and the thumb root's own height.

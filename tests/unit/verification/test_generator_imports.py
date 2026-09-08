@@ -66,7 +66,9 @@ def test_every_reachable_module_is_reloaded(slug: str) -> None:
     instance = HAND_INSTANCES[slug]
     closure = reload_modules_for(ROOT, ROOT / instance.generator_script)
     for name in (instance.contract_name, f"{instance.contract_name}_finger"):
-        contract = json.loads((ROOT / "scripts" / "verify" / "contracts" / f"{name}.json").read_text())
+        contract = json.loads(
+            (ROOT / "scripts" / "verify" / "contracts" / f"{name}.json").read_text()
+        )
         missing = set(closure) - set(contract["reload_modules"])
         assert not missing, f"{name}.json would run stale code for {sorted(missing)}"
         assert tuple(contract["reload_modules"]) == closure, f"{name}.json: order or extras differ"
