@@ -377,3 +377,79 @@ def test_a_tendon_turns_on_the_radius_its_moment_arm_sets() -> None:
 
     # A cord needing more than this cannot be used without a new link spec.
     assert min(bend_radii) == pytest.approx(6.6, abs=0.01)
+
+
+# --- M4: the palm knows which link it is built for ---------------------------
+
+
+def test_a_thumb_root_proud_of_the_palm_is_refused() -> None:
+    """ES-1: the root's forward limit is the plate's own thickness.
+
+    The comment on `thumb_base_palmar_mm` said so for a month; nothing enforced
+    it, and a 15 mm-deep link would have put the root 7 mm out on a stalk.
+    """
+    with pytest.raises(ValueError, match="proud"):
+        AnthropomorphicPalmSpec(thumb_base_palmar_mm=23.0)
+
+
+def test_a_contact_distance_wider_than_the_plate_is_refused() -> None:
+    with pytest.raises(ValueError, match="contact"):
+        AnthropomorphicPalmSpec(pinch_contact_mm=23.0)
+
+
+def test_derived_palm_defaults_equal_the_v3_literals() -> None:
+    """ES-2: zero means 'from the link', and for this link that is the old 22.0 exactly."""
+    spec = AnthropomorphicPalmSpec()
+
+    assert spec.thumb_base_palmar_mm == 22.0 == spec.finger.link.body_depth_mm
+    assert spec.pinch_contact_mm == 22.0
+    assert spec.thumb_boss_clearance_mm == 1.0 == 4 * spec.finger.link.printed_radial_clearance_mm
+    assert spec == AnthropomorphicPalmSpec(
+        thumb_base_palmar_mm=0.0, pinch_contact_mm=0.0, thumb_boss_clearance_mm=0.0
+    )
+
+
+def test_a_boss_clearance_under_the_printed_clearance_is_refused() -> None:
+    with pytest.raises(ValueError, match="clearance"):
+        AnthropomorphicPalmSpec(thumb_boss_clearance_mm=0.1)
+
+
+def test_a_three_finger_row_is_narrower_by_one_pitch() -> None:
+    """PS-3: the row count is a field, and the plate, the stations and the thumb follow it."""
+    four = AnthropomorphicPalmSpec()
+    three = dataclasses.replace(four, row_finger_count=3)
+
+    assert three.row_finger_x_mm == (-30.0, 0.0, 30.0)
+    assert four.palm_width_mm - three.palm_width_mm == pytest.approx(four.row_pitch_mm)
+    assert three.thumb_root_mm[0] == pytest.approx(-56.0)
+    assert four.row_finger_x_mm == (-45.0, -15.0, 15.0, 45.0)
+
+
+def test_a_row_of_no_fingers_is_refused() -> None:
+    with pytest.raises(ValueError, match="row"):
+        AnthropomorphicPalmSpec(row_finger_count=0)
+
+
+def test_the_posture_grid_follows_the_articulation_limit() -> None:
+    """DS-2: samples every ten degrees to whatever the link allows, never to a literal 50."""
+    from src.core.domain.hinge_chain import HingePhalanxSpec
+    from src.core.domain.opposition import posture_samples_deg
+
+    v3 = AnthropomorphicPalmSpec()
+    assert posture_samples_deg(v3) == (0.0, 10.0, 20.0, 30.0, 40.0, 50.0)
+
+    wider_link = HingePhalanxSpec(
+        joint_count=2, joint_center_offset_mm=27.0, maximum_articulation_deg=60.0
+    )
+    wider = dataclasses.replace(v3, finger=dataclasses.replace(v3.finger, link=wider_link))
+    assert posture_samples_deg(wider)[-1] == 60.0
+    assert len(posture_samples_deg(wider)) == 7
+
+
+def test_opposition_is_a_function_of_the_palm_and_the_palm_only_delegates() -> None:
+    """The reachability arithmetic lives in `opposition`; the palm keeps three lines."""
+    from src.core.domain.opposition import thumb_index_tip_gap_mm
+
+    spec = AnthropomorphicPalmSpec()
+
+    assert thumb_index_tip_gap_mm(spec) == spec.thumb_index_tip_gap_mm

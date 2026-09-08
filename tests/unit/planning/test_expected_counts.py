@@ -40,3 +40,14 @@ def test_the_layout_holds_every_printed_unit_plus_the_palm() -> None:
     counts = expected_counts(PALM, NAMING)
 
     assert counts.layout_part_count == counts.units_per_finger + 1
+
+
+def test_a_three_finger_row_has_three_stations_and_one_thumb() -> None:
+    """SF-3: nothing downstream types the number four."""
+    from dataclasses import replace
+
+    counts = expected_counts(replace(PALM, row_finger_count=3), NAMING)
+
+    assert counts.stations == ("F1", "F2", "F3", "T")
+    assert counts.row_finger_count == 3
+    assert counts.hand_unit_count == 12
