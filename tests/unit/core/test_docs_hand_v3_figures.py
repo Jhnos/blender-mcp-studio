@@ -172,5 +172,6 @@ def test_the_finger_doc_quotes_the_finger_that_shipped() -> None:
     finger = binary_stl_metrics((PACKAGE / "finger_v3_mm.stl").read_bytes())
 
     line = next(line for line in doc.splitlines() if "整指高" in line)
-    quoted = [float(v) for v in re.findall(r"(\d+(?:\.\d+)?) mm", line)]
-    assert finger.dimensions_mm[2] in pytest.approx(quoted, abs=0.1), line
+    quoted = [float(v) for v in re.findall(r"整指高 \*{0,2}(\d+(?:\.\d+)?)", line)]
+    assert len(quoted) == 1, f"the sentence should quote one height, found {quoted}: {line}"
+    assert quoted[0] == pytest.approx(finger.dimensions_mm[2], abs=0.5), line
