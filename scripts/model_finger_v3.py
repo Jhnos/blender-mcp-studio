@@ -1,4 +1,4 @@
-"""V3 finger: four planar units on one tendon, generated from the spec.
+"""V3 finger: three planar units on one tendon, generated from the spec.
 
 Reviving the hinge-chain line the way `scripts/archive/README.md` prescribes —
 through a named `PresentationProfile`, not by moving a fork back into the live
@@ -155,16 +155,16 @@ def build() -> None:
         finger.objects.link(part)
         if part.users_collection and scene.collection in part.users_collection:
             scene.collection.objects.unlink(part)
-        # Per-object material links, so alternating colours do not force the four
-        # units apart into four meshes. Sharing the mesh is the point.
+        # Per-object material links, so alternating colours do not force the
+        # units apart into separate meshes. Sharing the mesh is the point.
         assign(part, bone)
         part.material_slots[0].link = "OBJECT"
         part.material_slots[0].material = alt if index % 2 == 0 else bone
 
     if len({id(part.data) for part in parts}) != 1:
         raise RuntimeError(
-            "the four units stopped sharing one mesh, so this finger is now four "
-            "part numbers instead of one; that is a decision, not a side effect"
+            f"the {len(parts)} units stopped sharing one mesh, so this finger is now "
+            f"{len(parts)} part numbers instead of one; that is a decision, not a side effect"
         )
 
     export_stl_mm(parts, OUTPUT / "finger_v3_mm.stl")
@@ -201,7 +201,7 @@ def build() -> None:
 
     scene["HJ_V3_PHALANX_NAMES"] = [part.name for part in parts]
     scene["HJ_V3_DESIGN_NOTE"] = (
-        "V3 finger: four planar units, both hinge ends on one axis so the stack "
+        "V3 finger: three planar units, both hinge ends on one axis so the stack "
         "goes together unrotated, and one tendon bore per unit at that joint's own "
         "moment arm. Unqualified fit prototype; no grip force, retention or "
         "strength claim. Never printed."
