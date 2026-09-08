@@ -186,20 +186,6 @@ def test_readiness_cannot_pass_when_invalid_incomplete_or_truncated(
     assert any(item.name == "readiness_issues" and not item.passed for item in summary.evidence)
 
 
-def _green_oracle() -> dict[str, object]:
-    return {
-        "object_count": 3,
-        "shared_mesh_count": 1,
-        "rotations_deg": [0, 90, 0],
-        "scene_list": ["J1_X", "J2_Y"],
-        "center_ray_hit": False,
-        "collision_groups": {
-            "FX_PART_": {"object_count": 3, "adjacent_overlap_pairs": [0, 0]},
-            "FX_BENT_": {"object_count": 3, "adjacent_overlap_pairs": [0, 0]},
-        },
-    }
-
-
 def test_optional_bore_probes_are_parsed_and_a_blocked_bore_fails(tmp_path: Path) -> None:
     """The centre probe answers one axis. A plate with a bore per arm needs one ray each."""
     mapping = _mapping()

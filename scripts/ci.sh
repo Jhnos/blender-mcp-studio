@@ -89,6 +89,14 @@ if (( REAL )); then
     _run hard "MCP protocol (nonce + independent oracle)" "$PY" scripts/verify/mcp_verify_real.py
     _run hard "print readiness (real Blender fixtures)" "$PY" scripts/verify/print_readiness_verify_real.py
     _run hard "batch transform (one Undo, independent oracle)" "$PY" scripts/verify/batch_transform_verify_real.py
+    # The hand contracts caught ten defects in one campaign while being run by hand;
+    # a gate outside ci.sh is a gate that is not run. Order matters: the finger
+    # contract reuses the scene the hand contract generated, and the differential
+    # reads the STLs that generation exported to tmp/hand-v3. First-run timings are
+    # recorded in docs/30-verification.md.
+    _run hard "hand-v3 contract (real Blender + MCP)" "$PY" scripts/verify/generated_artifact_verify_real.py scripts/verify/contracts/hand_v3.json
+    _run hard "hand-v3 finger contract (same scene)" "$PY" scripts/verify/generated_artifact_verify_real.py scripts/verify/contracts/hand_v3_finger.json --skip-generate
+    _run hard "hand-v3 regenerated package matches shipped" "$PY" scripts/verify/regenerated_package_matches_shipped.py --package hand-v3
   else
     # Explicit SKIP, never a silent pass: with Blender down this tier is vacuous.
     printf '  %sSKIP%s MCP pipeline — Blender addon not listening on 9876 %s(start it: launchctl kickstart -k gui/$(id -u)/com.blender-mcp.blender)%s\n' \
