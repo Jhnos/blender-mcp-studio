@@ -14,6 +14,7 @@ reaching back into something that has already shipped.
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import Protocol
 
 
@@ -103,3 +104,39 @@ class FingerLinkSpec(Protocol):
         a seat diameter that happens to equal the bore.
         """
         ...
+
+
+@dataclass(frozen=True, slots=True)
+class BearingSeatCut:
+    """One counterbore in a fork lug, along the hinge axis."""
+
+    offset_mm: float
+    diameter_mm: float
+    width_mm: float
+
+
+def bearing_seat_cuts(link: FingerLinkSpec) -> list[BearingSeatCut]:
+    """Which seats this link wants bored, if any.
+
+    Domain knowledge rather than Blender knowledge: whether a joint carries a
+    rolling element is a fact about the link, and the generator's job is only to
+    subtract what it is told. Keeping it here is also what lets it be checked at
+    all — the geometry module imports `bpy` at the top, so nothing in it can be
+    exercised on a machine without Blender.
+
+    A bearingless link returns an empty list, **not** one cut of zero width.
+    Those are different instructions: the second hands a degenerate cylinder to
+    a boolean, which produces either nothing or something non-manifold, and no
+    per-dimension rule would have objected.
+    """
+    if not link.has_bearing_seat:
+        return []
+    centre = link.fork_total_width_mm / 2.0 - link.bearing_width_mm / 2.0
+    return [
+        BearingSeatCut(
+            offset_mm=side * centre,
+            diameter_mm=link.bearing_seat_diameter_mm,
+            width_mm=link.bearing_width_mm,
+        )
+        for side in (-1.0, 1.0)
+    ]

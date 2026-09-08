@@ -26,6 +26,7 @@ import bpy
 
 from scripts.blender_mesh_primitives import add_cylinder, add_ellipsoid, boolean, cleanup_mesh
 from scripts.hollow_hinge_geometry import create_box
+from src.core.domain.finger_link import bearing_seat_cuts
 from src.core.domain.finger_v3 import SingleTendonFingerSpec
 
 #: Segments on every drilled bore. The readiness check samples a fixed triangle
@@ -160,15 +161,16 @@ def _add_female_end(body: bpy.types.Object, spec: SingleTendonFingerSpec) -> Non
         "DIFFERENCE",
     )
 
-    seat_centre = link.fork_total_width_mm / 2.0 - link.bearing_width_mm / 2.0
-    for side in (-1.0, 1.0):
+    # Asked for rather than assumed. A bearingless link returns no cuts, where
+    # the old unconditional loop would have subtracted a zero-height cylinder.
+    for index, seat in enumerate(bearing_seat_cuts(link)):
         boolean(
             body,
             add_cylinder(
-                f"HJ_CUT_BEARING_SEAT_{side:+.0f}",
-                link.bearing_seat_diameter_mm / 2.0,
-                link.bearing_width_mm,
-                (side * seat_centre, 0.0, centre_z),
+                f"HJ_CUT_BEARING_SEAT_{index}",
+                seat.diameter_mm / 2.0,
+                seat.width_mm,
+                (seat.offset_mm, 0.0, centre_z),
                 axis=spec.female_hinge_axis,
                 vertices=_BORE_SEGMENTS,
             ),

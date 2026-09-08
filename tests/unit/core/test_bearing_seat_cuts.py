@@ -1,9 +1,9 @@
 """Which bearing seats a link asks for — as data, so it can be checked anywhere.
 
-The generator needs `bpy`, so nothing about it runs in this suite. The decision
-inside it does not need `bpy` at all: a link either wants seats bored into its
-fork lugs or it does not, and that is a list of cuts. Making it a list is what
-lets the bearingless case be checked on a machine with no Blender on it.
+The generator imports `bpy` at the top, so nothing in it can be exercised here
+at all. The decision inside it never needed `bpy`: whether a joint carries a
+rolling element is a fact about the link, so it belongs in the domain, and once
+it is a list of cuts the bearingless case can be checked anywhere.
 
 Not cosmetic. A link with no bearing carries `bearing_width_mm = 0.0`, and the
 unconditional code would hand a zero-height cylinder to a boolean — the kind of
@@ -13,7 +13,7 @@ that no per-dimension rule would have objected to.
 
 import pytest
 
-from scripts.finger_v3_geometry import bearing_seat_cuts
+from src.core.domain.finger_link import bearing_seat_cuts
 from src.core.domain.compact_link import CompactHingeLinkSpec
 from src.core.domain.hinge_chain import HingePhalanxSpec
 
