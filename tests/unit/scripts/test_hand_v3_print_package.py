@@ -178,6 +178,7 @@ def test_the_readme_quotes_the_reach_the_spec_computes() -> None:
     kept separate because it is computed from the spec rather than measured from
     a mesh — two different sources of truth, both able to drift from prose.
     """
+    import dataclasses
     import re
 
     from src.core.domain.palm_v3 import AnthropomorphicPalmSpec
@@ -185,9 +186,21 @@ def test_the_readme_quotes_the_reach_the_spec_computes() -> None:
     readme = (PACKAGE / "README.md").read_text(encoding="utf-8")
     spec = AnthropomorphicPalmSpec()
 
-    line = next(l for l in readme.splitlines() if "closest approach" in l)
-    quoted = [float(v) for v in re.findall(r"(\d+\.\d+) mm", line)]
-    assert quoted, "the reach sentence stopped quoting a number"
-    assert quoted[0] == pytest.approx(spec.thumb_index_tip_gap_mm, abs=0.1), (
-        f"the README says {quoted[0]}, the spec computes {spec.thumb_index_tip_gap_mm:.1f}"
+    # Both figures, because the first draft of this check read one line and the
+    # sentence runs onto the next one: the opposed reach was caught and the
+    # flat-thumb comparison it is quoted against sat stale underneath it.
+    flat = dataclasses.replace(spec, thumb_opposition_deg=0.0, thumb_palmar_tilt_deg=0.0)
+    start = next(i for i, l in enumerate(readme.splitlines()) if "closest approach" in l)
+    sentence = " ".join(readme.splitlines()[start : start + 2])
+    quoted = [float(v) for v in re.findall(r"(\d+\.\d+) mm", sentence)]
+    assert len(quoted) == 3, f"the reach sentence should quote three figures, found {quoted}"
+    opposed, contact, flat_gap = quoted
+    assert opposed == pytest.approx(spec.thumb_index_tip_gap_mm, abs=0.1), (
+        f"the README says {opposed}, the spec computes {spec.thumb_index_tip_gap_mm:.1f}"
     )
+    assert contact == pytest.approx(spec.pinch_contact_mm, abs=0.1)
+    assert flat_gap == pytest.approx(flat.thumb_index_tip_gap_mm, abs=0.1), (
+        f"the README says a flat thumb gives {flat_gap}, "
+        f"the spec computes {flat.thumb_index_tip_gap_mm:.1f}"
+    )
+    assert opposed < flat_gap, "opposing the thumb has to be what closes the gap"

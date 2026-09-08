@@ -16,10 +16,10 @@ untouched beside it.
 
 | File | What it is |
 |---|---|
-| **`phalanx_mm.stl`** | **The part you print most.** One phalanx, 24.0 × 22.0 × 67.0 mm, carrying a tendon bore on the palmar side and a wiring bore on the back. Four per finger, three for the thumb — nineteen in all, and all one part number |
-| `palm_mm.stl` | The plate with five knuckle roots, the thenar boss, five tendon channels, the cuff clamp groove and the air port — 140.0 × 44.0 × 90.0 mm |
-| `finger_v3_mm.stl` | One assembled finger, for checking fit before committing to nineteen parts |
-| `hand_v3_mm.stl` | The whole hand assembled, 140.0 × 44.1 × 319.5 mm — **too tall for a 256 mm bed on purpose.** It is a reference, not a print |
+| **`phalanx_mm.stl`** | **The part you print most.** One phalanx, 24.0 × 22.0 × 67.0 mm, carrying a tendon bore on the palmar side and a wiring bore on the back. Three per finger and three for the thumb — fifteen in all, and all one part number |
+| `palm_mm.stl` | The plate with five knuckle roots, the thenar boss, five tendon channels, the cuff clamp groove and the air port — 140.0 × 44.0 × 103.5 mm |
+| `finger_v3_mm.stl` | One assembled finger, 24.0 × 22.0 × 175.0 mm, for checking fit before committing to fifteen parts |
+| `hand_v3_mm.stl` | The whole hand assembled, 140.0 × 44.1 × 265.5 mm — **too tall for a 256 mm bed on purpose.** It is a reference, not a print |
 | `finger_v3.blend` | The Blender source these were exported from |
 
 ## Printing
@@ -28,14 +28,14 @@ Bambu Lab P2S, bed 256 mm. Units mm, 100%, **auto-arrange off** — the layout i
 nested and fits one plate at 182.5 × 100.5 mm.
 
 Print `phalanx_mm.stl` first, once. Check the pin bore and the bearing seat before
-committing to nineteen of them.
+committing to fifteen of them.
 
 ## What is verified, and what is not
 
 Verified by machine, on the real Blender the files were generated in:
 
 - Every part watertight, zero non-manifold edges.
-- The four units of a finger share one mesh — one part number, not four.
+- The three units of a finger share one mesh — one part number, not three.
 - Each tendon bore's centre sits on its joint's moment arm, measured by ray.
 - Both bores are open and the axis between them is solid: this hinge's pin runs
   through the axis, so there is no central channel and the wiring runs dorsally
@@ -44,8 +44,8 @@ Verified by machine, on the real Blender the files were generated in:
   ±50° travel.
 - The palm is a single connected solid; all five tendon channels and the air port are
   genuinely open, with material confirmed present before the claim.
-- The thumb can reach the index fingertip: closest approach 18.2 mm against a 22.0 mm
-  contact distance. A thumb left flat in the finger row gives 29.9 mm.
+- The thumb can reach the index fingertip: closest approach 20.7 mm against a 22.0 mm
+  contact distance. A thumb left flat in the finger row gives 26.1 mm.
 
 **Not verified, and not claimable from anything here:** grip force, friction, whether it
 prints, whether the joints move once printed, and every property of the pneumatic
