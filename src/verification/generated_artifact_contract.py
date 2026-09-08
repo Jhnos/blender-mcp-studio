@@ -60,6 +60,11 @@ class OracleExpectation:
     #: nobody. Absent means no claim; declared and unmeasured is a FAIL.
     disjoint_groups: tuple[str, ...] = ()
     channel_probes: tuple[ChannelProbe, ...] = ()
+    #: How many separate solids each prefixed object is allowed to be. Absent
+    #: means no claim. This is the quantity no per-face check can see: two
+    #: disconnected pieces are each watertight, each manifold, and together they
+    #: are not a part.
+    expected_shells_per_object: int | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -336,6 +341,11 @@ def contract_from_mapping(
         bore_probe_points_mm=_bore_probe_points(oracle_source),
         disjoint_groups=_disjoint_groups(oracle_source),
         channel_probes=_channel_probes(oracle_source),
+        expected_shells_per_object=(
+            _required_positive_int(oracle_source, "expected_shells_per_object")
+            if "expected_shells_per_object" in oracle_source
+            else None
+        ),
     )
     if len(oracle.expected_rotations_deg) != oracle.expected_count:
         raise ValueError("expected_rotations_deg length must match expected_count")

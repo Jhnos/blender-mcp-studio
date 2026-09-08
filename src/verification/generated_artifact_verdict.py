@@ -150,6 +150,24 @@ def assess_verification(
             )
         )
 
+    if expected.expected_shells_per_object is not None:
+        counts = mapping_value(oracle, "shell_counts")
+        observed = dict(counts) if counts is not None else {}
+        # Every object the oracle found must be present and whole. A part that
+        # went unmeasured is a FAIL, because unmeasured is how this shipped.
+        whole = bool(observed) and all(
+            type(value) is int and value == expected.expected_shells_per_object
+            for value in observed.values()
+        )
+        expected_names = int(expected.expected_count)
+        evidence.append(
+            VerificationEvidence(
+                "one_solid_per_part",
+                whole and len(observed) >= expected_names,
+                f"shells={observed!r}, expected {expected.expected_shells_per_object} each",
+            )
+        )
+
     for probe in expected.channel_probes:
         results = mapping_value(oracle, "channel_probe_results")
         record = mapping_value(results, probe.key) if results is not None else None
