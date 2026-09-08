@@ -54,6 +54,9 @@ scripts/ci.sh --real   # T3 REST/MCP/readiness/batch + hand-v3 契約與重現�
 | `test_router_composition.py` | router 組裝 use case、內嵌 `bpy` 原始碼或觸碰 `execute_code` |
 | `test_docs_dcc.py` | 斷掉的 wikilink、導航孤兒、埠號寫在 SSOT 之外 |
 | `test_script_primitive_ssot.py` | 產生器重新定義共用 primitive |
+| `test_contract_builder.py` | 簽入的手契約 ≠ 由規劃生成的契約(契約是生成產物,手改即紅) |
+| `test_generator_imports.py` | 產生器可達的模組沒進契約 `reload_modules`(常駐 Blender 跑舊碼還綠) |
+| `test_architecture_ssot.py::test_domain_and_planning_never_import_bpy` | 域層或規劃層匯入 bpy/mathutils |
 | `test_file_budgets.py` | `api/`、`src/` 出現 god-file（400 行硬上限，380 行預警） |
 | `errorMessage.gate.test.ts` | 前端手抄 `instanceof Error`（用真的 eslint 驗證規則有生效） |
 

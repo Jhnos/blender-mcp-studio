@@ -24,16 +24,18 @@
 | `src/core/domain/finger_v3.py` | domain | 既有 | 單腱手指:力矩臂、彈簧梯度、行程、夾層上界 |
 | `src/core/domain/palm_v3.py` | domain | 泛化 | 見 [[hand-framework/03-domain-spec]];類名不變 |
 | `src/core/domain/opposition.py` | domain | 新 | 對生可達性函式(從掌盤切出,因 372/380 行預算) |
-| `src/core/domain/hand_instances.py` | domain | 新 | `HAND_INSTANCES` 註冊表——**唯一**命名實例的地方 |
-| `src/core/planning/naming.py` | planning | 新 | `NamingPolicy`,見 [[hand-framework/06-naming]] |
-| `src/core/planning/phalanx_plan.py` | planning | 新 | 每節的名字、孔、座、公母端尺寸 |
-| `src/core/planning/station_plan.py` | planning | 新 | 站台原點、基底、鏈;拇指基底算一次 |
-| `src/core/planning/route_plan.py` | planning | 新 | 站台 × 路徑 → 孔 |
-| `src/core/planning/layout_plan.py` | planning | 新 | 換行擺盤算術 |
-| `src/core/planning/expected_counts.py` | planning | 新 | 節數、單元數、佈局件數、站台清單 |
-| `src/core/planning/probe_plan.py` | planning | 新 | 探針點、掃掠角、閉合軌跡參數 |
-| `src/verification/contract_builder.py` | verification | 新 | 規劃 → 契約 JSON,見 [[hand-framework/07-contracts]] |
-| `src/verification/package_reproduction.py` | verification | 新 | 重現差分的純核心 |
+| `src/core/domain/hand_instances.py` | domain | 已建(M2) | `HAND_INSTANCES` 註冊表——**唯一**命名實例的地方 |
+| `src/core/planning/naming.py` | planning | 已建(M2) | `NamingPolicy`,見 [[hand-framework/06-naming]] |
+| `src/core/planning/phalanx_plan.py` | planning | M3 | 每節的名字、孔、座、公母端尺寸 |
+| `src/core/planning/station_plan.py` | planning | 已建(M2) | 站台原點、基底、鏈;拇指基底算一次 |
+| `src/core/planning/route_plan.py` | planning | M3 | 站台 × 路徑 → 孔 |
+| `src/core/planning/layout_plan.py` | planning | 已建(M2) | 換行擺盤算術 |
+| `src/core/planning/expected_counts.py` | planning | 已建(M2) | 節數、單元數、佈局件數、站台清單 |
+| `src/core/planning/probe_plan.py` | planning | 已建(M2) | 探針點、掃掠角、閉合軌跡參數 |
+| `src/core/planning/hand_plan.py` | planning | 已建(M2) | 把以上組成一個 `HandPlan` |
+| `src/verification/generator_imports.py` | verification | 已建(M2) | 讀原始碼推導產生器的 import 閉包(ES-6) |
+| `src/verification/contract_builder.py` | verification | 已建(M2) | 規劃 → 契約 JSON,見 [[hand-framework/07-contracts]] |
+| `src/verification/package_reproduction.py` | verification | 已建(M1) | 重現差分的純核心 |
 | `scripts/hand_{geometry,presentation,gates,generator}.py` | execution | 新 | 只執行規劃 |
 | `scripts/model_finger_v3.py` | execution | 保留為 shim | 契約、manifest、測試、regex 都指名它 |
 | `scripts/model_hand_compact.py` | execution | 新 | 精簡實例入口 |

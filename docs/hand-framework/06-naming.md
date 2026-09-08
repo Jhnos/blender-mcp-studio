@@ -35,7 +35,7 @@ V3 目前有**三套**站台標籤同時存在(親驗 `scripts/palm_v3_geometry.
 | 實例 | `namespace` | `family` | 前綴 | 狀態 |
 |---|---|---|---|---|
 | `hand-v3` | `HJ_` | `V3` | `HJ_V3_` | 既有;**不可變**——契約、manifest、測試 regex 都釘著 |
-| `hand-compact` | `HK_` | `COMPACT` | `HK_COMPACT_` | 建議值;M2 建 `NamingPolicy` 時定案 |
+| `hand-compact` | `HK_` | `COMPACT` | `HK_COMPACT_` | 定案(M2);M6 註冊時使用 |
 
 母數守衛(`test_docs_hand_framework_figures.py`)從 `scripts/model_finger_v3.py` 的
 `run_generator(build, prefix="…")` 讀出前綴,再斷言本樹五份文件宣告的是 `HJ_V3_` 而且沒有別的 `H?_V3_` 變體

@@ -5,6 +5,33 @@
 
 ## [Unreleased]
 
+### V01.0P.004 — 契約由規劃生成,而且第一次生成就抓到五個從未重載的模組
+
+#### Added
+
+- `src/core/planning/`:命名策略、期望計數、站台、探針、佈局、`HandPlan`——全部純資料、凍結、
+  不匯入 bpy,在沒有 Blender 的機器上可測。V3 契約裡每個手打字面值(`±6.6`、`±15/45`、`−71`、
+  `−43.1`、`27.0`、`[1.0, 0.625]`、`256`、站台清單、件數)現在各有一行由規格算出的出處。
+- `src/core/domain/hand_instances.py`:`HAND_INSTANCES` 註冊表,唯一命名實例的地方(目前只有 hand-v3)。
+- `src/verification/contract_builder.py` + `scripts/verify/build_hand_contracts.py <slug> [--check]`:
+  契約成為**簽入的生成產物**;`test_contract_builder` 把簽入檔釘在生成輸出上,手改任一邊都紅。
+- `src/verification/generator_imports.py`:**讀原始碼**推導產生器的 import 閉包(葉子在前),
+  契約的 `reload_modules` 由此生成;`test_every_reachable_module_is_reloaded` 比對(ES-6)。
+- DS-1 有真的守衛了:`test_domain_and_planning_never_import_bpy`(附植入的 should-fire);
+  矩陣原本引用的 `test_architecture_ssot` 裡根本沒有 bpy 檢查——ref 存在不等於 ref 在驗那件事。
+
+#### Fixed
+
+- **兩份 V3 契約手打的 `reload_modules` 漏了 5 個模組**:`finger_link`(擁有 `bearing_seat_cuts`)、
+  `rotation`、`blender_generator_runner`、`hollow_side_hinge`、`biaxial_hinge`。常駐 Blender 對它們
+  一直跑上一次載入的碼並回報綠。ES-6 守衛第一次跑就紅。契約重生(13 → 18),真機仍 20/14。
+- 契約數字渲染到小數六位:`6.6 / 1.6 / 6.6` 在浮點是 `0.6249999999999999`,簽入檔不該每次重生翻最後一位。
+
+#### Changed
+
+- 追溯矩陣:PS-4、ES-4、ES-6、DS-1 的 `TODO_` ref 改真名,PS-1 的 `build_hand_contracts` 已建;
+  剩 10 個 `TODO_`(M3–M6)。v4 的「五件換行 182.5 × 100.5」是猜的,算法給 242.0 × 217.0,已改。
+
 ### V01.0P.003 — 契約閘門進 CI,而且第一次有人量它要幾秒
 
 #### Added

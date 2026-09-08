@@ -9,10 +9,12 @@
 | 場景 | 腳本 | 狀態 |
 |---|---|---|
 | SF-15, SF-16, SF-9 | `tests/unit/core/test_docs_hand_framework_figures.py` | **已建**(M0) |
-| SF-1 | `tests/unit/verification/test_contract_builder.py` | 待建(M2) |
-| SF-2, SF-3, SF-5 | `tests/unit/planning/test_*.py` | 待建(M2) |
+| SF-1 | `tests/unit/verification/test_contract_builder.py` | **已建**(M2):生成 == 簽入,兩份 |
+| SF-2 | `tests/unit/planning/test_layout_plan.py` | **已建**(M2):四件 242.0 × 103.5 離線算出 |
+| SF-3 | `tests/unit/planning/test_expected_counts.py` 新增案例 | 待建(M4,要先有 `row_finger_count` 欄位) |
+| SF-5 | `tests/unit/planning/test_phalanx_plan.py` | 待建(M3 建 `PhalanxPlan`,M5 加梯度案例) |
 | SF-4 | `tests/unit/core/test_palm_v3.py` 新增案例 | 待建(M4) |
-| SF-6 | `tests/unit/core/test_every_reachable_module_is_reloaded` | 待建(M2) |
+| SF-6 | `tests/unit/verification/test_generator_imports.py` | **已建**(M2):首跑抓到 5 個沒重載的模組 |
 | SF-7 | `tests/unit/scripts/test_bpy_modules_read_plans_only` | 待建(M3) |
 | SF-8 | `tests/unit/core/test_hand_instance_conformance.py` | 待建(M6) |
 | SF-10 | `scripts/verify/regenerated_package_matches_shipped.py --package hand-v3` | **已建**(M1);對舊產生器 4/4 PASS;M3 換新產生器後重跑 |

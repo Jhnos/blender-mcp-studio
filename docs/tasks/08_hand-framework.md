@@ -41,19 +41,21 @@
 
 ### Verified facts
 
-- M0:樹守衛先在空目錄上紅(6 failed),文件寫完綠;第一稿被守衛抓到四件事。
-- M1:重現差分對**舊產生器** 4/4 PASS(3434/2686/10302/54196 面,尺寸全在 ±0.1 內);
-  `ci.sh --real` 三條新閘門全 PASS,首跑 7 s + 1 s + 0.2 s;整支 `--real` 約 35 s。
-- 差分的 should-fire 親驗:`--source` 指向空目錄 → 4 個 `missing` FAIL、exit 1。
-- 親驗過的三個決定計畫形狀的事實在 `00-context`;`finger_mount_frames` 零呼叫者;`palm_v3.py` 372/380 行。
+- M0:樹守衛先在空目錄上紅,文件寫完綠;第一稿被守衛抓到四件事。
+- M1:差分對舊產生器 4/4 PASS;`--real` 三條新閘門 7 s + 1 s + 0.2 s;should-fire 親驗 exit 1。
+- M2:規劃層 83 個測試綠;兩份契約由規劃生成並簽入,真機仍 20/14;ES-6 首跑抓到 5 個從未重載的模組;
+  佈局算法離線算出 242.0 × 103.5 = 真機量到的數。DS-1 現在有真守衛。
+- 親驗:`finger_mount_frames` 零呼叫者;`palm_v3.py` 372/380 行;`build_finger` 等臂守衛在 `:221-225`。
 
 ### Open failures
 
-- 沒有機器檢查在失敗。矩陣剩 14 個 `TODO_` ref(M2–M6),每個都有名字。
-- D-004 已 `due`(觸發:手契約閘門 < 10 分鐘):V1/V2/V6 七份契約排進 M3 一起接。
+- 沒有機器檢查在失敗。矩陣剩 10 個 `TODO_` ref(M3–M6),每個都有名字。
+- D-004 已 `due`:V1/V2/V6 七份契約排進 M3 一起接進 `--real`。
 
 ### Next step
 
-- M2:先寫 `tests/unit/verification/test_contract_builder.py`——對 `hand-v3` 生成,與簽入的兩份 JSON
-  `json.loads` 後相等(紅:模組不存在);再建 `src/core/planning/` 七個規劃物件與 `NamingPolicy`,
-  `src/verification/contract_builder.py`,`scripts/verify/build_hand_contracts.py`;ES-6 reload 測試。
+- M3:先寫 `tests/unit/planning/test_phalanx_plan.py` 與 `test_route_plan.py`(紅:模組不存在)釘住
+  `04-plans` 帳本 P-1…P-6、R-1;再寫 `tests/unit/scripts/test_bpy_modules_read_plans_only`(ES-5)。
+  然後建 `scripts/hand_{geometry,presentation,gates,generator}.py`,`model_finger_v3.py` 縮成 shim,
+  Mac 上跑 `v6-scripts` 的三條差分指令;綠了才刪 `finger_v3_geometry.py`、`palm_v3_geometry.py`、
+  `finger_v3_presentation.py` 與 `finger_mount_frames`。

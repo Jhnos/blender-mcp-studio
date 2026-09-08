@@ -36,13 +36,17 @@
 | L-3 | 換行擺盤算術 | `:64-83` | `LayoutPlan.pack()`,**離線可測** |
 | E-1 | `4 *` | `model_finger_v3.py:130` | `row_finger_count` |
 | E-2 | 站台清單 `["F1","F2","F3","F4","T"]` | `:198` | `ExpectedCounts.stations` |
-| E-3 | 佈局件數 `4` | `hand_v3.json` `expected_selection_count` | `phalanx_part_count + 1` |
+| E-3 | 佈局件數 `4` | `hand_v3.json` `expected_selection_count` | `ExpectedCounts.layout_part_count` = 單元數 + 1(三個相同的指節仍是三次列印) |
 | Q-1 | 手指探針 `±6.6` | `hand_v3.json` `bore_probe_points_mm` | `(0, -arm[0])`、`(0, +wiring)` |
 | Q-2 | 掌盤通道探針 `±15/45, −71`、對照 `±30, 0` | `hand_v3.json` `channel_probes` | 站台 × 腱路徑;對照 = 站台中點 |
 | Q-3 | 進氣口探針 `−43.1` | 同上 | `air_port_center_mm` |
 | Q-4 | 掃掠 `±50 每 10°`、pivot `27.0`、shares `[1.0, 0.625]` | `hand_v3_finger.json` | 由 `maximum_articulation_deg`、`joint_center_offset_mm`、`joint_travel_shares` 推導 |
 
-**帳本是驗收條件**:M2 結束時,舊產生器裡不得再有任何一個上表的字面值;ES-5 的靜態測試掃它。
+**帳本是驗收條件**:M3 結束時,執行層裡不得再有任何一個上表的字面值;ES-5 的靜態測試掃它。
+
+進度:S-1…S-3、R-1(路徑偏移)、L-1…L-3、E-1…E-3、Q-1…Q-4 的規劃物件在 M2 建好並由契約生成器讀取;
+P-1…P-6 與 R-1 的孔幾何(`PhalanxPlan`、`RoutePlan` 的 CSG 指令清單)隨執行層在 M3 一起建——
+沒有人執行的規劃是沒被測的設計。
 
 ## 死碼
 

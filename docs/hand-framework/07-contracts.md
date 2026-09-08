@@ -2,22 +2,23 @@
 
 > 回導航 [[hand-framework]] · 相關 [[hand-framework/04-plans]]、[[hand-framework/v6-scripts]]、[[verification/generated-artifacts]]、[[30-verification]]
 
-## 現況(親驗)
+## M2 之前的現況(親驗,已改)
 
-`scripts/verify/contracts/hand_v3.json` 與 `hand_v3_finger.json` 每一個值都是手打的 V3 字面值:
+`scripts/verify/contracts/hand_v3.json` 與 `hand_v3_finger.json` 每一個值**曾是**手打的 V3 字面值:
 前綴 `HJ_V3_*`、探針 `±6.6`、掌盤探針橫座標 `±15/30/45/71` 與 `−43.1`、pivot `27.0`、
 shares `[1.0, 0.625]`、床身 `256`、站台 `F1–F4, T`、件數 `3/4`、`reload_modules` 13 個手打名字。
 這輪修過一次「契約還在講四節的手」;字面值只要存在就會再漂一次。
 
-## 生成而非手寫
+## 生成而非手寫(M2 起)
 
-`src/verification/contract_builder.py`:`HandPlan → GeneratedArtifactContract → JSON`。
-`scripts/verify/build_hand_contracts.py <slug>` 寫出 `contracts/<slug>.json` 與 `<slug>_finger.json`。
+`src/verification/contract_builder.py`:`HandPlan → mapping → JSON`,數字渲染到小數六位。
+`scripts/verify/build_hand_contracts.py <slug>` 寫出 `contracts/<slug>.json` 與 `<slug>_finger.json`;`--check` 只比對。
 
 **契約是簽入 git 的生成產物**:diff 可讀,而且 T2 測試斷言「生成器輸出 == 簽入檔(`json.loads` 後)」,
 任何手改契約或改規劃都會紅。這比「用測試對照手寫契約」少一份真相源。
 
-M2 的紅測試就是這一條:對 `hand-v3` 生成,與現有兩份 JSON 比——每一個生成器漏掉的字面值都是一行 diff。
+M2 的紅測試就是這一條。重生後與手打版的差異只有三種:`reload_modules` 13 → 18(下一節)、產物順序、`0` → `0.0`。
+重生的契約在真機仍 20/14 全過。
 
 ## 證據鍵對照(判準已有的,不新發明)
 
@@ -38,8 +39,10 @@ M2 的紅測試就是這一條:對 `hand-v3` 生成,與現有兩份 JSON 比—�
 ## `reload_modules` 是失效點(ES-6)
 
 真機驗證在**常駐** Blender 裡重載模組再跑產生器。沒列進 `reload_modules` 的模組會跑**上一次載入的舊碼**,
-而且回報綠——這是靜默假通過的教科書案例。生成器從執行模組的 import 圖推導這個清單;
-`test_every_reachable_module_is_reloaded` 靜態掃描確認。
+而且回報綠——這是靜默假通過的教科書案例。生成器用 `src/verification/generator_imports.py` **讀原始碼**
+(產生器頂層 `import bpy`,不能用 import 來找)推導 import 閉包、葉子在前;`test_every_reachable_module_is_reloaded` 比對。
+**首跑就紅**:手打清單漏了 `finger_link`(擁有 `bearing_seat_cuts`)、`rotation`、`blender_generator_runner`、
+`hollow_side_hinge`、`biaxial_hinge`。
 
 ## 接進 CI(使用者已裁決:進 `--real`)
 

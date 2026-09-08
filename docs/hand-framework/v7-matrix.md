@@ -13,12 +13,12 @@ Population: 註冊表實例與其命名空間下的物件(hand-v3 = `HJ_V3_`);`m
 | FF-1 / VOC-2 | SF-15 | 實例表 | 每個數字 = 規格算出 | A 機器 | **PASS**(M0 守衛) |
 | FF-2 / 02 表 | SF-16 | 追溯矩陣 | ref 全解析;`TODO_` 不在程式碼 | A 機器 | **PASS**(M0 守衛) |
 | FF-3 | SF-9 | 五份文件 | 宣告前綴 = 產生器前綴 | A 機器 | **PASS**(M0 守衛) |
-| HF-2 / PS-4 | SF-1 | `hand-v3` | 生成 == 簽入 JSON | A 機器 | TODO(M2) |
-| HF-6 / ES-4 | SF-2 | footprint 清單 | 四件 242.0 × 103.5 | A 機器 | TODO(M2) |
+| HF-2 / PS-4 | SF-1 | `hand-v3` | 生成 == 簽入 JSON | A 機器 | **PASS**(M2,兩份契約重生後真機 20/14) |
+| HF-6 / ES-4 | SF-2 | footprint 清單 | 四件 242.0 × 103.5 | A 機器 | **PASS**(M2,離線算出 = 真機量到) |
 | PS-3 | SF-3 | 指列 4 vs 3 | 站台數、掌寬 | A 機器 | TODO(M4) |
 | HF-5 / ES-1, ES-2 | SF-4 | 凸出 22 vs 23 | 23 拒;22 不變 | A 機器 | TODO(M4) |
 | HF-4 / PS-2 | SF-5 | 臂相等 vs 梯度 | 零件號 1 vs 2 | A 機器 | TODO(M5) |
-| FF-9 / ES-6 | SF-6 | import 圖 | 全在 `reload_modules` | A 機器 | TODO(M2) |
+| FF-9 / ES-6 | SF-6 | import 圖 | 全在 `reload_modules` | A 機器 | **PASS**(M2;首跑紅:13/18,見 v8) |
 | FF-11 / ES-5 | SF-7 | 執行模組 | 字面值白名單 | A 機器 | TODO(M3) |
 | FF-12 / PS-1 | SF-8 | 兩實例 | 前綴互異、皆通過一致性 | A 機器 | TODO(M6) |
 | HF-1 / VOC-1 | SF-10 | `tmp/` vs `models/` | 面數精確、尺寸 ±0.1 | A 機器(真機) | **PASS**(M1,對舊產生器 4/4);M3 換新產生器後重驗 |

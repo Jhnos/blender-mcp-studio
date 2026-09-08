@@ -21,6 +21,8 @@
 |---|---|---|---|---|---|
 | 2026-09-08 | hand_v3.json | 舊(`model_finger_v3.py`) | 20 | 0 | 第一次由 `ci.sh --real` 跑 |
 | 2026-09-08 | hand_v3_finger.json | 舊(同場景,`--skip-generate`) | 14 | 0 | 同上 |
+| 2026-09-09 | hand_v3.json(**由規劃生成**) | 舊產生器 | 20 | 0 | reload 清單 13 → 18 |
+| 2026-09-09 | hand_v3_finger.json(**由規劃生成**) | 舊產生器 | 14 | 0 | 同上 |
 
 ## `--real` 計時(SF-13)
 
@@ -35,7 +37,7 @@
 
 | 實例 | 一致性套件 | 契約生成 | 真機契約 | 差分 | 發布 |
 |---|---|---|---|---|---|
-| `hand-v3` | vacuous | vacuous | 舊產生器 PASS(在 `--real`) | 舊產生器 4/4 PASS | 已發布 |
+| `hand-v3` | vacuous | **生成 == 簽入** | 舊產生器 PASS(生成的契約,在 `--real`) | 舊產生器 4/4 PASS | 已發布 |
 | `hand-compact` | vacuous | vacuous | vacuous | 不適用 | 未發布(D-008) |
 
 `vacuous` = 檢查存在但沒有對這個實例跑過;**永遠不併入 pass**。
@@ -46,7 +48,8 @@
 
 | 日期 | 原本的說法 | 量到的 | 改寫了哪份文件 |
 |---|---|---|---|
-| — | — | — | — |
+| 2026-09-09 | 兩份 V3 契約的 `reload_modules` 是完整的 | import 圖 18 個模組,契約列 13 個;`finger_link`(擁有 `bearing_seat_cuts`)、`rotation`、runner、兩個 domain 規格從未被重載 | [[hand-framework/07-contracts]];契約重生並簽入 |
+| 2026-09-09 | v4 猜的「五件換行成 182.5 × 100.5」 | 算法給 242.0 × 217.0 | [[hand-framework/v4-scenarios]] |
 
 舉例:若 HF-8 被推翻(15 mm 深掌盤掃不出對生解),那是設計發現——寫在這裡,改 [[hand-framework/08-instances]],
 不做平放拇指的 fallback。
