@@ -151,21 +151,28 @@ def assess_verification(
         )
 
     if expected.disjoint_groups:
-        overlaps = mapping_value(oracle, "cross_group_overlaps")
+        cross_overlaps = mapping_value(oracle, "cross_group_overlaps")
         # Sorted pairs, so the key is canonical and the order a contract happens
         # to list its groups in never becomes a hidden part of the format.
-        wanted = [
+        wanted_pairs = [
             "|".join(sorted((a, b)))
             for index, a in enumerate(expected.disjoint_groups)
             for b in expected.disjoint_groups[index + 1 :]
         ]
-        measured = {key: overlaps.get(key) for key in wanted} if overlaps is not None else {}
+        pair_counts = (
+            {key: cross_overlaps.get(key) for key in wanted_pairs}
+            if cross_overlaps is not None
+            else {}
+        )
         # Every declared pair present, and every one of them zero. A pair that
         # never came back is a FAIL: unmeasured is the condition this ends.
-        disjoint = overlaps is not None and all(
-            type(measured.get(key)) is int and measured.get(key) == 0 for key in wanted
+        disjoint = cross_overlaps is not None and all(
+            type(pair_counts.get(key)) is int and pair_counts.get(key) == 0
+            for key in wanted_pairs
         )
-        evidence.append(VerificationEvidence("disjoint_groups", disjoint, f"overlaps={measured!r}"))
+        evidence.append(
+            VerificationEvidence("disjoint_groups", disjoint, f"overlaps={pair_counts!r}")
+        )
 
     selected_count = readiness.get("selected_count")
     if expected.joint_sweep is not None:
@@ -195,8 +202,8 @@ def assess_verification(
     )
     bed = contract.readiness.max_footprint_mm
     if bed is not None:
-        measured = sequence_value(readiness, "layout_footprint_mm")
-        sides = [as_finite_number(value) for value in measured or []]
+        scene_footprint = sequence_value(readiness, "layout_footprint_mm")
+        sides = [as_finite_number(value) for value in scene_footprint or []]
         # Fail-closed: a declared bed with no measurement, or one that came back
         # short or unparseable, is a FAIL. A layout nobody measured is exactly
         # the state this expectation exists to end.
@@ -217,7 +224,7 @@ def assess_verification(
             )
         )
         fits = (
-            measured is not None
+            scene_footprint is not None
             and agree
             and all(side <= limit for side, limit in zip(sides, bed, strict=True))  # type: ignore[operator]
         )
@@ -225,7 +232,7 @@ def assess_verification(
             VerificationEvidence(
                 "layout_fits_bed",
                 fits,
-                f"scene={measured!r}, readiness={second_sides!r}, bed={list(bed)!r}",
+                f"scene={scene_footprint!r}, readiness={second_sides!r}, bed={list(bed)!r}",
             )
         )
 
