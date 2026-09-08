@@ -167,8 +167,7 @@ def assess_verification(
         # Every declared pair present, and every one of them zero. A pair that
         # never came back is a FAIL: unmeasured is the condition this ends.
         disjoint = cross_overlaps is not None and all(
-            type(pair_counts.get(key)) is int and pair_counts.get(key) == 0
-            for key in wanted_pairs
+            type(pair_counts.get(key)) is int and pair_counts.get(key) == 0 for key in wanted_pairs
         )
         evidence.append(
             VerificationEvidence("disjoint_groups", disjoint, f"overlaps={pair_counts!r}")
