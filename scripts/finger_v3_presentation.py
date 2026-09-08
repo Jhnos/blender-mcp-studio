@@ -49,31 +49,53 @@ def build_print_layout(
     layout, not a plan for one.
     """
     layout = collection("HJ_V3_LAYOUT")
-    gap = 10.0
     copies: list[bpy.types.Object] = []
-    placements: list[tuple[bpy.types.Object, float, float]] = []
-    cursor_x = 0.0
-    cursor_y = 0.0
-    row_depth = 0.0
-    for part in parts:
-        # Laid on its side, so its printed footprint is length by width.
-        width = max(part.dimensions.x, part.dimensions.z) / m(1.0)
-        depth = min(part.dimensions.x, part.dimensions.y) / m(1.0)
-        if cursor_x and cursor_x + width > bed_mm:
-            cursor_x = 0.0
-            cursor_y += row_depth + gap
-            row_depth = 0.0
-        placements.append((part, cursor_x + width / 2, cursor_y))
-        cursor_x += width + gap
-        row_depth = max(row_depth, depth)
+    gap = 10.0
 
-    span_x = max(x for _, x, _ in placements) + gap
-    span_y = cursor_y
+    # `_LAY_FLAT` is a quarter turn about X, which maps extents (x, y, z) to
+    # (x, z, y). So a part's printed footprint is its own x by its own z, and its
+    # height is its y. Guessing that with max() and min() gave a 24 mm-wide
+    # phalanx a 67 mm column and a 67 mm-deep row only 22 mm of room.
+    footprints = [(part, part.dimensions.x / m(1.0), part.dimensions.z / m(1.0)) for part in parts]
+
+    # Rows are built before anything is placed, because a row's depth is not known
+    # until the row is finished — and a cursor advanced by one row's depth but
+    # read as the next row's centre puts them half a row into each other.
+    rows: list[list[tuple[bpy.types.Object, float, float]]] = [[]]
+    used = 0.0
+    for part, width, depth in footprints:
+        if rows[-1] and used + gap + width > bed_mm:
+            rows.append([])
+            used = 0.0
+        rows[-1].append((part, width, depth))
+        used += width + (gap if len(rows[-1]) > 1 else 0.0)
+
+    placements: list[tuple[bpy.types.Object, float, float]] = []
+    row_top = 0.0
+    for row in rows:
+        row_depth = max(depth for _, _, depth in row)
+        row_width = sum(width for _, width, _ in row) + gap * (len(row) - 1)
+        left = -row_width / 2
+        for part, width, _ in row:
+            placements.append((part, left + width / 2, row_top + row_depth / 2))
+            left += width + gap
+        row_top += row_depth + gap
+    total_depth = row_top - gap
+
     for index, (part, x_mm, y_mm) in enumerate(placements, start=1):
         placed = duplicate(part, f"HJ_V3_LAYOUT_PART_{index}", Matrix.Identity(4))
         placed.data = part.data.copy()
+        # Centre the part in its slot on its own bounding box, not on its origin.
+        # The origin sits wherever the geometry was built from, so slots computed
+        # from measured widths still came out with the two rows touching edge to
+        # edge — zero overlapping faces and zero clearance, which on a real plate
+        # is two parts fused together.
+        placed.data.transform(_LAY_FLAT)
+        low = Vector(placed.bound_box[0])
+        high = Vector(placed.bound_box[6])
+        centre = (low + high) / 2
         placed.data.transform(
-            Matrix.Translation((m(x_mm - span_x / 2), m(y_mm - span_y / 2), 0.0)) @ _LAY_FLAT
+            Matrix.Translation((m(x_mm) - centre.x, m(y_mm - total_depth / 2) - centre.y, 0.0))
         )
         for existing in list(placed.users_collection):
             existing.objects.unlink(placed)
