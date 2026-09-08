@@ -48,6 +48,9 @@
 ### Open failures
 
 - 一件都還沒印。`v8-results.md` 的試片表與台架表都是空的。
+- 台架的**統計已經寫好**(`src/verification/paired_bench_statistics.py`),
+  但它需要一個 SESOI(滑脫力差多少才算有用),而那是關於這隻手的決定,不是計算。
+  印完、量到第一批數字之後才有辦法談那個門檻。
 
 ### Next step
 

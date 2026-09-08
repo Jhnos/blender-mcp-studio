@@ -73,9 +73,11 @@ def wilcoxon_signed_rank_p(differences: list[float]) -> float:
         return 1.0
 
     ranks = _average_ranks([abs(value) for value in nonzero])
-    positive = sum(rank for rank, value in zip(ranks, nonzero, strict=True) if value > 0)
-    total = sum(ranks)
-    observed = min(positive, total - positive)
+    positive: float = math.fsum(
+        rank for rank, value in zip(ranks, nonzero, strict=True) if value > 0
+    )
+    total: float = math.fsum(ranks)
+    observed: float = min(positive, total - positive)
 
     if count > EXACT_LIMIT:
         return _normal_approximation_p(observed, count)
@@ -84,10 +86,10 @@ def wilcoxon_signed_rank_p(differences: list[float]) -> float:
     # null, so the exact p is just how often the statistic gets this extreme.
     extreme = 0
     for signs in itertools.product((0.0, 1.0), repeat=count):
-        candidate = sum(rank * sign for rank, sign in zip(ranks, signs, strict=True))
+        candidate = math.fsum(rank * sign for rank, sign in zip(ranks, signs, strict=True))
         if min(candidate, total - candidate) <= observed + 1e-12:
             extreme += 1
-    return extreme / (2**count)
+    return float(extreme) / float(2**count)
 
 
 def rank_biserial(differences: list[float]) -> float:
@@ -96,9 +98,9 @@ def rank_biserial(differences: list[float]) -> float:
     if not nonzero:
         return 0.0
     ranks = _average_ranks([abs(value) for value in nonzero])
-    total = sum(ranks)
-    positive = sum(rank for rank, value in zip(ranks, nonzero, strict=True) if value > 0)
-    return (2 * positive - total) / total
+    total = math.fsum(ranks)
+    positive = math.fsum(rank for rank, value in zip(ranks, nonzero, strict=True) if value > 0)
+    return (2.0 * positive - total) / total
 
 
 def bootstrap_median_ci(
@@ -114,9 +116,7 @@ def bootstrap_median_ci(
         raise ValueError("an interval needs observations")
     rng = random.Random(seed)
     size = len(values)
-    medians = sorted(
-        statistics.median(rng.choices(values, k=size)) for _ in range(iterations)
-    )
+    medians = sorted(statistics.median(rng.choices(values, k=size)) for _ in range(iterations))
     tail = (1.0 - confidence) / 2.0
     low = medians[int(tail * iterations)]
     high = medians[min(iterations - 1, int((1.0 - tail) * iterations))]
@@ -221,10 +221,7 @@ def _average_ranks(magnitudes: list[float]) -> list[float]:
     position = 0
     while position < len(order):
         stop = position
-        while (
-            stop + 1 < len(order)
-            and magnitudes[order[stop + 1]] == magnitudes[order[position]]
-        ):
+        while stop + 1 < len(order) and magnitudes[order[stop + 1]] == magnitudes[order[position]]:
             stop += 1
         shared = (position + stop) / 2.0 + 1.0
         for index in order[position : stop + 1]:
