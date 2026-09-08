@@ -2,35 +2,42 @@
   "name": "hand_v3_finger",
   "generator_script": "scripts/model_finger_v3.py",
   "reload_modules": [
+    "scripts.blender_artifact_export",
+    "scripts.blender_generator_runner",
+    "scripts.presentation_profile",
+    "src.core.domain.hollow_side_hinge",
     "src.core.domain.inset_hinge",
+    "scripts.hollow_hinge_render",
+    "scripts.blender_mesh_primitives",
+    "scripts.hollow_hinge_geometry",
+    "src.core.domain.finger_link",
     "src.core.domain.hinge_chain",
     "src.core.domain.finger_v3",
-    "scripts.blender_artifact_export",
-    "scripts.blender_mesh_primitives",
-    "scripts.presentation_profile",
-    "scripts.hollow_hinge_render",
-    "scripts.hollow_hinge_geometry",
-    "scripts.biaxial_hinge_presentation",
     "scripts.finger_v3_geometry",
-    "scripts.finger_v3_presentation"
+    "src.core.domain.biaxial_hinge",
+    "scripts.biaxial_hinge_presentation",
+    "scripts.finger_v3_presentation",
+    "src.core.domain.rotation",
+    "src.core.domain.palm_v3",
+    "scripts.palm_v3_geometry"
   ],
   "artifacts": [
     "tmp/hand-v3/finger_v3.blend",
-    "tmp/hand-v3/finger_v3_mm.stl",
     "tmp/hand-v3/phalanx_mm.stl",
+    "tmp/hand-v3/palm_mm.stl",
+    "tmp/hand-v3/finger_v3_mm.stl",
+    "tmp/hand-v3/hand_v3_mm.stl",
     "tmp/hand-v3/finger_v3_assembly.png",
     "tmp/hand-v3/finger_v3_joint_detail.png",
-    "tmp/hand-v3/finger_v3_print_layout.png",
-    "tmp/hand-v3/palm_mm.stl",
-    "tmp/hand-v3/hand_v3_mm.stl"
+    "tmp/hand-v3/finger_v3_print_layout.png"
   ],
   "oracle": {
     "object_prefix": "HJ_V3_HAND_F1_",
     "expected_count": 3,
     "expected_rotations_deg": [
-      0,
-      0,
-      0
+      0.0,
+      0.0,
+      0.0
     ],
     "scene_list_property": "HJ_V3_HAND_STATIONS",
     "expected_scene_list": [
@@ -56,19 +63,19 @@
       "master_object": "HJ_V3_HAND_F1_1",
       "pivot_offset_mm": 27.0,
       "axis": "X",
-      "mating_twist_deg": 0,
+      "mating_twist_deg": 0.0,
       "angles_deg": [
-        -50,
-        -40,
-        -30,
-        -20,
-        -10,
-        0,
-        10,
-        20,
-        30,
-        40,
-        50
+        -50.0,
+        -40.0,
+        -30.0,
+        -20.0,
+        -10.0,
+        0.0,
+        10.0,
+        20.0,
+        30.0,
+        40.0,
+        50.0
       ]
     },
     "collision_groups": [
@@ -88,7 +95,7 @@
       "axis": "X",
       "travel_shares": [
         1.0,
-        0.625
+        0.6249999999999999
       ],
       "full_travel_deg": 50.0,
       "steps": 8

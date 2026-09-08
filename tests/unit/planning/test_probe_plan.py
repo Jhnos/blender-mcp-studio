@@ -16,6 +16,11 @@ PALM = AnthropomorphicPalmSpec()
 NAMING = NamingPolicy("HJ_", "V3")
 
 
+def _flat(points: tuple[tuple[float, float], ...]) -> list[float]:
+    """pytest.approx does not walk nested tuples; a flat list compares the same numbers."""
+    return [value for point in points for value in point]
+
+
 def test_finger_bores_are_the_tendon_and_its_dorsal_mirror() -> None:
     probes = probe_plan(PALM, NAMING, station_plan(PALM, NAMING))
 
@@ -29,11 +34,11 @@ def test_palm_tendon_channels_are_probed_at_every_station_with_solid_controls() 
 
     assert channel.object_name == "HJ_V3_PALM"
     assert channel.axis == "Z"
-    assert channel.open_points_mm == pytest.approx(
-        ((-45.0, -6.6), (-15.0, -6.6), (15.0, -6.6), (45.0, -6.6), (-71.0, -6.6))
+    assert _flat(channel.open_points_mm) == pytest.approx(
+        [-45.0, -6.6, -15.0, -6.6, 15.0, -6.6, 45.0, -6.6, -71.0, -6.6]
     )
     # Controls sit midway between row stations, where the plate must be solid.
-    assert channel.solid_points_mm == pytest.approx(((-30.0, -6.6), (0.0, -6.6), (30.0, -6.6)))
+    assert _flat(channel.solid_points_mm) == pytest.approx([-30.0, -6.6, 0.0, -6.6, 30.0, -6.6])
 
 
 def test_the_air_port_is_probed_where_the_spec_puts_it_with_plate_above_as_control() -> None:
@@ -42,8 +47,8 @@ def test_the_air_port_is_probed_where_the_spec_puts_it_with_plate_above_as_contr
 
     assert port.object_name == "HJ_V3_PALM"
     assert port.axis == "Y"
-    assert port.open_points_mm == pytest.approx(((0.0, -43.1),))
-    assert port.solid_points_mm == pytest.approx(((0.0, -20.0), (0.0, -30.0)))
+    assert _flat(port.open_points_mm) == pytest.approx([0.0, -43.1])
+    assert _flat(port.solid_points_mm) == pytest.approx([0.0, -20.0, 0.0, -30.0])
 
 
 def test_the_sweep_and_closure_follow_the_link_limit_and_the_spring_gradient() -> None:

@@ -171,11 +171,8 @@ def test_the_bpy_import_scan_fires_on_a_planted_import() -> None:
     planted = PROJECT_ROOT / "tmp" / "bpy_scan_fixture"
     planted.mkdir(parents=True, exist_ok=True)
     try:
-        (planted / "clean.py").write_text("import math
-")
-        (planted / "dirty.py").write_text("def f():
-    from mathutils import Vector
-")
+        (planted / "clean.py").write_text("import math\n")
+        (planted / "dirty.py").write_text("def f():\n    from mathutils import Vector\n")
         assert _bpy_importers(planted) == ["tmp/bpy_scan_fixture/dirty.py"]
     finally:
         for path in planted.glob("*.py"):
