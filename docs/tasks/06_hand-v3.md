@@ -38,6 +38,10 @@ V1／V2／V6 是凍結交付物,一個位元組都不動。
 
 - `SingleTendonFingerSpec` 已交(`src/core/domain/finger_v3.py`),10 條測試綠。
   實測腱行程需求 14.40 mm vs 致動器行程 30.0 mm。
+- 手指契約 `scripts/verify/contracts/hand_v3_finger.json` 已寫,尚未在真機跑過。
+- oracle 新增 `center_channel_expected_open`:不是每個重複件都是空心觸手。手指沒有中央
+  通道,而且不能有——那會切穿銷孔。做成**契約宣告期望值**而不是跳過檢查,因為本專案的
+  規則是「量不到就是失敗,不是跳過」;而且「軸上是實心的」本身就是一條斷言。
 - **修掉一個繼承來的缺陷**:借來的連桿在靜止姿態就讓相鄰件穿透 2.5 mm(實測 303 個面),
   而那個產生器被歸檔時從未被契約驗過。關節中心 24 → 27 mm,重建後靜止與 ±50° 掃掠零重疊。
 - 手指最終形態:**四件共用一個網格 = 一個零件編號**,整指 229 mm,腱孔 4/4 位置正確,
@@ -70,6 +74,5 @@ V1／V2／V6 是凍結交付物,一個位元組都不動。
 
 - Track 1:依 [`../hand-v3/08-inmoov.md`](../hand-v3/08-inmoov.md) 下載並列印 InMoov 右手,
   同時採購兩隻外層手套與針筒。**使用者執行。**
-- Track 2 下一片:給手指一份 JSON 契約(`scripts/verify/contracts/hand_v3_finger.json`),
-  讓腱孔貫通、指節碰撞與掃掠由**真機管線**驗,而不是我臨時寫的探針。
-  照 `docs/verification/generated-artifacts.md` 的六步走。
+- Track 2 下一片:在 Mac 上跑 `hand_v3_finger.json` 契約(需要 Blender addon 就緒),
+  把本機探針量到的東西換成真機管線的判定。之後才是擬人掌盤與對生拇指。

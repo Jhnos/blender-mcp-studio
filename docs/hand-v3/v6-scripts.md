@@ -11,8 +11,9 @@
 
 | 場景 | 腳本 | 狀態 |
 |---|---|---|
-| S1、S2、S6 | V3 域規格的單元測試 | 待建 |
-| S3、S4、S5 | `scripts/verify/contracts/hand_v3.json` 走既有的產出物契約管線 | 待建 |
+| S1、S2、S6 | `tests/unit/core/test_finger_v3.py` | **已建,20 條綠** |
+| S3、S4 | `scripts/verify/contracts/hand_v3_finger.json` 走既有的產出物契約管線 | **已寫,真機未跑** |
+| S5 | 拇指對生的可達區域 | 待建(掌盤還沒做) |
 | S7 | V1／V2 的四份既有契約重跑 | **已存在,直接用** |
 | S8 | git 追蹤清單掃描 + `NOTICE` 文字檢查 | 待建 |
 

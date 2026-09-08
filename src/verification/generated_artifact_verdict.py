@@ -98,11 +98,15 @@ def assess_verification(
         )
     )
     center_ray_hit = oracle.get("center_ray_hit")
+    # Fail-closed on anything that is not an actual boolean: a missing or
+    # malformed measurement must never read as agreement with the expectation.
+    wants_open = expected.center_channel_expected_open
     evidence.append(
         VerificationEvidence(
             "center_channel",
-            center_ray_hit is False,
-            f"center_ray_hit={center_ray_hit!r}",
+            isinstance(center_ray_hit, bool) and (center_ray_hit is not wants_open),
+            f"center_ray_hit={center_ray_hit!r}, expected "
+            f"{'an open channel' if wants_open else 'solid material'} on the axis",
         )
     )
 

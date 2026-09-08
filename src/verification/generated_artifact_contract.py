@@ -41,6 +41,13 @@ class OracleExpectation:
     expected_scene_list: tuple[str, ...]
     center_probe_object: str
     collision_groups: tuple[CollisionExpectation, ...]
+    #: Whether a ray up the probe object's axis should find a clear channel.
+    #: True for every hollow body — V5, V6 and both octopus hands carry a cable
+    #: channel down the middle. A finger does not, and cannot: a channel there
+    #: would cut through the pin bores. The expectation moves rather than the
+    #: check disappearing, because a measurement nobody makes is a failure here,
+    #: not a skip, and "solid on the axis" is itself an assertion worth holding.
+    center_channel_expected_open: bool = True
     joint_sweep: JointSweepExpectation | None = None
     #: Extra bores to prove open, as (x, y) in the probe object's own coordinates.
     #: The centre probe answers one axis; a palm that carries a bore per arm needs one
@@ -146,6 +153,21 @@ def _resolve_path(project_root: Path, raw_path: str) -> Path:
     return path if path.is_absolute() else project_root / path
 
 
+def _optional_flag(source: Mapping[str, object], key: str, *, default: bool) -> bool:
+    """Read a boolean the contract may omit, refusing anything that is not one.
+
+    A string "false" or a 0 would quietly become truthy, and the whole point of
+    this field is that a contract states what it expects rather than leaving it
+    to be inferred.
+    """
+    if key not in source:
+        return default
+    value = source[key]
+    if not isinstance(value, bool):
+        raise ValueError(f"{key} must be true or false when present")
+    return value
+
+
 def _bore_probe_points(source: Mapping[str, object]) -> tuple[tuple[float, float], ...]:
     """Optional list of (x, y) probe points. Absent means no claim; malformed raises.
 
@@ -201,6 +223,9 @@ def contract_from_mapping(
         scene_list_property=_required_string(oracle_source, "scene_list_property"),
         expected_scene_list=_required_strings(oracle_source, "expected_scene_list"),
         center_probe_object=_required_string(oracle_source, "center_probe_object"),
+        center_channel_expected_open=_optional_flag(
+            oracle_source, "center_channel_expected_open", default=True
+        ),
         collision_groups=tuple(collision_groups),
         joint_sweep=_joint_sweep(oracle_source),
         bore_probe_points_mm=_bore_probe_points(oracle_source),

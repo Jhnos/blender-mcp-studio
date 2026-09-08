@@ -277,3 +277,77 @@ def test_malformed_bore_probe_points_fail_loudly(points: object, tmp_path: Path)
 
     with pytest.raises(ValueError):
         contract_from_mapping(mapping, tmp_path)
+
+
+def _green_oracle(**overrides: object) -> dict[str, object]:
+    """The fixture model's passing oracle, with one value swapped at a time."""
+    oracle: dict[str, object] = {
+        "object_count": 3,
+        "shared_mesh_count": 1,
+        "rotations_deg": [0, 90, 0],
+        "scene_list": ["J1_X", "J2_Y"],
+        "center_ray_hit": False,
+        "collision_groups": {
+            "FX_PART_": {"object_count": 3, "adjacent_overlap_pairs": [0, 0]},
+            "FX_BENT_": {"object_count": 3, "adjacent_overlap_pairs": [0, 0]},
+        },
+    }
+    oracle.update(overrides)
+    return oracle
+
+
+def _green_readiness() -> dict[str, object]:
+    return {"selected_count": 3, "report": {"status": "ready", "issues": []}}
+
+
+def test_a_model_with_no_central_channel_declares_that_and_is_still_checked(
+    tmp_path: Path,
+) -> None:
+    """Not every repeated part is a hollow tentacle, and a skip would be worse.
+
+    The oracle has always demanded that a ray up the probe object's axis miss —
+    right for V1, V2 and V6, whose bodies carry a cable channel down the middle.
+    A finger has no such channel, and giving it one would cut straight through
+    the pin bores. Making the check optional would let a future contract lose it
+    silently, and this project's rule is that a missing measurement is a failure,
+    never a skip.
+
+    So the contract declares the expected answer instead. The ray still fires;
+    only the expectation moves. "Solid on the axis" is itself an assertion — it
+    is what says the tendon bore is offset rather than central.
+    """
+    mapping = _mapping()
+    oracle_mapping = mapping["oracle"]
+    assert isinstance(oracle_mapping, dict)
+    oracle_mapping["center_channel_expected_open"] = False
+    contract = contract_from_mapping(mapping, tmp_path)
+    artifact_state = {str(path): True for path in contract.artifacts}
+
+    assert contract.oracle.center_channel_expected_open is False
+
+    solid = assess_verification(
+        contract, artifact_state, _green_oracle(center_ray_hit=True), _green_readiness()
+    )
+    assert solid.passed, [item.detail for item in solid.evidence if not item.passed]
+
+    # And it fires the other way: a model declared solid that comes out hollow is
+    # a finding, not a shrug.
+    hollow = assess_verification(
+        contract, artifact_state, _green_oracle(center_ray_hit=False), _green_readiness()
+    )
+    assert not hollow.passed
+    assert any(item.name == "center_channel" and not item.passed for item in hollow.evidence)
+
+
+def test_the_default_expectation_is_still_an_open_channel(tmp_path: Path) -> None:
+    """Every existing contract omits the field, and none of them may change meaning."""
+    contract = contract_from_mapping(_mapping(), tmp_path)
+    artifact_state = {str(path): True for path in contract.artifacts}
+
+    assert contract.oracle.center_channel_expected_open is True
+    assert assess_verification(
+        contract, artifact_state, _green_oracle(center_ray_hit=False), _green_readiness()
+    ).passed
+    assert not assess_verification(
+        contract, artifact_state, _green_oracle(center_ray_hit=True), _green_readiness()
+    ).passed
