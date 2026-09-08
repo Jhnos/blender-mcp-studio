@@ -13,8 +13,8 @@ that no per-dimension rule would have objected to.
 
 import pytest
 
-from src.core.domain.finger_link import bearing_seat_cuts
 from src.core.domain.compact_link import CompactHingeLinkSpec
+from src.core.domain.finger_link import bearing_seat_cuts
 from src.core.domain.hinge_chain import HingePhalanxSpec
 
 
