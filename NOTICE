@@ -1,0 +1,44 @@
+Blender MCP Studio — third-party attributions
+==============================================
+
+This project's own source, geometry generators and generated meshes are
+original work. The entries below record external designs that this project
+consults, reproduces or prints, together with the licence each carries.
+
+Nothing listed here is redistributed inside this repository. Where a design is
+printed or measured, it is downloaded from its own upstream source at use time.
+
+
+InMoov
+------
+Author:   Gaël Langevin
+Source:   https://inmoov.fr/
+Licence:  Creative Commons Attribution-NonCommercial 3.0 Unported (CC BY-NC 3.0)
+Verified: 2026-09-08
+Used for: printed as a physical test bed for the V3 pneumatic-interlayer
+          experiment (see docs/hand-v3/08-inmoov.md), and as a dimensional and
+          ergonomic reference for the V3 hand.
+Boundary: InMoov STL/CAD files are NOT committed to this repository. They are
+          downloaded from inmoov.fr and printed. No InMoov geometry is
+          redistributed here, and no InMoov file is a build input.
+Note:     CC BY-NC 3.0 is a non-commercial licence. Any derivative of InMoov
+          geometry inherits that restriction. This project is a personal,
+          non-commercial project. If commercial use is ever intended, InMoov
+          must be dropped and an alternative under a permissive licence used
+          instead.
+
+
+Yale OpenHand Project
+---------------------
+Source:   https://www.eng.yale.edu/grablab/openhand/
+Licence:  Creative Commons Attribution-NonCommercial (reported; not verified
+          first-hand as of 2026-09-08)
+Used for: consulted as a reference for underactuated differential and floating
+          pulley-tree tendon topologies. No geometry or code taken.
+
+
+Referenced literature
+---------------------
+Method sources for the pneumatic interlayer and for grasp measurement are
+listed, with their evidence grade, in docs/hand-v3/v9-references.md. They are
+cited, not reproduced.
