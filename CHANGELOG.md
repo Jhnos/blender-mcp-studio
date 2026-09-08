@@ -5,6 +5,29 @@
 
 ## [Unreleased]
 
+### V01.0O.001 — 填完表跑一行就有報告
+
+#### Added
+
+- `scripts/analyse_bench_results.py`:讀 [[hand-v3/v8-results]] 的試驗表,直接印出報告。
+  上一版寫好了算式卻沒接讀取,等於你填完表還得自己寫 Python 呼叫函式——**那是同一次移交換了件衣服**。
+
+```bash
+python3 scripts/analyse_bench_results.py --sesoi 0.5
+```
+
+- 只在一個條件下量到的物體會被**丟掉**,不會被補齊:半對不是一對,把另一半填出來叫捏造。
+- 沒填的場景照樣列出來,回報 `vacuous` 並附母數——**那是檢查在運作,不是檢查在等**。
+- Holm 只在真的跑過的場景之間校正;拿空的場景一起校正會憑空膨脹修正量。
+
+#### Fixed
+
+- vacuous 那一行原本沒有明寫 `n=`,與有資料的行格式不一致。需求是「每一列都帶母數」,
+  那就一致地帶,而不是把檢查放寬。
+- `bench_slip_report_has_n_and_ci` 與 `bench_report_records_both_outer_layers` 兩個驗證器
+  **不需要實體**,它們檢查的是報告而不是台架。已建立。尚未建立的驗證器剩 **三個**,
+  而且全部是 `differential:` 層——「充氣與不充氣的實測差」,沒有實體就不存在。
+
 ### V01.0O.000 — 台架的統計已經寫好了,你只要記數字
 
 #### Added

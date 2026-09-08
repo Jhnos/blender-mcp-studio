@@ -97,9 +97,7 @@ def scenario_pairs(
             first[trial.object_id] = trial.slip_force_n
         elif value == after:
             second[trial.object_id] = trial.slip_force_n
-    return [
-        (first[name], second[name]) for name in order if name in first and name in second
-    ]
+    return [(first[name], second[name]) for name in order if name in first and name in second]
 
 
 def scenario_verdicts(document: str, *, sesoi: float) -> list[ScenarioVerdict]:

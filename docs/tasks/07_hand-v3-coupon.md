@@ -51,6 +51,8 @@
 - 台架的**統計已經寫好**(`src/verification/paired_bench_statistics.py`),
   但它需要一個 SESOI(滑脫力差多少才算有用),而那是關於這隻手的決定,不是計算。
   印完、量到第一批數字之後才有辦法談那個門檻。
+- 台架的**讀表與報告也已經寫好**:填完 `v8-results.md` 的試驗表之後跑
+  `python3 scripts/analyse_bench_results.py --sesoi <牛頓>`,報告直接出來。
 
 ### Next step
 

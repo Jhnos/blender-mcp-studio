@@ -23,7 +23,7 @@ Population: V3 自己產生的物件(前綴 `HJ_V3_`)與 `models/hand-v3/` 的�
 
 | ID | Requirement | Tier | User-visible | Kind | Verified-by |
 |---|---|---|---|---|---|
-| VOC-1 | 使用者看得到「充氣後抓得更牢」的實測數字,含母數、效果量與信賴區間 | voc | yes | feature | artifact:TODO_bench_slip_report_has_n_and_ci; differential:TODO_inflated_vs_deflated; unit:test_a_complete_scenario_reports_magnitude_uncertainty_and_a_verdict |
+| VOC-1 | 使用者看得到「充氣後抓得更牢」的實測數字,含母數、效果量與信賴區間 | voc | yes | feature | artifact:test_every_reported_scenario_carries_its_population_and_an_interval; differential:TODO_inflated_vs_deflated; unit:test_a_complete_scenario_reports_magnitude_uncertainty_and_a_verdict |
 | VOC-2 | 使用者拿得到可直接送切片的檔案,並看得到每個檔的尺寸與三角面數 | voc | yes | feature | artifact:test_versioned_hand_v3_print_package_matches_verified_meshes |
 | VOC-3 | 每個引用的外部設計,使用者看得到它的出處與授權條款 | voc | yes | constraint | static:NOTICE; artifact:test_the_notice_names_every_source_the_prior_art_gives_a_licence; static:test_no_inmoov_geometry_is_tracked_here |
 | VOC-4 | 使用者看得到手長什麼樣子與它的握姿,不必自己開 Blender | voc | yes | feature | artifact:test_the_package_carries_the_pictures_a_person_judges_it_by |
@@ -33,7 +33,7 @@ Population: V3 自己產生的物件(前綴 `HJ_V3_`)與 `models/hand-v3/` 的�
 | PS-3 | 手掌是四指一排加一個對生拇指 | product | yes | feature | artifact:scene_list; unit:test_the_thumb_can_touch_the_index_fingertip |
 | PS-4 | 夾層充氣後的外形不擋住手指閉合 | product | yes | constraint | artifact:test_the_finger_that_shipped_carries_three_phalanges; unit:test_the_interlayer_has_a_thickness_the_finger_cannot_exceed |
 | PS-5 | 整隻手裝得進宣告的床身,且列印姿態可行 | product | yes | constraint | artifact:layout_fits_bed; unit:test_the_assembled_hand_is_deliberately_too_tall_for_the_bed |
-| PS-6 | 外層改用不可延展手套時,夾層壓力才建得起來 | product | yes | flag | differential:TODO_outer_layer_elastic_vs_work_glove; artifact:TODO_bench_report_records_both_outer_layers |
+| PS-6 | 外層改用不可延展手套時,夾層壓力才建得起來 | product | yes | flag | differential:TODO_outer_layer_elastic_vs_work_glove; artifact:test_the_glove_comparison_names_two_distinct_outer_layers |
 | PS-7 | 加壓與抽真空共用同一組介面,兩種都能跑 | product | yes | flag | differential:TODO_pressure_vs_vacuum_slip_force; artifact:channel_probes |
 | ES-1 | 腱從全伸到全屈的路徑長變化不超過致動器行程 | engineering | no | constraint | unit:test_the_shipped_finger_closes_within_its_actuator_stroke |
 | ES-2 | 各關節力矩臂落在可用窗內,且不向指尖增大 | engineering | no | constraint | unit:test_moment_arms_outside_the_usable_window_are_refused; unit:test_the_moment_arms_never_grow_towards_the_fingertip |
