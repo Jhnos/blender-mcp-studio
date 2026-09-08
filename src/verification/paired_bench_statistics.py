@@ -176,7 +176,7 @@ def assess_scenario(
             significant=False,
             equivalent=False,
             summary=(
-                f"{scenario}: vacuous — {count} of {planned_pairs} planned pairs. "
+                f"{scenario}: vacuous — n={count} of {planned_pairs} planned pairs. "
                 "Never mixed into a pass."
             ),
         )
