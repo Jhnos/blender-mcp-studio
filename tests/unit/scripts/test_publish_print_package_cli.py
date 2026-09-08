@@ -18,5 +18,5 @@ def test_publisher_cli_bootstraps_project_imports() -> None:
     assert "verified manufacturing files" in result.stdout
     # The publisher serves more than one model now, so the choice has to be visible.
     assert "--package" in result.stdout
-    for slug in ("biaxial-hinge-v6", "octopus-hand-v1", "octopus-hand-v2"):
+    for slug in ("biaxial-hinge-v6", "octopus-hand-v1", "octopus-hand-v2", "hand-v3"):
         assert slug in result.stdout

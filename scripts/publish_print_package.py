@@ -67,6 +67,22 @@ PACKAGES: dict[str, Package] = {
             "scripts/verify/contracts/octopus_hand_tips.json",
         ),
     ),
+    "hand-v3": Package(
+        slug="hand-v3",
+        revision="hand-V3",
+        generator="scripts/model_finger_v3.py",
+        stl_files=(
+            "phalanx_mm.stl",
+            "palm_mm.stl",
+            "finger_v3_mm.stl",
+            "hand_v3_mm.stl",
+        ),
+        blend_file="finger_v3.blend",
+        contracts=(
+            "scripts/verify/contracts/hand_v3.json",
+            "scripts/verify/contracts/hand_v3_finger.json",
+        ),
+    ),
     "octopus-hand-v2": Package(
         slug="octopus-hand-v2",
         # V2.1, not V2, because "octopus-hand-V2" already names a published set of bits
