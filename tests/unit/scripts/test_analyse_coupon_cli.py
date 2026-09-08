@@ -6,8 +6,22 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
 FULL_PASS = [
-    "--c1", "4.52", "4.48", "--c2", "yes", "--c3", "8.05", "8.12",
-    "--c4", "yes", "--c5", "yes", "--c6", "yes", "--c7", "yes",
+    "--c1",
+    "4.52",
+    "4.48",
+    "--c2",
+    "yes",
+    "--c3",
+    "8.05",
+    "8.12",
+    "--c4",
+    "yes",
+    "--c5",
+    "yes",
+    "--c6",
+    "yes",
+    "--c7",
+    "yes",
 ]
 
 

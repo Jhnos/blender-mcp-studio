@@ -144,7 +144,9 @@ def result_rows(verdicts: Sequence[ItemVerdict], date: str) -> list[str]:
     for verdict in verdicts:
         if verdict.readings:
             for value, note in zip(verdict.readings, verdict.reading_notes, strict=True):
-                rows.append(f"| {date} | {verdict.item} | {value:.2f} | {verdict.status} | {note} |")
+                rows.append(
+                    f"| {date} | {verdict.item} | {value:.2f} | {verdict.status} | {note} |"
+                )
         else:
             rows.append(f"| {date} | {verdict.item} | — | {verdict.status} | {verdict.detail} |")
     return rows

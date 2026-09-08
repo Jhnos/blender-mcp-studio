@@ -41,11 +41,15 @@ def _yes_no(value: str) -> bool:
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
     parser.add_argument("--instance", default="hand-v3", choices=sorted(HAND_INSTANCES))
     parser.add_argument("--date", default=datetime.date.today().isoformat())
     parser.add_argument("--c1", type=float, nargs="+", metavar="MM", help="pin bore, two readings")
-    parser.add_argument("--c3", type=float, nargs="+", metavar="MM", help="bearing seat, two readings")
+    parser.add_argument(
+        "--c3", type=float, nargs="+", metavar="MM", help="bearing seat, two readings"
+    )
     for item, what in BOOLEAN_CHECKS.items():
         parser.add_argument(f"--{item.lower()}", type=_yes_no, metavar="yes|no", help=what)
     return parser.parse_args(argv)
@@ -73,7 +77,10 @@ def main(argv: list[str] | None = None) -> int:
     for row in result_rows(verdicts, args.date):
         print(row)
     passed = coupon_passed(verdicts)
-    counts = {status: sum(1 for v in verdicts if v.status == status) for status in ("PASS", "FAIL", "VACUOUS")}
+    counts = {
+        status: sum(1 for v in verdicts if v.status == status)
+        for status in ("PASS", "FAIL", "VACUOUS")
+    }
     print(("COUPON PASS" if passed else "COUPON NOT PASSED") + f" — {counts}")
     return 0 if passed else 1
 
