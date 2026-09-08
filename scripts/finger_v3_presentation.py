@@ -115,7 +115,8 @@ def present_finger(
     """Three views: the assembled finger, its joints up close, and the print bed."""
     floor_material = material("HJ_V3_FLOOR", (0.05, 0.06, 0.08, 1))
     white = material("HJ_V3_LABEL", (0.95, 0.95, 0.95, 1))
-    camera, _rig = setup_render(spec.link, floor_material, assign, FINGER_PROFILE)
+    camera, rig = setup_render(spec.link, floor_material, assign, FINGER_PROFILE)
+    floor = rig[0]
 
     for obj in bpy.data.objects:
         obj.hide_render = True
@@ -125,6 +126,22 @@ def present_finger(
     # Framed from the measured extent rather than a number that looked right:
     # at 260 the vertical field was 204 mm against a 229 mm finger, so the tips
     # were outside the frame in every render taken so far.
+    def ground(objects: list[bpy.types.Object]) -> list[bpy.types.Object]:
+        """Put the floor just under this view's subject and hand it to `capture`.
+
+        `capture` only un-hides the objects it is given, and the floor was never
+        one of them, so every view rendered the parts against empty background —
+        they read as floating. The profile's fixed floor height is no use either:
+        at -25 mm it cuts straight through a hand that spans -103 to +160.
+        """
+        low = min(
+            (obj.matrix_world @ Vector(corner)).z / m(1.0)
+            for obj in objects
+            for corner in obj.bound_box
+        )
+        floor.location.z = m(low - 2.0)
+        return [*objects, floor]
+
     subject = hand if hand else parts
     zs = [
         (obj.matrix_world @ Vector(corner)).z / m(1.0)
@@ -144,7 +161,7 @@ def present_finger(
         output,
         "finger_v3_assembly.png",
         camera,
-        subject,
+        ground(subject),
         (frame * 0.9, -frame * 1.6, mid[2] + frame * 0.25),
         mid,
         frame,
@@ -157,7 +174,7 @@ def present_finger(
         output,
         "finger_v3_joint_detail.png",
         camera,
-        parts,
+        ground(parts),
         (110.0, -150.0, 55.0),
         (0.0, 0.0, spec.link.unit_pitch_mm),
         110.0,
@@ -168,7 +185,7 @@ def present_finger(
         output,
         "finger_v3_print_layout.png",
         camera,
-        layout,
+        ground(layout),
         # Straight down. A print layout seen from an angle projects one row onto
         # the next, so parts that are 11 mm apart on the bed read as overlapping —
         # a blind reviewer called it a collision, and the measurement said the
