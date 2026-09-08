@@ -164,3 +164,13 @@ def test_the_layout_the_docs_describe_is_the_layout_the_contract_declares() -> N
     plate = next(line for line in readme.splitlines() if "fits one plate" in line)
     sides = [float(v) for v in DECIMAL.findall(plate)][:2]
     assert all(side <= limit for side, limit in zip(sides, bed, strict=True)), plate
+
+
+def test_the_finger_doc_quotes_the_finger_that_shipped() -> None:
+    """The assembled height, which is the figure that moved when four became three."""
+    doc = (ROOT / "docs" / "hand-v3" / "03-finger.md").read_text(encoding="utf-8")
+    finger = binary_stl_metrics((PACKAGE / "finger_v3_mm.stl").read_bytes())
+
+    line = next(line for line in doc.splitlines() if "整指高" in line)
+    quoted = [float(v) for v in re.findall(r"(\d+(?:\.\d+)?) mm", line)]
+    assert finger.dimensions_mm[2] in pytest.approx(quoted, abs=0.1), line
