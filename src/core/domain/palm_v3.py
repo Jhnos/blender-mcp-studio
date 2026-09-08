@@ -43,10 +43,28 @@ def _rotate_y(vector: Vector3, degrees: float) -> Vector3:
     )
 
 
-def _rotate_z(vector: Vector3, degrees: float) -> Vector3:
+def _roll_about(vector: Vector3, axis: Vector3, degrees: float) -> Vector3:
+    """Turn `vector` about `axis` — a roll, not a turn about a global axis.
+
+    The difference is not pedantic. Rolling the thumb's pad about the global Z
+    while its own axis had already been swung leaves the two no longer square:
+    measured at a dot product of -0.166, a frame that is a parallelogram rather
+    than a corner, so every tip position computed in it is wrong by an amount
+    that changes with posture.
+    """
     angle = math.radians(degrees)
-    x, y, z = vector
-    return (x * math.cos(angle) - y * math.sin(angle), x * math.sin(angle) + y * math.cos(angle), z)
+    cos = math.cos(angle)
+    sin = math.sin(angle)
+    dot = sum(a * b for a, b in zip(axis, vector, strict=True))
+    cross = (
+        axis[1] * vector[2] - axis[2] * vector[1],
+        axis[2] * vector[0] - axis[0] * vector[2],
+        axis[0] * vector[1] - axis[1] * vector[0],
+    )
+    return tuple(  # type: ignore[return-value]
+        vector[index] * cos + cross[index] * sin + axis[index] * dot * (1.0 - cos)
+        for index in range(3)
+    )
 
 
 @dataclass(frozen=True, slots=True)
@@ -185,20 +203,34 @@ class AnthropomorphicPalmSpec:
         palmar, along = self.fingertip_in_finger_frame_mm(angles_deg)
         return (x_mm, palmar, along)
 
-    def _thumb_tip_world(self, angles_deg: tuple[float, ...]) -> Vector3:
-        palmar, along = self.tip_in_frame_mm(self.thumb_segment_lengths_mm, angles_deg)
-        # The thumb's frame is the row frame swung across the palm, then rolled so
-        # its pad turns to face the fingers. Both turns are needed: the swing alone
-        # produces a finger pointing sideways, which still cannot oppose anything.
-        axis = _rotate_z(_rotate_y((0.0, 0.0, 1.0), self.thumb_opposition_deg), 0.0)
-        pad = _rotate_z(
-            _rotate_y((0.0, -1.0, 0.0), self.thumb_opposition_deg), self.thumb_palmar_tilt_deg
+    @property
+    def thumb_frame(self) -> tuple[Vector3, Vector3]:
+        """The thumb's own axis and pad direction, as an orthonormal pair.
+
+        Swung across the palm first, then rolled about its own axis so the pad
+        turns towards the fingers. Both turns are needed: the swing alone gives a
+        finger pointing sideways, which opposes nothing.
+        """
+        axis = _rotate_y((0.0, 0.0, 1.0), self.thumb_opposition_deg)
+        pad = _roll_about(
+            _rotate_y((0.0, -1.0, 0.0), self.thumb_opposition_deg),
+            axis,
+            self.thumb_palmar_tilt_deg,
         )
-        origin = (
+        return (axis, pad)
+
+    @property
+    def thumb_root_mm(self) -> Vector3:
+        return (
             self.row_finger_x_mm[0] - self.thumb_offset_mm,
             -self.thumb_base_palmar_mm,
             -self.thumb_base_drop_mm,
         )
+
+    def _thumb_tip_world(self, angles_deg: tuple[float, ...]) -> Vector3:
+        palmar, along = self.tip_in_frame_mm(self.thumb_segment_lengths_mm, angles_deg)
+        axis, pad = self.thumb_frame
+        origin = self.thumb_root_mm
         return tuple(  # type: ignore[return-value]
             origin[axis_index] + along * axis[axis_index] + (-palmar) * pad[axis_index]
             for axis_index in range(3)

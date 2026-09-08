@@ -27,8 +27,7 @@ def test_the_thumb_can_touch_the_index_fingertip() -> None:
     spec = AnthropomorphicPalmSpec()
 
     assert spec.thumb_index_tip_gap_mm < spec.pinch_contact_mm, (
-        f"closest the thumb tip gets to the index tip is "
-        f"{spec.thumb_index_tip_gap_mm:.1f} mm"
+        f"closest the thumb tip gets to the index tip is {spec.thumb_index_tip_gap_mm:.1f} mm"
     )
 
 
@@ -108,3 +107,30 @@ def test_the_palm_carries_the_two_things_the_soft_layer_needs() -> None:
     assert spec.cuff_clamp_wall_mm >= spec.finger.link.minimum_wall_mm
     assert spec.air_port_diameter_mm >= 4.0
     assert spec.air_port_center_mm[1] > 0.0, "the port belongs on the back, clear of the grasp"
+
+
+def test_the_thumb_frame_is_square() -> None:
+    """A pad direction that is not perpendicular to its own finger axis is skew.
+
+    Found by inspection after the placement scan: the first version turned the
+    axis about Y and then turned the pad about the *global* Z, which is not a
+    roll about the finger's own axis. Dot product came out at -0.166 — the frame
+    was a parallelogram, so every tip position computed in it was wrong by an
+    amount that varied with posture, which is the kind of error a single spot
+    check cannot see.
+    """
+    spec = AnthropomorphicPalmSpec()
+    axis, pad = spec.thumb_frame
+
+    assert math.isclose(sum(a * a for a in axis), 1.0, abs_tol=1e-9)
+    assert math.isclose(sum(p * p for p in pad), 1.0, abs_tol=1e-9)
+    assert math.isclose(sum(a * p for a, p in zip(axis, pad, strict=True)), 0.0, abs_tol=1e-9)
+
+
+def test_rolling_the_thumb_does_not_move_its_axis() -> None:
+    """A roll is about the finger's own axis, so the axis is what it leaves alone."""
+    upright = AnthropomorphicPalmSpec(thumb_palmar_tilt_deg=0.0)
+    rolled = AnthropomorphicPalmSpec(thumb_palmar_tilt_deg=45.0)
+
+    assert upright.thumb_frame[0] == pytest.approx(rolled.thumb_frame[0])
+    assert upright.thumb_frame[1] != pytest.approx(rolled.thumb_frame[1])
