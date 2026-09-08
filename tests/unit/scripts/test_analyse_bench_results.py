@@ -98,3 +98,81 @@ def test_the_shipped_results_file_parses_and_reports_vacuous() -> None:
 
     assert parse_trials(text) == []
     assert any("vacuous" in line.lower() for line in report_lines(text, sesoi=0.5))
+
+
+DECAY_EMPTY = """
+| 日期 | 試次 | 氣壓方向 | 0 秒 kPa | 10 秒 kPa | 30 秒 kPa | 60 秒 kPa | 備註 |
+|---|---|---|---|---|---|---|---|
+| — | — | — | — | — | — | — | 尚未執行 |
+"""
+
+DECAY_FILLED = """
+| 日期 | 試次 | 氣壓方向 | 0 秒 kPa | 10 秒 kPa | 30 秒 kPa | 60 秒 kPa | 備註 |
+|---|---|---|---|---|---|---|---|
+| 2026-09-20 | 1 | 加壓 | 40.0 | 36.0 | 30.0 | 22.0 | |
+| 2026-09-20 | 2 | 加壓 | 42.0 | 38.0 | 31.0 | 24.0 | |
+| 2026-09-20 | 3 | 加壓 | 41.0 | 35.0 | 29.0 | 21.0 | |
+"""
+
+LEAKY = """
+| 日期 | 試次 | 氣壓方向 | 0 秒 kPa | 10 秒 kPa | 30 秒 kPa | 60 秒 kPa | 備註 |
+|---|---|---|---|---|---|---|---|
+| 2026-09-20 | 1 | 加壓 | 40.0 | 8.0 | 1.0 | 0.0 | |
+| 2026-09-20 | 2 | 加壓 | 41.0 | 7.0 | 0.5 | 0.0 | |
+| 2026-09-20 | 3 | 加壓 | 39.0 | 9.0 | 1.0 | 0.0 | |
+"""
+
+
+def test_a_decay_table_nobody_filled_in_reports_vacuous() -> None:
+    from scripts.analyse_bench_results import decay_summary
+
+    verdict = decay_summary(DECAY_EMPTY, hold_fraction=0.5)
+
+    assert verdict.vacuous
+    assert verdict.n == 0
+    assert "vacuous" in verdict.summary.lower()
+
+
+def test_a_seal_that_still_holds_at_ten_seconds_says_so_with_a_fraction() -> None:
+    from scripts.analyse_bench_results import decay_summary
+
+    verdict = decay_summary(DECAY_FILLED, hold_fraction=0.5, planned_trials=3)
+
+    assert not verdict.vacuous
+    assert verdict.n == 3
+    assert verdict.retained_at_ten_seconds == pytest.approx(0.878, abs=0.01)
+    assert verdict.holds
+    assert "10 s" in verdict.summary
+
+
+def test_a_layer_that_has_emptied_by_ten_seconds_refutes_the_hypothesis() -> None:
+    """H8 says one inflation lasts ten seconds; this is what refuting it looks like."""
+    from scripts.analyse_bench_results import decay_summary
+
+    verdict = decay_summary(LEAKY, hold_fraction=0.5, planned_trials=3)
+
+    assert not verdict.vacuous
+    assert verdict.retained_at_ten_seconds < 0.25
+    assert not verdict.holds
+
+
+def test_the_holding_fraction_has_no_default_either() -> None:
+    """Same discipline as the SESOI: how much pressure counts as still inflated
+    is a decision about this hand, not a library constant."""
+    from scripts.analyse_bench_results import decay_summary
+
+    with pytest.raises(ValueError):
+        decay_summary(DECAY_FILLED, hold_fraction=0.0)
+    with pytest.raises(ValueError):
+        decay_summary(DECAY_FILLED, hold_fraction=1.5)
+
+
+def test_the_shipped_results_file_carries_a_table_for_the_decay_run() -> None:
+    """A protocol that asks for numbers with nowhere to write them is not a protocol."""
+    from scripts.analyse_bench_results import decay_summary
+
+    root = Path(__file__).resolve().parents[3]
+    text = (root / "docs" / "hand-v3" / "v8-results.md").read_text(encoding="utf-8")
+
+    assert "10 秒 kPa" in text, "the results file has no column for the ten-second reading"
+    assert decay_summary(text, hold_fraction=0.5).vacuous
