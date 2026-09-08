@@ -80,3 +80,21 @@ def test_a_spec_change_moves_the_contract() -> None:
     assert isinstance(probes, list) and isinstance(probes[0], dict)
     assert probes[0]["open_points_mm"][0] == [-48.0, -6.6]
     assert isinstance(v3, HandInstance)
+
+
+def test_a_gradient_finger_declares_its_part_numbers_and_v3_declares_nothing() -> None:
+    """PS-2 at the contract: the count is the instance's claim, not the verdict's default."""
+    from dataclasses import replace
+
+    v3 = HAND_INSTANCES["hand-v3"]
+    steeper = replace(v3.palm.finger, moment_arms_mm=(7.1, 6.1))
+    gradient = replace(v3, slug="hand-v3-gradient", palm=replace(v3.palm, finger=steeper))
+
+    for mapping in contract_mappings(hand_plan(gradient), ROOT).values():
+        oracle = mapping["oracle"]
+        assert isinstance(oracle, dict)
+        assert oracle["expected_shared_mesh_count"] == 2
+    for mapping in contract_mappings(hand_plan(v3), ROOT).values():
+        oracle = mapping["oracle"]
+        assert isinstance(oracle, dict)
+        assert "expected_shared_mesh_count" not in oracle

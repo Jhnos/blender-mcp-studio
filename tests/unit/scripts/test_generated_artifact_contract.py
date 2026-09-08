@@ -629,3 +629,49 @@ def test_a_contract_without_a_trajectory_claims_nothing_about_closing() -> None:
 
     assert contract.oracle.closure_trajectory is None
     assert not any(item.name == "closure_trajectory" for item in summary.evidence)
+
+
+def test_a_declared_part_number_count_replaces_the_hard_wired_one(tmp_path: Path) -> None:
+    """PS-2: how many part numbers a finger is comes from the instance, not the verdict.
+
+    `shared_mesh == 1` was wired into the verdict. A gradient finger is two
+    parts by declaration and would have failed for being what it claims to be.
+    """
+    mapping = _mapping()
+    oracle_mapping = mapping["oracle"]
+    assert isinstance(oracle_mapping, dict)
+    oracle_mapping["expected_shared_mesh_count"] = 2
+    contract = contract_from_mapping(mapping, tmp_path)
+    artifact_state = {str(path): True for path in contract.artifacts}
+
+    assert contract.oracle.expected_shared_mesh_count == 2
+    two = assess_verification(
+        contract, artifact_state, _green_oracle(shared_mesh_count=2), _green_readiness()
+    )
+    assert two.passed, [item.detail for item in two.evidence if not item.passed]
+    one = assess_verification(
+        contract, artifact_state, _green_oracle(shared_mesh_count=1), _green_readiness()
+    )
+    assert not one.passed
+    assert any(item.name == "shared_mesh" and not item.passed for item in one.evidence)
+
+
+def test_the_default_part_number_count_is_still_one(tmp_path: Path) -> None:
+    """Every committed contract omits the field, and none of them may change meaning."""
+    contract = contract_from_mapping(_mapping(), tmp_path)
+    artifact_state = {str(path): True for path in contract.artifacts}
+
+    assert contract.oracle.expected_shared_mesh_count == 1
+    assert not assess_verification(
+        contract, artifact_state, _green_oracle(shared_mesh_count=2), _green_readiness()
+    ).passed
+
+
+def test_a_part_number_count_of_zero_is_refused(tmp_path: Path) -> None:
+    mapping = _mapping()
+    oracle_mapping = mapping["oracle"]
+    assert isinstance(oracle_mapping, dict)
+    oracle_mapping["expected_shared_mesh_count"] = 0
+
+    with pytest.raises(ValueError):
+        contract_from_mapping(mapping, tmp_path)

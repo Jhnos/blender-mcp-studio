@@ -82,3 +82,41 @@ def test_a_link_with_a_wider_limit_widens_the_sweep_without_anyone_editing_a_lis
 
     assert probes.sweep_angles_deg[0] == -60.0 and probes.sweep_angles_deg[-1] == 60.0
     assert probes.full_travel_deg == 60.0
+
+
+def test_probe_points_lie_inside_the_body_and_clear_the_pin() -> None:
+    """ES-3: a probe aimed past the part reports 'open' through empty air.
+
+    This project once reported five open bores that way. Every open point has
+    to be inside the solid it probes, every control has to be plate with no
+    bore under it, and the finger's bores have to sit between the pin and the wall.
+    """
+    from src.core.planning.probe_plan import probe_soundness
+
+    probes = probe_plan(PALM, NAMING, station_plan(PALM, NAMING))
+
+    assert probe_soundness(PALM, probes) == []
+
+
+def test_a_control_point_over_a_bore_is_reported() -> None:
+    from dataclasses import replace
+
+    from src.core.planning.probe_plan import probe_soundness
+
+    probes = probe_plan(PALM, NAMING, station_plan(PALM, NAMING))
+    over_a_bore = replace(probes.palm_tendon_probe, solid_points_mm=((-45.0, -6.6),))
+
+    findings = probe_soundness(PALM, replace(probes, palm_tendon_probe=over_a_bore))
+
+    assert findings and "-45.0" in findings[0]
+
+
+def test_a_probe_aimed_past_the_plate_is_reported() -> None:
+    from dataclasses import replace
+
+    from src.core.planning.probe_plan import probe_soundness
+
+    probes = probe_plan(PALM, NAMING, station_plan(PALM, NAMING))
+    past_the_plate = replace(probes.palm_tendon_probe, open_points_mm=((200.0, -6.6),))
+
+    assert probe_soundness(PALM, replace(probes, palm_tendon_probe=past_the_plate))
