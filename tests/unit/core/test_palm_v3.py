@@ -106,7 +106,11 @@ def test_the_palm_carries_the_two_things_the_soft_layer_needs() -> None:
 
     assert spec.cuff_clamp_wall_mm >= spec.finger.link.minimum_wall_mm
     assert spec.air_port_diameter_mm >= 4.0
-    assert spec.air_port_center_mm[1] > 0.0, "the port belongs on the back, clear of the grasp"
+    # The port is a through-bore along Y, so it opens on the back by construction;
+    # this used to assert the y the generator threw away. What places it is z,
+    # and what matters about z is that it is on the plate and not in the clamp.
+    _, port_z = spec.air_port_center_mm
+    assert -spec.plate_height_mm < port_z < 0.0
 
 
 def test_the_thumb_frame_is_square() -> None:
