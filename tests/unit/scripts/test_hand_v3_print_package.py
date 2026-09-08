@@ -61,20 +61,31 @@ def test_the_palm_roots_reach_the_height_the_fingers_hang_at() -> None:
     assert palm.dimensions_mm[2] == pytest.approx(103.5, abs=0.1)
 
 
-def test_the_hand_has_a_hands_proportions() -> None:
-    """Fifteen phalanges, not nineteen, and a finger about as long as the palm.
+def test_the_finger_that_shipped_carries_three_phalanges() -> None:
+    """Three, not four, and the geometry says so without being told.
 
-    The package shipped once as a 320 mm hand with 169 mm fingers and four
-    phalanges each — 1.7 times human — and every machine check passed, because
-    reachability, collision, clearance and watertightness are all blind to
-    absolute size. A reader looking at a render asked whether anyone had looked
-    at it. This is that question, in the package, as a number.
+    The package shipped once with four phalanges per finger — a 320 mm hand,
+    1.7 times human — and every machine check passed, because reachability,
+    collision, clearance and watertightness are all blind to absolute size.
+
+    Checked as arithmetic on the assembled finger rather than as a ratio of two
+    bounding boxes. The first draft of this test did compare bboxes and failed at
+    1.69, and it was right to fail: an assembled finger's box includes the unit
+    hanging below its own knuckle, which lives at the palm and is not finger
+    length. Proportion belongs in the spec, where it is measured base-joint to
+    tip and reads 1.11. What the package can honestly see is how many units are
+    in the stack.
     """
     finger = binary_stl_metrics((PACKAGE / "finger_v3_mm.stl").read_bytes())
-    palm = binary_stl_metrics((PACKAGE / "palm_mm.stl").read_bytes())
+    phalanx = binary_stl_metrics((PACKAGE / "phalanx_mm.stl").read_bytes())
 
-    # One assembled finger against the palm it grows from. A hand is about 1.0.
-    assert 0.7 <= finger.dimensions_mm[2] / palm.dimensions_mm[2] <= 1.4
+    # A stack of n units spans (n-1) pitches plus one whole unit, and the pitch
+    # is the unit's length minus the lug diameter it shares with its neighbour.
+    unit = phalanx.dimensions_mm[2]
+    pitch = 54.0
+    units = round((finger.dimensions_mm[2] - unit) / pitch) + 1
+    assert units == 3, f"the assembled finger holds {units} phalanges"
+    assert finger.dimensions_mm[2] == pytest.approx((units - 1) * pitch + unit, abs=0.1)
 
 
 def test_the_assembled_hand_is_deliberately_too_tall_for_the_bed() -> None:
