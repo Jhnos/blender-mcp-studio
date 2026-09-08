@@ -150,6 +150,46 @@ def test_artifact_is_self_contained_and_model_driven() -> None:
     assert "createElementNS" in source
 
 
+def _bpy_importers(root: Path) -> list[str]:
+    """Files under `root` that import Blender, found by reading rather than importing."""
+    hits: list[str] = []
+    for path in sorted(root.rglob("*.py")):
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+        for node in ast.walk(tree):
+            names: list[str] = []
+            if isinstance(node, ast.Import):
+                names = [alias.name for alias in node.names]
+            elif isinstance(node, ast.ImportFrom) and node.module:
+                names = [node.module]
+            if any(name.split(".")[0] in {"bpy", "mathutils", "bmesh"} for name in names):
+                hits.append(str(path.relative_to(PROJECT_ROOT)))
+                break
+    return hits
+
+
+def test_the_bpy_import_scan_fires_on_a_planted_import() -> None:
+    planted = PROJECT_ROOT / "tmp" / "bpy_scan_fixture"
+    planted.mkdir(parents=True, exist_ok=True)
+    try:
+        (planted / "clean.py").write_text("import math
+")
+        (planted / "dirty.py").write_text("def f():
+    from mathutils import Vector
+")
+        assert _bpy_importers(planted) == ["tmp/bpy_scan_fixture/dirty.py"]
+    finally:
+        for path in planted.glob("*.py"):
+            path.unlink()
+        planted.rmdir()
+
+
+def test_domain_and_planning_never_import_bpy() -> None:
+    """DS-1: the specs and the plans have to be checkable on a machine without Blender."""
+    for tree in ("src/core/domain", "src/core/planning"):
+        assert (PROJECT_ROOT / tree).is_dir(), tree
+        assert _bpy_importers(PROJECT_ROOT / tree) == [], tree
+
+
 def test_real_ci_gates_batch_transform_single_undo() -> None:
     ci = (PROJECT_ROOT / "scripts" / "ci.sh").read_text()
 
