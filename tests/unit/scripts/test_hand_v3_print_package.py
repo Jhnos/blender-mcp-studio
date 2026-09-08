@@ -23,10 +23,10 @@ ROOT = Path(__file__).resolve().parents[3]
 PACKAGE = ROOT / "models" / "hand-v3"
 V2_PACKAGE = ROOT / "models" / "octopus-hand-v2"
 EXPECTED = {
-    "phalanx_mm.stl": (3906, (24.0, 22.0, 67.0)),
-    "palm_mm.stl": (3218, (140.0, 44.0, 90.0)),
-    "finger_v3_mm.stl": (15624, (24.0, 22.0, 229.0)),
-    "hand_v3_mm.stl": (77432, (140.0, 44.1, 319.5)),
+    "phalanx_mm.stl": (3494, (24.0, 22.0, 67.0)),
+    "palm_mm.stl": (2710, (140.0, 44.0, 90.0)),
+    "finger_v3_mm.stl": (13976, (24.0, 22.0, 229.0)),
+    "hand_v3_mm.stl": (69096, (140.0, 44.1, 319.5)),
 }
 
 

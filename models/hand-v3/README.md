@@ -16,7 +16,7 @@ untouched beside it.
 
 | File | What it is |
 |---|---|
-| **`phalanx_mm.stl`** | **The part you print most.** One phalanx, 24.0 × 22.0 × 67.0 mm. Four per finger, three for the thumb — nineteen in all, and all one part number |
+| **`phalanx_mm.stl`** | **The part you print most.** One phalanx, 24.0 × 22.0 × 67.0 mm, carrying a tendon bore on the palmar side and a wiring bore on the back. Four per finger, three for the thumb — nineteen in all, and all one part number |
 | `palm_mm.stl` | The plate with five knuckle roots, the thenar boss, five tendon channels, the cuff clamp groove and the air port — 140.0 × 44.0 × 90.0 mm |
 | `finger_v3_mm.stl` | One assembled finger, for checking fit before committing to nineteen parts |
 | `hand_v3_mm.stl` | The whole hand assembled, 140.0 × 44.1 × 319.5 mm — **too tall for a 256 mm bed on purpose.** It is a reference, not a print |
@@ -37,6 +37,9 @@ Verified by machine, on the real Blender the files were generated in:
 - Every part watertight, zero non-manifold edges.
 - The four units of a finger share one mesh — one part number, not four.
 - Each tendon bore's centre sits on its joint's moment arm, measured by ray.
+- Both bores are open and the axis between them is solid: this hinge's pin runs
+  through the axis, so there is no central channel and the wiring runs dorsally
+  instead — mirrored from the tendon, 2.95 mm of wall to the pin either side.
 - No interference between any two fingers at rest, and none across a joint's full
   ±50° travel.
 - The palm is a single connected solid; all five tendon channels and the air port are
