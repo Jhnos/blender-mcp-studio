@@ -14,6 +14,7 @@ from src.adapters.security.blender_code_sandbox import BlenderCodeSandbox
 from src.adapters.security.prompt_injection_sanitizer import PromptInjectionSanitizer
 from src.adapters.session.sqlite_session_store import SQLiteSessionStore
 from src.core.domain.session import Session
+from src.core.domain.scene_operations import ObjectDetails, SceneSummary, ViewportImage
 from src.core.ports.blender_port import BlenderPort
 from src.core.ports.llm_port import (
     LLMPort,
@@ -63,6 +64,15 @@ class MockToolCallingLLM(LLMPort):
 
 class MockBlender(BlenderPort):
     """Records all commands executed."""
+
+    async def scene_summary(self) -> SceneSummary:
+        raise NotImplementedError("this fake answers no scene queries")
+
+    async def object_details(self, name: str) -> ObjectDetails:
+        raise NotImplementedError("this fake answers no scene queries")
+
+    async def viewport_screenshot(self, max_size: int = 800) -> ViewportImage:
+        raise NotImplementedError("this fake answers no scene queries")
 
     def __init__(self, fail_on: str | None = None) -> None:
         self.executed: list[tuple[str, dict]] = []

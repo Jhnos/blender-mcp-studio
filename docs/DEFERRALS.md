@@ -12,7 +12,9 @@
 
 ## D-001 · `scene_operations` 保留自己的一份 narrowing
 
-**狀態**：`deferred`（2026-09-05 記錄）
+**狀態**：`done`（2026-09-09；2026-09-05 記錄）——`BlenderPort` 改回傳 typed DTO（`scene_summary`／`object_details`／`viewport_screenshot`），
+解碼搬到 `src/adapters/blender_scene_decoding.py`，截圖的暫存檔搬到 `src/adapters/viewport_capture.py`；use case 裡再沒有任何 narrowing，
+`test_the_use_case_decodes_nothing` 釘住。訊息逐字保留，REST 的 422 detail 不變。
 
 **現況**：`src/core/use_cases/scene_operations.py` 有 `_require_mapping`／`_require_str`／
 `_require_int`／`_require_bool`／`_require_sequence`，與 `src/adapters/blender_response.py`

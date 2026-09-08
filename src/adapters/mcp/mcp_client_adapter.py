@@ -20,7 +20,11 @@ import json
 import logging
 from typing import Any
 
+from src.adapters.blender_scene_decoding import decode_object_details, decode_scene_summary
+from src.adapters.viewport_capture import capture_viewport
 from src.core.domain.command import Command
+from src.core.domain.exceptions import SceneOperationError
+from src.core.domain.scene_operations import ObjectDetails, SceneSummary, ViewportImage
 from src.core.ports.blender_port import BlenderPort
 from src.core.ports.mcp_port import ToolResult
 from src.infrastructure.narrowing import as_str_keyed
@@ -65,24 +69,31 @@ class MCPClientBlenderAdapter(BlenderPort):
     async def is_connected(self) -> bool:
         return self._connected
 
-    async def get_scene_info(self) -> dict[str, object]:
-        result = await self._call_tool("get_scene_info", {})
-        if not (result.success and result.output):
-            return {}
+    async def scene_summary(self) -> SceneSummary:
+        return decode_scene_summary(await self._query("get_scene_info", {}))
+
+    async def object_details(self, name: str) -> ObjectDetails:
+        return decode_object_details(await self._query("get_object_info", {"name": name}))
+
+    async def viewport_screenshot(self, max_size: int = 800) -> ViewportImage:
+        return await capture_viewport(
+            lambda arguments: self._query("get_viewport_screenshot", arguments), max_size
+        )
+
+    async def _query(self, tool_name: str, arguments: dict[str, object]) -> object:
+        """This transport returns tool text; a JSON body inside it is the payload."""
+        result = await self._call_tool(tool_name, arguments)
+        if not result.success:
+            raise SceneOperationError(result.error or f"{tool_name} failed without an error message")
         if not isinstance(result.output, str):
-            logger.warning(
-                "get_scene_info: expected str output, got %s", type(result.output).__name__
-            )
-            return {}
+            return result.output
         try:
             parsed: object = json.loads(result.output)
-        except json.JSONDecodeError:
-            return {"raw": result.output}
-        scene = as_str_keyed(parsed, context="scene info")
-        if scene is None:
-            logger.warning("get_scene_info: expected a JSON object, got %s", type(parsed).__name__)
-            return {"raw": result.output}
-        return scene
+        except json.JSONDecodeError as exc:
+            raise SceneOperationError(
+                f"Blender returned invalid {tool_name} reply; expected JSON"
+            ) from exc
+        return parsed
 
     async def execute(self, command: Command) -> ToolResult:
         return await self._call_tool(command.tool_name, dict(command.arguments))

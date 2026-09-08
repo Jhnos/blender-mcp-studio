@@ -23,12 +23,22 @@ from fastapi.testclient import TestClient
 from api.main import create_app
 from api.runtime import AppRuntime
 from src.core.domain.command import Command
+from src.core.domain.scene_operations import ObjectDetails, SceneSummary, ViewportImage
 from src.core.ports.blender_port import BlenderPort
 from src.core.ports.mcp_port import ToolResult
 
 
 class _Blender(BlenderPort):
     """A Blender port whose link state the test dictates."""
+
+    async def scene_summary(self) -> SceneSummary:
+        raise NotImplementedError("this fake answers no scene queries")
+
+    async def object_details(self, name: str) -> ObjectDetails:
+        raise NotImplementedError("this fake answers no scene queries")
+
+    async def viewport_screenshot(self, max_size: int = 800) -> ViewportImage:
+        raise NotImplementedError("this fake answers no scene queries")
 
     def __init__(self, *, connected: bool) -> None:
         self._connected = connected
@@ -55,6 +65,15 @@ class _Blender(BlenderPort):
 
 class _Exploding(BlenderPort):
     """A link that cannot even be asked — the worst case must not read as healthy."""
+
+    async def scene_summary(self) -> SceneSummary:
+        raise NotImplementedError("this fake answers no scene queries")
+
+    async def object_details(self, name: str) -> ObjectDetails:
+        raise NotImplementedError("this fake answers no scene queries")
+
+    async def viewport_screenshot(self, max_size: int = 800) -> ViewportImage:
+        raise NotImplementedError("this fake answers no scene queries")
 
     async def connect(self) -> None:
         return None

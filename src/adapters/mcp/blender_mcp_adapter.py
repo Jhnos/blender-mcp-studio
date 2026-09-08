@@ -8,7 +8,11 @@ import json
 import logging
 
 from src.adapters.mcp.blender_tool_codegen import is_translatable, translate
+from src.adapters.blender_scene_decoding import decode_object_details, decode_scene_summary
+from src.adapters.viewport_capture import capture_viewport
 from src.core.domain.command import Command
+from src.core.domain.exceptions import SceneOperationError
+from src.core.domain.scene_operations import ObjectDetails, SceneSummary, ViewportImage
 from src.core.domain.exceptions import BlenderConnectionError
 from src.core.ports.blender_port import BlenderPort
 from src.core.ports.code_sandbox_port import CodeSandboxPort
@@ -286,20 +290,27 @@ class BlenderMCPAdapter(BlenderPort):
                 return ToolResult(success=True, output=envelope["result"], error=None)
         return result
 
-    async def get_scene_info(self) -> dict[str, object]:
-        result = await self._mcp.call_tool("get_scene_info", {})
-        # result.output is `object`; a bare isinstance(dict) would only reach
-        # dict[Any, Any] and mypy would wave the return through blind. Rebuild
-        # keys honestly via the narrowing SSOT (see src/infrastructure/narrowing).
-        scene = as_str_keyed(result.output, context="get_scene_info")
-        if scene is None:
-            # A non-mapping reply (list, str, null) is a real anomaly — degrade
-            # to {} but never silently (NO_SILENT_FALLBACK); `or {}` would hide it.
-            logger.warning(
-                "get_scene_info: expected a mapping, got %s", type(result.output).__name__
-            )
-            return {}
-        return scene
+    async def scene_summary(self) -> SceneSummary:
+        return decode_scene_summary(await self._query("get_scene_info", {}))
+
+    async def object_details(self, name: str) -> ObjectDetails:
+        return decode_object_details(await self._query("get_object_info", {"name": name}))
+
+    async def viewport_screenshot(self, max_size: int = 800) -> ViewportImage:
+        return await capture_viewport(
+            lambda arguments: self._query("get_viewport_screenshot", arguments), max_size
+        )
+
+    async def _query(self, tool_name: str, arguments: dict[str, object]) -> object:
+        """A read tool's reply payload, or the domain error its failure becomes.
+
+        Through `_dispatch`, so the single chokepoint claim stays true for
+        queries as well as commands.
+        """
+        result = await self._dispatch(tool_name, arguments)
+        if not result.success:
+            raise SceneOperationError(result.error or f"{tool_name} failed without an error message")
+        return result.output
 
     async def is_connected(self) -> bool:
         return self._socket.is_connected

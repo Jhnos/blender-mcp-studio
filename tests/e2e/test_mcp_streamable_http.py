@@ -10,6 +10,7 @@ from fastapi.testclient import TestClient
 from api.main import create_app
 from api.runtime import AppRuntime
 from src.core.domain.command import Command
+from src.core.domain.scene_operations import ObjectDetails, SceneSummary, ViewportImage
 from src.core.ports.blender_port import BlenderPort
 from src.core.ports.mcp_port import ToolResult
 from src.core.use_cases.batch_transform import BatchTransformService
@@ -42,6 +43,15 @@ _EXPECTED_TOOLS = {
 
 class CountingBlender(BlenderPort):
     """Blender fake that proves the shared transport owns one connection."""
+
+    async def scene_summary(self) -> SceneSummary:
+        raise NotImplementedError("this fake answers no scene queries")
+
+    async def object_details(self, name: str) -> ObjectDetails:
+        raise NotImplementedError("this fake answers no scene queries")
+
+    async def viewport_screenshot(self, max_size: int = 800) -> ViewportImage:
+        raise NotImplementedError("this fake answers no scene queries")
 
     def __init__(self) -> None:
         self.connect_calls = 0

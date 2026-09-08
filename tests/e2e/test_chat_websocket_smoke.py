@@ -28,6 +28,7 @@ from api.routers import chat
 from src.adapters.events.in_memory_event_bus import InMemoryEventBus
 from src.core.domain.command import Command
 from src.core.ports.adapter_factory_port import AdapterFactoryPort
+from src.core.domain.scene_operations import ObjectDetails, SceneSummary, ViewportImage
 from src.core.ports.blender_port import BlenderPort
 from src.core.ports.llm_port import LLMChatPort, LLMResponse, LLMStreamPort
 from src.core.ports.mcp_port import ToolResult
@@ -51,6 +52,15 @@ class _FakeStreamLLM(LLMStreamPort):
 
 class _FakeBlender(BlenderPort):
     """execute() returns whatever output shape the test injects."""
+
+    async def scene_summary(self) -> SceneSummary:
+        raise NotImplementedError("this fake answers no scene queries")
+
+    async def object_details(self, name: str) -> ObjectDetails:
+        raise NotImplementedError("this fake answers no scene queries")
+
+    async def viewport_screenshot(self, max_size: int = 800) -> ViewportImage:
+        raise NotImplementedError("this fake answers no scene queries")
 
     def __init__(self, output: object) -> None:
         self._output = output
