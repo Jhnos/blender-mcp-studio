@@ -53,6 +53,26 @@ def test_the_closure_lists_leaves_before_the_modules_that_import_them(tmp_path: 
     )
 
 
+def test_a_submodule_imported_from_its_package_is_followed_not_its_package(tmp_path: Path) -> None:
+    """`from src.core.domain import opposition` imports a module, and that module reloads.
+
+    Listing the package instead would reload its __init__ and leave the
+    submodule stale — the exact silent-green this closure exists to prevent.
+    """
+    (tmp_path / "scripts").mkdir()
+    (tmp_path / "scripts" / "__init__.py").write_text("")
+    (tmp_path / "scripts" / "pkg").mkdir()
+    (tmp_path / "scripts" / "pkg" / "__init__.py").write_text("")
+    (tmp_path / "scripts" / "pkg" / "leaf.py").write_text("X = 1\n")
+    (tmp_path / "scripts" / "pkg" / "other.py").write_text("Y = 2\n")
+    (tmp_path / "scripts" / "gen.py").write_text("from scripts.pkg import leaf, other\n")
+
+    assert reload_modules_for(tmp_path, tmp_path / "scripts" / "gen.py") == (
+        "scripts.pkg.leaf",
+        "scripts.pkg.other",
+    )
+
+
 def test_a_module_the_closure_names_but_the_tree_lacks_is_refused(tmp_path: Path) -> None:
     (tmp_path / "scripts").mkdir()
     (tmp_path / "scripts" / "gen.py").write_text("from scripts.ghost import X\n")
