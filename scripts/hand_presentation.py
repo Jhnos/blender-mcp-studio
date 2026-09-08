@@ -79,9 +79,9 @@ def present_hand(
         floor.location.z = m(low - plan.presentation.floor_clearance_mm)
         return [*objects, floor]
 
-    def framed(view: ViewPlan, subject: list[bpy.types.Object]) -> tuple[
-        tuple[float, float, float], tuple[float, float, float], float
-    ]:
+    def framed(
+        view: ViewPlan, subject: list[bpy.types.Object]
+    ) -> tuple[tuple[float, float, float], tuple[float, float, float], float]:
         if view.framing is None:
             assert view.location_mm is not None and view.target_mm is not None
             assert view.scale_mm is not None

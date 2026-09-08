@@ -16,7 +16,7 @@ from mathutils import Matrix
 from scripts.blender_mesh_primitives import add_cylinder, add_ellipsoid, boolean, cleanup_mesh
 from scripts.hollow_hinge_geometry import create_box
 from scripts.hollow_hinge_render import m
-from src.core.planning.csg import Box, Cylinder, Ellipsoid, HollowBox, Operation, Solid
+from src.core.planning.csg import Box, Cylinder, Ellipsoid, Operation, Solid
 from src.core.planning.hand_plan import HandPlan
 from src.core.planning.palm_plan import PalmPlan, RootPlan
 from src.core.planning.phalanx_plan import FingerPlan, PhalanxPlan
