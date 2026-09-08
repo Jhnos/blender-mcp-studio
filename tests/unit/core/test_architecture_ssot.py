@@ -156,6 +156,25 @@ def test_real_ci_gates_batch_transform_single_undo() -> None:
     assert "scripts/verify/batch_transform_verify_real.py" in ci
 
 
+def test_real_ci_gates_the_hand_contracts() -> None:
+    """The contract system caught ten defects this campaign while being run by hand.
+
+    A gate that is not in ci.sh is a gate that is not run. The three lines are
+    the reference pair (both hand-v3 contracts) and the reproduction differential
+    against the shipped package, in that order: the finger contract reuses the
+    scene the hand contract generated, and the differential reads the STLs that
+    generation exported.
+    """
+    ci = (PROJECT_ROOT / "scripts" / "ci.sh").read_text()
+
+    hand = ci.index("scripts/verify/contracts/hand_v3.json")
+    finger = ci.index("scripts/verify/contracts/hand_v3_finger.json --skip-generate")
+    differential = ci.index("scripts/verify/regenerated_package_matches_shipped.py --package hand-v3")
+    assert hand < finger < differential
+    real_tier = ci.index("T3 · real machine (MCP↔Blender)")
+    assert real_tier < hand, "the hand gates belong inside the --real tier"
+
+
 def test_frontend_productivity_boundaries_are_documented_and_exist() -> None:
     source = ARCHITECTURE_DOC.read_text()
     anchors = {
