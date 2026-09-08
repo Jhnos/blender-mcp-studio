@@ -27,6 +27,10 @@ class Package:
     stl_files: tuple[str, ...]
     blend_file: str
     contracts: tuple[str, ...]
+    #: Renders promoted alongside the meshes. Without these a package is four
+    #: STLs and no way to see what they assemble into short of opening Blender,
+    #: which is the whole of what the deliverable owes a reader.
+    render_files: tuple[str, ...] = ()
 
 
 PACKAGES: dict[str, Package] = {
@@ -82,6 +86,11 @@ PACKAGES: dict[str, Package] = {
             "scripts/verify/contracts/hand_v3.json",
             "scripts/verify/contracts/hand_v3_finger.json",
         ),
+        render_files=(
+            "finger_v3_assembly.png",
+            "finger_v3_joint_detail.png",
+            "finger_v3_print_layout.png",
+        ),
     ),
     "octopus-hand-v2": Package(
         slug="octopus-hand-v2",
@@ -118,7 +127,7 @@ def publish(
 ) -> None:
     destination.mkdir(parents=True, exist_ok=True)
     entries: dict[str, dict[str, object]] = {}
-    for name in (*package.stl_files, package.blend_file):
+    for name in (*package.stl_files, package.blend_file, *package.render_files):
         source_file = source / name
         if not source_file.is_file() or source_file.stat().st_size == 0:
             raise FileNotFoundError(f"verified source artifact is missing: {source_file}")
