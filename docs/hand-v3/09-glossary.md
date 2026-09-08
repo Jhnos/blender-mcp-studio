@@ -27,5 +27,5 @@
 
 ## 命名
 
-- V3 的 Blender 物件前綴 `HH_V3_`,與 V1 的 `HH_OCT_`、V2 的 `HH_OCT2_` 區隔。
+- V3 的 Blender 物件前綴 `HJ_V3_`,與 V1 的 `HH_OCT_`、V2 的 `HH_OCT2_` 區隔。
 - 印製包 slug `hand-v3`,manifest revision `hand-V3`。

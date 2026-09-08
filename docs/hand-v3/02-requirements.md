@@ -10,7 +10,7 @@
 
 矩陣用 requirement-traceability 的 `trace_check.py` 機器驗(R1–R6)。
 
-Population: V3 自己產生的物件(前綴 `HH_V3_`)與 `models/hand-v3/` 的檔案;
+Population: V3 自己產生的物件(前綴 `HJ_V3_`)與 `models/hand-v3/` 的檔案;
 實體台架的母數為 10 件 YCB 級物體 × 每組 10 次;`models/octopus-hand-v1|v2/`、
 `models/biaxial-hinge-v6/` 排除在 V3 的掃描之外,它們由各自的迴歸契約獨立驗證;
 尚未量測的台架列標記 vacuous,**永遠不併入 pass**。
