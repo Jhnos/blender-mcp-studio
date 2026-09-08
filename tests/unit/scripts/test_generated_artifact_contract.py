@@ -481,3 +481,54 @@ def test_a_contract_declaring_no_disjoint_groups_claims_nothing() -> None:
     assert contract.oracle.disjoint_groups == ()
     assert summary.passed
     assert not any(item.name == "disjoint_groups" for item in summary.evidence)
+
+
+def test_a_channel_probe_needs_a_hit_and_a_miss_to_mean_anything() -> None:
+    """F12 was written down and its check was never built.
+
+    "The air port is blocked by internal structure → no air goes in, and it
+    looks identical from outside" is in the failure-mode table with `射線探針`
+    beside it. The contract only ever probed the finger. So the palm's five
+    tendon channels and its air port were claimed open in the package README
+    and measured by nothing.
+
+    A ray that misses proves a bore is open only if a ray a few millimetres
+    away hits — otherwise "open" and "aimed at empty air" are the same reading.
+    This project has already shipped a probe that reported five open bores
+    through nothing at all, so both halves are mandatory here.
+    """
+    mapping = _mapping()
+    mapping["oracle"]["channel_probes"] = [  # type: ignore[index]
+        {
+            "object": "FX_PLATE",
+            "axis": "Z",
+            "open_points_mm": [[-45.0, -6.6], [15.0, -6.6]],
+            "solid_points_mm": [[-30.0, -6.6]],
+        }
+    ]
+    contract = contract_from_mapping(mapping, Path("/tmp"))
+    artifact_state = {str(path): True for path in contract.artifacts}
+    assert len(contract.oracle.channel_probes) == 1
+
+    def _assess(result: object) -> bool:
+        oracle = _green_oracle() | {"channel_probe_results": result}
+        return assess_verification(contract, artifact_state, oracle, _green_readiness()).passed
+
+    assert _assess({"FX_PLATE|Z": {"open": [False, False], "solid": [True]}})
+    assert not _assess({"FX_PLATE|Z": {"open": [False, True], "solid": [True]}}), "a blocked bore"
+    assert not _assess({"FX_PLATE|Z": {"open": [False, False], "solid": [False]}}), (
+        "nothing was hit, so the misses were through empty air"
+    )
+    assert not _assess({"FX_PLATE|Z": {"open": [False], "solid": [True]}}), "a probe went missing"
+    assert not _assess({}), "declared and unmeasured is a FAIL"
+    assert not _assess(None)
+
+
+def test_a_channel_probe_without_a_solid_control_is_refused_at_parse_time() -> None:
+    """The vacuous half cannot be optional, so the parser will not accept it."""
+    mapping = _mapping()
+    mapping["oracle"]["channel_probes"] = [  # type: ignore[index]
+        {"object": "FX_PLATE", "axis": "Z", "open_points_mm": [[0.0, 0.0]], "solid_points_mm": []}
+    ]
+    with pytest.raises(ValueError):
+        contract_from_mapping(mapping, Path("/tmp"))
