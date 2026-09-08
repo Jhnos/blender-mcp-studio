@@ -12,9 +12,9 @@ arms differ — rather than asserted. It has no package and never will.
 
 `hand-compact` is the human-scale hand: the bearingless 2 mm-pin link, a
 15 mm-deep body, and a moment-arm gradient that closes the joints in order.
-Its thumb placement was swept under `strict=True` (2823 of 7168 candidates
-reach the index fingertip; the chosen one is documented in
-docs/hand-framework/v8-results.md). Registered, contracted, never published
+Its thumb placement was swept under `strict=True` for reach and then for
+rest clearance, after the reach-only pick brushed a finger on the real
+machine; both sweeps are documented in docs/hand-framework/v8-results.md. Registered, contracted, never published
 until the user accepts the renders (DEFERRALS D-008).
 """
 
@@ -140,18 +140,20 @@ HAND_INSTANCES: dict[str, HandInstance] = {
     ),
     "hand-compact": HandInstance(
         slug="hand-compact",
-        # Swept under strict=True over offset, drop, palmar depth, opposition and
-        # tilt. This placement brings the tips within 0.34 mm on the coarse grid,
-        # keeps the finger-to-palm ratio at 1.09, and leaves 13 mm between the
-        # thumb's first phalanx and the boss. The root sits at the plate's own
-        # depth, the derived default, as V3's does.
+        # Swept twice under strict=True. The first sweep optimised reach alone
+        # and its pick brushed the third finger with the straight thumb on the
+        # real machine (8 overlapping faces). The second sweep adds the rest
+        # clearance: this placement clears every straight finger by 3.48 mm
+        # (V3: 2.49), brings the tips within 1.08 mm on the coarse grid, and
+        # keeps the finger-to-palm ratio at 1.14. The root sits at the plate's
+        # own depth, the derived default, as V3's does.
         palm=AnthropomorphicPalmSpec(
             finger=_COMPACT_FINGER,
             thumb=_COMPACT_FINGER,
             thumb_offset_mm=24.0,
-            thumb_base_drop_mm=26.0,
-            thumb_opposition_deg=30.0,
-            thumb_palmar_tilt_deg=-20.0,
+            thumb_base_drop_mm=22.0,
+            thumb_opposition_deg=25.0,
+            thumb_palmar_tilt_deg=-10.0,
             strict=True,
         ),
         namespace="HK_",

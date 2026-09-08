@@ -475,9 +475,37 @@ def test_the_resting_thumb_clears_every_row_finger() -> None:
 def test_a_thumb_laid_across_the_row_is_reported_as_overlapping() -> None:
     from src.core.domain.opposition import thumb_rest_clearance_mm
 
-    # Parallel to the row and one body width from the index: straight through it.
+    # Parallel to the row, half a body width outboard of the index and only 5 mm
+    # in front of the finger plane: straight through it. (Outboard alone is not
+    # enough — 22 mm in front, a parallel thumb clears the index by 1 mm.)
     across = dataclasses.replace(
-        AnthropomorphicPalmSpec(), thumb_offset_mm=12.0, thumb_opposition_deg=0.0
+        AnthropomorphicPalmSpec(),
+        thumb_offset_mm=12.0,
+        thumb_base_palmar_mm=5.0,
+        thumb_opposition_deg=0.0,
     )
 
     assert thumb_rest_clearance_mm(across) < 0.0
+
+
+def test_a_strict_palm_refuses_a_thumb_that_rests_inside_a_finger() -> None:
+    """Refused before Blender builds it, with the overlap in the message."""
+    with pytest.raises(ValueError, match="at rest"):
+        AnthropomorphicPalmSpec(
+            thumb_offset_mm=12.0,
+            thumb_base_palmar_mm=5.0,
+            thumb_opposition_deg=0.0,
+            strict=True,
+        )
+
+
+def test_the_registered_compact_placement_clears_the_row_by_more_than_v3() -> None:
+    """The second sweep's pick, held to the number it was chosen for."""
+    from src.core.domain.hand_instances import HAND_INSTANCES
+    from src.core.domain.opposition import thumb_rest_clearance_mm
+
+    compact = thumb_rest_clearance_mm(HAND_INSTANCES["hand-compact"].palm)
+    v3 = thumb_rest_clearance_mm(HAND_INSTANCES["hand-v3"].palm)
+
+    assert compact == pytest.approx(3.48, abs=0.05)
+    assert compact > v3 > 2.0

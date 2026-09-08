@@ -161,6 +161,12 @@ class AnthropomorphicPalmSpec:
                 f"past a plate only {self.palm_width_mm:.1f} mm wide — that is an arm, not "
                 "the bulge at the base of a thumb"
             )
+        if self.strict and (rest := opposition.thumb_rest_clearance_mm(self)) <= 0.0:
+            raise ValueError(
+                "the thumb at rest passes through the finger row: the straight thumb "
+                f"and a straight finger overlap by {-rest:.2f} mm. Reachability is "
+                "measured with the fingers straight, and so is this"
+            )
         if self.strict and not 0.7 <= self.finger_to_palm_ratio <= 1.4:
             raise ValueError(
                 f"the fingers are {self.finger_to_palm_ratio:.2f} times the palm's height; "

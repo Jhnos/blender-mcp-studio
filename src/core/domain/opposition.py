@@ -64,6 +64,99 @@ def thumb_tip_world(palm: AnthropomorphicPalmSpec, angles_deg: tuple[float, ...]
     )
 
 
+#: Axis positions are sampled this finely when the resting thumb is checked
+#: against the row. Fine enough that a joint gap of a few millimetres is seen.
+REST_SAMPLE_STEP_MM = 1.0
+
+
+def _unit_axis_samples(chain_lift_mm: float, link_pitch_mm: float, half_length_mm: float,
+                       units: int) -> list[tuple[float, float]]:
+    """(distance along the chain, distance from that unit's centre) for every sample."""
+    samples: list[tuple[float, float]] = []
+    steps = int(2 * half_length_mm / REST_SAMPLE_STEP_MM)
+    for index in range(units):
+        centre = chain_lift_mm + index * link_pitch_mm
+        for step in range(steps + 1):
+            local = -half_length_mm + step * REST_SAMPLE_STEP_MM
+            samples.append((centre + local, local))
+    return samples
+
+
+def _extent_towards(width_mm: float, depth_mm: float, length_mm: float, local_mm: float,
+                    direction_local: Axis3) -> float:
+    """How far an ellipsoid body reaches from its axis point towards `direction_local`.
+
+    The body is the ellipsoid (width, depth, length); at `local_mm` along its
+    axis the cross-section shrinks, and the support in a direction is the
+    ellipse's radius that way.
+    """
+    half = length_mm / 2
+    if abs(local_mm) >= half:
+        return 0.0
+    taper = math.sqrt(1.0 - (local_mm / half) ** 2)
+    dx, dy, _ = direction_local
+    horizontal = math.hypot(dx, dy)
+    if horizontal < 1e-12:
+        return 0.0
+    ux, uy = dx / horizontal, dy / horizontal
+    return taper * math.sqrt((width_mm / 2 * ux) ** 2 + (depth_mm / 2 * uy) ** 2) * horizontal
+
+
+def thumb_rest_clearance_mm(palm: AnthropomorphicPalmSpec) -> float:
+    """Closest the straight thumb comes to any straight row finger, surface to surface.
+
+    Negative means they pass through each other at rest. Bodies are the
+    ellipsoids the phalanx plan builds; lugs and necks are thinner and are
+    not modelled, so a small positive number here is not a guarantee — the
+    real-machine disjoint gate remains the ground truth. This is what lets a
+    placement be refused before Blender ever builds it.
+    """
+    link = palm.finger.link
+    thumb_link = palm.thumb.link
+    width, depth, length = link.body_width_mm, link.body_depth_mm, link.body_length_mm
+    t_width, t_depth, t_length = (
+        thumb_link.body_width_mm,
+        thumb_link.body_depth_mm,
+        thumb_link.body_length_mm,
+    )
+    lift = 2 * link.joint_center_offset_mm
+    t_lift = link.joint_center_offset_mm + thumb_link.joint_center_offset_mm
+    axis, pad = palm.thumb_frame
+    across = (
+        axis[1] * pad[2] - axis[2] * pad[1],
+        axis[2] * pad[0] - axis[0] * pad[2],
+        axis[0] * pad[1] - axis[1] * pad[0],
+    )
+    root = palm.thumb_root_mm
+
+    finger_samples = _unit_axis_samples(lift, link.unit_pitch_mm, length / 2, link.assembly_unit_count)
+    thumb_samples = _unit_axis_samples(
+        t_lift, thumb_link.unit_pitch_mm, t_length / 2, thumb_link.assembly_unit_count
+    )
+    best = math.inf
+    for along, t_local in thumb_samples:
+        thumb_point = tuple(root[i] + along * axis[i] for i in range(3))
+        for x_mm in palm.row_finger_x_mm:
+            for height, f_local in finger_samples:
+                finger_point = (x_mm, 0.0, height)
+                gap_vector = tuple(finger_point[i] - thumb_point[i] for i in range(3))
+                distance = math.sqrt(sum(component**2 for component in gap_vector))
+                if distance < 1e-9:
+                    best = min(best, -max(width, depth))
+                    continue
+                unit = tuple(component / distance for component in gap_vector)
+                # Finger frame is the world frame; the thumb's is (across, pad, axis).
+                finger_reach = _extent_towards(width, depth, length, f_local, (-unit[0], -unit[1], -unit[2]))
+                thumb_dir = (
+                    sum(unit[i] * across[i] for i in range(3)),
+                    sum(unit[i] * pad[i] for i in range(3)),
+                    sum(unit[i] * axis[i] for i in range(3)),
+                )
+                thumb_reach = _extent_towards(t_width, t_depth, t_length, t_local, thumb_dir)
+                best = min(best, distance - finger_reach - thumb_reach)
+    return best
+
+
 def thumb_index_tip_gap_mm(palm: AnthropomorphicPalmSpec) -> float:
     """Closest the thumb tip can come to the index tip, over both reachable sets.
 
