@@ -22,8 +22,8 @@
 | `src/core/domain/hinge_chain.py` | domain | 既有,凍結 | 借來的連桿;只允許**加法式**唯讀屬性 |
 | `src/core/domain/compact_link.py` | domain | 既有 | 精簡連桿 |
 | `src/core/domain/finger_v3.py` | domain | 既有 | 單腱手指:力矩臂、彈簧梯度、行程、夾層上界 |
-| `src/core/domain/palm_v3.py` | domain | 泛化 | 見 [[hand-framework/03-domain-spec]];類名不變 |
-| `src/core/domain/opposition.py` | domain | 新 | 對生可達性函式(從掌盤切出,因 372/380 行預算) |
+| `src/core/domain/palm_v3.py` | domain | 已泛化(M4) | 見 [[hand-framework/03-domain-spec]];類名不變 |
+| `src/core/domain/opposition.py` | domain | 已建(M4) | 對生可達性函式(從掌盤切出,因 372/380 行預算) |
 | `src/core/domain/hand_instances.py` | domain | 已建(M2) | `HAND_INSTANCES` 註冊表——**唯一**命名實例的地方 |
 | `src/core/planning/naming.py` | planning | 已建(M2) | `NamingPolicy`,見 [[hand-framework/06-naming]] |
 | `src/core/planning/phalanx_plan.py` | planning | 已建(M3) | 每節的名字、孔、座、公母端尺寸 |

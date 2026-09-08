@@ -11,9 +11,9 @@
 | SF-15, SF-16, SF-9 | `tests/unit/core/test_docs_hand_framework_figures.py` | **已建**(M0) |
 | SF-1 | `tests/unit/verification/test_contract_builder.py` | **已建**(M2):生成 == 簽入,兩份 |
 | SF-2 | `tests/unit/planning/test_layout_plan.py` | **已建**(M2):四件 242.0 × 103.5 離線算出 |
-| SF-3 | `tests/unit/planning/test_expected_counts.py` 新增案例 | 待建(M4,要先有 `row_finger_count` 欄位) |
+| SF-3 | `tests/unit/planning/test_expected_counts.py`、`test_palm_v3.py` | **已建**(M4):三指列窄一節距、站台 F1–F3 + T |
 | SF-5 | `tests/unit/planning/test_phalanx_plan.py` | **已建**(M3):梯度手指離線規劃出 2 個零件號;執行層驗證 M5 |
-| SF-4 | `tests/unit/core/test_palm_v3.py` 新增案例 | 待建(M4) |
+| SF-4 | `tests/unit/core/test_palm_v3.py` 新增八個案例 | **已建**(M4):23 拒、22 不變、推導預設相等、取樣跟上限 |
 | SF-6 | `tests/unit/verification/test_generator_imports.py` | **已建**(M2):首跑抓到 5 個沒重載的模組 |
 | SF-7 | `tests/unit/scripts/test_hand_execution_reads_plans_only.py` | **已建**(M3):浮點白名單 + 名字型字串,附植入夾具 |
 | SF-8 | `tests/unit/core/test_hand_instance_conformance.py` | 待建(M6) |

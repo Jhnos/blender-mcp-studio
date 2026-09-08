@@ -5,6 +5,32 @@
 
 ## [Unreleased]
 
+### V01.0P.007 — 掌盤知道自己是為哪種連桿建的
+
+#### Added
+
+- `AnthropomorphicPalmSpec` 四個新欄位:`row_finger_count`(`range(4)` 與 `3 * pitch` 曾在四處各自寫死),
+  `thumb_base_palmar_mm`、`pinch_contact_mm`、`thumb_boss_clearance_mm` 改成「0 = 由連桿推導」——
+  V3 推出來仍是 22.0 / 22.0 / 1.0,逐位元組不變(契約只多一個 reload 模組,差分仍 4/4)。
+- 五條不變式:拇指根凸出 > 掌盤厚度、接觸判準 > 掌盤厚度、拇指丘間隙 < 列印徑向間隙、零指列,全部被拒;
+  15 mm 深的連桿再也不會讓拇指根凸出 7 mm 而不報錯。姿態取樣由 `maximum_articulation_deg` 每 10° 推導,
+  不再綁死 50°。
+- `src/core/domain/opposition.py`:對生可達性切成拿掌盤當參數的函式;`palm_v3.py` 從 372 行降到 369 行,
+  離 380 行預警線有距離了。
+
+#### Changed
+
+- 追溯矩陣 PS-3、ES-1、ES-2、DS-2 改真名;剩 4 個 `TODO_`(M5、M6 與 ES-3)。
+- `test_an_unusable_palm_is_refused` 的「接觸距離為零」案例改成負值:零自 M4 起是「由連桿推導」的 sentinel,
+  有意識地重錄,不是改測試換綠燈。
+
+#### Fixed
+
+- **import 掃描器把 `from src.core.domain import opposition` 當成套件**:契約 `reload_modules` 列了
+  `src.core.domain` 而不是 `src.core.domain.opposition`,常駐 Blender 會留著舊的 `opposition`——ES-6 的同一類,
+  低一層。`--check` 在 `opposition` 切出來的當下抓到 diff 不對勁。掃描器現在把套件裡 import 的名字解析成子模組檔;
+  先紅(tmp 樹 `from scripts.pkg import leaf, other`)後綠。
+
 ### V01.0P.006 — 每一份契約都在 CI 裡(D-004 done)
 
 #### Added

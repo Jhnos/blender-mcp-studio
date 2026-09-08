@@ -41,20 +41,19 @@
 
 ### Verified facts
 
-- M0:樹守衛先紅後綠;M1:差分 + 三條 `--real` 閘門(7 s + 1 s + 0.2 s);M2:契約由規劃生成,ES-6 首跑抓到 5 個沒重載的模組。
-- **M3:新產生器(`scripts/hand_*.py` 讀規劃)在真機重現 V3:差分 4/4(3434/2686/10302/54196,STL 時戳在同一次跑內),
-  契約 20/14,`ci.sh --real` 全綠;三張渲染圖親眼看過(手立在地板上、圖說在旁、佈局三節加掌盤)。**
-- 舊產生器三個模組與 `finger_mount_frames` 已刪;`test_script_primitive_ssot` 綠;ES-5 字面值掃描綠。
-- 第一次真機跑抓到一個真缺陷:按名字認主體在第二條鏈起落單(Blender `.001`),已改按位置並記入 LESSONS。
-- 親驗:`palm_v3.py` 372/380 行(M4 要切 `opposition.py`)。
-- D-004 `done`:十三份非手契約在真機各跑一次全過(59 s),接進 `--real`;`test_real_ci_runs_every_contract`
-  釘住 `contracts/` 下每個檔案(先紅:13 個沒被跑)。
+- M0–M3:文件樹與守衛;差分與 `--real` 閘門;契約由規劃生成(ES-6 抓到 5 個沒重載的模組);
+  執行層讀規劃並在真機逐面重現 V3(4/4、20/14),舊產生器已刪。D-004 done:全部 15 份契約在 `--real`。
+- **M4:掌盤四個新欄位(`row_finger_count`、三個 0 = 由連桿推導的 sentinel)與五條不變式;
+  V3 的 22.0 / 22.0 / 1.0 由連桿推導、逐位元組不變——契約只多一個 reload 模組,差分仍 4/4。
+  `opposition.py` 切出,`palm_v3.py` 369 行。八個新案例先紅後綠。**
 
 ### Open failures
 
-- 沒有機器檢查在失敗。矩陣剩 8 個 `TODO_` ref:PS-1、VOC-4(M6)、PS-2 契約欄位(M5)、PS-3、ES-1、ES-2、DS-2(M4)、ES-3。
+- 沒有機器檢查在失敗。矩陣剩 4 個 `TODO_` ref:PS-1、VOC-4(M6)、PS-2 契約欄位(M5)、ES-3。
 
 ### Next step
 
-- M4:先寫 `test_palm_v3` 的紅案例(拇指凸出 23 被拒、三指列窄一節距、推導預設 = 22.0、取樣跟著上限),
-  再切 `opposition.py`、加五條不變式。
+- M5:先寫紅測試——契約新欄位 `expected_shared_mesh_count`(預設 1;判準 `shared_mesh` 觀測 ≠ 宣告即 FAIL,
+  附 should-fire)與 `build_finger` 對梯度手指建出 2 個 datablock(需真機);再讓 `contract_builder`
+  對 `phalanx_part_count != 1` 的實例寫該欄位。V3 契約不寫 → 逐位元組不變。
+- 然後 M6:掃精簡實例的拇指擺位(`strict=True`);註冊 `hand-compact`;生成契約;真機跑;登錄不發布。

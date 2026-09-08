@@ -11,7 +11,7 @@
 兩個實作:`HingePhalanxSpec`(借來的,凍結,只允許加唯讀屬性)與 `CompactHingeLinkSpec`。
 `has_bearing_seat` 是產生器**問**它拿到哪種關節的方式,不是從「座徑等於孔徑」去猜。
 
-## 掌盤目前寫死了什麼(親驗,`src/core/domain/palm_v3.py`)
+## 掌盤 M4 之前寫死了什麼(親驗,已改)
 
 | 位置 | 寫死的 | 問題 |
 |---|---|---|
@@ -22,7 +22,7 @@
 | `:32` | `_SAMPLES_DEG = (0…50)` | 綁死 50°,換了上限的連桿會被靜默截斷 |
 | `:99` | `strict=False` | 對生可達性與比例的拒絕預設關閉 |
 
-## 要加的五條不變式(全部加法式、對 V3 逐位元組中性)
+## 五條不變式(M4 已建;全部加法式、對 V3 逐位元組中性——契約與差分未動)
 
 | # | 不變式 | V3 值 | should-fire 夾具 |
 |---|---|---|---|
@@ -32,10 +32,11 @@
 | I4 | `thumb_boss_clearance_mm` 具名,預設 = 4 × 徑向間隙 | 1.0 | 小於連桿間隙 → 拒絕 |
 | I5 | `_SAMPLES_DEG` 改為由 `maximum_articulation_deg` 每 10° 推導 | 同一個元組 | 上限 60 → 元組多一格 |
 
-`thumb_base_palmar_mm` 與 `pinch_contact_mm` 改成「0 = 由連桿推導」,沿用 `finger_v3.py`
-裡 `wiring_bore_offset_mm` 的 sentinel 模式;V3 推出來剛好 22.0——ES-2 的測試就斷言這件事。
+`thumb_base_palmar_mm`、`pinch_contact_mm`、`thumb_boss_clearance_mm` 都是「0 = 由連桿推導」,沿用 `finger_v3.py`
+裡 `wiring_bore_offset_mm` 的 sentinel 模式;V3 推出來剛好 22.0 / 22.0 / 1.0——ES-2 的測試斷言這件事,
+而且 `AnthropomorphicPalmSpec() == AnthropomorphicPalmSpec(0, 0, 0)`。
 
-## 為什麼要切一個檔
+## 為什麼要切一個檔(M4 已切,`palm_v3.py` 369 行)
 
 `palm_v3.py` 目前 372 行,預算 380 行警告、400 行硬上限。任何新增不變式都會越線。
 切法照 `bearing_seat_cuts` 的形:`_row_tip_world`、`_thumb_tip_world`、`thumb_index_tip_gap_mm`、

@@ -23,18 +23,18 @@ Population: 註冊表 `HAND_INSTANCES` 裡的每個實例與其命名空間下�
 | VOC-4 | 人手尺寸的手是同一套程式的一個實例,不是分叉 | voc | yes | feature | artifact:TODO_hand_compact_contract; static:test_bpy_modules_read_plans_only |
 | PS-1 | 任何滿足 `FingerLinkSpec` 的連桿都能組成手且生成契約 | product | yes | feature | unit:TODO_test_every_registered_instance_conforms; artifact:build_hand_contracts |
 | PS-2 | 力矩臂有梯度的手指建得出,零件號數是宣告值不是產生器限制 | product | yes | feature | artifact:TODO_expected_shared_mesh_count; unit:test_a_gradient_finger_plans_one_part_per_distinct_arm |
-| PS-3 | 指列數是欄位不是常數 | product | no | feature | unit:TODO_test_a_three_finger_row_is_narrower_by_one_pitch |
+| PS-3 | 指列數是欄位不是常數 | product | no | feature | unit:test_a_three_finger_row_is_narrower_by_one_pitch |
 | PS-4 | 契約由規格生成;V3 的兩份契約可被完整重現 | product | no | constraint | unit:test_the_builder_reproduces_the_committed_hand_v3_contracts |
 | PS-5 | `ci.sh --real` 跑手契約與 V3 重現差分 | product | no | constraint | static:test_real_ci_gates_the_hand_contracts |
-| ES-1 | 拇指根凸出量 ≤ 掌盤厚度 | engineering | no | constraint | unit:TODO_test_a_thumb_root_proud_of_the_palm_is_refused |
-| ES-2 | 接觸判準與拇指凸出量由連桿推導;V3 推出來仍是 22.0 | engineering | no | constraint | unit:TODO_test_derived_palm_defaults_equal_the_v3_literals |
+| ES-1 | 拇指根凸出量 ≤ 掌盤厚度 | engineering | no | constraint | unit:test_a_thumb_root_proud_of_the_palm_is_refused |
+| ES-2 | 接觸判準與拇指凸出量由連桿推導;V3 推出來仍是 22.0 | engineering | no | constraint | unit:test_derived_palm_defaults_equal_the_v3_literals |
 | ES-3 | 探針點落在實體內且避開銷孔壁 | engineering | no | constraint | unit:TODO_test_probe_points_lie_inside_the_body_and_clear_the_pin |
 | ES-4 | 佈局規劃是純函式,離線可驗,放得進床身 | engineering | no | constraint | unit:test_a_fifth_part_wraps_to_a_second_row_instead_of_overrunning_the_bed; artifact:layout_fits_bed |
 | ES-5 | 執行層不做算術,名字全來自命名策略 | engineering | no | constraint | static:test_bpy_modules_read_plans_only |
 | ES-6 | 產生器可達的每個模組都在契約 `reload_modules` 裡 | engineering | no | constraint | static:test_every_reachable_module_is_reloaded |
 | ES-7 | 舊 V3 產生器刪除後無重複 primitive | engineering | no | constraint | static:test_script_primitive_ssot |
 | DS-1 | 域層與規劃層不匯入 bpy | detail | no | constraint | static:test_domain_and_planning_never_import_bpy |
-| DS-2 | 姿態取樣由關節上限推導,不寫死 50° | detail | no | constraint | unit:TODO_test_the_posture_grid_follows_the_articulation_limit |
+| DS-2 | 姿態取樣由關節上限推導,不寫死 50° | detail | no | constraint | unit:test_the_posture_grid_follows_the_articulation_limit |
 | DS-3 | 凍結交付物位元組不變 | detail | no | constraint | artifact:test_versioned_octopus_print_package_matches_verified_meshes; artifact:test_versioned_octopus_v2_print_package_matches_verified_meshes |
 
 ## 怎麼讀這張表

@@ -57,6 +57,7 @@
 |---|---|---|---|
 | 2026-09-09 | 兩份 V3 契約的 `reload_modules` 是完整的 | import 圖 18 個模組,契約列 13 個;`finger_link`(擁有 `bearing_seat_cuts`)、`rotation`、runner、兩個 domain 規格從未被重載 | [[hand-framework/07-contracts]];契約重生並簽入 |
 | 2026-09-09 | v4 猜的「五件換行成 182.5 × 100.5」 | 算法給 242.0 × 217.0 | [[hand-framework/v4-scenarios]] |
+| 2026-09-09 | 「import 閉包掃描器看得到每個模組」 | `from pkg import submodule` 被列成 `pkg`;`opposition` 切出來當天契約就列錯 | `generator_imports._from_import_targets`;[[LESSONS_LEARNED]] |
 | 2026-09-09 | 「零件的主體就是叫那個名字的物件」 | Blender 對重名加 `.001`;第二條鏈起主體全落單,場景 8 個 PHALANX_ | `hand_geometry.build_finger` 按位置認主體;[[LESSONS_LEARNED]] |
 
 舉例:若 HF-8 被推翻(15 mm 深掌盤掃不出對生解),那是設計發現——寫在這裡,改 [[hand-framework/08-instances]],
