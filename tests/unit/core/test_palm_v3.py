@@ -296,3 +296,55 @@ def test_a_port_wide_enough_to_meet_a_tendon_channel_is_caught() -> None:
     absurd = 2 * (nearest - channel_radius + 1.0)
     gap = nearest - absurd / 2 - channel_radius
     assert gap < 0.0
+
+
+def test_no_two_routes_through_the_palm_can_touch() -> None:
+    """F10: two tendons that cross rub each other until one parts.
+
+    Eleven bores run through this plate — five tendon channels on the palmar
+    side, five wiring channels on the back, and the air port across all of them
+    — and the failure-mode table asked for a pairwise clearance that nothing
+    ever computed. They are parallel lines and a crossing bore, so it is
+    arithmetic, and it was sitting in the matrix as TODO next to the rows that
+    genuinely need a printed part.
+    """
+    spec = AnthropomorphicPalmSpec()
+    link = spec.finger.link
+    radius = link.tendon_hole_diameter_mm / 2
+    stations = [*spec.row_finger_x_mm, spec.thumb_root_mm[0]]
+
+    routes = [
+        (x_mm, y_mm)
+        for x_mm in stations
+        for y_mm in (spec.finger.tendon_bore_offset_mm, spec.finger.wiring_bore_offset_mm)
+    ]
+    assert len(routes) == 10
+
+    worst = min(
+        math.dist(first, second) - 2 * radius
+        for index, first in enumerate(routes)
+        for second in routes[index + 1 :]
+    )
+    assert worst > link.minimum_wall_mm, f"two routes leave only {worst:.2f} mm between them"
+
+
+def test_a_tendon_turns_on_the_radius_its_moment_arm_sets() -> None:
+    """F9, as far as geometry can take it without a cord in hand.
+
+    The tendon wraps each joint at exactly its moment arm, so 'minimum bend
+    radius' is not a separate number to be measured — it *is* the moment arm,
+    and the usable window already brackets it. What stays open is the
+    threshold: a cord's own minimum bend radius is a property of the cord, and
+    choosing one is a purchase, not a computation. This pins the relationship
+    so that buying a cord immediately decides whether the geometry passes.
+    """
+    spec = AnthropomorphicPalmSpec()
+    finger = spec.finger
+
+    bend_radii = set(finger.moment_arms_mm)
+    assert bend_radii == {6.6}, "the tendon's turn radius is its moment arm, and they are equal"
+    assert finger.smallest_usable_moment_arm_mm <= min(bend_radii)
+    assert max(bend_radii) <= finger.largest_usable_moment_arm_mm
+
+    # A cord needing more than this cannot be used without a new link spec.
+    assert min(bend_radii) == pytest.approx(6.6, abs=0.01)
