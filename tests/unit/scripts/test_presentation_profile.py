@@ -104,3 +104,32 @@ def test_an_unusable_profile_is_refused(overrides: dict[str, object]) -> None:
     fields.update(overrides)
     with pytest.raises(ValueError):
         PresentationProfile(**fields)  # type: ignore[arg-type]
+
+
+def test_every_spec_the_render_serves_satisfies_its_interface() -> None:
+    """The render asks for a stack's height, not for a named class.
+
+    `setup_render` was typed as a union of the two specs that happened to call
+    it, which is a list of callers rather than a statement of what it needs — and
+    the third caller failed to type-check for a reason no one could act on. It
+    reads the unit count and the pitch to aim the camera at the middle of the
+    stack, and nothing else.
+    """
+    from scripts.presentation_profile import StackedAssembly
+    from src.core.domain.biaxial_hinge import BiaxialHingeSpec
+    from src.core.domain.finger_v3 import SingleTendonFingerSpec
+    from src.core.domain.hollow_side_hinge import HollowSideHingeSpec
+    from src.core.domain.inset_hinge import InsetHingeSpec
+
+    for spec in (
+        HollowSideHingeSpec(),
+        InsetHingeSpec(),
+        BiaxialHingeSpec(joint_count=4),
+        SingleTendonFingerSpec().link,
+    ):
+        assert isinstance(spec, StackedAssembly), type(spec).__name__
+        assert spec.assembly_unit_count >= 1
+        assert spec.unit_pitch_mm > 0
+
+    # Should-fire: an object with neither member must not satisfy it.
+    assert not isinstance(object(), StackedAssembly)

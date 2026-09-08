@@ -5,6 +5,17 @@
 
 ## [Unreleased]
 
+### V01.09.002
+
+#### Fixed
+
+- `setup_render` 原本的型別是「兩個具名 spec 的聯集」——那是一份**呼叫者名單**,不是
+  需求的陳述。第三個呼叫者(V3 手指)因此在 Mac 的 mypy 上掛掉,而那個錯誤沒有任何人
+  能據以行動:它讀的只有 `assembly_unit_count` 與 `unit_pitch_mm`,用來把相機瞄準
+  整疊的中點,其餘一概不碰。改成 `StackedAssembly` Protocol,並加一條測試證明四個
+  spec 都滿足它、而一個空物件不滿足。
+  (本機 mypy 當時是綠的,Mac 才紅——閘門以 Mac 為準。)
+
 ### V01.09.001
 
 #### Fixed

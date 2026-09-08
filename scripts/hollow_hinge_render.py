@@ -9,7 +9,11 @@ from pathlib import Path
 import bpy
 from mathutils import Matrix, Vector
 
-from scripts.presentation_profile import MECHANICAL_PROFILE, PresentationProfile
+from scripts.presentation_profile import (
+    MECHANICAL_PROFILE,
+    PresentationProfile,
+    StackedAssembly,
+)
 from src.core.domain.hollow_side_hinge import HollowSideHingeSpec
 from src.core.domain.inset_hinge import InsetHingeSpec
 
@@ -54,7 +58,7 @@ def add_text(
 
 
 def setup_render(
-    spec: HollowSideHingeSpec | InsetHingeSpec,
+    spec: StackedAssembly,
     floor_material: bpy.types.Material,
     assign_material: Callable[[bpy.types.Object, bpy.types.Material], None],
     profile: PresentationProfile = MECHANICAL_PROFILE,

@@ -19,9 +19,28 @@ lights and floor out of another model's collision groups and STL exports.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Protocol, runtime_checkable
 
 #: ``(suffix, energy, size_mm, location_mm)`` for one area light.
 Light = tuple[str, float, float, tuple[float, float, float]]
+
+
+@runtime_checkable
+class StackedAssembly(Protocol):
+    """What the render setup actually needs from a specification: how tall it is.
+
+    It was typed as a union of two named specs, which is a list of the callers
+    that happened to exist rather than a statement of the requirement — and the
+    third caller failed to type-check for no reason anyone could act on. The
+    camera and lights aim at the middle of the stack; the middle of the stack is
+    the unit count and the pitch. Nothing else is read.
+    """
+
+    @property
+    def assembly_unit_count(self) -> int: ...
+
+    @property
+    def unit_pitch_mm(self) -> float: ...
 
 
 @dataclass(frozen=True, slots=True)
