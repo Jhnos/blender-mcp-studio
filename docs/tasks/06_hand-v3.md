@@ -36,6 +36,11 @@ V1／V2／V6 是凍結交付物,一個位元組都不動。
 
 ### Verified facts
 
+- `SingleTendonFingerSpec` 已交(`src/core/domain/finger_v3.py`),10 條測試綠。
+  實測腱行程需求 14.40 mm vs 致動器行程 30.0 mm。
+- **實測推翻了文件的一個說法**:`HingePhalanxSpec` 單軸的是**連桿**,它的串接規則
+  `assembly_rotations_deg` 是 `(0, 90, 0, 90)`——交替軸。兩份文件已改寫。
+
 - 文件樹 20 檔已寫,平鋪於 `docs/hand-v3/`(子目錄會超過導航兩跳而變孤兒)。
 - 追溯矩陣 22 條需求全部有驗證器,R1–R6 綠。過程中 `trace_check.py` 抓到一個真缺口:
   PS-6 原本只有 differential 沒有 artifact,已補。
@@ -46,14 +51,15 @@ V1／V2／V6 是凍結交付物,一個位元組都不動。
 
 ### Open failures
 
-- 覆蓋矩陣 [`../hand-v3/v7-matrix.md`](../hand-v3/v7-matrix.md) 上**每一列都是 TODO**。
-  唯一可立即跑的是 V1／V2 的四份迴歸契約。
+- 覆蓋矩陣 [`../hand-v3/v7-matrix.md`](../hand-v3/v7-matrix.md):域規格那四列已 PASS,
+  **其餘每一列仍是 TODO**。幾何尚未產生。
 - 抓持力無法由現有管線驗證,只能實體台架量。台架一次都還沒跑,
   [`../hand-v3/v8-results.md`](../hand-v3/v8-results.md) 全部空白。
 
 ### Next step
 
 - Track 1:依 [`../hand-v3/08-inmoov.md`](../hand-v3/08-inmoov.md) 下載並列印 InMoov 右手,
-  同時採購兩隻外層手套與針筒。
-- Track 2:寫 `tests/unit/core/test_finger_v3.py` 的第一個**會紅**的測試——
-  腱路徑長變化超過致動器行程時必須 raise。
+  同時採購兩隻外層手套與針筒。**使用者執行。**
+- Track 2 下一片:手指產生器。照 `scripts/archive/README.md` 指定的做法——
+  先定義 `PresentationProfile`(前綴／解析度／相機／燈光／地板),再讓 render 變成 profile
+  常數,**不是把 `scripts/archive/hinge_chain_render.py` 的 fork 搬回來**。

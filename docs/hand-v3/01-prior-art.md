@@ -18,9 +18,12 @@
 
 ## repo 內部就有的東西(最大的一筆)
 
-`src/core/domain/hinge_chain.py` 的 `HingePhalanxSpec` **已經是一個單軸、指節形狀的
-手指鏈**:本體 40 × 24 × 22 mm、有細長比檢查、最大關節角 ±50°、公舌／母叉單軸鉸鏈、
+`src/core/domain/hinge_chain.py` 的 `HingePhalanxSpec` **已經是一個指節形狀的單軸連桿**:
+本體 40 × 24 × 22 mm、有細長比檢查、最大關節角 ±50°、公舌／母叉單軸鉸鏈、
 腱半徑 7 mm、軸承座 Ø8.1。它現在仍是活的,而且有測試(`tests/unit/core/test_hinge_chain.py`)。
+
+**可復用的是連桿,不是串接規則。** 實測它的 `assembly_rotations_deg` 是 `(0, 90, 0, 90)`
+——交替軸,對觸手對、對手指錯。V3 借連桿、換規則,詳見 [[hand-v3/03-finger]]。
 
 只有它的**產生器**被歸檔在 `scripts/archive/model_hinge_chain.py`。
 歸檔理由寫在 `scripts/archive/README.md`:**全樹零引用,不是幾何缺陷**。
