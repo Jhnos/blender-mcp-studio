@@ -69,8 +69,9 @@ def thumb_tip_world(palm: AnthropomorphicPalmSpec, angles_deg: tuple[float, ...]
 REST_SAMPLE_STEP_MM = 1.0
 
 
-def _unit_axis_samples(chain_lift_mm: float, link_pitch_mm: float, half_length_mm: float,
-                       units: int) -> list[tuple[float, float]]:
+def _unit_axis_samples(
+    chain_lift_mm: float, link_pitch_mm: float, half_length_mm: float, units: int
+) -> list[tuple[float, float]]:
     """(distance along the chain, distance from that unit's centre) for every sample."""
     samples: list[tuple[float, float]] = []
     steps = int(2 * half_length_mm / REST_SAMPLE_STEP_MM)
@@ -82,8 +83,9 @@ def _unit_axis_samples(chain_lift_mm: float, link_pitch_mm: float, half_length_m
     return samples
 
 
-def _extent_towards(width_mm: float, depth_mm: float, length_mm: float, local_mm: float,
-                    direction_local: Axis3) -> float:
+def _extent_towards(
+    width_mm: float, depth_mm: float, length_mm: float, local_mm: float, direction_local: Axis3
+) -> float:
     """How far an ellipsoid body reaches from its axis point towards `direction_local`.
 
     The body is the ellipsoid (width, depth, length); at `local_mm` along its
@@ -129,7 +131,9 @@ def thumb_rest_clearance_mm(palm: AnthropomorphicPalmSpec) -> float:
     )
     root = palm.thumb_root_mm
 
-    finger_samples = _unit_axis_samples(lift, link.unit_pitch_mm, length / 2, link.assembly_unit_count)
+    finger_samples = _unit_axis_samples(
+        lift, link.unit_pitch_mm, length / 2, link.assembly_unit_count
+    )
     thumb_samples = _unit_axis_samples(
         t_lift, thumb_link.unit_pitch_mm, t_length / 2, thumb_link.assembly_unit_count
     )
@@ -146,7 +150,9 @@ def thumb_rest_clearance_mm(palm: AnthropomorphicPalmSpec) -> float:
                     continue
                 unit = tuple(component / distance for component in gap_vector)
                 # Finger frame is the world frame; the thumb's is (across, pad, axis).
-                finger_reach = _extent_towards(width, depth, length, f_local, (-unit[0], -unit[1], -unit[2]))
+                finger_reach = _extent_towards(
+                    width, depth, length, f_local, (-unit[0], -unit[1], -unit[2])
+                )
                 thumb_dir = (
                     sum(unit[i] * across[i] for i in range(3)),
                     sum(unit[i] * pad[i] for i in range(3)),
