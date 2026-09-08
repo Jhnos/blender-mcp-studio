@@ -20,11 +20,15 @@ room → corridor → exit, three interactions, persistent inventory and visual 
 
 ### Open failures
 
-- No known failures in the delivered assets or game integration.
-- User aesthetic acceptance remains. Veilroom browser evidence is retained in its
-  `data/verification/universal-room/` directory; both keyboard and touch journeys passed.
-- Full Blender CI output is retained in `tmp/universal-room-ci-final.log`.
+- Complete Lane A is not established. Gameplay journeys do not prove all controls, numeric viewport
+  checks, module seams, material outcome differentials, cleanup or reversible formal delivery.
+- Aesthetic acceptance is not assigned to the user: quantifiable experience stays in Lane A.
+- Concurrent main updates twice removed the asset merge. The pushed branch preserves source;
+  stable integration and delivery-path checks remain the agent's responsibility.
+- Canonical Lane definition and per-requirement evidence audit live in Project_Veilroom under
+  docs/12_gameplay_campaign/verification/universal-room/00-INDEX.md and ../01-scope.md.
 
 ### Next step
 
-Open the library and the Veilroom demo for aesthetic review, then reuse the modules for the next map.
+Follow the canonical Lane A plan: fixture lifecycle, UI sweep/random/oracles, artifact comparisons,
+independent visual checks and stable formal integration. Do not ask the user to replace these checks.
