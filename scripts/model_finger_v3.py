@@ -51,6 +51,27 @@ def _shell_count(obj: bpy.types.Object) -> int:
     return len({find(index) for index in range(len(mesh.vertices))})
 
 
+def _refuse_a_stale_scene() -> None:
+    """Fail loudly if a previous run's objects are still in the scene.
+
+    The contract caught this before the generator did, which is the wrong way
+    round: the generator knows exactly how many of each thing it just made.
+    """
+    expected = {
+        "HJ_V3_PHALANX_": 4,
+        "HJ_V3_LAYOUT_PART_": 5,
+        "HJ_V3_HAND_": 19,
+        "HJ_V3_PALM": 1,
+    }
+    for prefix, count in expected.items():
+        found = sum(1 for obj in bpy.data.objects if obj.name.startswith(prefix))
+        if found != count:
+            raise RuntimeError(
+                f"{found} objects under {prefix!r}, expected {count} — a previous run "
+                "was not cleared, and everything downstream is measuring two hands"
+            )
+
+
 def build() -> None:
     OUTPUT.mkdir(parents=True, exist_ok=True)
     scene = bpy.context.scene
@@ -117,13 +138,20 @@ def build() -> None:
         "moment arm. Unqualified fit prototype; no grip force, retention or "
         "strength claim. Never printed."
     )
+    _refuse_a_stale_scene()
     present_finger(OUTPUT, SPEC, parts, layout, hand)
     bpy.ops.wm.save_as_mainfile(filepath=str(OUTPUT / "finger_v3.blend"))
     print("FINGER_V3_READY", str(OUTPUT))
 
 
 def main() -> None:
-    run_generator(build)
+    # The prefix is not decoration. `run_generator` defaults to "HH_", which every
+    # earlier generator uses; this one namespaces its output "HJ_". Left at the
+    # default, `clear_previous` removed nothing of ours and each run in a live
+    # Blender stacked another whole hand on the last — nine layout parts instead
+    # of five, two of them intersecting. It cannot show up locally, because a
+    # --factory-startup run always begins with an empty scene.
+    run_generator(build, prefix="HJ_")
 
 
 if __name__ == "__main__":
