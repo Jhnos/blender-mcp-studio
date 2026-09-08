@@ -217,7 +217,9 @@ def find_blanket_excepts(root: Path) -> dict[str, int]:
         for node in ast.walk(tree):
             if not isinstance(node, ast.ExceptHandler):
                 continue
-            if node.type is None or (isinstance(node.type, ast.Name) and node.type.id == "Exception"):
+            if node.type is None or (
+                isinstance(node.type, ast.Name) and node.type.id == "Exception"
+            ):
                 hits += 1
         if hits:
             counts[path.name] = hits
