@@ -105,6 +105,7 @@ def oracle_code(contract: GeneratedArtifactContract) -> str:
         "bore_probe_points_mm": [list(point) for point in expected.bore_probe_points_mm],
         "collision_groups": [item.prefix for item in expected.collision_groups],
         "disjoint_groups": list(expected.disjoint_groups),
+        "count_shells": expected.expected_shells_per_object is not None,
         "channel_probes": [
             {
                 "key": probe.key,
@@ -196,6 +197,31 @@ for obj in bpy.data.objects:
         obj.hide_set(False)
         obj.select_set(True)
         selected.append(obj.name)
+shell_counts = {{}}
+if config['count_shells']:
+    for obj in parts:
+        bm = bmesh.new()
+        bm.from_mesh(obj.data)
+        bm.faces.ensure_lookup_table()
+        seen = set()
+        islands = 0
+        for face in bm.faces:
+            if face.index in seen:
+                continue
+            islands += 1
+            stack = [face]
+            while stack:
+                current = stack.pop()
+                if current.index in seen:
+                    continue
+                seen.add(current.index)
+                for edge in current.edges:
+                    for other in edge.link_faces:
+                        if other.index not in seen:
+                            stack.append(other)
+        bm.free()
+        shell_counts[obj.name] = islands
+
 channel_probe_results = {{}}
 for probe in config['channel_probes']:
     target = bpy.data.objects.get(probe['object'])
@@ -270,6 +296,7 @@ print(json.dumps({{
     'bore_ray_hits': bore_hits,
     'collision_groups': collision_results,
     'cross_group_overlaps': cross_group_overlaps,
+    'shell_counts': shell_counts,
     'channel_probe_results': channel_probe_results,
     'joint_sweep': sweep_result,
     'selected_count': len(selected),

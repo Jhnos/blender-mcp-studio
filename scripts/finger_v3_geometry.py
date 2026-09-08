@@ -70,6 +70,24 @@ def _add_male_end(body: bpy.types.Object, spec: SingleTendonFingerSpec) -> None:
     """The tongue at the top, a disc whose pin bore runs along the finger's one axis."""
     link = spec.link
     axis = spec.male_hinge_axis
+    # The neck, without which the lug is a disc floating above its own body.
+    # The female fork has always had one; the male end did not, and once the
+    # joint centre moved from 24 to 27 mm the disc left the body 0.5 mm behind.
+    # Every phalanx then shipped as two watertight solids that no gate could
+    # tell apart from one.
+    boolean(
+        body,
+        create_box(
+            "HJ_MALE_CONNECTOR",
+            (
+                link.male_tongue_thickness_mm,
+                link.lug_outer_diameter_mm * 0.72,
+                9.0,
+            ),
+            (0.0, 0.0, link.body_length_mm / 2.0 - 1.0),
+        ),
+        "UNION",
+    )
     boolean(
         body,
         add_cylinder(

@@ -148,7 +148,8 @@
           ]
         ]
       }
-    ]
+    ],
+    "expected_shells_per_object": 1
   },
   "readiness": {
     "selection_prefix": "HJ_V3_LAYOUT_PART_",
