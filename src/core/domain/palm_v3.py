@@ -87,6 +87,12 @@ class AnthropomorphicPalmSpec:
     #: outer glove itself is bought, not designed — see docs/hand-v3/07-interfaces.
     cuff_clamp_wall_mm: float = 3.0
     air_port_diameter_mm: float = 6.0
+    #: How far the port's lower edge stands clear of the cuff clamp band. The
+    #: port's height used to be `-plate_height * 0.72` inside the generator and
+    #: the band's `-plate_height + body_length / 2` inside another function;
+    #: they landed 0.4 mm apart, so a 6 mm bore went through the middle of a
+    #: 3 mm band. Their relationship is a decision now, and it has a name.
+    air_port_clearance_mm: float = 2.4
     #: Refuse an unopposable thumb outright instead of only reporting the gap.
     #: Off by default so a caller can measure a deliberately flat hand and
     #: compare — the guard needs a case it fires on to be worth anything.
@@ -99,6 +105,8 @@ class AnthropomorphicPalmSpec:
             raise ValueError("a contact distance of zero can never be met")
         if self.cuff_clamp_wall_mm < self.finger.link.minimum_wall_mm:
             raise ValueError("the cuff clamp is thinner than the minimum printable wall")
+        if self.air_port_clearance_mm < 0.0:
+            raise ValueError("the air port would be bored into the cuff clamp band")
         if self.air_port_diameter_mm < 4.0:
             raise ValueError("the air port must take a syringe fitting")
         if self.thumb_offset_mm <= 0 or self.thumb_base_drop_mm <= 0:
@@ -188,9 +196,26 @@ class AnthropomorphicPalmSpec:
         return 3 * self.row_pitch_mm + self.finger.link.body_width_mm
 
     @property
+    def plate_height_mm(self) -> float:
+        """The plate the roots stand on, wrist to knuckles."""
+        return self.thumb_base_drop_mm + self.finger.link.body_length_mm
+
+    @property
+    def cuff_clamp_center_z_mm(self) -> float:
+        """Where the band that holds the glove cuff sits on the plate."""
+        return -self.plate_height_mm + self.finger.link.body_length_mm / 2
+
+    @property
     def air_port_center_mm(self) -> tuple[float, float]:
-        """On the back of the hand, clear of anything the palm grips with."""
-        return (0.0, self.finger.link.body_depth_mm / 2)
+        """Where the through-bore crosses the plate, as (x, z).
+
+        A through-bore along Y, so y places nothing — it used to be published
+        here and the generator threw it away with `_ = port_y` while the height
+        that mattered was a magic fraction. x centres it; z lifts it clear of
+        the clamp band.
+        """
+        band_top = self.cuff_clamp_center_z_mm + self.cuff_clamp_wall_mm / 2
+        return (0.0, band_top + self.air_port_clearance_mm + self.air_port_diameter_mm / 2)
 
     # -------------------------------------------------------- can it oppose?
 

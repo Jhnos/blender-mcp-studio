@@ -75,7 +75,7 @@ def _place(obj: bpy.types.Object, origin_mm: tuple[float, float, float], matrix:
 def build_palm(spec: AnthropomorphicPalmSpec) -> bpy.types.Object:
     """The plate with every root, channel, clamp and port already cut into it."""
     link = spec.finger.link
-    plate_height = spec.thumb_base_drop_mm + link.body_length_mm
+    plate_height = spec.plate_height_mm
     plate = create_box(
         "HJ_V3_PALM",
         (spec.palm_width_mm, link.body_depth_mm, plate_height),
@@ -139,20 +139,19 @@ def build_palm(spec: AnthropomorphicPalmSpec) -> bpy.types.Object:
             )
 
     # Air port, on the back of the hand and clear of anything that grips.
-    port_x, port_y = spec.air_port_center_mm
+    port_x, port_z = spec.air_port_center_mm
     boolean(
         plate,
         add_cylinder(
             "HJ_V3_CUT_AIR_PORT",
             spec.air_port_diameter_mm / 2,
             link.body_depth_mm + 8.0,
-            (port_x, 0.0, -plate_height * 0.72),
+            (port_x, 0.0, port_z),
             axis="Y",
             vertices=_BORE_SEGMENTS,
         ),
         "DIFFERENCE",
     )
-    _ = port_y
 
     # Cuff clamp: a groove right round the wrist for a cable tie or a band to sit
     # in, holding both sleeves. One clamp, because there is one seal.
@@ -170,7 +169,7 @@ def _clamp_groove(spec: AnthropomorphicPalmSpec, plate_height: float) -> bpy.typ
     """A shallow band round the wrist, cut as a slightly larger box minus a smaller."""
     link = spec.finger.link
     depth = spec.cuff_clamp_wall_mm
-    z = -plate_height + link.body_length_mm / 2
+    z = spec.cuff_clamp_center_z_mm
     outer = create_box(
         "HJ_V3_CUT_CLAMP_OUTER",
         (spec.palm_width_mm + 8.0, link.body_depth_mm + 8.0, depth),

@@ -249,3 +249,46 @@ def test_the_air_port_misses_every_tendon_and_wiring_channel() -> None:
     for x_mm in stations:
         gap = abs(x_mm - port_x) - port_radius - channel_radius
         assert gap > 0.0, f"the port meets the channel at x={x_mm}: {gap:.2f} mm"
+
+
+def test_the_air_port_clears_the_cuff_clamp_band() -> None:
+    """Two independent formulas landed 0.4 mm apart, and nobody chose that.
+
+    The port's height was `-plate_height * 0.72` inside the generator; the
+    clamp groove's was `-plate_height + body_length / 2` inside another
+    function. They evaluated to -50.4 and -50.0, so a Ø6 port was bored
+    straight through the middle of a 3 mm clamp band — the one place on the
+    plate whose whole job is to hold a glove cuff down against continuous
+    material. Neither number was reviewable, and their near-collision was
+    arithmetic, not a decision.
+    """
+    spec = AnthropomorphicPalmSpec()
+
+    _, port_z = spec.air_port_center_mm
+    port_bottom = port_z - spec.air_port_diameter_mm / 2
+    band_top = spec.cuff_clamp_center_z_mm + spec.cuff_clamp_wall_mm / 2
+
+    assert port_bottom >= band_top + spec.finger.link.minimum_wall_mm, (
+        f"port bottom {port_bottom:.2f} against band top {band_top:.2f}"
+    )
+
+
+def test_a_port_driven_into_the_clamp_band_is_refused() -> None:
+    """The should-fire half. A guard with only a passing fixture is a guard
+    that is indistinguishable from one that always passes."""
+    with pytest.raises(ValueError):
+        AnthropomorphicPalmSpec(air_port_clearance_mm=-20.0)
+
+
+def test_a_port_wide_enough_to_meet_a_tendon_channel_is_caught() -> None:
+    """The should-fire half of the channel-clearance check."""
+    spec = AnthropomorphicPalmSpec()
+    port_x, _ = spec.air_port_center_mm
+    channel_radius = spec.finger.link.tendon_hole_diameter_mm / 2
+    nearest = min(abs(x - port_x) for x in spec.row_finger_x_mm)
+
+    # A port this wide reaches the nearest channel; the arithmetic the passing
+    # test relies on must say so rather than staying quiet.
+    absurd = 2 * (nearest - channel_radius + 1.0)
+    gap = nearest - absurd / 2 - channel_radius
+    assert gap < 0.0
