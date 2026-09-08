@@ -25,20 +25,22 @@
   "tmp/hand-v3/hand_v3_mm.stl"
  ],
  "oracle": {
-  "object_prefix": "HJ_V3_PHALANX_",
+  "object_prefix": "HJ_V3_HAND_F1_",
   "expected_count": 3,
   "expected_rotations_deg": [
    0,
    0,
    0
   ],
-  "scene_list_property": "HJ_V3_PHALANX_NAMES",
+  "scene_list_property": "HJ_V3_HAND_STATIONS",
   "expected_scene_list": [
-   "HJ_V3_PHALANX_1",
-   "HJ_V3_PHALANX_2",
-   "HJ_V3_PHALANX_3"
+   "F1",
+   "F2",
+   "F3",
+   "F4",
+   "T"
   ],
-  "center_probe_object": "HJ_V3_PHALANX_1",
+  "center_probe_object": "HJ_V3_HAND_F1_1",
   "center_channel_expected_open": false,
   "bore_probe_points_mm": [
    [
@@ -51,7 +53,7 @@
    ]
   ],
   "joint_sweep": {
-   "master_object": "HJ_V3_PHALANX_1",
+   "master_object": "HJ_V3_HAND_F1_1",
    "pivot_offset_mm": 27.0,
    "axis": "X",
    "mating_twist_deg": 0,
@@ -71,7 +73,7 @@
   },
   "collision_groups": [
    {
-    "prefix": "HJ_V3_PHALANX_",
+    "prefix": "HJ_V3_HAND_F1_",
     "expected_count": 3
    },
    {

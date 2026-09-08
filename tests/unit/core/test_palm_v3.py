@@ -196,8 +196,7 @@ def test_the_hand_has_a_hands_proportions() -> None:
         sum(spec.finger_segment_lengths_mm) / spec.palm_height_mm
     )
     assert 0.7 <= spec.finger_to_palm_ratio <= 1.4, (
-        f"fingers are {spec.finger_to_palm_ratio:.2f} times the palm's height; "
-        "a hand is about 1.0"
+        f"fingers are {spec.finger_to_palm_ratio:.2f} times the palm's height; a hand is about 1.0"
     )
 
 

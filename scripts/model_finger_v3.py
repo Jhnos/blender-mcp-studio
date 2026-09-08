@@ -84,6 +84,11 @@ def _leave_only_the_hand_visible(hand: list[bpy.types.Object]) -> None:
     pictures never showed the problem. The file is the deliverable, not the
     pictures of it.
     """
+    # Hidden, not merely un-rendered. `hide_viewport` also drops an object out of
+    # the depsgraph, which is a documented trap in this repo — and it bit here:
+    # the finger contract measured the loose stack and started failing with "has
+    # no evaluated mesh data" the moment it was hidden. The contract now measures
+    # the finger that is actually delivered, which is the one on the hand.
     keep = {obj.name for obj in hand}
     for obj in list(bpy.data.objects):
         if obj.name in keep:
