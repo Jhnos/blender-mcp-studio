@@ -14,8 +14,6 @@ These tests pin translation to the adapter and prove no caller can bypass it.
 
 from __future__ import annotations
 
-import logging
-
 import pytest
 
 from src.adapters.mcp.blender_mcp_adapter import BlenderMCPAdapter, BlenderMCPClient
@@ -241,9 +239,7 @@ class _ScreenshotMCP:
         if self.write_file:
             from pathlib import Path
 
-            Path(str(arguments["filepath"])).write_bytes(
-                b"\x89PNG\r\n\x1a\n" + b"\x00" * 16
-            )
+            Path(str(arguments["filepath"])).write_bytes(b"\x89PNG\r\n\x1a\n" + b"\x00" * 16)
         return ToolResult(success=True, output={"width": 1, "height": 1}, error=None)
 
 

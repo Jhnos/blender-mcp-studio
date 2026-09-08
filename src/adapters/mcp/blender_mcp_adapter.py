@@ -7,13 +7,12 @@ import contextlib
 import json
 import logging
 
-from src.adapters.mcp.blender_tool_codegen import is_translatable, translate
 from src.adapters.blender_scene_decoding import decode_object_details, decode_scene_summary
+from src.adapters.mcp.blender_tool_codegen import is_translatable, translate
 from src.adapters.viewport_capture import capture_viewport
 from src.core.domain.command import Command
-from src.core.domain.exceptions import SceneOperationError
+from src.core.domain.exceptions import BlenderConnectionError, SceneOperationError
 from src.core.domain.scene_operations import ObjectDetails, SceneSummary, ViewportImage
-from src.core.domain.exceptions import BlenderConnectionError
 from src.core.ports.blender_port import BlenderPort
 from src.core.ports.code_sandbox_port import CodeSandboxPort
 from src.core.ports.mcp_port import MCPPort, ToolDefinition, ToolResult
@@ -309,7 +308,9 @@ class BlenderMCPAdapter(BlenderPort):
         """
         result = await self._dispatch(tool_name, arguments)
         if not result.success:
-            raise SceneOperationError(result.error or f"{tool_name} failed without an error message")
+            raise SceneOperationError(
+                result.error or f"{tool_name} failed without an error message"
+            )
         return result.output
 
     async def is_connected(self) -> bool:

@@ -6,8 +6,8 @@ from dataclasses import FrozenInstanceError
 
 import pytest
 
-from src.core.domain.session import Session
 from src.core.domain.scene_operations import ObjectDetails, SceneSummary, ViewportImage
+from src.core.domain.session import Session
 from src.core.ports.blender_port import BlenderPort
 from src.core.ports.llm_port import (
     LLMChatPort,
@@ -27,7 +27,6 @@ from src.core.use_cases.conversational_modeling import ConversationalModelingUse
 
 
 class FakeBlender(BlenderPort):
-
     async def scene_summary(self) -> SceneSummary:
         raise NotImplementedError("this fake answers no scene queries")
 
@@ -36,6 +35,7 @@ class FakeBlender(BlenderPort):
 
     async def viewport_screenshot(self, max_size: int = 800) -> ViewportImage:
         raise NotImplementedError("this fake answers no scene queries")
+
     def __init__(self) -> None:
         self.last_command = None
 

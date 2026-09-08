@@ -27,7 +27,6 @@ from src.core.domain.exceptions import SceneOperationError
 from src.core.domain.scene_operations import ObjectDetails, SceneSummary, ViewportImage
 from src.core.ports.blender_port import BlenderPort
 from src.core.ports.mcp_port import ToolResult
-from src.infrastructure.narrowing import as_str_keyed
 
 logger = logging.getLogger(__name__)
 
@@ -84,7 +83,9 @@ class MCPClientBlenderAdapter(BlenderPort):
         """This transport returns tool text; a JSON body inside it is the payload."""
         result = await self._call_tool(tool_name, arguments)
         if not result.success:
-            raise SceneOperationError(result.error or f"{tool_name} failed without an error message")
+            raise SceneOperationError(
+                result.error or f"{tool_name} failed without an error message"
+            )
         if not isinstance(result.output, str):
             return result.output
         try:
