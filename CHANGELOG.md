@@ -5,6 +5,18 @@
 
 ## [Unreleased]
 
+### V01.0Q.003 — 試片由機器判、精簡實例的發布路徑先證明
+
+#### Added
+
+- `src/verification/coupon_judgement.py` + `scripts/analyse_coupon.py`:使用者量七項,機器對照**由連桿推導**的
+  公差帶(C1 銷孔 4.35–4.70、C3 軸承座 7.95–8.20,協定偏移具名放在旁邊)給 PASS / FAIL / VACUOUS,
+  印出可貼進 v8 的列(一次量測一列,不平均);只量一次是 vacuous;七項全 PASS 才 exit 0。
+  `v6b-coupon.md` 的公差表由測試釘在同一組數字上。Windows 主控台改 UTF-8 才印得出 Ø。
+  先查 GitHub:有公差測試件與影像工具,沒有這種判定腳本。
+- `test_hand_compact_publish_path`:用合成檔把五個 STL + blend + 三張圖的精簡實例包發布到暫存目錄,
+  manifest 每檔一筆、每個 STL 有面數;缺一張圖就拒發。使用者接受渲染圖後要跑的那一行,不會是第一次跑。
+
 ### V01.0Q.002 — `scripts/` 納入檔案行數棘輪;兩個超標檔沿責任切開
 
 #### Changed

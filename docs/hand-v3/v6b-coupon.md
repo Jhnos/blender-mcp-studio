@@ -65,6 +65,15 @@ J4 是這一版特別要看的:借來的規格原本讓相鄰件互相侵入 2.5
 
 ## 記錄
 
+**量完不要自己比對表格,交給機器判**:
+
+```bash
+python3 scripts/analyse_coupon.py --c1 4.52 4.48 --c2 yes --c3 8.05 8.12 --c4 yes --c5 yes --c6 yes --c7 yes
+```
+
+它從連桿規格算出 C1/C3 的公差帶(上表的數字由測試釘住,不會漂),逐項給 PASS / FAIL / VACUOUS,
+並印出可直接貼進 [[hand-v3/v8-results]] 的列;只量一次的孔是 vacuous,全部七項 PASS 才 exit 0。
+
 數字填進 [[hand-v3/v8-results]] 的「機器結果」表下面新開的「試片」段:
 一列一次量測,同一個孔的兩次量測**分開兩列**,不要先平均。
 

@@ -13,7 +13,10 @@
 | wengmister/BiDexHand <https://github.com/wengmister/BiDexHand> | 參數化 CAD(SolidWorks/STEP),MIT | `[轉引]` | 授權最寬;STEP 進不了規格驅動管線 |
 | Yeah Robotic Hand(Hackaday.io 204373) | Blender **modifier** 參數化手,OSHWA | `[轉引 2026-09-08 網搜]` | 最接近「Blender 參數化」,但靠 modifier 堆疊不是規格驅動,無契約驗證 |
 
-**查證結論**:沒有任何一個是 Python/bpy、規格驅動、契約驗證的手框架。可轉移的是設計結論,不是程式碼。
+**查證結論**:沒有任何一個是 Python/bpy、規格驅動、契約驗證的手框架。
+
+2026-09-09 建 `coupon_judgement` 前再查一次(WebSearch):Printables/Thingiverse 有公差測試件的 STL、
+NIST 與 PorMe 有列印影像分析工具,**沒有**一個是「卡尺讀數對規格推導公差帶」的判定腳本;自建,約 150 行。可轉移的是設計結論,不是程式碼。
 本框架的三層與契約生成在 repo 內建。無銷關節的先例已寫入 [[DEFERRALS]] D-005 的觸發條件。
 
 ## 本 repo 內的先例(親驗,不是外部)

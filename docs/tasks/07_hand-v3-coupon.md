@@ -75,5 +75,7 @@
 
 ### Next step
 
+- 量完七項後跑 `python3 scripts/analyse_coupon.py --c1 … --c3 … --c2 yes …`(V01.0Q.003 起):機器對照連桿推導的公差帶給 PASS/FAIL,印出可貼進 v8 的列;使用者只量,不比對。
+
 - 印 `models/hand-v3/phalanx_mm.stl` 一件,量 C1–C7,數字填進 `docs/hand-v3/v8-results.md`。
   **使用者執行**——機器量不到實體公差。
