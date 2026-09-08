@@ -122,10 +122,6 @@ def capture(
     label_position = label_position + to_camera.normalized() * min(scale, to_camera.length * 0.5)
     label = add_text("HH_VIEW_LABEL", title, tuple(label_position), white, scale * 0.018)
     face_camera(label, camera)
-    # Moving the caption towards the camera put it between the light and the
-    # subject, so it started casting a legible shadow onto the part below. A
-    # caption is an annotation, not an object in the scene.
-    label.visible_shadow = False
     scene.render.filepath = str(output / name)
     bpy.ops.render.render(write_still=True)
     bpy.data.objects.remove(label, do_unlink=True)
