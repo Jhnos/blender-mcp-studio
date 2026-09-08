@@ -199,7 +199,19 @@ for obj in bpy.data.objects:
         selected.append(obj.name)
 shell_counts = {{}}
 if config['count_shells']:
-    for obj in parts:
+    # Every object the contract names anywhere, not just the one prefix the
+    # oracle walks. Counting `parts` alone covered three phalanges out of
+    # fifteen and no palm — a gate with a coverage hole the size of the model.
+    shell_targets = {{}}
+    _prefixes = [config['object_prefix'], *config['collision_groups'], *config['disjoint_groups']]
+    for obj in bpy.data.objects:
+        if obj.type == 'MESH' and any(obj.name.startswith(p) for p in _prefixes):
+            shell_targets[obj.name] = obj
+    for probe in config['channel_probes']:
+        named = bpy.data.objects.get(probe['object'])
+        if named is not None and named.type == 'MESH':
+            shell_targets[named.name] = named
+    for obj in shell_targets.values():
         bm = bmesh.new()
         bm.from_mesh(obj.data)
         bm.faces.ensure_lookup_table()
