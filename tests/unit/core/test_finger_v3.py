@@ -340,3 +340,51 @@ def test_the_interlayer_has_a_thickness_the_finger_cannot_exceed() -> None:
     # Straightened, the same faces are a whole body-depth apart, so the limit is
     # set by the closed posture and by nothing else.
     assert finger.palmar_surface_gap_at_rest_mm > room
+
+
+def test_the_spring_gradient_is_what_orders_the_joints_now() -> None:
+    """ES-3 / H4: with equal moment arms, only the springs can sequence closure.
+
+    The moment-arm window on this link is 1.15 mm, a ratio of about 1.16 —
+    nowhere near enough to sequence joints on its own, and then the arms were
+    made equal so that fifteen phalanges share one part number. That did not
+    remove the requirement that the base joint closes first; it moved the whole
+    job onto the spring gradient, and left the matrix row reading as though
+    someone had forgotten it.
+
+    An underactuated joint turns until tendon torque meets spring torque, so at
+    one tension each joint sits at `arm / stiffness`. Order is that ratio,
+    largest first. The stiffnesses are relative on purpose: which spring to buy
+    is a purchase, but which way the gradient has to run is arithmetic, and
+    getting it backwards curls the fingertip first and pushes the object out.
+    """
+    link = HingePhalanxSpec(joint_count=2, joint_center_offset_mm=27.0)
+    finger = SingleTendonFingerSpec(link=link, moment_arms_mm=(6.6, 6.6))
+
+    assert finger.spring_stiffness_ratio == (1.0, 1.6)
+    assert finger.closure_order == (0, 1), "the base joint has to move first"
+
+    # Backwards is refused rather than reported: a finger that closes from the
+    # tip is not a weaker grasp, it is a different machine.
+    with pytest.raises(ValueError):
+        SingleTendonFingerSpec(
+            link=link, moment_arms_mm=(6.6, 6.6), spring_stiffness_ratio=(1.6, 1.0)
+        )
+    with pytest.raises(ValueError):
+        SingleTendonFingerSpec(
+            link=link, moment_arms_mm=(6.6, 6.6), spring_stiffness_ratio=(1.0, 1.0)
+        )
+
+
+def test_the_order_is_a_function_of_both_arms_and_springs() -> None:
+    """The named requirement is that *both* decide it, so vary each in turn."""
+    link = HingePhalanxSpec(joint_count=2, joint_center_offset_mm=27.0)
+
+    softer_base = SingleTendonFingerSpec(
+        link=link, moment_arms_mm=(6.6, 6.6), spring_stiffness_ratio=(1.0, 2.5)
+    )
+    assert softer_base.closure_order == (0, 1)
+
+    # A big enough arm on the distal joint overturns an equal spring gradient,
+    # which is the whole of what "both decide it" means.
+    assert softer_base.joint_travel_shares == pytest.approx([1.0, 0.4], abs=0.01)
