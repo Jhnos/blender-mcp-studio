@@ -12,6 +12,8 @@ from fastapi.testclient import TestClient
 
 from api.main import create_app
 from src.core.domain.command import Command
+from src.core.domain.exceptions import SceneOperationError
+from src.core.domain.scene_operations import SceneObjectSummary, SceneSummary, Vector3
 from src.core.ports.mcp_port import ToolResult
 from src.core.use_cases.scene_operations import SceneOperationsService
 
@@ -27,13 +29,15 @@ def _make_client(blender_success: bool = True, blender_response: dict | None = N
 
     mock_blender = AsyncMock()
     mock_blender.execute = AsyncMock(return_value=mock_result)
-    mock_blender.get_scene_info = AsyncMock(
-        return_value={
-            "name": "Scene",
-            "object_count": 1,
-            "materials_count": 0,
-            "objects": [{"name": "Cube", "type": "MESH", "location": [0.0, 0.0, 0.0]}],
-        }
+    # The port answers typed DTOs; decoding the addon's reply is the adapter's
+    # job and is tested there (D-001).
+    mock_blender.scene_summary = AsyncMock(
+        return_value=SceneSummary(
+            name="Scene",
+            object_count=1,
+            materials_count=0,
+            objects=(SceneObjectSummary("Cube", "MESH", Vector3()),),
+        )
     )
 
     app.state.blender = mock_blender
@@ -123,12 +127,15 @@ def test_get_scene_uses_shared_scene_service() -> None:
     assert response.json()["objects"] == [
         {"name": "Cube", "type": "MESH", "location": [0.0, 0.0, 0.0]}
     ]
-    client.app.state.blender.get_scene_info.assert_awaited_once_with()
+    client.app.state.blender.scene_summary.assert_awaited_once_with()
 
 
 def test_get_scene_does_not_silently_hide_invalid_blender_data() -> None:
+    """The adapter refuses an unusable reply with a domain error; REST shows it as 422."""
     client = _make_client()
-    client.app.state.blender.get_scene_info.return_value = {"objects": []}
+    client.app.state.blender.scene_summary.side_effect = SceneOperationError(
+        "Blender scene info is missing: name"
+    )
 
     response = client.get("/api/scene")
 
@@ -139,11 +146,9 @@ def test_get_scene_does_not_silently_hide_invalid_blender_data() -> None:
 def test_preview_rejects_non_png_blender_output() -> None:
     client = _make_client()
 
-    async def write_invalid_png(tool_name: str, arguments: dict[str, object]) -> ToolResult:
-        Path(str(arguments["filepath"])).write_bytes(b"not a png")
-        return ToolResult(True, {"width": 1, "height": 1})
-
-    client.app.state.blender.call_tool.side_effect = write_invalid_png
+    client.app.state.blender.viewport_screenshot.side_effect = SceneOperationError(
+        "Blender screenshot is not a PNG file"
+    )
 
     response = client.get("/api/preview")
 

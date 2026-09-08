@@ -110,7 +110,7 @@ async def test_status_reflects_shared_blender_connection(fake_blender: FakeBlend
 async def test_create_object_uses_high_level_command(fake_blender: FakeBlender) -> None:
     receipt = await scene_service(fake_blender).create_object(
         CreateObjectSpec(
-            object_type=ObjectType.CUBE,
+            object_type=ObjectType.MESH,
             name="Cube",
             location=Vector3(1.0, 2.0, 3.0),
             scale=Vector3(2.0, 2.0, 2.0),
@@ -121,7 +121,7 @@ async def test_create_object_uses_high_level_command(fake_blender: FakeBlender) 
     assert receipt.object_name == "Cube"
     assert fake_blender.commands[0].tool_name == "create_object"
     assert fake_blender.commands[0].arguments == {
-        "type": "CUBE",
+        "type": "MESH",
         "location": [1.0, 2.0, 3.0],
         "scale": [2.0, 2.0, 2.0],
         "name": "Cube",

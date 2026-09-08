@@ -76,14 +76,15 @@ async def test_mcp_client_adapter_call_tool_returns_error_when_disconnected():
 
 
 @pytest.mark.asyncio
-async def test_mcp_client_adapter_get_scene_returns_empty_on_failure():
-    """MCPClientBlenderAdapter.get_scene_info returns empty dict on connection failure."""
+async def test_mcp_client_adapter_scene_query_fails_loudly_when_unreachable():
+    """An unreachable transport is a SceneOperationError, never an empty scene (D-001)."""
     from src.adapters.mcp.mcp_client_adapter import MCPClientBlenderAdapter
+    from src.core.domain.exceptions import SceneOperationError
 
     adapter = MCPClientBlenderAdapter(sse_url="http://localhost:19999/sse")
-    info = await adapter.get_scene_info()
 
-    assert isinstance(info, dict)
+    with pytest.raises(SceneOperationError):
+        await adapter.scene_summary()
 
 
 def test_mcp_client_adapter_implements_blender_port():
