@@ -63,7 +63,7 @@ scripts/ci.sh --real   # T3 REST/MCP/readiness/batch + hand-v3 契約與重現�
 | `test_contract_builder.py` | 簽入的手契約 ≠ 由規劃生成的契約(契約是生成產物,手改即紅) |
 | `test_generator_imports.py` | 產生器可達的模組沒進契約 `reload_modules`(常駐 Blender 跑舊碼還綠) |
 | `test_architecture_ssot.py::test_domain_and_planning_never_import_bpy` | 域層或規劃層匯入 bpy/mathutils |
-| `test_file_budgets.py` | `api/`、`src/` 出現 god-file（400 行硬上限，380 行預警） |
+| `test_file_budgets.py` | `api/`、`src/`、`scripts/`（`archive/` 除外）出現 god-file（400 行硬上限，380 行預警；`scripts/` 於 2026-09-09 納入） |
 | `errorMessage.gate.test.ts` | 前端手抄 `instanceof Error`（用真的 eslint 驗證規則有生效） |
 
 **每一個都附 should-fire 與 should-pass fixture。** 只有前者的閘門，

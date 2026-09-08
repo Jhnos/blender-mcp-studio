@@ -33,6 +33,11 @@ from scripts.hollow_hinge_render import (  # noqa: E402
     render_views,
     setup_render,
 )
+from scripts.hollow_side_hinge_hardware import (  # noqa: E402
+    HardwareMaterials,
+    create_joint_hardware,
+    create_route_guides,
+)
 from src.core.domain.hollow_side_hinge import HollowSideHingeSpec  # noqa: E402
 
 PREFIX = "HH_"
@@ -51,6 +56,9 @@ TENDON_MAT = material("HH_MAT_TENDON", (0.0, 0.96, 0.82, 1.0), metallic=0.08)
 CABLE_MAT = material("HH_MAT_SENSOR_CABLE", (0.93, 0.08, 0.82, 1.0), metallic=0.12)
 TEXT_MAT = material("HH_MAT_TEXT", (0.96, 0.98, 1.0, 1.0))
 FLOOR_MAT = material("HH_MAT_FLOOR", (0.015, 0.022, 0.035, 1.0))
+HARDWARE_MATERIALS = HardwareMaterials(
+    bearing=BEARING_MAT, x_pin=X_MAT, y_pin=Y_MAT, tendon=TENDON_MAT, cable=CABLE_MAT
+)
 
 
 def add_side_lugs(module: bpy.types.Object) -> None:
@@ -198,89 +206,6 @@ def repeat_module(
     return parts
 
 
-def create_bearing(
-    name: str,
-    joint_z_mm: float,
-    axis: str,
-    side: float,
-    hardware: bpy.types.Collection,
-) -> None:
-    face_offset = SPEC.side_female_center_mm + SPEC.female_lug_thickness_mm / 2.0 + 0.2
-    location = (
-        (side * face_offset, 0.0, joint_z_mm)
-        if axis == "X"
-        else (0.0, side * face_offset, joint_z_mm)
-    )
-    rotation = (0.0, math.pi / 2.0, 0.0) if axis == "X" else (math.pi / 2.0, 0.0, 0.0)
-    outer_radius = SPEC.bearing_seat_diameter_mm / 2.0
-    inner_radius = SPEC.pin_diameter_mm / 2.0
-    bpy.ops.mesh.primitive_torus_add(
-        major_segments=40,
-        minor_segments=12,
-        major_radius=m((outer_radius + inner_radius) / 2.0),
-        minor_radius=m((outer_radius - inner_radius) / 2.0),
-        location=tuple(m(value) for value in location),
-        rotation=rotation,
-    )
-    bearing = bpy.context.object
-    bearing.name = name
-    move_to_collection(bearing, hardware)
-    assign(bearing, BEARING_MAT)
-    bearing.hide_viewport = True
-
-
-def create_joint_hardware(joint: int, hardware: bpy.types.Collection) -> None:
-    joint_z = (joint - 1) * SPEC.unit_pitch_mm + SPEC.joint_center_offset_mm
-    axis = "X" if joint % 2 else "Y"
-    inner_edge = SPEC.center_channel_diameter_mm / 2.0 + SPEC.minimum_running_clearance_mm
-    outer_edge = SPEC.side_female_center_mm + SPEC.female_lug_thickness_mm / 2.0 + 0.4
-    segment_center = (inner_edge + outer_edge) / 2.0
-    segment_length = outer_edge - inner_edge
-    for side in (-1.0, 1.0):
-        location = (
-            (side * segment_center, 0.0, joint_z)
-            if axis == "X"
-            else (0.0, side * segment_center, joint_z)
-        )
-        pin = add_cylinder(
-            f"HH_PIN_J{joint}_{axis}_{'POS' if side > 0 else 'NEG'}",
-            SPEC.pin_diameter_mm / 2.0,
-            segment_length,
-            location,
-            axis=axis,
-        )
-        move_to_collection(pin, hardware)
-        assign(pin, X_MAT if axis == "X" else Y_MAT)
-        pin.hide_viewport = True
-        create_bearing(
-            f"HH_BEARING_J{joint}_{'POS' if side > 0 else 'NEG'}",
-            joint_z,
-            axis,
-            side,
-            hardware,
-        )
-
-
-def create_route_guides(
-    z_min_mm: float,
-    z_max_mm: float,
-    hardware: bpy.types.Collection,
-) -> None:
-    depth = z_max_mm - z_min_mm
-    center_z = (z_min_mm + z_max_mm) / 2.0
-    cable = add_cylinder("HH_SENSOR_CABLE_ROUTE", 1.55, depth, (0.0, 0.0, center_z))
-    move_to_collection(cable, hardware)
-    assign(cable, CABLE_MAT)
-    cable.show_in_front = True
-    cable.hide_viewport = True
-    for index, (x_mm, y_mm) in enumerate(SPEC.tendon_positions_mm, start=1):
-        tendon = add_cylinder(f"HH_TENDON_{index}", 0.4, depth, (x_mm, y_mm, center_z))
-        move_to_collection(tendon, hardware)
-        assign(tendon, TENDON_MAT)
-        tendon.show_in_front = True
-        tendon.hide_viewport = True
-
-
 def build_scene() -> None:
     scene = bpy.context.scene
     scene.unit_settings.system = "METRIC"
@@ -294,7 +219,7 @@ def build_scene() -> None:
     printable_parts = repeat_module(master, assembly)
     labels: list[bpy.types.Object] = []
     for joint, axis_name in enumerate(SPEC.axis_names, start=1):
-        create_joint_hardware(joint, hardware)
+        create_joint_hardware(joint, hardware, SPEC, HARDWARE_MATERIALS)
         joint_z = (joint - 1) * SPEC.unit_pitch_mm + SPEC.joint_center_offset_mm
         axis = axis_name.rsplit("_", 1)[1]
         labels.append(
@@ -314,7 +239,7 @@ def build_scene() -> None:
         + SPEC.lug_outer_diameter_mm / 2.0
         + 2.0
     )
-    create_route_guides(bottom_z, top_z, hardware)
+    create_route_guides(bottom_z, top_z, hardware, SPEC, HARDWARE_MATERIALS)
     labels.extend(
         (
             add_text(

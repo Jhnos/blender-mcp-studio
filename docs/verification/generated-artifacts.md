@@ -106,6 +106,7 @@ saved output files for the other version are retained.
 | `scripts/blender_mesh_primitives.py` | Shared material, cylinder, boolean and cleanup primitives |
 | `scripts/inset_hinge_presentation.py` | V5 close-up, top view and fit-coupon layout |
 | `scripts/model_hollow_side_hinge_chain.py` | Assemble the model from the specification |
+| `scripts/hollow_side_hinge_hardware.py` | Pins, bearings and route guides for that chain, materials handed in |
 | `scripts/hollow_hinge_geometry.py` | Watertight D-lug and bridge primitives |
 | `scripts/hollow_hinge_render.py` | Three views, spaced layout and saved-camera restoration |
 | `scripts/blender_artifact_export.py` | Explicit-mesh STL export in mm; restore selection/visibility |
@@ -125,6 +126,7 @@ saved output files for the other version are retained.
 | `scripts/model_finger_v3.py` | V3 entry point: binds the instance and its namespace, nothing else |
 | `scripts/model_hand_v3_gradient.py`, `scripts/model_hand_compact.py` | Entry points for the gradient fixture and the human-scale instance; same generator |
 | `src/verification/generated_artifact_contract.py` | Contract parsing and evidence assessment |
+| `src/verification/generated_artifact_oracle.py` | The Blender-side oracle code a contract runs, built as a string |
 | `src/verification/artifact_files.py` | Binary STL length/coordinate validation without Blender |
 | `src/verification/mesh_measurements.py` | Fail-closed dimensions, slopes, bores and pin evidence |
 | `scripts/verify/mesh_probe_verify_real.py` | JSON-driven read-only geometry measurements |
