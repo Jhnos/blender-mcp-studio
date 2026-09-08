@@ -1,0 +1,1216 @@
+{
+  "version": "1.0.0",
+  "units": "metres",
+  "tile_pixels": 64,
+  "frame_size": [
+    128,
+    192
+  ],
+  "anchor": [
+    0.5,
+    0.75
+  ],
+  "model_count": 18,
+  "families": {
+    "architecture": [
+      "window",
+      "column",
+      "stairs",
+      "arch",
+      "fence",
+      "gate_closed",
+      "gate_open"
+    ],
+    "outdoors": [
+      "tree",
+      "bush",
+      "rock",
+      "path",
+      "planter",
+      "well"
+    ],
+    "props": [
+      "barrel",
+      "bench",
+      "bed",
+      "lever_off",
+      "lever_on",
+      "plate_up",
+      "plate_down",
+      "crystal_off",
+      "crystal_on"
+    ]
+  },
+  "state_pairs": [
+    [
+      "gate_closed",
+      "gate_open"
+    ],
+    [
+      "lever_off",
+      "lever_on"
+    ],
+    [
+      "plate_up",
+      "plate_down"
+    ],
+    [
+      "crystal_off",
+      "crystal_on"
+    ]
+  ],
+  "assets": [
+    {
+      "id": "window",
+      "label": "窗牆",
+      "palette": "wood-stone",
+      "family": "architecture",
+      "frame": 1,
+      "collection": "WK_wood-stone_window",
+      "dimensions_m": [
+        1.0,
+        0.3,
+        1.6
+      ],
+      "anchor": [
+        0.5,
+        0.75
+      ],
+      "catalog_offset_m": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "id": "column",
+      "label": "柱子",
+      "palette": "wood-stone",
+      "family": "architecture",
+      "frame": 2,
+      "collection": "WK_wood-stone_column",
+      "dimensions_m": [
+        0.6,
+        0.6,
+        1.54
+      ],
+      "anchor": [
+        0.5,
+        0.75
+      ],
+      "catalog_offset_m": [
+        2.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "id": "stairs",
+      "label": "階梯",
+      "palette": "wood-stone",
+      "family": "architecture",
+      "frame": 3,
+      "collection": "WK_wood-stone_stairs",
+      "dimensions_m": [
+        1.0,
+        1.0,
+        0.6125
+      ],
+      "anchor": [
+        0.5,
+        0.75
+      ],
+      "catalog_offset_m": [
+        4.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "id": "arch",
+      "label": "拱門",
+      "palette": "wood-stone",
+      "family": "architecture",
+      "frame": 4,
+      "collection": "WK_wood-stone_arch",
+      "dimensions_m": [
+        1.06,
+        0.28,
+        1.59
+      ],
+      "anchor": [
+        0.5,
+        0.75
+      ],
+      "catalog_offset_m": [
+        6.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "id": "fence",
+      "label": "圍籬",
+      "palette": "wood-stone",
+      "family": "architecture",
+      "frame": 5,
+      "collection": "WK_wood-stone_fence",
+      "dimensions_m": [
+        1.05,
+        0.15,
+        1.025
+      ],
+      "anchor": [
+        0.5,
+        0.75
+      ],
+      "catalog_offset_m": [
+        8.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "id": "gate_closed",
+      "label": "閘門・關",
+      "palette": "wood-stone",
+      "family": "architecture",
+      "frame": 6,
+      "collection": "WK_wood-stone_gate_closed",
+      "dimensions_m": [
+        1.05,
+        0.165,
+        1.025
+      ],
+      "anchor": [
+        0.5,
+        0.75
+      ],
+      "catalog_offset_m": [
+        10.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "id": "gate_open",
+      "label": "閘門・開",
+      "palette": "wood-stone",
+      "family": "architecture",
+      "frame": 7,
+      "collection": "WK_wood-stone_gate_open",
+      "dimensions_m": [
+        1.05,
+        0.965,
+        1.025
+      ],
+      "anchor": [
+        0.5,
+        0.75
+      ],
+      "catalog_offset_m": [
+        12.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "id": "tree",
+      "label": "樹",
+      "palette": "wood-stone",
+      "family": "outdoors",
+      "frame": 1,
+      "collection": "WK_wood-stone_tree",
+      "dimensions_m": [
+        0.965,
+        0.88,
+        1.74
+      ],
+      "anchor": [
+        0.5,
+        0.75
+      ],
+      "catalog_offset_m": [
+        14.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "id": "bush",
+      "label": "灌木",
+      "palette": "wood-stone",
+      "family": "outdoors",
+      "frame": 2,
+      "collection": "WK_wood-stone_bush",
+      "dimensions_m": [
+        0.91,
+        0.66,
+        0.65
+      ],
+      "anchor": [
+        0.5,
+        0.75
+      ],
+      "catalog_offset_m": [
+        0.0,
+        2.5,
+        0.0
+      ]
+    },
+    {
+      "id": "rock",
+      "label": "岩石",
+      "palette": "wood-stone",
+      "family": "outdoors",
+      "frame": 3,
+      "collection": "WK_wood-stone_rock",
+      "dimensions_m": [
+        0.85,
+        0.67,
+        0.53
+      ],
+      "anchor": [
+        0.5,
+        0.75
+      ],
+      "catalog_offset_m": [
+        2.0,
+        2.5,
+        0.0
+      ]
+    },
+    {
+      "id": "path",
+      "label": "步道",
+      "palette": "wood-stone",
+      "family": "outdoors",
+      "frame": 4,
+      "collection": "WK_wood-stone_path",
+      "dimensions_m": [
+        0.925,
+        0.9189,
+        0.07
+      ],
+      "anchor": [
+        0.5,
+        0.75
+      ],
+      "catalog_offset_m": [
+        4.0,
+        2.5,
+        0.0
+      ]
+    },
+    {
+      "id": "planter",
+      "label": "花槽",
+      "palette": "wood-stone",
+      "family": "outdoors",
+      "frame": 5,
+      "collection": "WK_wood-stone_planter",
+      "dimensions_m": [
+        0.9,
+        0.52,
+        0.65
+      ],
+      "anchor": [
+        0.5,
+        0.75
+      ],
+      "catalog_offset_m": [
+        6.0,
+        2.5,
+        0.0
+      ]
+    },
+    {
+      "id": "well",
+      "label": "水井",
+      "palette": "wood-stone",
+      "family": "outdoors",
+      "frame": 6,
+      "collection": "WK_wood-stone_well",
+      "dimensions_m": [
+        0.98,
+        0.8921,
+        1.48
+      ],
+      "anchor": [
+        0.5,
+        0.75
+      ],
+      "catalog_offset_m": [
+        8.0,
+        2.5,
+        0.0
+      ]
+    },
+    {
+      "id": "barrel",
+      "label": "木桶",
+      "palette": "wood-stone",
+      "family": "props",
+      "frame": 1,
+      "collection": "WK_wood-stone_barrel",
+      "dimensions_m": [
+        0.626,
+        0.626,
+        0.8275
+      ],
+      "anchor": [
+        0.5,
+        0.75
+      ],
+      "catalog_offset_m": [
+        10.0,
+        2.5,
+        0.0
+      ]
+    },
+    {
+      "id": "bench",
+      "label": "長椅",
+      "palette": "wood-stone",
+      "family": "props",
+      "frame": 2,
+      "collection": "WK_wood-stone_bench",
+      "dimensions_m": [
+        0.96,
+        0.465,
+        1.015
+      ],
+      "anchor": [
+        0.5,
+        0.75
+      ],
+      "catalog_offset_m": [
+        12.0,
+        2.5,
+        0.0
+      ]
+    },
+    {
+      "id": "bed",
+      "label": "床",
+      "palette": "wood-stone",
+      "family": "props",
+      "frame": 3,
+      "collection": "WK_wood-stone_bed",
+      "dimensions_m": [
+        0.88,
+        1.365,
+        0.86
+      ],
+      "anchor": [
+        0.5,
+        0.75
+      ],
+      "catalog_offset_m": [
+        14.0,
+        2.5,
+        0.0
+      ]
+    },
+    {
+      "id": "lever_off",
+      "label": "拉桿・關",
+      "palette": "wood-stone",
+      "family": "props",
+      "frame": 4,
+      "collection": "WK_wood-stone_lever_off",
+      "dimensions_m": [
+        0.52,
+        0.63,
+        0.855
+      ],
+      "anchor": [
+        0.5,
+        0.75
+      ],
+      "catalog_offset_m": [
+        0.0,
+        5.0,
+        0.0
+      ]
+    },
+    {
+      "id": "lever_on",
+      "label": "拉桿・開",
+      "palette": "wood-stone",
+      "family": "props",
+      "frame": 5,
+      "collection": "WK_wood-stone_lever_on",
+      "dimensions_m": [
+        0.52,
+        0.625,
+        0.855
+      ],
+      "anchor": [
+        0.5,
+        0.75
+      ],
+      "catalog_offset_m": [
+        2.0,
+        5.0,
+        0.0
+      ]
+    },
+    {
+      "id": "plate_up",
+      "label": "壓板・升",
+      "palette": "wood-stone",
+      "family": "props",
+      "frame": 6,
+      "collection": "WK_wood-stone_plate_up",
+      "dimensions_m": [
+        0.82,
+        0.82,
+        0.242
+      ],
+      "anchor": [
+        0.5,
+        0.75
+      ],
+      "catalog_offset_m": [
+        4.0,
+        5.0,
+        0.0
+      ]
+    },
+    {
+      "id": "plate_down",
+      "label": "壓板・壓下",
+      "palette": "wood-stone",
+      "family": "props",
+      "frame": 7,
+      "collection": "WK_wood-stone_plate_down",
+      "dimensions_m": [
+        0.82,
+        0.82,
+        0.157
+      ],
+      "anchor": [
+        0.5,
+        0.75
+      ],
+      "catalog_offset_m": [
+        6.0,
+        5.0,
+        0.0
+      ]
+    },
+    {
+      "id": "crystal_off",
+      "label": "水晶・暗",
+      "palette": "wood-stone",
+      "family": "props",
+      "frame": 8,
+      "collection": "WK_wood-stone_crystal_off",
+      "dimensions_m": [
+        0.61,
+        0.6,
+        0.935
+      ],
+      "anchor": [
+        0.5,
+        0.75
+      ],
+      "catalog_offset_m": [
+        8.0,
+        5.0,
+        0.0
+      ]
+    },
+    {
+      "id": "crystal_on",
+      "label": "水晶・亮",
+      "palette": "wood-stone",
+      "family": "props",
+      "frame": 9,
+      "collection": "WK_wood-stone_crystal_on",
+      "dimensions_m": [
+        0.61,
+        0.6,
+        0.935
+      ],
+      "anchor": [
+        0.5,
+        0.75
+      ],
+      "catalog_offset_m": [
+        10.0,
+        5.0,
+        0.0
+      ]
+    },
+    {
+      "id": "window",
+      "label": "窗牆",
+      "palette": "metal",
+      "family": "architecture",
+      "frame": 1,
+      "collection": "WK_metal_window",
+      "dimensions_m": [
+        1.0,
+        0.3,
+        1.6
+      ],
+      "anchor": [
+        0.5,
+        0.75
+      ],
+      "catalog_offset_m": [
+        0.0,
+        9.0,
+        0.0
+      ]
+    },
+    {
+      "id": "column",
+      "label": "柱子",
+      "palette": "metal",
+      "family": "architecture",
+      "frame": 2,
+      "collection": "WK_metal_column",
+      "dimensions_m": [
+        0.6,
+        0.6,
+        1.54
+      ],
+      "anchor": [
+        0.5,
+        0.75
+      ],
+      "catalog_offset_m": [
+        2.0,
+        9.0,
+        0.0
+      ]
+    },
+    {
+      "id": "stairs",
+      "label": "階梯",
+      "palette": "metal",
+      "family": "architecture",
+      "frame": 3,
+      "collection": "WK_metal_stairs",
+      "dimensions_m": [
+        1.0,
+        1.0,
+        0.6125
+      ],
+      "anchor": [
+        0.5,
+        0.75
+      ],
+      "catalog_offset_m": [
+        4.0,
+        9.0,
+        0.0
+      ]
+    },
+    {
+      "id": "arch",
+      "label": "拱門",
+      "palette": "metal",
+      "family": "architecture",
+      "frame": 4,
+      "collection": "WK_metal_arch",
+      "dimensions_m": [
+        1.06,
+        0.28,
+        1.59
+      ],
+      "anchor": [
+        0.5,
+        0.75
+      ],
+      "catalog_offset_m": [
+        6.0,
+        9.0,
+        0.0
+      ]
+    },
+    {
+      "id": "fence",
+      "label": "圍籬",
+      "palette": "metal",
+      "family": "architecture",
+      "frame": 5,
+      "collection": "WK_metal_fence",
+      "dimensions_m": [
+        1.05,
+        0.15,
+        1.025
+      ],
+      "anchor": [
+        0.5,
+        0.75
+      ],
+      "catalog_offset_m": [
+        8.0,
+        9.0,
+        0.0
+      ]
+    },
+    {
+      "id": "gate_closed",
+      "label": "閘門・關",
+      "palette": "metal",
+      "family": "architecture",
+      "frame": 6,
+      "collection": "WK_metal_gate_closed",
+      "dimensions_m": [
+        1.05,
+        0.165,
+        1.025
+      ],
+      "anchor": [
+        0.5,
+        0.75
+      ],
+      "catalog_offset_m": [
+        10.0,
+        9.0,
+        0.0
+      ]
+    },
+    {
+      "id": "gate_open",
+      "label": "閘門・開",
+      "palette": "metal",
+      "family": "architecture",
+      "frame": 7,
+      "collection": "WK_metal_gate_open",
+      "dimensions_m": [
+        1.05,
+        0.965,
+        1.025
+      ],
+      "anchor": [
+        0.5,
+        0.75
+      ],
+      "catalog_offset_m": [
+        12.0,
+        9.0,
+        0.0
+      ]
+    },
+    {
+      "id": "tree",
+      "label": "樹",
+      "palette": "metal",
+      "family": "outdoors",
+      "frame": 1,
+      "collection": "WK_metal_tree",
+      "dimensions_m": [
+        0.965,
+        0.88,
+        1.74
+      ],
+      "anchor": [
+        0.5,
+        0.75
+      ],
+      "catalog_offset_m": [
+        14.0,
+        9.0,
+        0.0
+      ]
+    },
+    {
+      "id": "bush",
+      "label": "灌木",
+      "palette": "metal",
+      "family": "outdoors",
+      "frame": 2,
+      "collection": "WK_metal_bush",
+      "dimensions_m": [
+        0.91,
+        0.66,
+        0.65
+      ],
+      "anchor": [
+        0.5,
+        0.75
+      ],
+      "catalog_offset_m": [
+        0.0,
+        11.5,
+        0.0
+      ]
+    },
+    {
+      "id": "rock",
+      "label": "岩石",
+      "palette": "metal",
+      "family": "outdoors",
+      "frame": 3,
+      "collection": "WK_metal_rock",
+      "dimensions_m": [
+        0.85,
+        0.67,
+        0.53
+      ],
+      "anchor": [
+        0.5,
+        0.75
+      ],
+      "catalog_offset_m": [
+        2.0,
+        11.5,
+        0.0
+      ]
+    },
+    {
+      "id": "path",
+      "label": "步道",
+      "palette": "metal",
+      "family": "outdoors",
+      "frame": 4,
+      "collection": "WK_metal_path",
+      "dimensions_m": [
+        0.925,
+        0.9189,
+        0.07
+      ],
+      "anchor": [
+        0.5,
+        0.75
+      ],
+      "catalog_offset_m": [
+        4.0,
+        11.5,
+        0.0
+      ]
+    },
+    {
+      "id": "planter",
+      "label": "花槽",
+      "palette": "metal",
+      "family": "outdoors",
+      "frame": 5,
+      "collection": "WK_metal_planter",
+      "dimensions_m": [
+        0.9,
+        0.52,
+        0.65
+      ],
+      "anchor": [
+        0.5,
+        0.75
+      ],
+      "catalog_offset_m": [
+        6.0,
+        11.5,
+        0.0
+      ]
+    },
+    {
+      "id": "well",
+      "label": "水井",
+      "palette": "metal",
+      "family": "outdoors",
+      "frame": 6,
+      "collection": "WK_metal_well",
+      "dimensions_m": [
+        0.98,
+        0.8921,
+        1.48
+      ],
+      "anchor": [
+        0.5,
+        0.75
+      ],
+      "catalog_offset_m": [
+        8.0,
+        11.5,
+        0.0
+      ]
+    },
+    {
+      "id": "barrel",
+      "label": "木桶",
+      "palette": "metal",
+      "family": "props",
+      "frame": 1,
+      "collection": "WK_metal_barrel",
+      "dimensions_m": [
+        0.626,
+        0.626,
+        0.8275
+      ],
+      "anchor": [
+        0.5,
+        0.75
+      ],
+      "catalog_offset_m": [
+        10.0,
+        11.5,
+        0.0
+      ]
+    },
+    {
+      "id": "bench",
+      "label": "長椅",
+      "palette": "metal",
+      "family": "props",
+      "frame": 2,
+      "collection": "WK_metal_bench",
+      "dimensions_m": [
+        0.96,
+        0.465,
+        1.015
+      ],
+      "anchor": [
+        0.5,
+        0.75
+      ],
+      "catalog_offset_m": [
+        12.0,
+        11.5,
+        0.0
+      ]
+    },
+    {
+      "id": "bed",
+      "label": "床",
+      "palette": "metal",
+      "family": "props",
+      "frame": 3,
+      "collection": "WK_metal_bed",
+      "dimensions_m": [
+        0.88,
+        1.365,
+        0.86
+      ],
+      "anchor": [
+        0.5,
+        0.75
+      ],
+      "catalog_offset_m": [
+        14.0,
+        11.5,
+        0.0
+      ]
+    },
+    {
+      "id": "lever_off",
+      "label": "拉桿・關",
+      "palette": "metal",
+      "family": "props",
+      "frame": 4,
+      "collection": "WK_metal_lever_off",
+      "dimensions_m": [
+        0.52,
+        0.63,
+        0.855
+      ],
+      "anchor": [
+        0.5,
+        0.75
+      ],
+      "catalog_offset_m": [
+        0.0,
+        14.0,
+        0.0
+      ]
+    },
+    {
+      "id": "lever_on",
+      "label": "拉桿・開",
+      "palette": "metal",
+      "family": "props",
+      "frame": 5,
+      "collection": "WK_metal_lever_on",
+      "dimensions_m": [
+        0.52,
+        0.625,
+        0.855
+      ],
+      "anchor": [
+        0.5,
+        0.75
+      ],
+      "catalog_offset_m": [
+        2.0,
+        14.0,
+        0.0
+      ]
+    },
+    {
+      "id": "plate_up",
+      "label": "壓板・升",
+      "palette": "metal",
+      "family": "props",
+      "frame": 6,
+      "collection": "WK_metal_plate_up",
+      "dimensions_m": [
+        0.82,
+        0.82,
+        0.242
+      ],
+      "anchor": [
+        0.5,
+        0.75
+      ],
+      "catalog_offset_m": [
+        4.0,
+        14.0,
+        0.0
+      ]
+    },
+    {
+      "id": "plate_down",
+      "label": "壓板・壓下",
+      "palette": "metal",
+      "family": "props",
+      "frame": 7,
+      "collection": "WK_metal_plate_down",
+      "dimensions_m": [
+        0.82,
+        0.82,
+        0.157
+      ],
+      "anchor": [
+        0.5,
+        0.75
+      ],
+      "catalog_offset_m": [
+        6.0,
+        14.0,
+        0.0
+      ]
+    },
+    {
+      "id": "crystal_off",
+      "label": "水晶・暗",
+      "palette": "metal",
+      "family": "props",
+      "frame": 8,
+      "collection": "WK_metal_crystal_off",
+      "dimensions_m": [
+        0.61,
+        0.6,
+        0.935
+      ],
+      "anchor": [
+        0.5,
+        0.75
+      ],
+      "catalog_offset_m": [
+        8.0,
+        14.0,
+        0.0
+      ]
+    },
+    {
+      "id": "crystal_on",
+      "label": "水晶・亮",
+      "palette": "metal",
+      "family": "props",
+      "frame": 9,
+      "collection": "WK_metal_crystal_on",
+      "dimensions_m": [
+        0.61,
+        0.6,
+        0.935
+      ],
+      "anchor": [
+        0.5,
+        0.75
+      ],
+      "catalog_offset_m": [
+        10.0,
+        14.0,
+        0.0
+      ]
+    }
+  ],
+  "layouts": {
+    "architecture": [
+      {
+        "id": "window",
+        "position_m": [
+          0.6,
+          4.5,
+          0
+        ]
+      },
+      {
+        "id": "column",
+        "position_m": [
+          2.5,
+          4.5,
+          0
+        ]
+      },
+      {
+        "id": "stairs",
+        "position_m": [
+          4.5,
+          4.5,
+          0
+        ]
+      },
+      {
+        "id": "arch",
+        "position_m": [
+          0.6,
+          2.5,
+          0
+        ]
+      },
+      {
+        "id": "fence",
+        "position_m": [
+          4.5,
+          2.5,
+          0
+        ]
+      },
+      {
+        "id": "gate_closed",
+        "position_m": [
+          0.6,
+          0.5,
+          0
+        ]
+      },
+      {
+        "id": "gate_open",
+        "position_m": [
+          2.5,
+          0.5,
+          0
+        ]
+      }
+    ],
+    "outdoors": [
+      {
+        "id": "tree",
+        "position_m": [
+          0.6,
+          4.5,
+          0
+        ]
+      },
+      {
+        "id": "bush",
+        "position_m": [
+          2.5,
+          4.5,
+          0
+        ]
+      },
+      {
+        "id": "rock",
+        "position_m": [
+          4.5,
+          4.5,
+          0
+        ]
+      },
+      {
+        "id": "path",
+        "position_m": [
+          0.6,
+          2.5,
+          0
+        ]
+      },
+      {
+        "id": "planter",
+        "position_m": [
+          4.5,
+          2.5,
+          0
+        ]
+      },
+      {
+        "id": "well",
+        "position_m": [
+          0.6,
+          0.5,
+          0
+        ]
+      }
+    ],
+    "props": [
+      {
+        "id": "barrel",
+        "position_m": [
+          0.6,
+          4.5,
+          0
+        ]
+      },
+      {
+        "id": "bench",
+        "position_m": [
+          2.5,
+          4.5,
+          0
+        ]
+      },
+      {
+        "id": "bed",
+        "position_m": [
+          4.5,
+          4.5,
+          0
+        ]
+      },
+      {
+        "id": "lever_off",
+        "position_m": [
+          0.6,
+          2.5,
+          0
+        ]
+      },
+      {
+        "id": "lever_on",
+        "position_m": [
+          4.5,
+          2.5,
+          0
+        ]
+      },
+      {
+        "id": "plate_up",
+        "position_m": [
+          0.6,
+          0.5,
+          0
+        ]
+      },
+      {
+        "id": "plate_down",
+        "position_m": [
+          2.5,
+          0.5,
+          0
+        ]
+      },
+      {
+        "id": "crystal_off",
+        "position_m": [
+          4.5,
+          0.5,
+          0
+        ]
+      },
+      {
+        "id": "crystal_on",
+        "position_m": [
+          4.5,
+          1.5,
+          0
+        ]
+      }
+    ]
+  }
+}
