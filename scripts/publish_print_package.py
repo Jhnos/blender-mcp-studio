@@ -14,6 +14,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
+from src.core.domain.hand_instances import HAND_INSTANCES  # noqa: E402
 from src.verification.artifact_files import binary_stl_metrics  # noqa: E402
 
 
@@ -31,6 +32,24 @@ class Package:
     #: STLs and no way to see what they assemble into short of opening Blender,
     #: which is the whole of what the deliverable owes a reader.
     render_files: tuple[str, ...] = ()
+
+
+def hand_package(slug: str, revision: str) -> Package:
+    """A hand package is its registered instance's files; nothing is typed twice."""
+    instance = HAND_INSTANCES[slug]
+    name = instance.contract_name
+    return Package(
+        slug=slug,
+        revision=revision,
+        generator=instance.generator_script,
+        stl_files=instance.stl_files,
+        blend_file=instance.blend_file,
+        contracts=(
+            f"scripts/verify/contracts/{name}.json",
+            f"scripts/verify/contracts/{name}_finger.json",
+        ),
+        render_files=instance.render_files,
+    )
 
 
 PACKAGES: dict[str, Package] = {
@@ -71,27 +90,10 @@ PACKAGES: dict[str, Package] = {
             "scripts/verify/contracts/octopus_hand_tips.json",
         ),
     ),
-    "hand-v3": Package(
-        slug="hand-v3",
-        revision="hand-V3",
-        generator="scripts/model_finger_v3.py",
-        stl_files=(
-            "phalanx_mm.stl",
-            "palm_mm.stl",
-            "finger_v3_mm.stl",
-            "hand_v3_mm.stl",
-        ),
-        blend_file="finger_v3.blend",
-        contracts=(
-            "scripts/verify/contracts/hand_v3.json",
-            "scripts/verify/contracts/hand_v3_finger.json",
-        ),
-        render_files=(
-            "finger_v3_assembly.png",
-            "finger_v3_joint_detail.png",
-            "finger_v3_print_layout.png",
-        ),
-    ),
+    "hand-v3": hand_package("hand-v3", revision="hand-V3"),
+    # Registered so the publish path exists; not published until the user has
+    # judged the renders (DEFERRALS D-008). models/hand-compact/ does not exist.
+    "hand-compact": hand_package("hand-compact", revision="hand-compact-V1"),
     "octopus-hand-v2": Package(
         slug="octopus-hand-v2",
         # V2.1, not V2, because "octopus-hand-V2" already names a published set of bits

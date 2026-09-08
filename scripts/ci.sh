@@ -121,6 +121,9 @@ if (( REAL )); then
     # claim (expected_shared_mesh_count) and not a limit of the generator.
     _run hard "hand-v3 gradient fixture contract" "$PY" scripts/verify/generated_artifact_verify_real.py scripts/verify/contracts/hand_v3_gradient.json
     _run hard "hand-v3 gradient fixture finger (same scene)" "$PY" scripts/verify/generated_artifact_verify_real.py scripts/verify/contracts/hand_v3_gradient_finger.json --skip-generate
+    # The human-scale instance: the compact link through the same generator.
+    _run hard "hand-compact contract" "$PY" scripts/verify/generated_artifact_verify_real.py scripts/verify/contracts/hand_compact.json
+    _run hard "hand-compact finger (same scene)" "$PY" scripts/verify/generated_artifact_verify_real.py scripts/verify/contracts/hand_compact_finger.json --skip-generate
   else
     # Explicit SKIP, never a silent pass: with Blender down this tier is vacuous.
     printf '  %sSKIP%s MCP pipeline — Blender addon not listening on 9876 %s(start it: launchctl kickstart -k gui/$(id -u)/com.blender-mcp.blender)%s\n' \

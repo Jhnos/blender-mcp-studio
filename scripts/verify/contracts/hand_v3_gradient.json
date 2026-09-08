@@ -9,6 +9,7 @@
     "src.core.domain.inset_hinge",
     "scripts.hollow_hinge_render",
     "scripts.blender_mesh_primitives",
+    "src.core.domain.compact_link",
     "src.core.domain.finger_link",
     "src.core.domain.hinge_chain",
     "src.core.domain.finger_v3",

@@ -10,9 +10,12 @@ window allows, so that "a finger can be two part numbers" is proved on the
 real machine by a controlled differential — same link, same palm, only the
 arms differ — rather than asserted. It has no package and never will.
 
-The compact instance's spec exists (`CompactHingeLinkSpec`) but its palm
-placement has not been swept; registering a palm that fails its own
-invariants is not registering an instance.
+`hand-compact` is the human-scale hand: the bearingless 2 mm-pin link, a
+15 mm-deep body, and a moment-arm gradient that closes the joints in order.
+Its thumb placement was swept under `strict=True` (2823 of 7168 candidates
+reach the index fingertip; the chosen one is documented in
+docs/hand-framework/v8-results.md). Registered, contracted, never published
+until the user accepts the renders (DEFERRALS D-008).
 """
 
 from __future__ import annotations
@@ -20,6 +23,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 
+from src.core.domain.compact_link import CompactHingeLinkSpec
 from src.core.domain.finger_v3 import SingleTendonFingerSpec
 from src.core.domain.hinge_chain import HingePhalanxSpec
 from src.core.domain.palm_v3 import AnthropomorphicPalmSpec
@@ -82,6 +86,11 @@ class HandInstance:
 
 
 _V3_LINK = HingePhalanxSpec(joint_count=2, joint_center_offset_mm=27.0)
+#: 5.5 / 3.6 sits inside the compact window of 3.15–5.55 with the base joint on
+#: the longest arm, so the moment arms — not only the springs — order the closure.
+_COMPACT_FINGER = SingleTendonFingerSpec(
+    link=CompactHingeLinkSpec(), moment_arms_mm=(5.5, 3.6), spring_stiffness_ratio=(1.0, 1.6)
+)
 
 HAND_INSTANCES: dict[str, HandInstance] = {
     "hand-v3": HandInstance(
@@ -127,6 +136,39 @@ HAND_INSTANCES: dict[str, HandInstance] = {
             "Verification fixture, not a deliverable: V3's link with moment arms 7.1 "
             "and 6.1 mm, so the finger is two part numbers. Exists to prove the "
             "generator and the contracts handle a gradient. Never printed, never published."
+        ),
+    ),
+    "hand-compact": HandInstance(
+        slug="hand-compact",
+        # Swept under strict=True over offset, drop, palmar depth, opposition and
+        # tilt. This placement brings the tips within 0.34 mm on the coarse grid,
+        # keeps the finger-to-palm ratio at 1.09, and leaves 13 mm between the
+        # thumb's first phalanx and the boss. The root sits at the plate's own
+        # depth, the derived default, as V3's does.
+        palm=AnthropomorphicPalmSpec(
+            finger=_COMPACT_FINGER,
+            thumb=_COMPACT_FINGER,
+            thumb_offset_mm=24.0,
+            thumb_base_drop_mm=26.0,
+            thumb_opposition_deg=30.0,
+            thumb_palmar_tilt_deg=-20.0,
+            strict=True,
+        ),
+        namespace="HK_",
+        family="COMPACT",
+        generator_script="scripts/model_hand_compact.py",
+        blend_file="hand_compact.blend",
+        phalanx_stls=("phalanx_base_mm.stl", "phalanx_distal_mm.stl"),
+        palm_stl="palm_mm.stl",
+        finger_stl="finger_compact_mm.stl",
+        hand_stl="hand_compact_mm.stl",
+        assembly_render="compact_assembly.png",
+        joint_render="compact_joint_detail.png",
+        layout_render="compact_print_layout.png",
+        design_note=(
+            "Human-scale hand on the compact link: 2 mm pin, no bearing, 15 mm-deep "
+            "body, moment arms 5.5 / 3.6 mm so the joints close from the base. Two "
+            "phalanx part numbers. Fit prototype; no grip force claim. Never printed."
         ),
     ),
 }

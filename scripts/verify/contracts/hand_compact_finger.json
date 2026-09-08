@@ -1,6 +1,6 @@
 {
-  "name": "hand_v3_gradient_finger",
-  "generator_script": "scripts/model_hand_v3_gradient.py",
+  "name": "hand_compact_finger",
+  "generator_script": "scripts/model_hand_compact.py",
   "reload_modules": [
     "scripts.blender_generator_runner",
     "scripts.blender_artifact_export",
@@ -37,25 +37,25 @@
     "scripts.hand_generator"
   ],
   "artifacts": [
-    "tmp/hand-v3-gradient/hand_v3_gradient.blend",
-    "tmp/hand-v3-gradient/phalanx_base_mm.stl",
-    "tmp/hand-v3-gradient/phalanx_distal_mm.stl",
-    "tmp/hand-v3-gradient/palm_mm.stl",
-    "tmp/hand-v3-gradient/finger_gradient_mm.stl",
-    "tmp/hand-v3-gradient/hand_gradient_mm.stl",
-    "tmp/hand-v3-gradient/gradient_assembly.png",
-    "tmp/hand-v3-gradient/gradient_joint_detail.png",
-    "tmp/hand-v3-gradient/gradient_print_layout.png"
+    "tmp/hand-compact/hand_compact.blend",
+    "tmp/hand-compact/phalanx_base_mm.stl",
+    "tmp/hand-compact/phalanx_distal_mm.stl",
+    "tmp/hand-compact/palm_mm.stl",
+    "tmp/hand-compact/finger_compact_mm.stl",
+    "tmp/hand-compact/hand_compact_mm.stl",
+    "tmp/hand-compact/compact_assembly.png",
+    "tmp/hand-compact/compact_joint_detail.png",
+    "tmp/hand-compact/compact_print_layout.png"
   ],
   "oracle": {
-    "object_prefix": "HG_V3G_HAND_F1_",
+    "object_prefix": "HK_COMPACT_HAND_F1_",
     "expected_count": 3,
     "expected_rotations_deg": [
       0.0,
       0.0,
       0.0
     ],
-    "scene_list_property": "HG_V3G_HAND_STATIONS",
+    "scene_list_property": "HK_COMPACT_HAND_STATIONS",
     "expected_scene_list": [
       "F1",
       "F2",
@@ -63,21 +63,21 @@
       "F4",
       "T"
     ],
-    "center_probe_object": "HG_V3G_HAND_F1_1",
+    "center_probe_object": "HK_COMPACT_HAND_F1_1",
     "center_channel_expected_open": false,
     "bore_probe_points_mm": [
       [
         0.0,
-        -7.1
+        -5.5
       ],
       [
         0.0,
-        7.1
+        5.5
       ]
     ],
     "joint_sweep": {
-      "master_object": "HG_V3G_HAND_F1_1",
-      "pivot_offset_mm": 27.0,
+      "master_object": "HK_COMPACT_HAND_F1_1",
+      "pivot_offset_mm": 24.0,
       "axis": "X",
       "mating_twist_deg": 0.0,
       "angles_deg": [
@@ -96,30 +96,30 @@
     },
     "collision_groups": [
       {
-        "prefix": "HG_V3G_HAND_F1_",
+        "prefix": "HK_COMPACT_HAND_F1_",
         "expected_count": 3
       },
       {
-        "prefix": "HG_V3G_LAYOUT_PART_",
+        "prefix": "HK_COMPACT_LAYOUT_PART_",
         "expected_count": 4
       }
     ],
     "expected_shells_per_object": 1,
     "expected_shared_mesh_count": 2,
     "closure_trajectory": {
-      "chain_prefix": "HG_V3G_HAND_F1_",
-      "pivot_offset_mm": 27.0,
+      "chain_prefix": "HK_COMPACT_HAND_F1_",
+      "pivot_offset_mm": 24.0,
       "axis": "X",
       "travel_shares": [
         1.0,
-        0.536972
+        0.409091
       ],
       "full_travel_deg": 50.0,
       "steps": 8
     }
   },
   "readiness": {
-    "selection_prefix": "HG_V3G_LAYOUT_PART_",
+    "selection_prefix": "HK_COMPACT_LAYOUT_PART_",
     "expected_selection_count": 4,
     "forbidden_issue_codes": [
       "no_mesh",
