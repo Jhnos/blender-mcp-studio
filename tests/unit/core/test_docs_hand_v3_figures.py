@@ -122,3 +122,45 @@ def test_every_current_state_doc_quotes_the_same_reach() -> None:
         assert len(lines) == 1, f"{path.name}: expected one line saying {label!r}"
         quoted = [float(v) for v in DECIMAL.findall(lines[0])]
         assert quoted[:3] == pytest.approx(expected, abs=0.1), f"{path.name}: {lines[0].strip()}"
+
+
+def test_the_layout_the_docs_describe_is_the_layout_the_contract_declares() -> None:
+    """How many parts are on the plate, and that the plate fits.
+
+    The docs said five parts at 182.5 x 100.5 long after the layout became four
+    at 242.0 x 103.5 — the margin against a 256 mm bed had gone from 73 mm to
+    14 mm while the prose still described the roomy version.
+
+    What this can check without Blender is the part count and that the quoted
+    footprint is inside the declared bed. Whether the real layout fits is the
+    contract's `layout_fits_bed`, measured twice on the real machine; this only
+    stops the documents from describing a different plate than the one verified.
+    """
+    import json
+
+    contract = json.loads(
+        (ROOT / "scripts" / "verify" / "contracts" / "hand_v3.json").read_text(encoding="utf-8")
+    )
+    parts = contract["readiness"]["expected_selection_count"]
+    bed = contract["readiness"]["max_footprint_mm"]
+    spec = AnthropomorphicPalmSpec()
+    assert parts == spec.finger.link.joint_count + 1 + 1, "the plate is one finger plus the palm"
+
+    _CHINESE_COUNT = {4: "四", 5: "五"}
+    for path, phrase in (
+        (ROOT / "docs" / "hand-v3" / "v7-matrix.md", "佈局可印"),
+        (ROOT / "docs" / "tasks" / "06_hand-v3.md", "列印佈局已交"),
+    ):
+        line = next(
+            line for line in path.read_text(encoding="utf-8").splitlines() if phrase in line
+        )
+        assert f"{_CHINESE_COUNT[parts]}件一盤" in line, f"{path.name}: {line.strip()}"
+        quoted = [float(v) for v in DECIMAL.findall(line)][:2]
+        assert len(quoted) == 2 and all(
+            side <= limit for side, limit in zip(quoted, bed, strict=True)
+        ), f"{path.name} quotes a plate that does not fit the declared bed: {quoted} vs {bed}"
+
+    readme = (PACKAGE / "README.md").read_text(encoding="utf-8")
+    plate = next(line for line in readme.splitlines() if "fits one plate" in line)
+    sides = [float(v) for v in DECIMAL.findall(plate)][:2]
+    assert all(side <= limit for side, limit in zip(sides, bed, strict=True)), plate

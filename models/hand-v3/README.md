@@ -25,7 +25,8 @@ untouched beside it.
 ## Printing
 
 Bambu Lab P2S, bed 256 mm. Units mm, 100%, **auto-arrange off** — the layout is already
-nested and fits one plate at 182.5 × 100.5 mm.
+nested and fits one plate at 242.0 × 103.5 mm — four parts, the three
+phalanges and the palm.
 
 Print `phalanx_mm.stl` first, once. Check the pin bore and the bearing seat before
 committing to fifteen of them.
