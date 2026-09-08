@@ -9,6 +9,7 @@ from pathlib import Path
 
 from src.infrastructure.narrowing import (
     as_finite_number,
+    as_mapping,
     as_nonempty_str,
     as_positive_int,
     as_sequence,
@@ -58,6 +59,26 @@ class OracleExpectation:
     #: so the digit that crosses in front of the others was measured against
     #: nobody. Absent means no claim; declared and unmeasured is a FAIL.
     disjoint_groups: tuple[str, ...] = ()
+    channel_probes: tuple[ChannelProbe, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
+class ChannelProbe:
+    """Rays down one object's bores, with the control that makes them mean something.
+
+    `open_points_mm` must all miss and `solid_points_mm` must all hit. A miss
+    alone says nothing — a ray aimed past the part misses too, which is how
+    this project once reported five open bores through empty air.
+    """
+
+    object_name: str
+    axis: str
+    open_points_mm: tuple[tuple[float, float], ...]
+    solid_points_mm: tuple[tuple[float, float], ...]
+
+    @property
+    def key(self) -> str:
+        return f"{self.object_name}|{self.axis}"
 
 
 @dataclass(frozen=True, slots=True)
@@ -178,6 +199,53 @@ def _optional_flag(source: Mapping[str, object], key: str, *, default: bool) -> 
     return value
 
 
+def _point_pairs(source: Mapping[str, object], key: str, *, required: bool) -> tuple[tuple[float, float], ...]:
+    entries = sequence_value(source, key)
+    if not entries:
+        if required:
+            raise ValueError(f"{key} must be a non-empty list of two-number points")
+        return ()
+    points: list[tuple[float, float]] = []
+    for entry in entries:
+        pair = as_sequence(entry)
+        if pair is None or len(pair) != 2:
+            raise ValueError(f"each {key} entry must be a two-number list")
+        first, second = (as_finite_number(value) for value in pair)
+        if first is None or second is None:
+            raise ValueError(f"{key} coordinates must be finite numbers")
+        points.append((first, second))
+    return tuple(points)
+
+
+def _channel_probes(source: Mapping[str, object]) -> tuple[ChannelProbe, ...]:
+    """Optional bore probes. Both halves are required per probe, by design."""
+    if "channel_probes" not in source:
+        return ()
+    entries = sequence_value(source, "channel_probes")
+    if not entries:
+        raise ValueError("channel_probes must be a non-empty list when present")
+    probes: list[ChannelProbe] = []
+    for entry in entries:
+        mapping = as_mapping(entry)
+        if mapping is None:
+            raise ValueError("each channel probe must be a mapping")
+        axis = _required_string(mapping, "axis").upper()
+        if axis not in ("X", "Y", "Z"):
+            raise ValueError("a channel probe's axis must be X, Y or Z")
+        probes.append(
+            ChannelProbe(
+                object_name=_required_string(mapping, "object"),
+                axis=axis,
+                open_points_mm=_point_pairs(mapping, "open_points_mm", required=True),
+                solid_points_mm=_point_pairs(mapping, "solid_points_mm", required=True),
+            )
+        )
+    keys = [probe.key for probe in probes]
+    if len(set(keys)) != len(keys):
+        raise ValueError("two channel probes share one object and axis")
+    return tuple(probes)
+
+
 def _disjoint_groups(source: Mapping[str, object]) -> tuple[str, ...]:
     """Optional list of object prefixes that must not intersect one another."""
     if "disjoint_groups" not in source:
@@ -265,6 +333,7 @@ def contract_from_mapping(
         joint_sweep=_joint_sweep(oracle_source),
         bore_probe_points_mm=_bore_probe_points(oracle_source),
         disjoint_groups=_disjoint_groups(oracle_source),
+        channel_probes=_channel_probes(oracle_source),
     )
     if len(oracle.expected_rotations_deg) != oracle.expected_count:
         raise ValueError("expected_rotations_deg length must match expected_count")

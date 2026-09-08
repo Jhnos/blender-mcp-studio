@@ -150,6 +150,27 @@ def assess_verification(
             )
         )
 
+    for probe in expected.channel_probes:
+        results = mapping_value(oracle, "channel_probe_results")
+        record = mapping_value(results, probe.key) if results is not None else None
+        opens = sequence_value(record, "open") if record is not None else None
+        solids = sequence_value(record, "solid") if record is not None else None
+        # Every declared point measured, every open one a miss, every solid one
+        # a hit. The hits are what stop the misses meaning "aimed at nothing".
+        probe_ok = (
+            opens is not None
+            and solids is not None
+            and len(opens) == len(probe.open_points_mm)
+            and len(solids) == len(probe.solid_points_mm)
+            and all(value is False for value in opens)
+            and all(value is True for value in solids)
+        )
+        evidence.append(
+            VerificationEvidence(
+                f"channels:{probe.key}", probe_ok, f"open={opens!r}, solid={solids!r}"
+            )
+        )
+
     if expected.disjoint_groups:
         cross_overlaps = mapping_value(oracle, "cross_group_overlaps")
         # Sorted pairs, so the key is canonical and the order a contract happens
