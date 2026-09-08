@@ -30,23 +30,50 @@ _LAY_FLAT = Matrix.Rotation(1.5707963267948966, 4, "X")
 
 
 def build_print_layout(
-    parts: list[bpy.types.Object], spec: SingleTendonFingerSpec
+    parts: list[bpy.types.Object], spec: SingleTendonFingerSpec, bed_mm: float = 256.0
 ) -> list[bpy.types.Object]:
-    """Every distinct printed part, flat and spaced, under the readiness prefix.
+    """Every distinct printed part, laid flat and nested to fit one plate.
 
     The palm belongs here as much as the phalanges do: it is the part most likely
-    to have a thin wall or an unsupported overhang, and leaving it out of the
-    layout would leave it out of the readiness check entirely — a gap that reads
-    exactly like a clean result.
+    to carry a thin wall or an unsupported overhang, and leaving it out would
+    leave it out of the readiness check entirely — a gap that reads exactly like
+    a clean result.
+
+    Three things this had to learn, each measured rather than assumed. Parts are
+    spaced by their own width, because a pitch chosen for a 24 mm phalanx puts a
+    140 mm palm straight through its neighbours. The placement is baked into each
+    copy's mesh rather than carried on its object transform, because carried
+    there it survived every in-process check and came back as identity when the
+    .blend was reopened. And the row wraps at the bed, because five parts in a
+    line is 413.5 mm and a layout that does not fit the plate is a picture of a
+    layout, not a plan for one.
     """
     layout = collection("HJ_V3_LAYOUT")
-    pitch = spec.link.body_width_mm + 8.0
+    gap = 10.0
     copies: list[bpy.types.Object] = []
-    for index, part in enumerate(parts):
-        placed = duplicate(
-            part,
-            f"HJ_V3_LAYOUT_PART_{index + 1}",
-            Matrix.Translation((m((index - 1.5) * pitch), 0.0, 0.0)) @ _LAY_FLAT,
+    placements: list[tuple[bpy.types.Object, float, float]] = []
+    cursor_x = 0.0
+    cursor_y = 0.0
+    row_depth = 0.0
+    for part in parts:
+        # Laid on its side, so its printed footprint is length by width.
+        width = max(part.dimensions.x, part.dimensions.z) / m(1.0)
+        depth = min(part.dimensions.x, part.dimensions.y) / m(1.0)
+        if cursor_x and cursor_x + width > bed_mm:
+            cursor_x = 0.0
+            cursor_y += row_depth + gap
+            row_depth = 0.0
+        placements.append((part, cursor_x + width / 2, cursor_y))
+        cursor_x += width + gap
+        row_depth = max(row_depth, depth)
+
+    span_x = max(x for _, x, _ in placements) + gap
+    span_y = cursor_y
+    for index, (part, x_mm, y_mm) in enumerate(placements, start=1):
+        placed = duplicate(part, f"HJ_V3_LAYOUT_PART_{index}", Matrix.Identity(4))
+        placed.data = part.data.copy()
+        placed.data.transform(
+            Matrix.Translation((m(x_mm - span_x / 2), m(y_mm - span_y / 2), 0.0)) @ _LAY_FLAT
         )
         for existing in list(placed.users_collection):
             existing.objects.unlink(placed)
@@ -101,10 +128,10 @@ def present_finger(
         "finger_v3_print_layout.png",
         camera,
         layout,
-        (0.0, -300.0, 210.0),
+        (0.0, -430.0, 250.0),
         (0.0, 0.0, 0.0),
-        190.0,
-        "Print layout: one part, four times",
+        320.0,
+        "Print layout: one plate, four phalanges and the palm",
         white,
     )
 
