@@ -38,6 +38,8 @@ V1／V2／V6 是凍結交付物,一個位元組都不動。
 
 - `SingleTendonFingerSpec` 已交(`src/core/domain/finger_v3.py`),10 條測試綠。
   實測腱行程需求 14.40 mm vs 致動器行程 30.0 mm。
+- `PresentationProfile` 已交,`setup_render` 改讀 profile。行為未變的證明:場景讀回 16 項
+  全相符、四個 STL 位元組相同。**PNG 不能當 oracle**——同一份程式跑兩次雜湊就全不同。
 - **實測推翻了文件的一個說法**:`HingePhalanxSpec` 單軸的是**連桿**,它的串接規則
   `assembly_rotations_deg` 是 `(0, 90, 0, 90)`——交替軸。兩份文件已改寫。
 
@@ -60,6 +62,5 @@ V1／V2／V6 是凍結交付物,一個位元組都不動。
 
 - Track 1:依 [`../hand-v3/08-inmoov.md`](../hand-v3/08-inmoov.md) 下載並列印 InMoov 右手,
   同時採購兩隻外層手套與針筒。**使用者執行。**
-- Track 2 下一片:手指產生器。照 `scripts/archive/README.md` 指定的做法——
-  先定義 `PresentationProfile`(前綴／解析度／相機／燈光／地板),再讓 render 變成 profile
-  常數,**不是把 `scripts/archive/hinge_chain_render.py` 的 fork 搬回來**。
+- Track 2 下一片:用 `FINGER_PROFILE` 與 `SingleTendonFingerSpec` 把手指幾何產生出來,
+  先寫一個會紅的契約或測試。`PresentationProfile` 這一步已完成。

@@ -9,6 +9,7 @@ from pathlib import Path
 import bpy
 from mathutils import Matrix, Vector
 
+from scripts.presentation_profile import MECHANICAL_PROFILE, PresentationProfile
 from src.core.domain.hollow_side_hinge import HollowSideHingeSpec
 from src.core.domain.inset_hinge import InsetHingeSpec
 
@@ -56,11 +57,19 @@ def setup_render(
     spec: HollowSideHingeSpec | InsetHingeSpec,
     floor_material: bpy.types.Material,
     assign_material: Callable[[bpy.types.Object, bpy.types.Material], None],
+    profile: PresentationProfile = MECHANICAL_PROFILE,
 ) -> tuple[bpy.types.Object, list[bpy.types.Object]]:
+    """Build the camera, floor and lights this model line is looked at with.
+
+    The numbers come from `profile` rather than from here, so a second model
+    line becomes a second constant instead of a third near-identical copy of
+    this function — the revival rule `scripts/archive/README.md` lays down.
+    `MECHANICAL_PROFILE` is the default because four delivered models are
+    rendered with it and none of them should shift.
+    """
     scene = bpy.context.scene
     scene.render.engine = "BLENDER_WORKBENCH"
-    scene.render.resolution_x = 1200
-    scene.render.resolution_y = 1500
+    scene.render.resolution_x, scene.render.resolution_y = profile.resolution
     scene.render.resolution_percentage = 100
     scene.render.image_settings.file_format = "PNG"
     scene.render.film_transparent = False
@@ -69,37 +78,35 @@ def setup_render(
     shading.light = "STUDIO"
     shading.color_type = "MATERIAL"
     shading.background_type = "VIEWPORT"
-    shading.background_color = (0.008, 0.014, 0.026)
+    shading.background_color = profile.background_color
     shading.show_shadows = True
     shading.show_cavity = True
     shading.cavity_type = "WORLD"
-    shading.curvature_ridge_factor = 2.0
-    shading.curvature_valley_factor = 1.6
+    shading.curvature_ridge_factor = profile.curvature_ridge
+    shading.curvature_valley_factor = profile.curvature_valley
 
-    bpy.ops.mesh.primitive_plane_add(size=m(300.0), location=(0.0, 0.0, m(-25.0)))
+    bpy.ops.mesh.primitive_plane_add(
+        size=m(profile.floor_size_mm), location=(0.0, 0.0, m(profile.floor_z_mm))
+    )
     floor = bpy.context.object
-    floor.name = "HH_FLOOR"
+    floor.name = profile.object_name("FLOOR")
     assign_material(floor, floor_material)
 
     midpoint = (spec.assembly_unit_count - 1) * spec.unit_pitch_mm / 2.0
-    bpy.ops.object.camera_add(location=(m(145.0), m(-270.0), m(145.0)))
+    bpy.ops.object.camera_add(location=tuple(m(value) for value in profile.camera_location_mm))
     camera = bpy.context.object
-    camera.name = "HH_CAMERA"
+    camera.name = profile.object_name("CAMERA")
     camera.data.type = "ORTHO"
     configure_mechanical_camera(camera)
-    camera.data.ortho_scale = m(226.0)
+    camera.data.ortho_scale = m(profile.ortho_scale_mm)
     look_at(camera, (0.0, 0.0, midpoint))
     scene.camera = camera
 
     lights: list[bpy.types.Object] = []
-    for name, energy, size_mm, location_mm in (
-        ("HH_KEY", 30.0, 80.0, (90.0, -100.0, 190.0)),
-        ("HH_FILL", 16.0, 70.0, (-90.0, -35.0, 100.0)),
-        ("HH_RIM", 24.0, 60.0, (35.0, 95.0, 175.0)),
-    ):
+    for name, energy, size_mm, location_mm in profile.lights:
         bpy.ops.object.light_add(type="AREA", location=tuple(m(value) for value in location_mm))
         light = bpy.context.object
-        light.name = name
+        light.name = profile.object_name(name)
         light.data.energy = energy
         light.data.shape = "DISK"
         light.data.size = m(size_mm)
