@@ -5,6 +5,29 @@
 
 ## [Unreleased]
 
+### V01.0P.003 — 契約閘門進 CI,而且第一次有人量它要幾秒
+
+#### Added
+
+- `src/verification/package_reproduction.py` + `scripts/verify/regenerated_package_matches_shipped.py`:
+  用新產生的 `tmp/<slug>/*.stl` 對 `models/<slug>/manifest.json` 比**面數(精確)與尺寸(±0.1 mm)**。
+  **不比 sha**——STL 匯出不可位元組重現,本輪已證。manifest 是唯一期望來源,沒有第二張數字表。
+  fail-closed:manifest 沒量過的、沒生成的、讀不出來的、空母數,全部是帶理由的 FAIL。
+  should-fire 與 should-pass 成對(多一個三角形、尺寸差 0.2、檔案缺、payload 壞、母數空)。
+- `scripts/ci.sh --real` 多三條硬閘門:hand-v3 契約(20 項)、手指契約(同場景,14 項)、重現差分。
+  順序是硬的(後者讀前者生成的東西),由 `test_real_ci_gates_the_hand_contracts` 釘住。
+  Blender 沒開走既有 SKIP 分支,不假綠。
+
+#### Changed
+
+- 首跑實測:手契約 7 s、手指 1 s、差分 0.2 s,整個 T3 13 s。這個數字讓 D-004(V1/V2/V6 契約進 CI)
+  的觸發條件當天成立,狀態改 `due`,排進 M3。
+- 追溯矩陣兩個 `TODO_` ref 改成真名(VOC-1、PS-5);v6/v7/v8 記入第一批真機數字。
+
+#### Fixed
+
+- `test_generated_artifact_contract.py` 定義了兩次 `_green_oracle`;第一個(不吃覆寫)被第二個遮蔽。刪第一個。
+
 ### V01.0P.002 — 靈巧手框架:文件先行,守衛比第一行散文早
 
 #### Added

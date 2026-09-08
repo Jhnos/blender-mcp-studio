@@ -51,4 +51,4 @@ M2 的紅測試就是這一條:對 `hand-v3` 生成,與現有兩份 JSON 比—�
 
 Blender 沒開 → 既有 `else` 印 SKIP(`:92-96`),**絕不假綠**。API 沒開 → FAIL,與既有 readiness 閘門同極性。
 釘住:`test_real_ci_gates_the_hand_contracts`,照 `tests/unit/core/test_architecture_ssot.py:153-157` 的形。
-首跑在 Mac 上量秒數,記進 [[30-verification]];V1/V2/V6 契約另列 [[DEFERRALS]] D-004。
+首跑實測三條合計 8 s([[hand-framework/v8-results]]),遠低於 D-004 的 10 分鐘門檻——D-004 因此升為 `due`。

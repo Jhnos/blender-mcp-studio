@@ -15,8 +15,19 @@
 
 ```bash
 scripts/ci.sh          # T1 static + T2 unit/headless dummy run；commit 前必跑
-scripts/ci.sh --real   # T3 REST/MCP/readiness/batch；需要 Blender addon 已就緒
+scripts/ci.sh --real   # T3 REST/MCP/readiness/batch + hand-v3 契約與重現差分；需要 Blender addon 已就緒
 ```
+
+### T3 裡的產出物閘門（2026-09-08 起）
+
+| 閘門 | 讀什麼 | 首跑秒數（Mac，2026-09-08） |
+|---|---|---|
+| hand-v3 contract | 在常駐 Blender 重建整手，20 項證據 | 7 |
+| hand-v3 finger contract | 同一場景（`--skip-generate`），14 項 | 1 |
+| regenerated package matches shipped | `tmp/hand-v3/*.stl` 對 `models/hand-v3/manifest.json`：面數精確、尺寸 ±0.1，**不比 sha** | 0.2 |
+
+順序是硬的：手指契約重用手契約生成的場景；差分讀那次生成匯出的 STL。三條由
+`test_real_ci_gates_the_hand_contracts` 釘在 `ci.sh` 裡。V1／V2／V6 的契約尚未接入：[[DEFERRALS]] D-004（已 `due`）。
 
 本專案**沒有** GitHub Actions；`scripts/ci.sh` 是唯一 CI。新行為一律從一個
 **有鑑別力的失敗測試**開始——測試要能在功能未實作時變紅，而不是靠實作細節通過。

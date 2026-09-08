@@ -41,16 +41,19 @@
 
 ### Verified facts
 
-- 樹守衛(6 條)在空目錄上先紅(6 failed),M0 文件寫完後綠。
+- M0:樹守衛先在空目錄上紅(6 failed),文件寫完綠;第一稿被守衛抓到四件事。
+- M1:重現差分對**舊產生器** 4/4 PASS(3434/2686/10302/54196 面,尺寸全在 ±0.1 內);
+  `ci.sh --real` 三條新閘門全 PASS,首跑 7 s + 1 s + 0.2 s;整支 `--real` 約 35 s。
+- 差分的 should-fire 親驗:`--source` 指向空目錄 → 4 個 `missing` FAIL、exit 1。
 - 親驗過的三個決定計畫形狀的事實在 `00-context`;`finger_mount_frames` 零呼叫者;`palm_v3.py` 372/380 行。
-- 先例查證:四個開源手,無一是 Python/bpy 規格驅動;無銷關節寫成 D-005。
 
 ### Open failures
 
-- 沒有機器檢查在失敗。矩陣 16 列 TODO 是狀態(M1–M6 還沒做),不是缺口;每列都有 `TODO_` 前綴的驗證器名字。
+- 沒有機器檢查在失敗。矩陣剩 14 個 `TODO_` ref(M2–M6),每個都有名字。
+- D-004 已 `due`(觸發:手契約閘門 < 10 分鐘):V1/V2/V6 七份契約排進 M3 一起接。
 
 ### Next step
 
-- M1:先寫 `tests/unit/core/test_architecture_ssot.py` 的 `test_real_ci_gates_the_hand_contracts`(紅),
-  再寫 `src/verification/package_reproduction.py` 與 `scripts/verify/regenerated_package_matches_shipped.py`,
-  然後在 `scripts/ci.sh` 的 addon-socket 分支(port 見 `docs/10-runtime-ssot.md`)後加三條 `_run hard`。
+- M2:先寫 `tests/unit/verification/test_contract_builder.py`——對 `hand-v3` 生成,與簽入的兩份 JSON
+  `json.loads` 後相等(紅:模組不存在);再建 `src/core/planning/` 七個規劃物件與 `NamingPolicy`,
+  `src/verification/contract_builder.py`,`scripts/verify/build_hand_contracts.py`;ES-6 reload 測試。
