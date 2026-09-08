@@ -176,6 +176,19 @@ def cleanup_mesh(obj: bpy.types.Object) -> None:
     editable.from_mesh(obj.data)
     bmesh.ops.remove_doubles(editable, verts=editable.verts, dist=m(0.005))
     bmesh.ops.dissolve_degenerate(editable, edges=editable.edges, dist=m(0.001))
+    # Wire debris the two thresholds above are too tight to catch. A boolean
+    # between operands with coincident faces can leave an edge carrying no
+    # faces at all — one turned up 0.01 mm long on a fork lug, which is longer
+    # than either threshold and still means nothing. An edge with no faces
+    # cannot be part of a solid, so removing it is not a repair, it is taking
+    # out something that was never surface. Nothing here touches a face, so
+    # every exported mesh stays identical to the byte.
+    loose_edges = [edge for edge in editable.edges if not edge.link_faces]
+    if loose_edges:
+        bmesh.ops.delete(editable, geom=loose_edges, context="EDGES")
+    loose_verts = [vert for vert in editable.verts if not vert.link_edges]
+    if loose_verts:
+        bmesh.ops.delete(editable, geom=loose_verts, context="VERTS")
     bmesh.ops.recalc_face_normals(editable, faces=editable.faces)
     editable.to_mesh(obj.data)
     editable.free()
