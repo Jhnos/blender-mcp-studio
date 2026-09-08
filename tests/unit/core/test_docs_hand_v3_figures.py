@@ -25,6 +25,7 @@ PALM_DOC = ROOT / "docs" / "hand-v3" / "04-palm-thumb.md"
 PACKAGE = ROOT / "models" / "hand-v3"
 
 DECIMAL = re.compile(r"\d+\.\d+")
+_CHINESE = {3: "三", 4: "四", 5: "五"}
 
 
 def _row(document: str, label: str) -> str:
@@ -91,9 +92,13 @@ def test_the_palm_doc_counts_the_parts_the_spec_asks_for() -> None:
     per_thumb = spec.thumb.link.joint_count + 1
     fingers = len(spec.row_finger_x_mm)
 
+    # The row reads "1 個掌盤 + 15 個指節(四指各 3、拇指 3)" — the count of
+    # fingers is written as a Chinese numeral and is prose, so the digits are
+    # the plate, the total, and the two per-digit counts.
     cell = _row(doc, "零件")
     counts = [int(v) for v in re.findall(r"\d+", cell)]
-    assert counts == [1, fingers * per_finger + per_thumb, fingers, per_finger, per_thumb], cell
+    assert counts == [1, fingers * per_finger + per_thumb, per_finger, per_thumb], cell
+    assert f"{_CHINESE[fingers]}指各" in cell, cell
 
 
 def test_every_current_state_doc_quotes_the_same_reach() -> None:
