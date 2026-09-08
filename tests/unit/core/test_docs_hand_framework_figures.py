@@ -21,10 +21,6 @@ from pathlib import Path
 
 import pytest
 
-from src.core.domain.compact_link import CompactHingeLinkSpec
-from src.core.domain.finger_v3 import SingleTendonFingerSpec
-from src.core.domain.palm_v3 import AnthropomorphicPalmSpec
-
 ROOT = Path(__file__).resolve().parents[3]
 TREE = ROOT / "docs" / "hand-framework"
 MATRIX = TREE / "02-requirements.md"
