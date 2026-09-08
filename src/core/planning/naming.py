@@ -85,6 +85,10 @@ class NamingPolicy:
         """A named through-cut in the palm: the route it carries and the station it serves."""
         return f"{self.prefix}CUT_{route}_{label}"
 
+    def cutter(self, kind: str) -> str:
+        """A named cut that serves no one station: the air port, the clamp groove."""
+        return f"{self.prefix}CUT_{kind}"
+
     def scratch(self, kind: str) -> str:
         """A transient boolean operand: cleared with the namespace, never counted as a part."""
         return f"{self.namespace}{kind}"

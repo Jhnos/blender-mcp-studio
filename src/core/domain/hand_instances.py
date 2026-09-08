@@ -30,16 +30,31 @@ class HandInstance:
     #: manifest and the package tests all pin it.
     generator_script: str
     blend_file: str
-    stl_files: tuple[str, ...]
-    render_files: tuple[str, ...]
+    phalanx_stl: str
+    palm_stl: str
+    finger_stl: str
+    hand_stl: str
+    assembly_render: str
+    joint_render: str
+    layout_render: str
+    #: Written into the .blend so the file says what it is and what it does not claim.
+    design_note: str
 
     def __post_init__(self) -> None:
         if not _SLUG.match(self.slug):
             raise ValueError(
                 f"an instance slug is lowercase words joined by hyphens, not {self.slug!r}"
             )
-        if not self.stl_files:
-            raise ValueError("an instance ships at least one mesh")
+        if len(set(self.stl_files)) != len(self.stl_files):
+            raise ValueError("two meshes cannot ship under one file name")
+
+    @property
+    def stl_files(self) -> tuple[str, ...]:
+        return (self.phalanx_stl, self.palm_stl, self.finger_stl, self.hand_stl)
+
+    @property
+    def render_files(self) -> tuple[str, ...]:
+        return (self.assembly_render, self.joint_render, self.layout_render)
 
     @property
     def output_dir(self) -> str:
@@ -58,11 +73,18 @@ HAND_INSTANCES: dict[str, HandInstance] = {
         family="V3",
         generator_script="scripts/model_finger_v3.py",
         blend_file="finger_v3.blend",
-        stl_files=("phalanx_mm.stl", "palm_mm.stl", "finger_v3_mm.stl", "hand_v3_mm.stl"),
-        render_files=(
-            "finger_v3_assembly.png",
-            "finger_v3_joint_detail.png",
-            "finger_v3_print_layout.png",
+        phalanx_stl="phalanx_mm.stl",
+        palm_stl="palm_mm.stl",
+        finger_stl="finger_v3_mm.stl",
+        hand_stl="hand_v3_mm.stl",
+        assembly_render="finger_v3_assembly.png",
+        joint_render="finger_v3_joint_detail.png",
+        layout_render="finger_v3_print_layout.png",
+        design_note=(
+            "V3 finger: three planar units, both hinge ends on one axis so the stack "
+            "goes together unrotated, and one tendon bore per unit at that joint's own "
+            "moment arm. Unqualified fit prototype; no grip force, retention or "
+            "strength claim. Never printed."
         ),
     ),
 }
