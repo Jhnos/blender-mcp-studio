@@ -91,7 +91,9 @@ def expected_from_manifest(
         triangles = as_positive_int(entry.get("triangle_count"))
         if triangles is None:
             raise ValueError(f"manifest never measured {name}: triangle_count is missing")
-        expected[name] = ExpectedMesh(name, triangles, _dimensions(entry.get("dimensions_mm"), name))
+        expected[name] = ExpectedMesh(
+            name, triangles, _dimensions(entry.get("dimensions_mm"), name)
+        )
     return expected
 
 

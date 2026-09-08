@@ -169,7 +169,9 @@ def test_real_ci_gates_the_hand_contracts() -> None:
 
     hand = ci.index("scripts/verify/contracts/hand_v3.json")
     finger = ci.index("scripts/verify/contracts/hand_v3_finger.json --skip-generate")
-    differential = ci.index("scripts/verify/regenerated_package_matches_shipped.py --package hand-v3")
+    differential = ci.index(
+        "scripts/verify/regenerated_package_matches_shipped.py --package hand-v3"
+    )
     assert hand < finger < differential
     real_tier = ci.index("T3 · real machine (MCP↔Blender)")
     assert real_tier < hand, "the hand gates belong inside the --real tier"

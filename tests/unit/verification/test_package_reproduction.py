@@ -35,8 +35,16 @@ def _stl(triangle_count: int, dimensions: tuple[float, float, float]) -> bytes:
 
 MANIFEST = {
     "files": {
-        "phalanx_mm.stl": {"triangle_count": 3434, "dimensions_mm": [24.0, 22.0, 67.0], "sha256": "x"},
-        "palm_mm.stl": {"triangle_count": 2686, "dimensions_mm": [140.0, 44.0, 103.5], "sha256": "y"},
+        "phalanx_mm.stl": {
+            "triangle_count": 3434,
+            "dimensions_mm": [24.0, 22.0, 67.0],
+            "sha256": "x",
+        },
+        "palm_mm.stl": {
+            "triangle_count": 2686,
+            "dimensions_mm": [140.0, 44.0, 103.5],
+            "sha256": "y",
+        },
         "finger_v3.blend": {"sha256": "z"},
     }
 }
