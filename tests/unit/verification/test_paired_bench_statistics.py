@@ -121,3 +121,60 @@ def test_a_complete_scenario_reports_magnitude_uncertainty_and_a_verdict() -> No
     assert verdict.significant
     # A bare p is a failure, so the summary has to carry the magnitude too.
     assert "CI" in verdict.summary and "p=" in verdict.summary
+
+
+@pytest.mark.parametrize("count", [4, 5, 6, 7, 8, 9, 10, 11, 12])
+def test_the_exact_null_matches_the_arithmetic_it_is_supposed_to_be(count: int) -> None:
+    """Hand-rolled inference is only as good as what pins it down.
+
+    `applied-statistics:experiment-statistics` says the primitives already exist
+    and this layer should route over them rather than write new statistics. This
+    project carries no scipy and no pure-Python exact Wilcoxon exists, so the
+    test is written here — which means it needs pinning to something better than
+    "it looked right".
+
+    Two cases are analytically certain and need no reference table. When every
+    difference shares a sign, exactly two of the 2^n sign assignments reach a
+    statistic that extreme, so p is 2/2^n. And a p-value is a probability, so it
+    can never leave [0, 1] whatever the ranks look like.
+    """
+    same_sign = [float(value) for value in range(1, count + 1)]
+
+    assert wilcoxon_signed_rank_p(same_sign) == pytest.approx(2 / 2**count, rel=1e-9)
+    assert wilcoxon_signed_rank_p([-value for value in same_sign]) == pytest.approx(
+        2 / 2**count, rel=1e-9
+    )
+    assert 0.0 <= wilcoxon_signed_rank_p(same_sign) <= 1.0
+
+
+def test_the_p_value_moves_the_way_evidence_moves() -> None:
+    """One sign flipped is strictly weaker evidence than none flipped.
+
+    Monotonicity is the cheapest property that a transcription error breaks, and
+    it does not need a reference implementation to state.
+    """
+    clean = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0]
+    one_flipped = [-1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0]
+    two_flipped = [-1.0, -2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0]
+
+    assert (
+        wilcoxon_signed_rank_p(clean)
+        < wilcoxon_signed_rank_p(one_flipped)
+        < wilcoxon_signed_rank_p(two_flipped)
+    )
+
+
+def test_tied_magnitudes_are_handled_as_a_permutation_over_the_observed_ranks() -> None:
+    """Ties are where a textbook table and this implementation part company.
+
+    With tied magnitudes the classical exact table no longer applies, because it
+    assumes distinct ranks. What is computed here is the permutation null
+    conditional on the ranks actually observed — a defensible answer to a
+    slightly different question, and one worth stating rather than glossing.
+    """
+    tied = [2.0, 2.0, 2.0, 2.0]
+
+    p_value = wilcoxon_signed_rank_p(tied)
+
+    assert p_value == pytest.approx(2 / 16, rel=1e-9)
+    assert rank_biserial(tied) == pytest.approx(1.0)
