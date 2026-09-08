@@ -31,6 +31,7 @@ from src.core.domain.rotation import Axis3, roll_about, rotate_y
 #: purpose: this answers "can these two ever meet", not "by what path".
 _SAMPLES_DEG = (0.0, 10.0, 20.0, 30.0, 40.0, 50.0)
 
+
 @dataclass(frozen=True, slots=True)
 class AnthropomorphicPalmSpec:
     """No grip-force claim: reach, spacing and clearance, not a rated hand."""

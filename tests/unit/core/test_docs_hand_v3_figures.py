@@ -30,9 +30,7 @@ _CHINESE = {3: "三", 4: "四", 5: "五"}
 
 def _row(document: str, label: str) -> str:
     """The value cell of the one table row carrying this label."""
-    rows = [
-        line for line in document.splitlines() if line.startswith("|") and label in line
-    ]
+    rows = [line for line in document.splitlines() if line.startswith("|") and label in line]
     assert len(rows) == 1, f"expected exactly one row labelled {label!r}, found {len(rows)}"
     return rows[0].split("|")[2]
 

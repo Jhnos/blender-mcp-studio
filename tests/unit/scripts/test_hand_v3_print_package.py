@@ -163,7 +163,14 @@ def test_the_readme_describes_the_package_that_shipped() -> None:
     total = len(palm.row_finger_x_mm) * len(palm.finger_segment_lengths_mm) + len(
         palm.thumb_segment_lengths_mm
     )
-    words = {13: "thirteen", 14: "fourteen", 15: "fifteen", 16: "sixteen", 19: "nineteen", 20: "twenty"}
+    words = {
+        13: "thirteen",
+        14: "fourteen",
+        15: "fifteen",
+        16: "sixteen",
+        19: "nineteen",
+        20: "twenty",
+    }
     assert words[total] in readme, f"the README never says how many parts to print ({total})"
     for count, word in words.items():
         if count != total:
