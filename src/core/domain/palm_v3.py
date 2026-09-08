@@ -23,13 +23,10 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass
 
+from src.core.domain import opposition
 from src.core.domain.finger_v3 import SingleTendonFingerSpec
 from src.core.domain.hinge_chain import HingePhalanxSpec
 from src.core.domain.rotation import Axis3, roll_about, rotate_y
-
-#: Joint angles sampled when asking where a fingertip can reach. Coarse on
-#: purpose: this answers "can these two ever meet", not "by what path".
-_SAMPLES_DEG = (0.0, 10.0, 20.0, 30.0, 40.0, 50.0)
 
 
 @dataclass(frozen=True, slots=True)
@@ -59,6 +56,9 @@ class AnthropomorphicPalmSpec:
     )
     #: Air between neighbouring fingers along the row.
     finger_gap_mm: float = 6.0
+    #: How many fingers stand in the row. Four is a hand. A field because
+    #: `range(4)` and `3 * pitch` were typed in four places and agreed by luck.
+    row_finger_count: int = 4
     #: How far the thumb's root sits outboard of the row, and how far down.
     thumb_offset_mm: float = 26.0
     thumb_base_drop_mm: float = 30.0
@@ -66,7 +66,9 @@ class AnthropomorphicPalmSpec:
     #: palmar side. Without it the thumb swings in the plane of the fingers and
     #: can only ever meet them edge-on; a real thumb comes up from in front, and
     #: that is what turns a sideways finger into an opposable one.
-    thumb_base_palmar_mm: float = 22.0
+    #: Zero means: as far forward as the plate is deep, which is its own limit
+    #: (see below) and is 22.0 for the borrowed link — the old literal, derived.
+    thumb_base_palmar_mm: float = 0.0
     #: Swings the thumb's axis across the palm. Zero leaves it a fifth finger.
     #:
     #: These four numbers were chosen by scanning the placement space against
@@ -82,7 +84,10 @@ class AnthropomorphicPalmSpec:
     thumb_palmar_tilt_deg: float = -15.0
     #: How close two tips must come to count as touching. Generous, because this
     #: is a reachability question answered on a coarse grid, not a contact model.
-    pinch_contact_mm: float = 22.0
+    #: Zero means one body depth: two pads touch when their centres are that far
+    #: apart. Bounded above by the plate, because a contact distance wider than
+    #: the part turns a miss into a touch.
+    pinch_contact_mm: float = 0.0
     #: Where the two sleeves are clamped, and where the syringe pushes in. The
     #: outer glove itself is bought, not designed — see docs/hand-v3/07-interfaces.
     cuff_clamp_wall_mm: float = 3.0
@@ -93,16 +98,36 @@ class AnthropomorphicPalmSpec:
     #: they landed 0.4 mm apart, so a 6 mm bore went through the middle of a
     #: 3 mm band. Their relationship is a decision now, and it has a name.
     air_port_clearance_mm: float = 2.4
+    #: Air between the thumb's first phalanx and the boss carrying its root.
+    #: Zero means four printed radial clearances — what the old `* 4` meant,
+    #: now with a name and a floor.
+    thumb_boss_clearance_mm: float = 0.0
     #: Refuse an unopposable thumb outright instead of only reporting the gap.
     #: Off by default so a caller can measure a deliberately flat hand and
     #: compare — the guard needs a case it fires on to be worth anything.
     strict: bool = False
 
     def __post_init__(self) -> None:
+        link = self.finger.link
+        if not self.thumb_base_palmar_mm:
+            object.__setattr__(self, "thumb_base_palmar_mm", link.body_depth_mm)
+        if not self.pinch_contact_mm:
+            object.__setattr__(self, "pinch_contact_mm", link.body_depth_mm)
+        if not self.thumb_boss_clearance_mm:
+            object.__setattr__(
+                self, "thumb_boss_clearance_mm", 4 * link.printed_radial_clearance_mm
+            )
+        if self.row_finger_count < 1:
+            raise ValueError("a finger row needs at least one finger")
         if self.finger_gap_mm <= 0:
             raise ValueError("neighbouring fingers need air between them")
         if self.pinch_contact_mm <= 0:
             raise ValueError("a contact distance of zero can never be met")
+        if self.pinch_contact_mm > link.body_depth_mm:
+            raise ValueError(
+                f"a contact distance of {self.pinch_contact_mm:.1f} mm is wider than the plate "
+                f"is deep ({link.body_depth_mm:.1f} mm); on a coarse grid that counts a miss as a touch"
+            )
         if self.cuff_clamp_wall_mm < self.finger.link.minimum_wall_mm:
             raise ValueError("the cuff clamp is thinner than the minimum printable wall")
         if self.air_port_clearance_mm < 0.0:
@@ -113,8 +138,17 @@ class AnthropomorphicPalmSpec:
             raise ValueError("the thumb root must sit outboard of and below the row")
         if self.thumb_base_palmar_mm < 0:
             raise ValueError("the thumb root cannot sit behind the back of the hand")
-        clearance = self.finger.link.printed_radial_clearance_mm * 4
-        if self.thumb_chain_lowest_z_mm < self.thenar_top_z_mm + clearance:
+        if self.thumb_base_palmar_mm > link.body_depth_mm:
+            raise ValueError(
+                f"the thumb root would stand {self.thumb_base_palmar_mm:.1f} mm proud of a plate "
+                f"only {link.body_depth_mm:.1f} mm deep — a thumb on a stalk in front of the hand"
+            )
+        if self.thumb_boss_clearance_mm < link.printed_radial_clearance_mm:
+            raise ValueError(
+                f"a boss clearance of {self.thumb_boss_clearance_mm:.2f} mm is under the printed "
+                f"radial clearance of {link.printed_radial_clearance_mm:.2f} mm; the phalanx would fuse"
+            )
+        if self.thumb_chain_lowest_z_mm < self.thenar_top_z_mm + self.thumb_boss_clearance_mm:
             raise ValueError(
                 "the thumb's first phalanx swings down into the boss carrying its own "
                 f"root: lowest point {self.thumb_chain_lowest_z_mm:.1f} mm against a boss "
@@ -187,13 +221,14 @@ class AnthropomorphicPalmSpec:
 
     @property
     def row_finger_x_mm(self) -> tuple[float, ...]:
-        """Four roots evenly spaced across the plate, index first."""
+        """The row's roots evenly spaced across the plate, index first."""
         pitch = self.row_pitch_mm
-        return tuple((index - 1.5) * pitch for index in range(4))
+        centre = (self.row_finger_count - 1) / 2
+        return tuple((index - centre) * pitch for index in range(self.row_finger_count))
 
     @property
     def palm_width_mm(self) -> float:
-        return 3 * self.row_pitch_mm + self.finger.link.body_width_mm
+        return (self.row_finger_count - 1) * self.row_pitch_mm + self.finger.link.body_width_mm
 
     @property
     def plate_height_mm(self) -> float:
@@ -218,10 +253,6 @@ class AnthropomorphicPalmSpec:
         return (0.0, band_top + self.air_port_clearance_mm + self.air_port_diameter_mm / 2)
 
     # -------------------------------------------------------- can it oppose?
-
-    def _row_tip_world(self, x_mm: float, angles_deg: tuple[float, ...]) -> Axis3:
-        palmar, along = self.fingertip_in_finger_frame_mm(angles_deg)
-        return (x_mm, palmar, along)
 
     @property
     def thumb_frame(self) -> tuple[Axis3, Axis3]:
@@ -332,41 +363,7 @@ class AnthropomorphicPalmSpec:
             -self.thumb_base_drop_mm,
         )
 
-    def _thumb_tip_world(self, angles_deg: tuple[float, ...]) -> Axis3:
-        palmar, along = self.tip_in_frame_mm(self.thumb_segment_lengths_mm, angles_deg)
-        axis, pad = self.thumb_frame
-        origin = self.thumb_root_mm
-        return tuple(  # type: ignore[return-value]
-            origin[axis_index] + along * axis[axis_index] + (-palmar) * pad[axis_index]
-            for axis_index in range(3)
-        )
-
     @property
     def thumb_index_tip_gap_mm(self) -> float:
-        """Closest the thumb tip can come to the index tip, over both reachable sets.
-
-        A reachability question, not a posture: it asks whether *some* pair of
-        postures brings the tips together, which is what "opposable" means. The
-        grid is coarse, and `pinch_contact_mm` is correspondingly generous.
-        """
-        index_x = self.row_finger_x_mm[0]
-        row_tips = [
-            self._row_tip_world(index_x, angles)
-            for angles in self._posture_grid(self.finger.link.joint_count)
-        ]
-        best = math.inf
-        for thumb_angles in self._posture_grid(self.thumb.link.joint_count):
-            thumb = self._thumb_tip_world(thumb_angles)
-            for tip in row_tips:
-                gap = math.dist(thumb, tip)
-                if gap < best:
-                    best = gap
-        return best
-
-    def _posture_grid(self, joints: int) -> tuple[tuple[float, ...], ...]:
-        limit = self.finger.link.maximum_articulation_deg
-        allowed = tuple(value for value in _SAMPLES_DEG if value <= limit)
-        grid: list[tuple[float, ...]] = [()]
-        for _ in range(joints):
-            grid = [(*posture, angle) for posture in grid for angle in allowed]
-        return tuple(grid)
+        """Closest the thumb tip can come to the index tip; the arithmetic is `opposition`."""
+        return opposition.thumb_index_tip_gap_mm(self)

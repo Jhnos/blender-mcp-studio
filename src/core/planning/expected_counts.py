@@ -48,7 +48,7 @@ class ExpectedCounts:
 
 
 def expected_counts(palm: AnthropomorphicPalmSpec, naming: NamingPolicy) -> ExpectedCounts:
-    row = len(palm.row_finger_x_mm)
+    row = palm.row_finger_count
     labels = tuple(naming.station_label(index) for index in range(1, row + 1))
     return ExpectedCounts(
         units_per_finger=palm.finger.link.assembly_unit_count,
