@@ -62,6 +62,12 @@
   `python3 scripts/analyse_bench_results.py --sesoi <牛頓>`,報告直接出來,
   **四個場景都涵蓋**(S9 充氣與否、S10 兩種外層、S11 加壓與抽真空、S12 壓力衰減)。
 
+### 為什麼這件事現在更值錢
+
+`CompactHingeLinkSpec`(V01.0P.000)把指節縮到人手尺寸,靠的是把銷減半、拿掉軸承、
+壁厚降到 1.2 mm——**公差因此全面變緊**,而這件試片量的正是那些數字。
+量到的 C1–C7 不只決定現在這版印不印得出來,也決定人手尺寸那條路走不走得通。
+
 ### Next step
 
 - 印 `models/hand-v3/phalanx_mm.stl` 一件,量 C1–C7,數字填進 `docs/hand-v3/v8-results.md`。

@@ -54,6 +54,36 @@ Used for: consulted as a bill-of-materials and cost reference only. It is a
           hand, so nothing of its mechanism is used here.
 
 
+100_fingers
+-----------
+Author:   kg398
+Source:   https://github.com/kg398/100_fingers
+Licence:  GPLv3 for code, CC BY 4.0 for 3D assets (read first-hand 2026-09-08)
+Used for: consulted while choosing V3's joint type. It replaces the pinned joint
+          with a living hinge, which is the evidence behind the finding that a
+          pin is not required. No code and no geometry taken — GPLv3 would
+          propagate to this project, and the conclusion is not copyrightable.
+
+
+RoninHand
+---------
+Author:   Polymorph Intelligence
+Source:   https://github.com/Polymorph-Intelligence/RoninHand
+Licence:  Apache 2.0 for software and docs, CC BY 4.0 for mechanical design
+          (read first-hand 2026-09-08)
+Used for: consulted for the same decision. Its semi print-in-place joints are
+          the second piece of evidence that the pin is optional. Nothing taken.
+
+
+BiDexHand
+---------
+Source:   https://github.com/wengmister/BiDexHand
+Licence:  MIT (reported; not verified first-hand as of 2026-09-08)
+Used for: noted as the most permissively licensed parametric hand available.
+          Its CAD is SolidWorks/STEP, which cannot enter this project's
+          spec-driven pipeline, so it is recorded as an option and not used.
+
+
 Referenced literature
 ---------------------
 Method sources for the pneumatic interlayer and for grasp measurement are

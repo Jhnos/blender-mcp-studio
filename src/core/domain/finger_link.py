@@ -25,22 +25,57 @@ class FingerLinkSpec(Protocol):
     obligation on every link; the list is short on purpose.
     """
 
-    joint_count: int
-    body_length_mm: float
-    body_width_mm: float
-    body_depth_mm: float
-    joint_center_offset_mm: float
-    tendon_hole_diameter_mm: float
-    pin_diameter_mm: float
-    printed_radial_clearance_mm: float
-    bearing_seat_diameter_mm: float
-    bearing_width_mm: float
-    lug_outer_diameter_mm: float
-    male_tongue_thickness_mm: float
-    fork_gap_mm: float
-    fork_lug_thickness_mm: float
-    minimum_wall_mm: float
-    maximum_articulation_deg: float
+    # Read-only on purpose. A Protocol that declares plain attributes demands
+    # *settable* ones, which no frozen dataclass can offer — and settable is
+    # the opposite of what is wanted here: the V3 stack only ever reads a
+    # link, and a link that could be written to mid-build is a bug waiting.
+    @property
+    def joint_count(self) -> int: ...
+
+    @property
+    def body_length_mm(self) -> float: ...
+
+    @property
+    def body_width_mm(self) -> float: ...
+
+    @property
+    def body_depth_mm(self) -> float: ...
+
+    @property
+    def joint_center_offset_mm(self) -> float: ...
+
+    @property
+    def tendon_hole_diameter_mm(self) -> float: ...
+
+    @property
+    def pin_diameter_mm(self) -> float: ...
+
+    @property
+    def printed_radial_clearance_mm(self) -> float: ...
+
+    @property
+    def bearing_seat_diameter_mm(self) -> float: ...
+
+    @property
+    def bearing_width_mm(self) -> float: ...
+
+    @property
+    def lug_outer_diameter_mm(self) -> float: ...
+
+    @property
+    def male_tongue_thickness_mm(self) -> float: ...
+
+    @property
+    def fork_gap_mm(self) -> float: ...
+
+    @property
+    def fork_lug_thickness_mm(self) -> float: ...
+
+    @property
+    def minimum_wall_mm(self) -> float: ...
+
+    @property
+    def maximum_articulation_deg(self) -> float: ...
 
     @property
     def assembly_unit_count(self) -> int: ...

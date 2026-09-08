@@ -146,9 +146,7 @@ class CompactHingeLinkSpec:
     @property
     def largest_usable_moment_arm_mm(self) -> float:
         """Furthest out the bore may sit and still be inside the finger."""
-        return (
-            self.body_depth_mm / 2.0 - self.minimum_wall_mm - self.tendon_hole_diameter_mm / 2.0
-        )
+        return self.body_depth_mm / 2.0 - self.minimum_wall_mm - self.tendon_hole_diameter_mm / 2.0
 
     @property
     def moment_arm_window_ratio(self) -> float:
