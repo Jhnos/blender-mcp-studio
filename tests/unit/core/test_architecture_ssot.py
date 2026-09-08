@@ -214,6 +214,53 @@ def test_real_ci_gates_the_hand_contracts() -> None:
     assert real_tier < hand, "the hand gates belong inside the --real tier"
 
 
+def test_real_ci_runs_every_contract() -> None:
+    """A contract nobody runs is a hand-run contract, and those run when someone remembers.
+
+    D-004: every file under scripts/verify/contracts is a --real gate. Probe
+    contracts go through the read-only mesh-probe checker, the rest through
+    the generic verifier, and a contract that reuses a scene (--skip-generate)
+    must come after a contract that generated it with the same script.
+    """
+    ci = (PROJECT_ROOT / "scripts" / "ci.sh").read_text()
+    real_tier = ci.index("T3 · real machine (MCP↔Blender)")
+    contracts = sorted((PROJECT_ROOT / "scripts" / "verify" / "contracts").glob("*.json"))
+    assert contracts, "no contracts to gate — the check is vacuous"
+
+    missing = [
+        contract.name
+        for contract in contracts
+        if ci.find(f"scripts/verify/contracts/{contract.name}", real_tier) < 0
+    ]
+    assert missing == [], f"contracts ci.sh --real never runs: {missing}"
+
+    lines = ci.splitlines()
+    for contract in contracts:
+        index, line = next(
+            (i, text) for i, text in enumerate(lines) if f"contracts/{contract.name}" in text
+        )
+        probe = contract.name.endswith("_probe.json")
+        runner = "mesh_probe_verify_real.py" if probe else "generated_artifact_verify_real.py"
+        assert runner in line, f"{contract.name} runs through the wrong checker: {line.strip()}"
+        if "--skip-generate" not in line:
+            continue
+        generator = json.loads(contract.read_text())["generator_script"]
+        earlier = [
+            text
+            for text in lines[:index]
+            if "generated_artifact_verify_real.py" in text and "--skip-generate" not in text
+        ]
+        assert any(
+            json.loads((PROJECT_ROOT / _contract_path(text)).read_text())["generator_script"]
+            == generator
+            for text in earlier
+        ), f"{contract.name} reuses a scene nothing before it generated"
+
+
+def _contract_path(ci_line: str) -> str:
+    return next(token for token in ci_line.split() if token.startswith("scripts/verify/contracts/"))
+
+
 def test_frontend_productivity_boundaries_are_documented_and_exist() -> None:
     source = ARCHITECTURE_DOC.read_text()
     anchors = {
