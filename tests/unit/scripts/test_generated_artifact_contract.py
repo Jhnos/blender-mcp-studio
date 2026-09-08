@@ -351,3 +351,54 @@ def test_the_default_expectation_is_still_an_open_channel(tmp_path: Path) -> Non
     assert not assess_verification(
         contract, artifact_state, _green_oracle(center_ray_hit=True), _green_readiness()
     ).passed
+
+
+def test_a_layout_that_overruns_the_bed_fails_and_a_silent_one_fails_too() -> None:
+    """Whether the plate fits is the first thing a person finds out, in a slicer.
+
+    It was carried only in prose, and the prose said 182.5 × 100.5 across five
+    parts long after the layout became four parts at 242.0 × 103.5 — the margin
+    against a 256 mm bed had fallen from 73 mm to 14 mm and no machine anywhere
+    knew. Declared here, so a part getting wider fails a gate instead of failing
+    a print.
+
+    Fail-closed, like every other expectation in this file: a contract that
+    declares a bed and gets no measurement back is a FAIL, never a skip.
+    """
+    mapping = _mapping()
+    mapping["readiness"]["max_footprint_mm"] = [256.0, 256.0]  # type: ignore[index]
+    contract = contract_from_mapping(mapping, Path("/tmp"))
+    artifact_state = {str(path): True for path in contract.artifacts}
+
+    assert contract.readiness.max_footprint_mm == (256.0, 256.0)
+
+    fits = assess_verification(
+        contract,
+        artifact_state,
+        _green_oracle(),
+        _green_readiness() | {"layout_footprint_mm": [242.0, 103.5]},
+    )
+    assert fits.passed
+    assert any(item.name == "layout_fits_bed" and item.passed for item in fits.evidence)
+
+    overruns = assess_verification(
+        contract,
+        artifact_state,
+        _green_oracle(),
+        _green_readiness() | {"layout_footprint_mm": [256.1, 103.5]},
+    )
+    assert not overruns.passed
+
+    silent = assess_verification(contract, artifact_state, _green_oracle(), _green_readiness())
+    assert not silent.passed, "a declared bed with no measurement is a FAIL, not a skip"
+
+
+def test_a_contract_without_a_bed_claims_nothing_about_the_layout_size() -> None:
+    contract = contract_from_mapping(_mapping(), Path("/tmp"))
+    artifact_state = {str(path): True for path in contract.artifacts}
+
+    summary = assess_verification(contract, artifact_state, _green_oracle(), _green_readiness())
+
+    assert contract.readiness.max_footprint_mm is None
+    assert summary.passed
+    assert not any(item.name == "layout_fits_bed" for item in summary.evidence)
