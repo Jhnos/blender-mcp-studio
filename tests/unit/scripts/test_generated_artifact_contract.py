@@ -532,3 +532,48 @@ def test_a_channel_probe_without_a_solid_control_is_refused_at_parse_time() -> N
     ]
     with pytest.raises(ValueError):
         contract_from_mapping(mapping, Path("/tmp"))
+
+
+def test_a_part_that_arrives_in_two_pieces_fails_even_though_both_are_watertight() -> None:
+    """Every V3 phalanx shipped as two disconnected solids, and everything was green.
+
+    The male tongue is a bare disc at the joint centre. When that centre moved
+    from 24 to 27 mm — the fix for adjacent bodies interpenetrating — the disc
+    went with it and left its own body 0.5 mm behind. The female fork has a neck
+    box joining lug to body; the male end never had one.
+
+    Nothing saw it. Both pieces are watertight and manifold, so the mesh gates
+    passed. Adjacent units overlap by zero, so the collision groups passed —
+    more comfortably than before. Triangle counts matched the numbers recorded
+    from the broken build. It took a person looking at a picture.
+
+    So the count that no per-face check can see gets declared: how many separate
+    solids a part is allowed to be.
+    """
+    mapping = _mapping()
+    mapping["oracle"]["expected_shells_per_object"] = 1  # type: ignore[index]
+    contract = contract_from_mapping(mapping, Path("/tmp"))
+    artifact_state = {str(path): True for path in contract.artifacts}
+    assert contract.oracle.expected_shells_per_object == 1
+
+    def _assess(counts: object) -> bool:
+        oracle = _green_oracle() | {"shell_counts": counts}
+        return assess_verification(contract, artifact_state, oracle, _green_readiness()).passed
+
+    whole = {"FX_PART_1": 1, "FX_PART_2": 1, "FX_PART_3": 1}
+    assert _assess(whole)
+    assert not _assess(whole | {"FX_PART_2": 2}), "a part in two pieces is not a part"
+    assert not _assess({"FX_PART_1": 1}), "a part that went unmeasured is a FAIL"
+    assert not _assess({}), "declared and unmeasured is a FAIL"
+    assert not _assess(None)
+
+
+def test_a_contract_that_declares_no_shell_count_claims_nothing() -> None:
+    contract = contract_from_mapping(_mapping(), Path("/tmp"))
+    artifact_state = {str(path): True for path in contract.artifacts}
+
+    summary = assess_verification(contract, artifact_state, _green_oracle(), _green_readiness())
+
+    assert contract.oracle.expected_shells_per_object is None
+    assert summary.passed
+    assert not any(item.name == "one_solid_per_part" for item in summary.evidence)
