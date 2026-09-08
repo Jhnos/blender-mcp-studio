@@ -1,0 +1,52 @@
+# 靈巧手 V3 — 第一件實體:列印試片並量七項
+
+**Status:** ACTIVE
+
+## Goal
+
+印出一件 `models/hand-v3/phalanx_mm.stl`,量完 [`../hand-v3/v6b-coupon.md`](../hand-v3/v6b-coupon.md)
+的 C1–C7,把數字填回 [`../hand-v3/v8-results.md`](../hand-v3/v8-results.md) 的試片表。
+
+**這是機器做不到的那一段。** 幾何、契約、文件都已完成並驗證;
+往下所有事情(公差、關節配合、抓持力、人手尺寸的可行性)都要從這一件實體反推。
+
+## Context to read
+
+1. [`../hand-v3/v6b-coupon.md`](../hand-v3/v6b-coupon.md) — 協定,七項判準與失敗處置
+2. [`../../models/hand-v3/README.md`](../../models/hand-v3/README.md) — 印製設定與包內容
+3. [`../hand-v3/v8-results.md`](../hand-v3/v8-results.md) — 數字填這裡
+
+## Specification
+
+拓竹 P2S,床身 256 mm。單位 mm、100%、**平躺**(檔案已躺好)、**關閉 auto-arrange**、
+第一件**不加支撐也不改參數**——目的就是看預設參數下無支撐橋接會不會塌。
+
+**建議印兩件。** 一件只量得到三個孔;第二件才量得到舌片與叉口的配合、關節轉不轉得動,
+以及靜止時那 **0.5 mm** 間隙——那個數字在螢幕上是零風險,在實體上剛好是列印公差等級,
+而且它正是本輪那個「指節裂成兩塊」缺陷的來源。
+
+## Acceptance checks
+
+- C1–C7 每一項都有**數字**(不是「OK」),同一個孔轉 90° 量兩次分開記。
+- 沒過的項目照協定的處置表走:先分辨是調機還是改設計,不要直接改 CAD。
+- `docs/hand-v3/v8-results.md` 的試片表不再是空的。
+- Human acceptance is required before moving this file to `archive/`。
+
+## Hand-off
+
+### Verified facts
+
+- 幾何側已完成:整手契約真機 20 項、單指 13 項全 PASS,零 FAIL。
+- 每個零件都是單一實體(`expected_shells_per_object`),這一輪修好的——
+  修之前每個指節都是兩塊,而所有既有閘門都看不到。
+- 印製盤四件、佔地 242.0 × 103.5 mm,床身 256,兩條獨立路徑量測一致。
+- 銷孔 Ø4.50、軸承座 Ø8.10、腱孔與走線孔 Ø2.8 位於軸兩側 ±6.6 mm。
+
+### Open failures
+
+- 一件都還沒印。`v8-results.md` 的試片表與台架表都是空的。
+
+### Next step
+
+- 印 `models/hand-v3/phalanx_mm.stl` 一件,量 C1–C7,數字填進 `docs/hand-v3/v8-results.md`。
+  **使用者執行**——機器量不到實體公差。
