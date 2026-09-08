@@ -186,7 +186,7 @@ for obj in bpy.data.objects:
         obj.hide_set(False)
         obj.select_set(True)
         selected.append(obj.name)
-cross_group_overlaps = {}
+cross_group_overlaps = {{}}
 for first_index, first_prefix in enumerate(config['disjoint_groups']):
     for second_prefix in config['disjoint_groups'][first_index + 1:]:
         firsts = [o for o in bpy.data.objects if o.name.startswith(first_prefix)]
