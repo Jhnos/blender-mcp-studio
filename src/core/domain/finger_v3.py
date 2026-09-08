@@ -154,6 +154,64 @@ class SingleTendonFingerSpec:
         next_body_starts = link.unit_pitch_mm - link.body_length_mm / 2
         return next_body_starts - lug_reach
 
+    def _palmar_gap_mm(self, flexion_deg: float) -> float:
+        """Closest approach of two adjacent bodies' palmar faces, at one posture.
+
+        Both faces are straight lines in the bending plane, so the distance is
+        found by sampling them rather than by solving: the faces are short, the
+        sampling is dense, and the number only ever feeds an upper bound.
+        """
+        link = self.link
+        half_length = link.body_length_mm / 2.0
+        palmar = -link.body_depth_mm / 2.0
+        centre = (0.0, link.joint_center_offset_mm)
+        angle = math.radians(flexion_deg)
+
+        def turned(point: tuple[float, float]) -> tuple[float, float]:
+            y, z = point[0] - centre[0], point[1] - centre[1]
+            return (
+                centre[0] + y * math.cos(angle) - z * math.sin(angle),
+                centre[1] + y * math.sin(angle) + z * math.cos(angle),
+            )
+
+        steps = 21
+        near = [
+            (palmar, half_length - index * (link.body_length_mm / (steps - 1)))
+            for index in range(steps)
+        ]
+        far = [
+            turned(
+                (
+                    palmar,
+                    link.unit_pitch_mm - half_length + index * (link.body_length_mm / (steps - 1)),
+                )
+            )
+            for index in range(steps)
+        ]
+        return min(math.dist(one, other) for one in near for other in far)
+
+    @property
+    def palmar_surface_gap_at_rest_mm(self) -> float:
+        """How far apart the gripping faces are with the finger straight."""
+        return self._palmar_gap_mm(0.0)
+
+    @property
+    def palmar_surface_gap_at_full_flexion_mm(self) -> float:
+        """The same faces once the finger has closed as far as it can."""
+        return self._palmar_gap_mm(self.link.maximum_articulation_deg)
+
+    @property
+    def maximum_interlayer_thickness_mm(self) -> float:
+        """Thickest the inflated layer may become without costing travel.
+
+        The bladder has never been built and its real inflated thickness is a
+        bench measurement. This is the other half of that question, and it is
+        pure geometry: past this, the two gloves meet before the joints do, and
+        pushing the syringe buys surface by spending flexion. It is the number a
+        glove purchase has to respect.
+        """
+        return self.palmar_surface_gap_at_full_flexion_mm / 2.0
+
     @property
     def tendon_bore_offset_mm(self) -> float:
         """Where the tendon runs, palmar, hence negative."""

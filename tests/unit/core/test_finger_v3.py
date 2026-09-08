@@ -14,6 +14,7 @@ import math
 import pytest
 
 from src.core.domain.finger_v3 import SingleTendonFingerSpec
+from src.core.domain.hinge_chain import HingePhalanxSpec
 
 
 def test_the_tendon_a_finger_needs_is_the_sum_of_what_each_joint_takes() -> None:
