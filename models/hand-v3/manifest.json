@@ -1,28 +1,40 @@
 {
   "files": {
     "finger_v3.blend": {
-      "bytes": 266675,
-      "sha256": "5173e6a00d43959a3998423433fc0cdf59c7aea941fa03534a414aa79b4c9af8"
+      "bytes": 694360,
+      "sha256": "8d66df8fea660bc40627ccd5c79aa7fa94564a2cbd1ae9f1ee084f81b42f6cc0"
+    },
+    "finger_v3_assembly.png": {
+      "bytes": 1233224,
+      "sha256": "96f68614bef98bc10798b5dc2762c1cf179173bb6be3aa8f9bfbd80a813d614a"
+    },
+    "finger_v3_joint_detail.png": {
+      "bytes": 1057935,
+      "sha256": "7520b92b5c277c68aa4458f7867c2396e5ea9c1a49ac8d4883bcf962d9a8bb31"
     },
     "finger_v3_mm.stl": {
-      "bytes": 524184,
+      "bytes": 515184,
       "dimensions_mm": [
         24.00001049041748,
         22.000003814697266,
         175.0
       ],
-      "sha256": "c0698f7316d3b87c3991c0f3337f44abb9643712ac1f2c3e4371fd9a3ff46da8",
-      "triangle_count": 10482
+      "sha256": "825471971fcd73ff94f4daead7b5122c46aead5a71942c4a078653393b38d35f",
+      "triangle_count": 10302
+    },
+    "finger_v3_print_layout.png": {
+      "bytes": 1717306,
+      "sha256": "3fcd6073c7d7f52424df93c84b7d91ed81246e4dd34fd6fa1e79100e0365ec92"
     },
     "hand_v3_mm.stl": {
-      "bytes": 2754884,
+      "bytes": 2709884,
       "dimensions_mm": [
         140.00000381469727,
         44.064903259277344,
         265.5
       ],
-      "sha256": "886546cf4d3db3a12acf98703079078c8b4f24ae8ac9011aac2770eb8a10ac1c",
-      "triangle_count": 55096
+      "sha256": "52722878eac1fce82ede943184ddd05038fd90a3a6d88b880fde72b95b4919b4",
+      "triangle_count": 54196
     },
     "palm_mm.stl": {
       "bytes": 134384,
@@ -35,14 +47,14 @@
       "triangle_count": 2686
     },
     "phalanx_mm.stl": {
-      "bytes": 174784,
+      "bytes": 171784,
       "dimensions_mm": [
         24.00001049041748,
         22.000003814697266,
         67.0
       ],
-      "sha256": "7db4a937e502f3e28c92092de041364d0816f8db3f0424bfd1869365983ea29f",
-      "triangle_count": 3494
+      "sha256": "c381a3ad4223b2dc2801421d9b535de98c12729fb4c3c42a3ce36047b3258cf3",
+      "triangle_count": 3434
     }
   },
   "model_revision": "hand-V3",
