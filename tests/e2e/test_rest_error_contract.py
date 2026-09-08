@@ -28,9 +28,12 @@ from api.main import create_app
 from src.core.domain.exceptions import (
     BatchTransformError,
     BlenderConnectionError,
+    ExternalServiceError,
     PrintReadinessError,
     SceneExportError,
     SceneOperationError,
+    TextTo3DError,
+    VisionAnalysisError,
 )
 from tests.e2e.test_mcp_streamable_http import make_fake_runtime
 
@@ -177,3 +180,71 @@ def test_batch_transform_error_is_a_scene_operation_error() -> None:
     assert not issubclass(BlenderConnectionError, SceneOperationError)
     for error in (SceneOperationError, SceneExportError, PrintReadinessError):
         assert not issubclass(BlenderConnectionError, error)
+
+
+# ---------------------------------------------------------------------------
+# D-002: provider-facing endpoints. A provider that answered with a failure is
+# 502; Blender being unreachable is 503 even inside a pipeline; and none of it
+# is the 500 that ``except Exception`` used to manufacture.
+# ---------------------------------------------------------------------------
+
+#: ``(id, path, json_body, state_attr, external_error_factory)``
+EXTERNAL_ENDPOINTS: list[tuple[str, str, dict[str, object], str, type[Exception]]] = [
+    (
+        "generate_3d",
+        "/api/generate3d",
+        {"prompt": "a small cat", "import_to_blender": False},
+        "text3d",
+        TextTo3DError,
+    ),
+    (
+        "refine",
+        "/api/refine",
+        {"session_id": "probe", "user_request": "rounder"},
+        "iterative_refinement",
+        VisionAnalysisError,
+    ),
+]
+
+
+@pytest.mark.parametrize(
+    ("path", "body", "attr", "factory"),
+    [row[1:] for row in EXTERNAL_ENDPOINTS],
+    ids=[row[0] for row in EXTERNAL_ENDPOINTS],
+)
+def test_external_service_error_maps_to_502(
+    app: FastAPI, path: str, body: dict[str, object], attr: str, factory: type[Exception]
+) -> None:
+    setattr(app.state, attr, RaisingService(factory(DETAIL)))
+    app.state.session_store = None
+
+    status, payload = _call(app, "POST", path, body)
+
+    assert (status, payload) == (502, {"detail": DETAIL})
+
+
+def test_external_service_error_is_a_domain_error_but_not_unprocessable() -> None:
+    """The handler order in api/main.py depends on this hierarchy."""
+    assert issubclass(TextTo3DError, ExternalServiceError)
+    assert issubclass(VisionAnalysisError, ExternalServiceError)
+    assert not issubclass(ExternalServiceError, SceneOperationError)
+
+
+def test_a_blender_outage_during_a_pipeline_is_503_not_500(app: FastAPI) -> None:
+    app.state.modeling_pipeline = RaisingService(BlenderConnectionError(DETAIL))
+
+    status, payload = _call(app, "POST", "/api/pipeline", {"pipeline_name": "character"})
+
+    assert (status, payload) == (503, {"detail": DETAIL})
+
+
+def test_a_vision_failure_on_image_analysis_is_502(app: FastAPI) -> None:
+    app.state.vision = RaisingService(VisionAnalysisError(DETAIL))
+
+    with TestClient(app) as client:
+        response = client.post(
+            "/api/chat/image",
+            files={"image": ("probe.png", b"\x89PNG\r\n\x1a\n" + b"\x00" * 16, "image/png")},
+        )
+
+    assert (response.status_code, response.json()) == (502, {"detail": DETAIL})

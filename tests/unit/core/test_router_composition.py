@@ -198,3 +198,50 @@ def test_dialect_gate_still_sees_script_constants(tmp_path: Path) -> None:
     source = '"""Router docstring."""\n\n_CODE = """\\\nimport bpy\nbpy.ops.ed.undo()\n"""\n'
     (tmp_path / "r.py").write_text(source, encoding="utf-8")
     assert find_blender_dialect(tmp_path) == ["r.py:4", "r.py:5"]
+
+
+#: D-002: routers that still translate arbitrary exceptions into HTTP themselves.
+#: A budget, not an allowlist: a file may only go down, and a file not listed
+#: here is at zero. The three provider-facing routers (vision, pipelines,
+#: generate3d) are at zero because their providers now raise domain errors
+#: that api/main.py maps in one place.
+BLANKET_EXCEPT_BUDGET: dict[str, int] = {"chat.py": 4, "snapshots.py": 1, "ws_manager.py": 2}
+
+
+def find_blanket_excepts(root: Path) -> dict[str, int]:
+    """Count ``except Exception`` and bare ``except:`` handlers per router file."""
+    counts: dict[str, int] = {}
+    for path in sorted(root.glob("*.py")):
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+        hits = 0
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.ExceptHandler):
+                continue
+            if node.type is None or (isinstance(node.type, ast.Name) and node.type.id == "Exception"):
+                hits += 1
+        if hits:
+            counts[path.name] = hits
+    return counts
+
+
+def test_routers_do_not_translate_arbitrary_exceptions() -> None:
+    counts = find_blanket_excepts(ROUTERS)
+    over = {
+        name: (count, BLANKET_EXCEPT_BUDGET.get(name, 0))
+        for name, count in counts.items()
+        if count > BLANKET_EXCEPT_BUDGET.get(name, 0)
+    }
+    assert not over, (
+        "routers translating arbitrary exceptions themselves (found, budget); raise a\n"
+        "domain error in the adapter and let api/main.py map it:\n"
+        + "\n".join(f"  {name}: {found} > {budget}" for name, (found, budget) in over.items())
+    )
+
+
+def test_blanket_except_gate_fires_and_passes(tmp_path: Path) -> None:
+    (tmp_path / "dirty.py").write_text(
+        "try:\n    pass\nexcept Exception as e:\n    pass\ntry:\n    pass\nexcept:\n    pass\n"
+    )
+    (tmp_path / "clean.py").write_text("try:\n    pass\nexcept ValueError:\n    pass\n")
+
+    assert find_blanket_excepts(tmp_path) == {"dirty.py": 2}
