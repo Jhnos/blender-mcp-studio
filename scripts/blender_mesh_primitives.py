@@ -77,6 +77,36 @@ def add_cylinder(
     return obj
 
 
+def add_ellipsoid(
+    name: str,
+    dimensions_mm: tuple[float, float, float],
+    location_mm: tuple[float, float, float],
+    segments: int = 40,
+    rings: int = 24,
+) -> bpy.types.Object:
+    """A sphere scaled to three different diameters — a rounded, finger-like body.
+
+    Built as a unit sphere and scaled, then the transform applied, so the object
+    leaves with a scale of 1 and downstream Booleans and world-space measurement
+    see the shape they expect rather than a scaled proxy.
+
+    Segment counts stay modest for the same reason every other primitive here
+    does: the readiness check samples a fixed triangle budget, and a body that
+    blows the budget reports as truncated, which the contracts treat as failure.
+    """
+    bpy.ops.mesh.primitive_uv_sphere_add(
+        segments=segments,
+        ring_count=rings,
+        radius=1.0,
+        location=tuple(m(value) for value in location_mm),
+    )
+    obj = bpy.context.object
+    obj.name = name
+    obj.scale = tuple(m(value / 2.0) for value in dimensions_mm)
+    apply_transform(obj)
+    return obj
+
+
 def loft_rings(
     name: str, rings: Sequence[Sequence[tuple[float, float, float]]]
 ) -> bpy.types.Object:

@@ -132,3 +132,77 @@ def test_the_v3_finger_is_not_a_subtype_of_the_octopus_hand() -> None:
     assert not descends_from_octopus(SingleTendonFingerSpec)
     # The should-fire half: V2 really is a subtype of V1, so the predicate works.
     assert descends_from_octopus(OctopusHandV2Spec)
+
+
+def test_both_ends_of_a_phalanx_turn_about_the_same_axis() -> None:
+    """Stacking unrotated is only coherent if the two ends actually mate.
+
+    The borrowed link puts its male lug on X and its female fork on Y, so the
+    0/90 alternation in its chain rule is not decoration — it is what lets a
+    male end enter the next unit's female end at all. Saying "V3 stacks its
+    units unrotated" while keeping perpendicular ends describes a finger whose
+    parts cannot be assembled: every dimension checks out, every part prints,
+    and the second phalanx will not go on the first.
+
+    So the planar decision and the shared-axis decision are one decision, and
+    this is the assertion that keeps them together.
+    """
+    spec = SingleTendonFingerSpec()
+
+    assert spec.male_hinge_axis == spec.female_hinge_axis
+    # And it is genuinely a departure from the link it borrows dimensions from.
+    assert spec.link.male_hinge_axis != spec.link.female_hinge_axis
+
+
+def test_a_planar_finger_with_perpendicular_ends_is_refused() -> None:
+    """The two decisions cannot drift apart later without something going red."""
+    spec = SingleTendonFingerSpec()
+
+    stacked_unrotated = set(spec.joint_rotations_deg) == {0.0}
+    ends_mate = spec.male_hinge_axis == spec.female_hinge_axis
+    assert stacked_unrotated is ends_mate, (
+        "a finger stacked unrotated needs both hinge ends on one axis; "
+        "one of these was changed without the other"
+    )
+
+
+def test_a_moment_arm_leaves_wall_between_the_tendon_and_the_pin() -> None:
+    """The tendon and the pin share one small cross-section, and both need wall.
+
+    A moment arm is just how far the tendon runs from the joint axis, so shrinking
+    it walks the tendon bore straight into the pin bore. The first draft of this
+    spec shipped arms of 5.5 and 4.0 mm, which leave 1.85 and 0.35 mm of material
+    against a 2.4 mm minimum — and nothing else would have caught it, because
+    each bore is individually legal and the mesh is watertight either way.
+    """
+    spec = SingleTendonFingerSpec()
+    link = spec.link
+
+    floor = link.printed_pin_bore_mm / 2 + link.minimum_wall_mm + link.tendon_hole_diameter_mm / 2
+    for arm in spec.moment_arms_mm:
+        assert arm >= floor, f"moment arm {arm} runs the tendon into the pin's wall"
+    assert spec.smallest_usable_moment_arm_mm == pytest.approx(floor)
+
+
+def test_a_moment_arm_stays_inside_the_body_it_is_drilled_through() -> None:
+    """The other end of the same squeeze: too far out and the bore leaves the finger."""
+    spec = SingleTendonFingerSpec()
+    link = spec.link
+
+    ceiling = link.body_depth_mm / 2 - link.minimum_wall_mm - link.tendon_hole_diameter_mm / 2
+    for arm in spec.moment_arms_mm:
+        assert arm <= ceiling, f"moment arm {arm} breaks out through the body wall"
+    assert spec.largest_usable_moment_arm_mm == pytest.approx(ceiling)
+
+
+@pytest.mark.parametrize(
+    "arms",
+    [
+        pytest.param((7.1, 5.5, 4.0), id="the arms this spec originally shipped with"),
+        pytest.param((7.1, 6.6, 2.0), id="a tendon bore inside the pin bore"),
+        pytest.param((9.0, 8.0, 7.0), id="a tendon bore outside the body"),
+    ],
+)
+def test_moment_arms_outside_the_usable_window_are_refused(arms: tuple[float, ...]) -> None:
+    with pytest.raises(ValueError, match="moment arm"):
+        SingleTendonFingerSpec(moment_arms_mm=arms)

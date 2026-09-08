@@ -26,6 +26,7 @@ OWNED: dict[str, str] = {
     "boolean": "blender_mesh_primitives.py",
     "cleanup_mesh": "blender_mesh_primitives.py",
     "loft_rings": "blender_mesh_primitives.py",
+    "add_ellipsoid": "blender_mesh_primitives.py",
     "collection": "blender_mesh_primitives.py",
     "run_generator": "blender_generator_runner.py",
     "clear_previous": "blender_generator_runner.py",
@@ -104,3 +105,15 @@ def test_gate_ignores_the_archive(tmp_path: Path) -> None:
     archive.mkdir()
     (archive / "old.py").write_text("def m(v):\n    return v\n", encoding="utf-8")
     assert find_redefinitions(tmp_path, OWNED_FIXTURE) == []
+
+
+def test_the_ellipsoid_primitive_is_owned_and_not_forked() -> None:
+    """A third generator line needs a rounded body; only one module may define it.
+
+    `add_ellipsoid` existed only inside the archived hinge-chain generator. The
+    V3 finger needs the same shape, and the cheap move — copying it across —
+    would make it the fourth primitive with two homes. Registering it here is
+    what makes the copy impossible rather than merely discouraged.
+    """
+    assert OWNED["add_ellipsoid"] == "blender_mesh_primitives.py"
+    assert not find_redefinitions(SCRIPTS, OWNED)

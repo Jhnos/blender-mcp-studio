@@ -38,6 +38,10 @@ V1／V2／V6 是凍結交付物,一個位元組都不動。
 
 - `SingleTendonFingerSpec` 已交(`src/core/domain/finger_v3.py`),10 條測試綠。
   實測腱行程需求 14.40 mm vs 致動器行程 30.0 mm。
+- 手指產生器已交,四節共面指節建得出來:零非流形邊、四個獨立網格、腱孔中心與力矩臂
+  4/4 相符。過程中修掉三個「逐件檢查全綠但東西是壞的」缺陷,詳見 CHANGELOG V01.09.000。
+- **實測結論**:力矩臂的可用窗只有 1.15 mm 寬,比值 1.16,**排不動三個關節的順序**;
+  順序必須交給彈簧勁度梯度。
 - `PresentationProfile` 已交,`setup_render` 改讀 profile。行為未變的證明:場景讀回 16 項
   全相符、四個 STL 位元組相同。**PNG 不能當 oracle**——同一份程式跑兩次雜湊就全不同。
 - **實測推翻了文件的一個說法**:`HingePhalanxSpec` 單軸的是**連桿**,它的串接規則
@@ -62,5 +66,6 @@ V1／V2／V6 是凍結交付物,一個位元組都不動。
 
 - Track 1:依 [`../hand-v3/08-inmoov.md`](../hand-v3/08-inmoov.md) 下載並列印 InMoov 右手,
   同時採購兩隻外層手套與針筒。**使用者執行。**
-- Track 2 下一片:用 `FINGER_PROFILE` 與 `SingleTendonFingerSpec` 把手指幾何產生出來,
-  先寫一個會紅的契約或測試。`PresentationProfile` 這一步已完成。
+- Track 2 下一片:給手指一份 JSON 契約(`scripts/verify/contracts/hand_v3_finger.json`),
+  讓腱孔貫通、指節碰撞與掃掠由**真機管線**驗,而不是我臨時寫的探針。
+  照 `docs/verification/generated-artifacts.md` 的六步走。
