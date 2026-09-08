@@ -104,6 +104,7 @@ def oracle_code(contract: GeneratedArtifactContract) -> str:
         "center_probe_object": expected.center_probe_object,
         "bore_probe_points_mm": [list(point) for point in expected.bore_probe_points_mm],
         "collision_groups": [item.prefix for item in expected.collision_groups],
+        "disjoint_groups": list(expected.disjoint_groups),
         "selection_prefix": contract.readiness.selection_prefix,
         "joint_sweep": asdict(expected.joint_sweep) if expected.joint_sweep else None,
     }
@@ -185,6 +186,22 @@ for obj in bpy.data.objects:
         obj.hide_set(False)
         obj.select_set(True)
         selected.append(obj.name)
+cross_group_overlaps = {}
+for first_index, first_prefix in enumerate(config['disjoint_groups']):
+    for second_prefix in config['disjoint_groups'][first_index + 1:]:
+        firsts = [o for o in bpy.data.objects if o.name.startswith(first_prefix)]
+        seconds = [o for o in bpy.data.objects if o.name.startswith(second_prefix)]
+        total = 0
+        for one in firsts:
+            _, tree_one = world_tree(one)
+            for other in seconds:
+                _, tree_other = world_tree(other)
+                total += len(tree_one.overlap(tree_other))
+        # An empty group would report zero overlaps and read as clean, so the
+        # count of what was compared is reported beside the result.
+        key = '|'.join(sorted((first_prefix, second_prefix)))
+        cross_group_overlaps[key] = total if (firsts and seconds) else None
+
 layout_footprint = None
 if selected:
     xs, ys = [], []
@@ -213,6 +230,7 @@ print(json.dumps({{
     'center_ray_hit': center_hit,
     'bore_ray_hits': bore_hits,
     'collision_groups': collision_results,
+    'cross_group_overlaps': cross_group_overlaps,
     'joint_sweep': sweep_result,
     'selected_count': len(selected),
     'layout_footprint_mm': layout_footprint,

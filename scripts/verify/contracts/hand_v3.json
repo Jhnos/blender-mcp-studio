@@ -79,6 +79,13 @@
         "prefix": "HJ_V3_LAYOUT_PART_",
         "expected_count": 4
       }
+    ],
+    "disjoint_groups": [
+      "HJ_V3_HAND_F1_",
+      "HJ_V3_HAND_F2_",
+      "HJ_V3_HAND_F3_",
+      "HJ_V3_HAND_F4_",
+      "HJ_V3_HAND_T_"
     ]
   },
   "readiness": {
