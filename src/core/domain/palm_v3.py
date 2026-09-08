@@ -25,47 +25,11 @@ from dataclasses import dataclass
 
 from src.core.domain.finger_v3 import SingleTendonFingerSpec
 from src.core.domain.hinge_chain import HingePhalanxSpec
+from src.core.domain.rotation import Axis3, roll_about, rotate_y
 
 #: Joint angles sampled when asking where a fingertip can reach. Coarse on
 #: purpose: this answers "can these two ever meet", not "by what path".
 _SAMPLES_DEG = (0.0, 10.0, 20.0, 30.0, 40.0, 50.0)
-
-Vector3 = tuple[float, float, float]
-
-
-def _rotate_y(vector: Vector3, degrees: float) -> Vector3:
-    angle = math.radians(degrees)
-    x, y, z = vector
-    return (
-        x * math.cos(angle) + z * math.sin(angle),
-        y,
-        -x * math.sin(angle) + z * math.cos(angle),
-    )
-
-
-def _roll_about(vector: Vector3, axis: Vector3, degrees: float) -> Vector3:
-    """Turn `vector` about `axis` — a roll, not a turn about a global axis.
-
-    The difference is not pedantic. Rolling the thumb's pad about the global Z
-    while its own axis had already been swung leaves the two no longer square:
-    measured at a dot product of -0.166, a frame that is a parallelogram rather
-    than a corner, so every tip position computed in it is wrong by an amount
-    that changes with posture.
-    """
-    angle = math.radians(degrees)
-    cos = math.cos(angle)
-    sin = math.sin(angle)
-    dot = sum(a * b for a, b in zip(axis, vector, strict=True))
-    cross = (
-        axis[1] * vector[2] - axis[2] * vector[1],
-        axis[2] * vector[0] - axis[0] * vector[2],
-        axis[0] * vector[1] - axis[1] * vector[0],
-    )
-    return tuple(  # type: ignore[return-value]
-        vector[index] * cos + cross[index] * sin + axis[index] * dot * (1.0 - cos)
-        for index in range(3)
-    )
-
 
 @dataclass(frozen=True, slots=True)
 class AnthropomorphicPalmSpec:
@@ -229,28 +193,28 @@ class AnthropomorphicPalmSpec:
 
     # -------------------------------------------------------- can it oppose?
 
-    def _row_tip_world(self, x_mm: float, angles_deg: tuple[float, ...]) -> Vector3:
+    def _row_tip_world(self, x_mm: float, angles_deg: tuple[float, ...]) -> Axis3:
         palmar, along = self.fingertip_in_finger_frame_mm(angles_deg)
         return (x_mm, palmar, along)
 
     @property
-    def thumb_frame(self) -> tuple[Vector3, Vector3]:
+    def thumb_frame(self) -> tuple[Axis3, Axis3]:
         """The thumb's own axis and pad direction, as an orthonormal pair.
 
         Swung across the palm first, then rolled about its own axis so the pad
         turns towards the fingers. Both turns are needed: the swing alone gives a
         finger pointing sideways, which opposes nothing.
         """
-        axis = _rotate_y((0.0, 0.0, 1.0), self.thumb_opposition_deg)
-        pad = _roll_about(
-            _rotate_y((0.0, -1.0, 0.0), self.thumb_opposition_deg),
+        axis = rotate_y((0.0, 0.0, 1.0), self.thumb_opposition_deg)
+        pad = roll_about(
+            rotate_y((0.0, -1.0, 0.0), self.thumb_opposition_deg),
             axis,
             self.thumb_palmar_tilt_deg,
         )
         return (axis, pad)
 
     @property
-    def thenar_bridge_mm(self) -> tuple[Vector3, Vector3]:
+    def thenar_bridge_mm(self) -> tuple[Axis3, Axis3]:
         """Centre and size of the boss that carries the thumb root to the plate.
 
         A hand has a thenar eminence for exactly this reason: the thumb's root
@@ -335,14 +299,14 @@ class AnthropomorphicPalmSpec:
         return -self.palm_width_mm / 2 - (self.thumb_root_mm[0] - link.body_width_mm / 2)
 
     @property
-    def thumb_root_mm(self) -> Vector3:
+    def thumb_root_mm(self) -> Axis3:
         return (
             self.row_finger_x_mm[0] - self.thumb_offset_mm,
             -self.thumb_base_palmar_mm,
             -self.thumb_base_drop_mm,
         )
 
-    def _thumb_tip_world(self, angles_deg: tuple[float, ...]) -> Vector3:
+    def _thumb_tip_world(self, angles_deg: tuple[float, ...]) -> Axis3:
         palmar, along = self.tip_in_frame_mm(self.thumb_segment_lengths_mm, angles_deg)
         axis, pad = self.thumb_frame
         origin = self.thumb_root_mm

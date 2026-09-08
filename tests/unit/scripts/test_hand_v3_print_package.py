@@ -190,8 +190,9 @@ def test_the_readme_quotes_the_reach_the_spec_computes() -> None:
     # sentence runs onto the next one: the opposed reach was caught and the
     # flat-thumb comparison it is quoted against sat stale underneath it.
     flat = dataclasses.replace(spec, thumb_opposition_deg=0.0, thumb_palmar_tilt_deg=0.0)
-    start = next(i for i, l in enumerate(readme.splitlines()) if "closest approach" in l)
-    sentence = " ".join(readme.splitlines()[start : start + 2])
+    lines = readme.splitlines()
+    start = next(i for i, text in enumerate(lines) if "closest approach" in text)
+    sentence = " ".join(lines[start : start + 2])
     quoted = [float(v) for v in re.findall(r"(\d+\.\d+) mm", sentence)]
     assert len(quoted) == 3, f"the reach sentence should quote three figures, found {quoted}"
     opposed, contact, flat_gap = quoted
