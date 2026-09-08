@@ -52,6 +52,11 @@ def build_hand(slug: str, cleared_prefix: str) -> None:
     plan = hand_plan(instance)
     output = PROJECT_ROOT / instance.output_dir
     output.mkdir(parents=True, exist_ok=True)
+    # A previous run's exports are removed first. The reproduction differential
+    # reads this directory, and a build that dies half-way must leave it holding
+    # nothing that could pass for this run's output.
+    for name in (*instance.stl_files, instance.blend_file, *instance.render_files):
+        (output / name).unlink(missing_ok=True)
     _build(plan, output)
 
 

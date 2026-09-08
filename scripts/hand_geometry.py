@@ -85,15 +85,21 @@ def build_finger(plan: FingerPlan) -> list[bpy.types.Object]:
     """
     masters = [build_part(part) for part in plan.parts]
     units: list[bpy.types.Object] = []
+    placed_parts: set[int] = set()
     for unit in plan.units:
         master = masters[unit.part_index]
-        if master.name == unit.name:
+        # The first unit printed from a part *is* the master; by position, never
+        # by name. Blender suffixes a name that already exists, so the second
+        # chain's master came out as `..._1.001`, matched nothing, and five
+        # orphaned masters sat in the scene until the stale-scene gate counted them.
+        if unit.part_index not in placed_parts:
+            placed_parts.add(unit.part_index)
             obj = master
         else:
             obj = master.copy()
             obj.data = master.data
-            obj.name = unit.name
             bpy.context.collection.objects.link(obj)
+        obj.name = unit.name
         obj.location.z = m(unit.lift_mm)
         obj.rotation_euler.z = math.radians(unit.rotation_deg)
         units.append(obj)
