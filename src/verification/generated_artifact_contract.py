@@ -199,7 +199,9 @@ def _optional_flag(source: Mapping[str, object], key: str, *, default: bool) -> 
     return value
 
 
-def _point_pairs(source: Mapping[str, object], key: str, *, required: bool) -> tuple[tuple[float, float], ...]:
+def _point_pairs(
+    source: Mapping[str, object], key: str, *, required: bool
+) -> tuple[tuple[float, float], ...]:
     entries = sequence_value(source, key)
     if not entries:
         if required:

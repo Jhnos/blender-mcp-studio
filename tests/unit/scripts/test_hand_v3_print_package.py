@@ -24,9 +24,13 @@ PACKAGE = ROOT / "models" / "hand-v3"
 V2_PACKAGE = ROOT / "models" / "octopus-hand-v2"
 EXPECTED = {
     "phalanx_mm.stl": (3494, (24.0, 22.0, 67.0)),
-    "palm_mm.stl": (2714, (140.0, 44.0, 103.5)),
+    # 2714 before the air port was lifted clear of the cuff clamp band. The
+    # 28 triangles that went away were the intersection between a Ø6 bore
+    # and the 3 mm groove it used to be cut straight through.
+    "palm_mm.stl": (2686, (140.0, 44.0, 103.5)),
     "finger_v3_mm.stl": (10482, (24.0, 22.0, 175.0)),
-    "hand_v3_mm.stl": (55124, (140.0, 44.1, 265.5)),
+    # Same 28 triangles as the palm, because the palm is part of this.
+    "hand_v3_mm.stl": (55096, (140.0, 44.1, 265.5)),
 }
 
 
