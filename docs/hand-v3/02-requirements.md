@@ -31,7 +31,7 @@ Population: V3 自己產生的物件(前綴 `HJ_V3_`)與 `models/hand-v3/` 的�
 | PS-1 | 一條腱能把三個指節從全伸帶到全屈 | product | yes | feature | artifact:test_the_finger_that_shipped_carries_three_phalanges; unit:test_the_shipped_finger_closes_within_its_actuator_stroke |
 | PS-2 | 指節依序閉合:近端先動,遠端後動 | product | yes | feature | artifact:TODO_closure_order_from_sweep_samples; unit:TODO_test_spring_gradient_orders_joints |
 | PS-3 | 手掌是四指一排加一個對生拇指 | product | yes | feature | artifact:scene_list; unit:test_the_thumb_can_touch_the_index_fingertip |
-| PS-4 | 夾層充氣後的外形不擋住手指閉合 | product | yes | constraint | artifact:TODO_inflated_envelope_sweep_no_overlap |
+| PS-4 | 夾層充氣後的外形不擋住手指閉合 | product | yes | constraint | artifact:test_the_finger_that_shipped_carries_three_phalanges; unit:test_the_interlayer_has_a_thickness_the_finger_cannot_exceed |
 | PS-5 | 整隻手裝得進宣告的床身,且列印姿態可行 | product | yes | constraint | artifact:layout_fits_bed; unit:test_the_assembled_hand_is_deliberately_too_tall_for_the_bed |
 | PS-6 | 外層改用不可延展手套時,夾層壓力才建得起來 | product | yes | flag | differential:TODO_outer_layer_elastic_vs_work_glove; artifact:TODO_bench_report_records_both_outer_layers |
 | PS-7 | 加壓與抽真空共用同一組介面,兩種都能跑 | product | yes | flag | differential:TODO_pressure_vs_vacuum_slip_force; artifact:channel_probes |
