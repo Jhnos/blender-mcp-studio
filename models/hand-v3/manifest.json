@@ -1,8 +1,8 @@
 {
   "files": {
     "finger_v3.blend": {
-      "bytes": 267124,
-      "sha256": "4bb885ebc9ed097c103cd2d8de35fc4c3ff9300dcb0b798aca5af4f013227693"
+      "bytes": 270924,
+      "sha256": "b50a7ad9ac84adb2cae004eef539bc2e6e71381b0b8ea9757ac9aa38d5726c82"
     },
     "finger_v3_mm.stl": {
       "bytes": 524184,
@@ -11,28 +11,28 @@
         22.000003814697266,
         175.0
       ],
-      "sha256": "e4a26dedfb3d8c7be2a32a03f1900afdaa0d0d28300f507f0a61bfa05b240f94",
+      "sha256": "d981a9a85b4cb245f722f9a27e15dd1ae9a388a3b7d1c7dc0029f7b2504019a3",
       "triangle_count": 10482
     },
     "hand_v3_mm.stl": {
-      "bytes": 2756284,
+      "bytes": 2754884,
       "dimensions_mm": [
         140.00000381469727,
         44.064903259277344,
         265.5
       ],
-      "sha256": "a3bcd7b767369512486295aa720bd604e20e0809ecb8dd2c2dd4f4fe73540f44",
-      "triangle_count": 55124
+      "sha256": "836932351d9091fb1e0373a450565a5a1abe05a94ad204525e42791fdff3342d",
+      "triangle_count": 55096
     },
     "palm_mm.stl": {
-      "bytes": 135784,
+      "bytes": 134384,
       "dimensions_mm": [
         140.0,
         44.0,
         103.49999618530273
       ],
-      "sha256": "7a0023ce9261dbb4b29ca915955d216a39b92db7ca9dfc6d64ae0403827972b5",
-      "triangle_count": 2714
+      "sha256": "d354ee53fbaadb2de84903e3809aaf66196c6705416883486f585cb266400915",
+      "triangle_count": 2686
     },
     "phalanx_mm.stl": {
       "bytes": 174784,
@@ -41,7 +41,7 @@
         22.000003814697266,
         67.0
       ],
-      "sha256": "6ec01c8170e677349e537bb89e4ecdb4abda34d9b7c9db9c756e245220c3d202",
+      "sha256": "06c1b99522ac651df91f3a5689fd451bcd86438a5640679f9a20923cfcacd851",
       "triangle_count": 3494
     }
   },
