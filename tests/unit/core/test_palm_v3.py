@@ -86,7 +86,8 @@ def test_the_four_row_fingers_are_evenly_spaced_and_do_not_touch() -> None:
     [
         pytest.param({"finger_gap_mm": 0.0}, id="fingers touching along the row"),
         pytest.param({"finger_gap_mm": -1.0}, id="fingers overlapping along the row"),
-        pytest.param({"pinch_contact_mm": 0.0}, id="a contact distance of nothing"),
+        # Zero now means "derive from the link" (M4); a negative distance is still nonsense.
+        pytest.param({"pinch_contact_mm": -1.0}, id="a negative contact distance"),
         pytest.param({"cuff_clamp_wall_mm": 0.1}, id="a cuff clamp thinner than a wall"),
         pytest.param({"air_port_diameter_mm": 0.5}, id="an air port a syringe cannot meet"),
     ],
