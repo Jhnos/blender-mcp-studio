@@ -2,12 +2,12 @@
 
 Read this file first after a new conversation, compaction, or terminal restart.
 
-## 接手(2026-09-09,V01.0R.009)
+## 接手(2026-09-09,V01.0R.00A)
 
-- **進行中:** 11 碎片預算改由實測支撐——`SLIVER_TRIANGLES_PER_PART = 2` 目前只有規劃推導、
-  沒有量測背書;決定性探針也只涵蓋第一站的單指。本任務**不碰幾何**,`models/` 位元組不動。
+- **等驗收:** 11 碎片預算改由實測支撐已完成,`--real` 28 條全綠,`models/` 位元組未動。
+  實測結論:八個零件裡只有一個的完成面數會動,差 2;預算 `2` 從此是量到的上界。
 - 使用者 2026-09-09 選定的三步順序是 **交付路徑 → 決定性閘門硬化 → 第四個實例**;
-  10 已驗收歸檔,現在是第二步。
+  10 已驗收歸檔,11 等驗收,驗收後才動第三步。
 - **在等使用者的:** 07 印 V3 指節試片並量七項(`scripts/analyse_coupon.py --instance hand-v3` 判讀)。
 - **閘門只在 Mac 跑**;Windows 端改碼、只 stage 明確路徑。
 - **在等使用者的:** 07 印 V3 指節試片並量七項(`scripts/analyse_coupon.py --instance hand-v3` 判讀)。
@@ -16,7 +16,7 @@ Read this file first after a new conversation, compaction, or terminal restart.
 
 | State | Task | Priority |
 |---|---|---|
-| ACTIVE | [`11_determinism-budget.md`](11_determinism-budget.md) | **碎片預算改由實測支撐**——探針從第一站的單指擴到所有 `chains` 與 `palm`,量測落檔並帶日期;預算小於實測值即紅。不碰幾何 |
+| AWAITING-ACCEPTANCE | [`11_determinism-budget.md`](11_determinism-budget.md) | **碎片預算改由實測支撐**——探針從第一站的單指擴到所有 `chains` 與 `palm`;實測八個零件只有一個會動、差 2,預算 `2` 從此是量到的上界。`--real` 28 條全綠,`models/` 位元組未動 |
 | WAITING-ON-USER | [`07_hand-v3-coupon.md`](07_hand-v3-coupon.md) | **印一件指節、量七項公差**——幾何側全部完成且真機驗證通過,往下每一件事都要從這一件實體反推。**使用者執行** |
 | AWAITING-ACCEPTANCE | [`06_hand-v3.md`](06_hand-v3.md) | 靈巧手 V3:文件樹 21 檔 + 追溯矩陣 22 條;域規格、手指、掌盤、整手、佈局全部做完,兩份真機契約 11/11 全綠,印製包已發布;**實體列印與台架量測未做** |
 | AWAITING-ACCEPTANCE | [`05_octopus-hand-v2.md`](05_octopus-hand-v2.md) | 章魚手 V2:角點對齊手臂 + 加強莖 + 瞄準式抓取墊 + 每臂電線孔 + 全面倒角;兩份契約真機全綠,包已發布;實體列印未做,視覺 rubric 未判 |

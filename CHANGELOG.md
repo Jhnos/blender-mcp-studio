@@ -5,6 +5,23 @@
 
 ## [Unreleased]
 
+### V01.0R.00A — 碎片預算有量測背書了
+
+#### Added
+
+- `docs/hand-framework/determinism.json`:2026-09-09 實測,每個零件重建 4 次。
+  三個實例八個零件裡只有 `HK_COMPACT_PHALANX_2` 的完成面數會動,差 2;其餘(含三個掌盤)全 0。
+  紀錄帶量測日期與 runs 數——沒有日期的量測快照不能當現況。
+- `src/verification/determinism_record.py` 與 `tests/unit/verification/test_sliver_budget_is_measured.py`:
+  預算小於實測值即紅;新實例沒被量過也紅(不得繼承別的實例的數字)。含 should-fire。
+- `ci.sh --real` 新增 `hand-compact build determinism within budget`(3 次重建,18 s)。
+
+#### Changed
+
+- `scripts/verify/build_determinism_probe.py`:從第一站的單指擴到所有 `chains` 與 `palm`;
+  掌盤走 `build_palm` 而不是在探針裡重寫一次組裝順序。新增 `--json` 落檔與 `--against-budget`——
+  頂點順序不同不算紅(那是 exact solver 的性質,幾乎每一步都發生),完成品面數超出預算才算。
+
 ### V01.0R.009 — 任務 10 驗收歸檔,開任務 11(碎片預算改由實測支撐)
 
 #### Changed
