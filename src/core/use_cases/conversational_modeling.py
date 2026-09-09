@@ -20,7 +20,7 @@ from src.core.domain.events import (
     LLMCalledEvent,
     MessageAddedEvent,
 )
-from src.core.domain.exceptions import LLMConnectionError, SceneCreationError
+from src.core.domain.exceptions import SceneCreationError
 from src.core.domain.session import Session
 from src.core.ports.blender_port import BlenderPort
 from src.core.ports.event_bus_port import EventBusPort
