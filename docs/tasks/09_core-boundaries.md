@@ -40,7 +40,7 @@
   截圖 dance 收斂、`src/workflows` 孤島刪除(V01.0Q.006)。
 - LLM 邊界翻譯的紅測試先抓到自己一個缺陷:串流回應未讀就取 `.text`,在 handler 裡再拋 `ResponseNotRead`——改用狀態行。
 - 929 個單元測試綠,`ci.sh --real` 全綠(17 份契約 + 差分)。
-- 2026-09-09 V01.0R.002:`hand-compact` 已發布、任務 08 歸檔;核心側本輪無變更,本檔仍是唯一待驗收的核心任務。
+- 2026-09-09 V01.0R.003:`hand-compact` 已發布、任務 08 歸檔;核心側本輪無變更,本檔仍是唯一待驗收的核心任務。
 - router 裡剩的整包 except:`chat.py` 2(WS 錯誤幀)、`ws_manager.py` 2(背景迴圈守衛),預算只能往下。
 
 ### Open failures

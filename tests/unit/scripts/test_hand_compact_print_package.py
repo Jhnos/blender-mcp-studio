@@ -104,7 +104,7 @@ def test_the_readme_describes_the_package_that_shipped() -> None:
 
     def says(word: str, text: str) -> bool:
         # Whole words only: "ten" must not be satisfied by "tendon".
-        return re.search(rf"{word}", text, re.IGNORECASE) is not None
+        return re.search(rf"\b{word}\b", text, re.IGNORECASE) is not None
 
     assert says(WORDS[total], readme), f"the README never says how many parts to print ({total})"
     for count, word in WORDS.items():
