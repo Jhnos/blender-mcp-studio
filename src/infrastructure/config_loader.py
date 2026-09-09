@@ -23,6 +23,3 @@ def load_mcp_servers(config_dir: Path | None = None) -> dict[str, object]:
     return load_yaml(base / "mcp_servers.yaml")
 
 
-def load_workflow(name: str, config_dir: Path | None = None) -> dict[str, object]:
-    base = config_dir or Path(__file__).parent.parent.parent / "config"
-    return load_yaml(base / "workflows" / f"{name}.yaml")

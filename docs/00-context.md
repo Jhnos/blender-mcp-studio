@@ -44,7 +44,7 @@ AI 自動操控 Blender 完成 3D 建模、場景配置、材質設定等創作�
 - 標準 MCP Streamable HTTP inbound adapter，以及 stdio proxy
 - 多 LLM 支援（透過 `LLMPort`，具體 provider 留在 adapters）
 - Blender MCP 橋接（ahujasid/blender-mcp addon）
-- 腳本驅動 Workflow 引擎
+- 腳本驅動的建模 pipeline(`config/modeling_pipeline.yaml` 定義階段,`POST /api/pipeline` 執行)
 - 機械件參數化建模與列印就緒檢查
 
 ## 不在範圍（Out of Scope）

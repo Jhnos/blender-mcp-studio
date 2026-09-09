@@ -50,6 +50,3 @@ class TextTo3DError(ExternalServiceError):
 class BlenderConnectionError(DomainError):
     """Raised when Blender MCP socket is unreachable."""
 
-
-class WorkflowError(DomainError):
-    """Raised when a workflow script fails."""
