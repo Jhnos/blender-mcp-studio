@@ -21,7 +21,7 @@ Population: 註冊表實例與其命名空間下的物件(hand-v3 = `HJ_V3_`);`m
 | FF-9 / ES-6 | SF-6 | import 圖 | 全在 `reload_modules` | A 機器 | **PASS**(M2;首跑紅:13/18,見 v8) |
 | FF-11 / ES-5 | SF-7 | 執行模組 | 字面值白名單 | A 機器 | **PASS**(M3) |
 | FF-12 / PS-1 | SF-8 | 三實例 | 前綴互異、皆通過一致性 | A 機器 | **PASS**(M6) |
-| HF-1 / VOC-1 | SF-10 | `tmp/` vs `models/` | 面數精確、尺寸 ±0.1 | A 機器(真機) | **PASS**(M3,新產生器 4/4:3434/2686/10302/54196) |
+| HF-1 / VOC-1 | SF-10 | `tmp/` vs `models/` | 面數在碎片預算內(每布林零件 ±2,規劃推導)、尺寸 ±0.1 | A 機器(真機) | **PASS**(M3,新產生器 4/4:3434/2686/10302/54196;compact 發布後 5/5,整手 ±4 在 ±32 內) |
 | HF-1 | SF-11 | 兩份 V3 契約 | 20 / 14 全 PASS | A 機器(真機) | **PASS**(M3,新產生器 20/14) |
 | HF-3 / VOC-4 | SF-12 | 精簡契約 | 全 PASS | A 機器(真機) | **PASS**(M6:20/14;第一次擺位被 `disjoint_groups` 擋下) |
 | HF-7 / PS-5 | SF-13 | `--real` | 秒數;釘住測試 | A 機器 | **PASS**(M1:8 s,`test_real_ci_gates_the_hand_contracts`) |

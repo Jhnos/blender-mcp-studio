@@ -3,9 +3,18 @@
 The framework's first claim is that it reproduces the package that shipped.
 STL export is not byte-reproducible (the same generator run twice gave three
 different hashes out of four files), so this never compares hashes. It compares
-what the package test already pins: triangle count exactly, bounding
-dimensions within a tenth of a millimetre. The shipped manifest is the only
-expectation source, so no second table of numbers exists to drift.
+what the package test already pins: triangle count within a sliver budget,
+bounding dimensions within a tenth of a millimetre. The shipped manifest is the
+only expectation source, so no second table of numbers exists to drift.
+
+The sliver budget exists because Blender's exact boolean solver does not order
+its output deterministically: the same compact phalanx built eight times in one
+session came back with six distinct vertex orderings from the first union on,
+and the cleanup thresholds then dissolved one sliver quad or not — 2976 or 2978
+triangles — from run to run. V3 reproduced exactly only because its slivers sit
+clear of the thresholds. The budget is two triangles per booleaned part and is
+derived from the plan, never typed in; zero stays the default so a mesh whose
+budget nobody derived is still held exact.
 
 Fail-closed throughout: a listed mesh the manifest never measured, a mesh that
 was not regenerated, a payload that is not an STL, and an empty population are
@@ -17,6 +26,8 @@ from __future__ import annotations
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 
+from src.core.domain.hand_instances import HandInstance
+from src.core.planning.hand_plan import hand_plan
 from src.infrastructure.narrowing import (
     as_finite_number,
     as_positive_int,
@@ -27,6 +38,9 @@ from src.verification.artifact_files import binary_stl_metrics
 
 #: Same tolerance the package tests use; float32 export noise sits far below it.
 DIMENSION_TOLERANCE_MM = 0.1
+#: One sliver quad per booleaned part: what the solver's ordering noise can add
+#: or remove once the cleanup thresholds have had their say (observed, 2026-09-09).
+SLIVER_TRIANGLES_PER_PART = 2
 
 
 @dataclass(frozen=True, slots=True)
@@ -34,6 +48,8 @@ class ExpectedMesh:
     name: str
     triangle_count: int
     dimensions_mm: tuple[float, float, float]
+    #: Triangles the regenerated count may differ by, either way. Zero = exact.
+    sliver_budget: int = 0
 
 
 @dataclass(frozen=True, slots=True)
@@ -76,10 +92,28 @@ def _dimensions(value: object, name: str) -> tuple[float, float, float]:
     return (x, y, z)
 
 
+def sliver_budgets(instance: HandInstance) -> dict[str, int]:
+    """Two triangles per booleaned part, per shipped STL, from the plan's counts."""
+    counts = hand_plan(instance).counts
+    per_part = SLIVER_TRIANGLES_PER_PART
+    budgets = {name: per_part for name in instance.phalanx_stls}
+    budgets[instance.palm_stl] = per_part
+    budgets[instance.finger_stl] = per_part * counts.units_per_finger
+    budgets[instance.hand_stl] = per_part * (counts.hand_unit_count + 1)
+    return budgets
+
+
 def expected_from_manifest(
-    manifest: Mapping[str, object], stl_files: Sequence[str]
+    manifest: Mapping[str, object],
+    stl_files: Sequence[str],
+    sliver_budgets: Mapping[str, int] | None = None,
 ) -> dict[str, ExpectedMesh]:
-    """The meshes a package promises, read from its shipped manifest and nothing else."""
+    """The meshes a package promises, read from its shipped manifest and nothing else.
+
+    `sliver_budgets` is the one thing not read from the manifest: it comes from
+    the plan, and a file it does not name is held exact.
+    """
+    budgets = sliver_budgets or {}
     files = as_str_keyed_exact(manifest.get("files"))
     if files is None:
         raise ValueError("manifest has no 'files' mapping")
@@ -92,7 +126,10 @@ def expected_from_manifest(
         if triangles is None:
             raise ValueError(f"manifest never measured {name}: triangle_count is missing")
         expected[name] = ExpectedMesh(
-            name, triangles, _dimensions(entry.get("dimensions_mm"), name)
+            name,
+            triangles,
+            _dimensions(entry.get("dimensions_mm"), name),
+            budgets.get(name, 0),
         )
     return expected
 
@@ -106,11 +143,12 @@ def compare_mesh(expected: ExpectedMesh, payload: bytes | None) -> MeshVerdict:
         measured = binary_stl_metrics(payload)
     except ValueError as error:
         return MeshVerdict(name, False, f"{name}: unreadable STL ({error})")
-    if measured.triangle_count != expected.triangle_count:
+    if abs(measured.triangle_count - expected.triangle_count) > expected.sliver_budget:
         return MeshVerdict(
             name,
             False,
-            f"{name}: {measured.triangle_count} triangles, manifest says {expected.triangle_count}",
+            f"{name}: {measured.triangle_count} triangles, manifest says"
+            f" {expected.triangle_count} (sliver budget ±{expected.sliver_budget})",
             measured.triangle_count,
             measured.dimensions_mm,
         )

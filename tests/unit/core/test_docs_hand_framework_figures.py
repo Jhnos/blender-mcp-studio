@@ -194,6 +194,31 @@ def test_the_instance_table_quotes_what_the_specs_compute() -> None:
         )
 
 
+def test_the_instance_prose_quotes_the_package_and_the_layout_plan() -> None:
+    """The bullet under the table quoted a run that no longer existed.
+
+    The compact hand was recorded as 234.5 tall on a 90.5 plate; the bytes that
+    shipped are 230.5 on 86.5. The table above is guarded; the prose was not.
+    Whole-hand figures come from the published manifest, the plate from the
+    layout plan — both can answer without Blender.
+    """
+    from src.core.domain.hand_instances import HAND_INSTANCES
+    from src.core.planning.hand_plan import hand_plan
+
+    doc = _tree_file("08-instances")
+    hand = re.search(r"整手 (\d+(?:\.\d+)?) × (\d+(?:\.\d+)?) × (\d+(?:\.\d+)?)", doc)
+    plate = re.search(r"佈局 (\d+(?:\.\d+)?) × (\d+(?:\.\d+)?)", doc)
+    assert hand and plate, "08-instances no longer quotes the whole-hand and plate figures"
+
+    instance = HAND_INSTANCES["hand-compact"]
+    manifest = json.loads((ROOT / "models" / "hand-compact" / "manifest.json").read_text())
+    shipped = manifest["files"][instance.hand_stl]["dimensions_mm"]
+    assert [float(v) for v in hand.groups()] == pytest.approx(shipped, abs=0.5)
+    assert [float(v) for v in plate.groups()] == pytest.approx(
+        hand_plan(instance).layout.footprint_mm, abs=0.5
+    )
+
+
 def test_the_results_template_marks_each_instance() -> None:
     """VOC-3: a reader learns what each registered instance passed from v8 alone.
 

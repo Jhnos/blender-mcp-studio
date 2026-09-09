@@ -45,7 +45,7 @@
 
 ## 接手 SOP
 
-1. 讀 [[tasks/00_INDEX]] 找框架的任務列,再讀 [`08_hand-framework.md`](../tasks/08_hand-framework.md) 的 hand-off。
+1. 讀 [[tasks/00_INDEX]];框架的任務已驗收歸檔,hand-off 在 [`archive/08_hand-framework.md`](../tasks/archive/08_hand-framework.md)。
 2. 讀 [[hand-framework/00-context]],知道範圍與不做什麼。
 3. 讀 [[hand-framework/02-requirements]],確認你要動的那一條需求由誰驗。
 4. 依上表**只載入這一步需要的檔**。不要重掃 repo。

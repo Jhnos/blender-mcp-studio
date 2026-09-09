@@ -22,9 +22,9 @@ reachable). That is the only human judgement in it; everything else is machine-m
 |---|---|
 | **`phalanx_base_mm.stl`** | The proximal phalanx, 17.0 × 15.0 × 53.0 mm, tendon bore at the 5.5 mm moment arm. One per chain — five prints |
 | **`phalanx_distal_mm.stl`** | The middle and distal phalanx, same 17.0 × 15.0 × 53.0 mm envelope, tendon bore at the 3.6 mm arm. Two per chain — ten prints |
-| `palm_mm.stl` | The plate with five knuckle roots, the thenar boss, five tendon channels, the cuff clamp groove and the air port — 110.0 × 30.0 × 90.5 mm |
+| `palm_mm.stl` | The plate with five knuckle roots, the thenar boss, five tendon channels, the cuff clamp groove and the air port — 110.0 × 30.0 × 86.5 mm |
 | `finger_compact_mm.stl` | One assembled finger, 17.0 × 15.0 × 149.0 mm, for checking fit before committing to fifteen parts |
-| `hand_compact_mm.stl` | The whole hand assembled, 110.0 × 30.1 × 234.5 mm. It fits a 256 mm bed, but it is a reference, not a print — the joints are modelled closed |
+| `hand_compact_mm.stl` | The whole hand assembled, 110.0 × 30.0 × 230.5 mm. It fits a 256 mm bed, but it is a reference, not a print — the joints are modelled closed |
 | `hand_compact.blend` | The Blender source these were exported from |
 | `compact_assembly.png`, `compact_joint_detail.png`, `compact_print_layout.png` | The three renders the Lane B verdict was given on |
 
@@ -36,7 +36,7 @@ Mark them.
 ## Printing
 
 Bambu Lab P2S, bed 256 mm. Units mm, 100%, **auto-arrange off** — the layout is already
-nested and fits one plate at 191.0 × 90.5 mm — four parts, the loose finger's three
+nested and fits one plate at 191.0 × 86.5 mm — four parts, the loose finger's three
 phalanges laid flat and the palm.
 
 This link is tighter than V3's everywhere: 1.2 mm minimum wall, 0.2 mm printed radial
@@ -67,7 +67,7 @@ compared triangle for triangle on every real run):
   the straight thumb clears the nearest finger by 3.48 mm.
 - No interference across a joint's full ±50° travel, and the finger's closure trajectory
   is measured against the plan's.
-- The print plate is 191.0 × 90.5 mm against a 256 mm bed, measured down two independent
+- The print plate is 191.0 × 86.5 mm against a 256 mm bed, measured down two independent
   paths and required to agree.
 - The palm is a single connected solid; all five tendon channels and the air port are
   genuinely open, with material confirmed present before the claim.

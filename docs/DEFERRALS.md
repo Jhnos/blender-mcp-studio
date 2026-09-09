@@ -158,7 +158,8 @@ callback，讓規則在分析到那裡時就停住、沒往下看。移除自我
 **結果**：使用者對三張渲染圖 Lane B 通過（2026-09-09「三張圖可以」）。`publish_print_package.py --package
 hand-compact` 從 `tmp/hand-compact/` 發布五個 STL、blend、三張圖到 `models/hand-compact/`，manifest 記 sha256
 與面數／尺寸；`test_hand_compact_print_package.py` 逐位元組對照，README 的尺寸、件數、可達性、靜止淨距由規格
-機器對照;`ci.sh --real` 從此每次重生成並與包差分（面數精確、尺寸 ±0.1）。
+機器對照;`ci.sh --real` 從此每次重生成並與包差分（面數在碎片預算內、尺寸 ±0.1）。發布後第一跑就被差分抓到
+整手 48240 ≠ 48244——不是包錯,是 exact boolean solver 輸出順序不定、cleanup 門檻把它變成每零件 ±2 面;預算由規劃推導（v3 FF-18）。
 
 **當時的現況**：精簡實例已註冊、契約由規劃生成並在真機 20/14 全過（2026-09-09），`PACKAGES` 已登錄，
 三張渲染圖已交使用者；`models/hand-compact/` 不存在，直到使用者裁決。
@@ -168,7 +169,7 @@ hand-compact` 從 `tmp/hand-compact/` 發布五個 STL、blend、三張圖到 `m
 
 **觸發條件**：使用者 Lane B 驗收通過。
 
-**目前的防護**：`publish_print_package.py` 不會自動跑；`08_hand-framework.md` 的驗收條件。
+**目前的防護**：`test_hand_compact_print_package.py` 逐位元組對照發布的包；`ci.sh --real` 的差分重生成後比對。
 
 ---
 

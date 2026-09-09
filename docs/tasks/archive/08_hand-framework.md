@@ -10,10 +10,10 @@
 
 ## Context to read
 
-1. [`../hand-framework/README.md`](../hand-framework/README.md) — 導航
-2. [`../hand-framework/00-context.md`](../hand-framework/00-context.md) — 為什麼、不做什麼、使用者已裁決的三件事
-3. [`../hand-framework/02-requirements.md`](../hand-framework/02-requirements.md) — 追溯矩陣(全 `TODO_` 直到建好)
-4. [`../hand-framework/v7-matrix.md`](../hand-framework/v7-matrix.md) — 哪裡還有洞
+1. [`../../hand-framework/README.md`](../../hand-framework/README.md) — 導航
+2. [`../../hand-framework/00-context.md`](../../hand-framework/00-context.md) — 為什麼、不做什麼、使用者已裁決的三件事
+3. [`../../hand-framework/02-requirements.md`](../../hand-framework/02-requirements.md) — 追溯矩陣(全 `TODO_` 直到建好)
+4. [`../../hand-framework/v7-matrix.md`](../../hand-framework/v7-matrix.md) — 哪裡還有洞
 
 ## Specification
 

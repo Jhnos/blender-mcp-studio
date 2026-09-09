@@ -24,7 +24,7 @@ scripts/ci.sh --real   # T3 REST/MCP/readiness/batch + hand-v3 契約與重現�
 |---|---|---|
 | hand-v3 contract | 在常駐 Blender 重建整手，20 項證據 | 7 |
 | hand-v3 finger contract | 同一場景（`--skip-generate`），14 項 | 1 |
-| regenerated package matches shipped | `tmp/hand-v3/*.stl` 對 `models/hand-v3/manifest.json`：面數精確、尺寸 ±0.1，**不比 sha** | 0.2 |
+| regenerated package matches shipped | `tmp/<slug>/*.stl` 對 `models/<slug>/manifest.json`（hand-v3、hand-compact）：面數在規劃推導的**碎片預算**內（每個布林零件 ±2；exact solver 輸出順序不定）、尺寸 ±0.1，**不比 sha** | 0.2 |
 | inset hinge ×3 | 生成、同場景 pins、讀取式 probe | 4 |
 | biaxial hinge ×5 | 生成、同場景 PIP 與 split、兩份讀取式 probe | 6 |
 | hollow side hinge | 生成 | 3 |

@@ -22,7 +22,7 @@
 
 | ID | 假設／失效 | 受控變數 | 步驟 | 判準 |
 |---|---|---|---|---|
-| SF-10 | HF-1 / FF-14 | 無 | 新產生器建 `hand-v3` 到 `tmp/`,對 `models/hand-v3/manifest.json` | 四 STL 面數精確、尺寸 ±0.1 |
+| SF-10 | HF-1 / FF-14 | 無 | 新產生器建 `hand-v3` 到 `tmp/`,對 `models/hand-v3/manifest.json` | 四 STL 面數在碎片預算內(每布林零件 ±2)、尺寸 ±0.1 |
 | SF-11 | HF-1 | 無 | 兩份 V3 契約 | 20 項與 14 項全 PASS |
 | SF-12 | HF-3 | 換連桿 | `hand_compact.json` + `hand_compact_finger.json` | 全 PASS |
 | SF-13 | HF-7 | 無 | `ci.sh --real` 首跑 | 記錄秒數;> 10 分鐘則觸發 D-004 的另一半 |

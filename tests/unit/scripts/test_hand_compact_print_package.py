@@ -24,13 +24,14 @@ from src.verification.artifact_files import binary_stl_metrics
 ROOT = Path(__file__).resolve().parents[3]
 PACKAGE = ROOT / "models" / "hand-compact"
 INSTANCE = HAND_INSTANCES["hand-compact"]
-#: Measured on the live Blender the files were exported from (2026-09-09).
+#: Measured from the published bytes (2026-09-09). An earlier run in the docs said
+#: 234.5 / 90.5; the bytes said otherwise, which is why the docs are guarded too.
 EXPECTED = {
     "phalanx_base_mm.stl": (2978, (17.0, 15.0, 53.0)),
     "phalanx_distal_mm.stl": (2986, (17.0, 15.0, 53.0)),
-    "palm_mm.stl": (3500, (110.0, 30.0, 90.5)),
+    "palm_mm.stl": (3498, (110.0, 30.0, 86.5)),
     "finger_compact_mm.stl": (8950, (17.0, 15.0, 149.0)),
-    "hand_compact_mm.stl": (48250, (110.0, 30.1, 234.5)),
+    "hand_compact_mm.stl": (48244, (110.0, 30.0, 230.5)),
 }
 WORDS = {5: "five", 10: "ten", 13: "thirteen", 14: "fourteen", 15: "fifteen", 16: "sixteen"}
 

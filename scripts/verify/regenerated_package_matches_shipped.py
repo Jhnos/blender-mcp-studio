@@ -3,9 +3,11 @@
 
 Reads the shipped manifest under models/<slug>/ as the only expectation source
 and the freshly exported STLs under tmp/<slug>/ (what the contract run just
-generated). Triangle count must match exactly, dimensions within 0.1 mm; hashes
-are never compared because STL export is not byte-reproducible. Exit 1 on any
-mismatch, on any missing mesh, and on an empty population.
+generated). Triangle count must match within the plan-derived sliver budget
+(two triangles per booleaned part; the exact boolean solver's output order is
+not deterministic), dimensions within 0.1 mm; hashes are never compared because
+STL export is not byte-reproducible. Exit 1 on any mismatch, on any missing
+mesh, and on an empty population.
 """
 
 from __future__ import annotations
@@ -20,10 +22,12 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from scripts.publish_print_package import PACKAGES  # noqa: E402
+from src.core.domain.hand_instances import HAND_INSTANCES  # noqa: E402
 from src.infrastructure.narrowing import as_str_keyed_exact  # noqa: E402
 from src.verification.package_reproduction import (  # noqa: E402
     expected_from_manifest,
     reproduction_report,
+    sliver_budgets,
 )
 
 
@@ -50,7 +54,9 @@ def main(argv: list[str] | None = None) -> int:
     if manifest is None:
         print(f"FAIL {manifest_path} is not a JSON object")
         return 1
-    expected = expected_from_manifest(manifest, package.stl_files)
+    instance = HAND_INSTANCES.get(package.slug)
+    budgets = sliver_budgets(instance) if instance is not None else None
+    expected = expected_from_manifest(manifest, package.stl_files, budgets)
     payloads = {path.name: path.read_bytes() for path in sorted(source.glob("*.stl"))}
     report = reproduction_report(expected, payloads)
 
@@ -58,8 +64,10 @@ def main(argv: list[str] | None = None) -> int:
     print(f"regenerated: {source}")
     for verdict in report.verdicts:
         if verdict.passed:
+            budget = expected[verdict.name]
             print(
-                f"  PASS {verdict.name}: {verdict.measured_triangles} triangles,"
+                f"  PASS {verdict.name}: {verdict.measured_triangles} triangles"
+                f" (manifest {budget.triangle_count}, budget ±{budget.sliver_budget}),"
                 f" {verdict.measured_dimensions_mm}"
             )
         else:

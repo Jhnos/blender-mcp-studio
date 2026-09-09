@@ -31,5 +31,6 @@
 | FF-15 | **等臂守衛被繞過**——梯度實例靜默變成等臂 | `expected_shared_mesh_count` 對梯度實例宣告 N |
 | FF-16 | **任務狀態說謊**——ACTIVE 掛著沒人在推的任務 | `WAITING-ON-USER` 狀態;checkpoint C1 |
 | FF-17 | **新閘門第一次就綠而它在量錯的東西** | 每個新閘門附 should-fire 夾具(v1 驗收準則 5) |
+| FF-18 | **閘門用一個實例的運氣校準**——V3 面數精確重現,精簡實例每零件 ±2 面(exact solver 輸出順序不定 + cleanup 門檻) | 差分的碎片預算由規劃推導(每布林零件 ±2),預設 0;探針記錄在 v8 |
 
 每一列在 [[hand-framework/v4-scenarios]] 至少有一個場景,在 [[hand-framework/v7-matrix]] 至少有一列。

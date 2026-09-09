@@ -2,9 +2,10 @@
 
 STL export is not byte-reproducible (the same generator run twice gave three
 different hashes out of four files), so the differential does not compare
-hashes. It compares what the package test already pins: triangle count exactly,
-bounding dimensions within 0.1 mm. The manifest is the expectation source, so
-the differential does not introduce a second table of numbers.
+hashes. It compares what the package test already pins: triangle count within
+a plan-derived sliver budget (exact by default), bounding dimensions within
+0.1 mm. The manifest is the expectation source, so the differential does not
+introduce a second table of numbers.
 
 Every should-pass case here has a should-fire twin. A differential that only
 has passing fixtures is indistinguishable from one that always passes.
