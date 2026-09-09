@@ -71,16 +71,25 @@ CI 專用路徑。做完之後，第四個實例可以用產品做出來，不�
 
 - 域與規劃層**已經在六角形裡**：`src/core/domain/hand_instances.py`、`src/core/planning/hand_plan.py`。
   住在 `scripts/` 的是碰 `bpy` 的組裝、閘門與匯出——分層本身沒錯，缺的是交付路徑。
-- 現行唯一的產生入口是 `scripts/verify/generated_artifact_verify_real.py`，
-  經 addon 的 `execute_code` 送 `build_generator_code()` 組出來的字串。
 - REST 有 13 個 router，MCP 有 9 個工具；不對等是刻意的，不是債。
 - 起點：`V01.0R.005` / `4436e5d`，工作區乾淨。
+- `2e7bb4e` 在 Mac 上 **T1 + T2 全綠**（ruff / mypy / pytest / vitest / eslint）。
+- API LaunchAgent 已重啟到新碼。`GET /blender/api/instances` 在**本機自己的 Tailscale FQDN**
+  上回三個實例與各自宣告的檔案清單（2026-09-09 實測）。
+- `--real` 既有 26 條閘門在重啟後**全部照舊通過**——新路徑沒有改到任何既有行為。
 
 ### Open failures
 
-- None yet（尚未動工）。
+- **`hand-compact built through the REST delivery path` 紅（HTTP 502）。**
+  端點回的訊息是 `Security: blocked code (importlib — dynamic import)`。
+  這不是 bug，是設計相撞：`BlenderMCPAdapter._dispatch` 對每一次 `execute_code`
+  套 `BlenderCodeSandbox`，而它的 blocklist 擋 `importlib`、`sys`、`subprocess`；
+  產生器 bootstrap 正好要用 `importlib.reload` 才能讓常駐 Blender 吃到新碼
+  （`docs/LESSONS_LEARNED.md:33` 說明為什麼不能不 reload）。
+  現行 CI 路徑之所以能跑，是因為它**直連 socket、根本沒經過 sandbox**。
+  取捨與選項見任務討論；未經使用者裁決前不動 sandbox。
 
 ### Next step
 
-- 寫那個會紅的測試：`tests/integration/api/test_generation_routes.py`，
-  斷言 `POST /api/instances/hand-compact/build` 的 `parts` 對得上登錄表的宣稱。
+- 使用者裁決 sandbox 的豁免形式後實作；預設方案是「逐字比對由登錄表＋契約重新
+  推導出來的字串才放行」，並附 should-fire。
