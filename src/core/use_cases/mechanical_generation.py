@@ -35,7 +35,6 @@ class MechanicalGenerationService:
         build = await self._builder.build_instance(instance)
         if build.part_names != instance.stl_files:
             raise MechanicalGenerationError(
-                f"{slug} declares {instance.stl_files} but the build produced "
-                f"{build.part_names}"
+                f"{slug} declares {instance.stl_files} but the build produced {build.part_names}"
             )
         return build

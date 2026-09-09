@@ -33,7 +33,12 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from scripts.publish_print_package import PACKAGES  # noqa: E402
 from src.core.domain.hand_instances import HAND_INSTANCES  # noqa: E402
-from src.infrastructure.narrowing import as_str_keyed_exact  # noqa: E402
+from src.infrastructure.narrowing import (  # noqa: E402
+    as_nonempty_sequence,
+    as_nonempty_str,
+    as_positive_int,
+    as_str_keyed_exact,
+)
 from src.verification.artifact_files import binary_stl_metrics  # noqa: E402
 from src.verification.package_reproduction import (  # noqa: E402
     expected_from_manifest,
@@ -105,18 +110,29 @@ def main(argv: list[str] | None = None) -> int:
 
     payloads = {path.name: path.read_bytes() for path in sorted(source.glob("*.stl"))}
 
+    parts = as_nonempty_sequence(reported.get("parts"))
+    if parts is None:
+        print("FAIL build endpoint reported no parts")
+        return 1
+
     failures = 0
-    for part in reported.get("parts", []):
-        name = part["name"]
+    for entry in parts:
+        part = as_str_keyed_exact(entry)
+        name = as_nonempty_str((part or {}).get("name"))
+        reported_faces = as_positive_int((part or {}).get("face_count"))
+        if name is None or reported_faces is None:
+            print(f"  FAIL a reported part is not a named mesh with a face count: {entry!r}")
+            failures += 1
+            continue
         payload = payloads.get(name)
         if payload is None:
             print(f"  FAIL {name}: the API reported it but nothing was written")
             failures += 1
             continue
         measured = binary_stl_metrics(payload)
-        if measured.triangle_count != part["face_count"]:
+        if measured.triangle_count != reported_faces:
             print(
-                f"  FAIL {name}: API said {part['face_count']} triangles,"
+                f"  FAIL {name}: API said {reported_faces} triangles,"
                 f" the file has {measured.triangle_count}"
             )
             failures += 1

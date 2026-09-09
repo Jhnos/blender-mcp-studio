@@ -27,8 +27,8 @@ from src.core.domain.exceptions import MechanicalGenerationError
 from src.core.domain.hand_instances import HandInstance
 from src.core.domain.mechanical_generation import BuiltPart, InstanceBuild
 from src.core.ports.blender_port import BlenderPort
-from src.verification.artifact_files import binary_stl_metrics
 from src.infrastructure.narrowing import as_str_keyed_exact, required
+from src.verification.artifact_files import binary_stl_metrics
 from src.verification.generated_artifact_bootstrap import build_generator_code
 from src.verification.generated_artifact_contract import (
     GeneratedArtifactContract,
