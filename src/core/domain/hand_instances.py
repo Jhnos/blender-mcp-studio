@@ -173,4 +173,53 @@ HAND_INSTANCES: dict[str, HandInstance] = {
             "phalanx part numbers. Fit prototype; no grip force claim. Never printed."
         ),
     ),
+    "hand-gripper": HandInstance(
+        slug="hand-gripper",
+        # Two fingers, not four. `row_finger_count` carries a comment saying it
+        # used to be typed in four places and agreed by luck; until this instance
+        # it had only ever been built at 4, so nothing had exercised it.
+        #
+        # The compact hand's thumb placement does not survive the narrower plate:
+        # a 24 mm offset cantilevers past a 40 mm plate and the unconditional
+        # thenar check refuses it. This placement came out of a sweep over
+        # offset / drop / opposition / palmar tilt under strict=True.
+        #
+        # It is deliberately NOT the sweep's best point. Scored on clearance
+        # alone, every leader sat at the edge of the swept range for palmar tilt
+        # — the objective kept improving because the gates being scored do not
+        # see what goes wrong further out, which is the failure this project has
+        # already recorded (a sweep answers only for its objective). This is the
+        # one placement whose whole neighbourhood is also a hand: move two grid
+        # steps in all four parameters at once (±4 mm, ±4 mm, ±10°, ±10°) and it
+        # still passes. Rest clearance 3.04 mm (V3 ships 2.49, compact 3.48),
+        # tip approach 1.78 mm against a 15.0 mm contact distance, finger-to-palm
+        # ratio 1.22.
+        palm=AnthropomorphicPalmSpec(
+            finger=_COMPACT_FINGER,
+            thumb=_COMPACT_FINGER,
+            row_finger_count=2,
+            thumb_offset_mm=16.0,
+            thumb_base_drop_mm=16.0,
+            thumb_opposition_deg=25.0,
+            thumb_palmar_tilt_deg=-30.0,
+            strict=True,
+        ),
+        namespace="HR_",
+        family="GRIPPER",
+        generator_script="scripts/model_hand_gripper.py",
+        blend_file="hand_gripper.blend",
+        phalanx_stls=("phalanx_base_mm.stl", "phalanx_distal_mm.stl"),
+        palm_stl="palm_mm.stl",
+        finger_stl="finger_gripper_mm.stl",
+        hand_stl="hand_gripper_mm.stl",
+        assembly_render="gripper_assembly.png",
+        joint_render="gripper_joint_detail.png",
+        layout_render="gripper_print_layout.png",
+        design_note=(
+            "Three stations on the compact link: a two-finger row and an opposed "
+            "thumb, nine phalanges instead of fifteen. Exists to build the framework "
+            "at a finger count it had never been built at. Fit prototype; no grip "
+            "force claim. Never printed."
+        ),
+    ),
 }
