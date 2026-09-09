@@ -1,0 +1,55 @@
+{
+  "passed": true,
+  "records": [
+    {
+      "actor": "traveler",
+      "clip": "idle",
+      "frames": 2,
+      "unique_poses": 2
+    },
+    {
+      "actor": "traveler",
+      "clip": "walk",
+      "frames": 6,
+      "unique_poses": 3
+    },
+    {
+      "actor": "traveler",
+      "clip": "interact",
+      "frames": 4,
+      "unique_poses": 3
+    },
+    {
+      "actor": "guide",
+      "clip": "idle",
+      "frames": 2,
+      "unique_poses": 2
+    },
+    {
+      "actor": "guide",
+      "clip": "walk",
+      "frames": 6,
+      "unique_poses": 3
+    },
+    {
+      "actor": "guide",
+      "clip": "interact",
+      "frames": 4,
+      "unique_poses": 3
+    }
+  ],
+  "marker_count": 9,
+  "anchor": [
+    0.5,
+    0.75
+  ],
+  "measured_root_projection": [
+    0.5,
+    0.7499996721744537
+  ],
+  "root_world": [
+    0,
+    0,
+    0
+  ]
+}
