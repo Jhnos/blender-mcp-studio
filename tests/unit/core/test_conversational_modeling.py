@@ -162,3 +162,22 @@ async def test_use_case_works_without_event_bus() -> None:
     session = Session().add_message("user", "hi")
     updated, reply, _ = await use_case.execute(session)
     assert reply == "OK"
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("error_type", ["LLMProviderError", "LLMConnectionError"])
+async def test_an_llm_domain_error_propagates_unchanged(error_type: str) -> None:
+    """The adapters raise domain errors now; the use case must not rewrap them.
+
+    It used to catch Exception and raise LLMConnectionError("LLM chat failed"),
+    turning a provider's 529 into a 503 and losing the cause.
+    """
+    from src.core.domain import exceptions
+
+    error_class = getattr(exceptions, error_type)
+    llm = _make_llm_mock("unused")
+    llm.chat = AsyncMock(side_effect=error_class("provider said no"))
+    use_case = ConversationalModelingUseCase(llm=llm, blender=_make_blender_mock())
+
+    with pytest.raises(error_class, match="provider said no"):
+        await use_case.execute(Session().add_message("user", "a cube"))

@@ -205,13 +205,14 @@ def test_dialect_gate_still_sees_script_constants(tmp_path: Path) -> None:
 #: here is at zero. The three provider-facing routers (vision, pipelines,
 #: generate3d) are at zero because their providers now raise domain errors
 #: that api/main.py maps in one place.
-#: chat.py keeps three: the two per-turn handlers that send an error frame over
-#: the WebSocket (Starlette's exception middleware is HTTP-only, so nothing
-#: else could) and the Blender command wrapper inside the stream. ws_manager.py
+#: chat.py keeps two: the per-turn handlers that send an error frame over the
+#: WebSocket (Starlette's exception middleware is HTTP-only, so nothing else
+#: could); the Blender command wrapper inside the stream narrowed to domain errors
+#: once the LLM and Blender adapters raised them. ws_manager.py
 #: keeps its two background-loop guards: a loop that stops ticking on the
 #: first bug is a silent outage. The screenshot helpers went through the typed
 #: port and, where a failure is recoverable, narrowed to the domain errors.
-BLANKET_EXCEPT_BUDGET: dict[str, int] = {"chat.py": 3, "ws_manager.py": 2}
+BLANKET_EXCEPT_BUDGET: dict[str, int] = {"chat.py": 2, "ws_manager.py": 2}
 
 
 def find_blanket_excepts(root: Path) -> dict[str, int]:
