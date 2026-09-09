@@ -2,12 +2,13 @@
 
 Read this file first after a new conversation, compaction, or terminal restart.
 
-## 接手(2026-09-09,V01.0R.00A)
+## 接手(2026-09-09,V01.0R.00B)
 
-- **等驗收:** 11 碎片預算改由實測支撐已完成,`--real` 28 條全綠,`models/` 位元組未動。
-  實測結論:八個零件裡只有一個的完成面數會動,差 2;預算 `2` 從此是量到的上界。
-- 使用者 2026-09-09 選定的三步順序是 **交付路徑 → 決定性閘門硬化 → 第四個實例**;
-  10 已驗收歸檔,11 等驗收,驗收後才動第三步。
+- **沒有進行中的任務。** 使用者 2026-09-09 選定的三步順序走完前兩步:
+  10 交付路徑、11 碎片預算實測,都已驗收歸檔。第三步是**第四個實例**,
+  但它的形態(幾指、幾關節、什麼尺寸)還沒定,**在等使用者給**——沒有形態就不要捏造任務。
+- 第四個實例做出來時要**走產品路徑**(`POST /api/instances/{slug}/build`),
+  不要再跑腳本;那是任務 10 存在的意義。
 - **在等使用者的:** 07 印 V3 指節試片並量七項(`scripts/analyse_coupon.py --instance hand-v3` 判讀)。
 - **閘門只在 Mac 跑**;Windows 端改碼、只 stage 明確路徑。
 - **在等使用者的:** 07 印 V3 指節試片並量七項(`scripts/analyse_coupon.py --instance hand-v3` 判讀)。
@@ -16,7 +17,6 @@ Read this file first after a new conversation, compaction, or terminal restart.
 
 | State | Task | Priority |
 |---|---|---|
-| AWAITING-ACCEPTANCE | [`11_determinism-budget.md`](11_determinism-budget.md) | **碎片預算改由實測支撐**——探針從第一站的單指擴到所有 `chains` 與 `palm`;實測八個零件只有一個會動、差 2,預算 `2` 從此是量到的上界。`--real` 28 條全綠,`models/` 位元組未動 |
 | WAITING-ON-USER | [`07_hand-v3-coupon.md`](07_hand-v3-coupon.md) | **印一件指節、量七項公差**——幾何側全部完成且真機驗證通過,往下每一件事都要從這一件實體反推。**使用者執行** |
 | AWAITING-ACCEPTANCE | [`06_hand-v3.md`](06_hand-v3.md) | 靈巧手 V3:文件樹 21 檔 + 追溯矩陣 22 條;域規格、手指、掌盤、整手、佈局全部做完,兩份真機契約 11/11 全綠,印製包已發布;**實體列印與台架量測未做** |
 | AWAITING-ACCEPTANCE | [`05_octopus-hand-v2.md`](05_octopus-hand-v2.md) | 章魚手 V2:角點對齊手臂 + 加強莖 + 瞄準式抓取墊 + 每臂電線孔 + 全面倒角;兩份契約真機全綠,包已發布;實體列印未做,視覺 rubric 未判 |
@@ -25,6 +25,8 @@ Read this file first after a new conversation, compaction, or terminal restart.
 | AWAITING-ACCEPTANCE | [`02_tendon-universal-joint.md`](02_tendon-universal-joint.md) | V6 PIN models checksum-controlled under models/ (PR #4 merged 2026-09-05, `901cb53`); physical print coupon remains |
 
 `WAITING-ON-USER` = 機器側已完成,下一步只有使用者能做(印、量、裁決);它不是 ACTIVE,checkpoint 不會把它當進行中。
+
+Accepted 2026-09-09: [`archive/11_determinism-budget.md`](archive/11_determinism-budget.md) — 碎片預算改由實測支撐:探針擴到所有 `chains` 與 `palm`,實測八個零件只有一個會動、差 2;`--real` 28 條全綠,`models/` 位元組未動;使用者「11 可以歸檔」(V01.0R.00B)。
 
 Accepted 2026-09-09: [`archive/10_generation-delivery-path.md`](archive/10_generation-delivery-path.md) — 參數化產生器接上交付路徑:`POST /api/instances/{slug}/build` 與 `GET /api/instances`,sandbox 的豁免鍵在逐字相同的推導字串而非呼叫者;`--real` 27 條全綠,交付路徑閘門 5/5 重現已發布的包;使用者「10 可以歸檔」(V01.0R.009)。
 

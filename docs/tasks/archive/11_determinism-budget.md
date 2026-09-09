@@ -1,6 +1,6 @@
 # 碎片預算改由實測支撐,決定性探針涵蓋每一個布林零件
 
-**Status:** AWAITING-ACCEPTANCE
+**Status:** ACCEPTED (2026-09-09)
 
 ## Goal
 
