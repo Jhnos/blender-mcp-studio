@@ -17,11 +17,11 @@ from src.core.domain.exceptions import UnknownInstanceError
 from src.core.domain.hand_instances import HAND_INSTANCES
 from src.core.domain.mechanical_generation import BuiltPart, InstanceBuild, InstanceSummary
 from src.core.ports.mcp_port import ToolResult
-from src.core.use_cases.conversational_modeling import (
-    _GENERATION_TOOLS,
+from src.core.use_cases.conversation_generation import (
     GENERATION_TOOL_NAMES,
-    ConversationalModelingUseCase,
+    GENERATION_TOOLS,
 )
+from src.core.use_cases.conversational_modeling import ConversationalModelingUseCase
 
 
 class StubGeneration:
@@ -101,7 +101,7 @@ def test_the_generation_tools_survive_the_semantic_router() -> None:
 
 
 def test_the_offered_slugs_are_exactly_the_registry() -> None:
-    build = next(tool for tool in _GENERATION_TOOLS if tool.name == "build_instance")
+    build = next(tool for tool in GENERATION_TOOLS if tool.name == "build_instance")
 
     assert build.parameters["slug"]["enum"] == sorted(HAND_INSTANCES)  # type: ignore[index]
 
@@ -111,7 +111,9 @@ async def test_a_generation_tool_goes_to_the_generator_not_to_blender() -> None:
     generation = StubGeneration()
     use_case, blender = _use_case(generation)
 
-    result = await use_case._dispatch(Command("build_instance", {"slug": "hand-gripper"}))
+    result = await use_case._dispatch(
+        Command(tool_name="build_instance", arguments={"slug": "hand-gripper"})
+    )
 
     assert result.success
     assert generation.built == ["hand-gripper"]
@@ -123,7 +125,7 @@ async def test_every_other_tool_still_goes_to_blender() -> None:
     generation = StubGeneration()
     use_case, blender = _use_case(generation)
 
-    await use_case._dispatch(Command("create_object", {"type": "MESH"}))
+    await use_case._dispatch(Command(tool_name="create_object", arguments={"type": "MESH"}))
 
     assert generation.built == []
     assert [command.tool_name for command in blender.commands] == ["create_object"]  # type: ignore[attr-defined]
@@ -133,7 +135,7 @@ async def test_every_other_tool_still_goes_to_blender() -> None:
 async def test_listing_answers_with_every_registered_instance() -> None:
     use_case, _ = _use_case(StubGeneration())
 
-    result = await use_case._dispatch(Command("list_instances", {}))
+    result = await use_case._dispatch(Command(tool_name="list_instances", arguments={}))
 
     assert result.success
     listed = {entry["slug"] for entry in json.loads(str(result.output))}
@@ -146,7 +148,9 @@ async def test_an_unregistered_slug_answers_in_the_turn_instead_of_raising() -> 
     hand that does not exist; say so, in the same turn."""
     use_case, _ = _use_case(StubGeneration())
 
-    result = await use_case._dispatch(Command("build_instance", {"slug": "hand-v4"}))
+    result = await use_case._dispatch(
+        Command(tool_name="build_instance", arguments={"slug": "hand-v4"})
+    )
 
     assert not result.success
     assert "hand-v4" in str(result.error)
@@ -156,7 +160,9 @@ async def test_an_unregistered_slug_answers_in_the_turn_instead_of_raising() -> 
 async def test_a_generation_tool_without_a_service_is_refused_not_sent_to_blender() -> None:
     use_case, blender = _use_case(None)
 
-    result = await use_case._dispatch(Command("build_instance", {"slug": "hand-gripper"}))
+    result = await use_case._dispatch(
+        Command(tool_name="build_instance", arguments={"slug": "hand-gripper"})
+    )
 
     assert not result.success
     assert blender.commands == []  # type: ignore[attr-defined]

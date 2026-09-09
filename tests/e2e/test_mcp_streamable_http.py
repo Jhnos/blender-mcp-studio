@@ -248,7 +248,7 @@ def test_the_public_catalog_stays_nine_and_never_gains_the_generation_tools() ->
     the only thing keeping them apart is that nobody added one to the other.
     This is the check that notices if somebody does.
     """
-    from src.core.use_cases.conversational_modeling import GENERATION_TOOL_NAMES
+    from src.core.use_cases.conversation_generation import GENERATION_TOOL_NAMES
 
     assert len(_EXPECTED_TOOLS) == 9
     assert not (_EXPECTED_TOOLS & GENERATION_TOOL_NAMES)
