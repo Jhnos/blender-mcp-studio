@@ -1,0 +1,164 @@
+{
+  "name": "hand_gripper",
+  "generator_script": "scripts/model_hand_gripper.py",
+  "reload_modules": [
+    "scripts.blender_generator_runner",
+    "scripts.blender_artifact_export",
+    "scripts.presentation_profile",
+    "src.core.domain.hollow_side_hinge",
+    "src.core.domain.inset_hinge",
+    "scripts.hollow_hinge_render",
+    "scripts.blender_mesh_primitives",
+    "src.core.domain.compact_link",
+    "src.core.domain.finger_link",
+    "src.core.domain.hinge_chain",
+    "src.core.domain.finger_v3",
+    "src.core.domain.rotation",
+    "src.core.domain.opposition",
+    "src.core.domain.palm_v3",
+    "src.core.domain.hand_instances",
+    "src.core.planning.naming",
+    "src.core.planning.expected_counts",
+    "src.core.planning.layout_plan",
+    "src.core.planning.csg",
+    "src.core.planning.phalanx_plan",
+    "src.core.planning.station_plan",
+    "src.core.planning.route_plan",
+    "src.core.planning.palm_plan",
+    "src.core.planning.presentation_plan",
+    "src.core.planning.probe_plan",
+    "src.core.planning.hand_plan",
+    "scripts.hand_gates",
+    "scripts.hollow_hinge_geometry",
+    "scripts.hand_geometry",
+    "src.core.domain.biaxial_hinge",
+    "scripts.biaxial_hinge_presentation",
+    "scripts.hand_presentation",
+    "scripts.hand_generator"
+  ],
+  "artifacts": [
+    "tmp/hand-gripper/hand_gripper.blend",
+    "tmp/hand-gripper/phalanx_base_mm.stl",
+    "tmp/hand-gripper/phalanx_distal_mm.stl",
+    "tmp/hand-gripper/palm_mm.stl",
+    "tmp/hand-gripper/finger_gripper_mm.stl",
+    "tmp/hand-gripper/hand_gripper_mm.stl",
+    "tmp/hand-gripper/gripper_assembly.png",
+    "tmp/hand-gripper/gripper_joint_detail.png",
+    "tmp/hand-gripper/gripper_print_layout.png"
+  ],
+  "oracle": {
+    "object_prefix": "HR_GRIPPER_HAND_F1_",
+    "expected_count": 3,
+    "expected_rotations_deg": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "scene_list_property": "HR_GRIPPER_HAND_STATIONS",
+    "expected_scene_list": [
+      "F1",
+      "F2",
+      "T"
+    ],
+    "center_probe_object": "HR_GRIPPER_HAND_F1_1",
+    "center_channel_expected_open": false,
+    "bore_probe_points_mm": [
+      [
+        0.0,
+        -5.5
+      ],
+      [
+        0.0,
+        5.5
+      ]
+    ],
+    "collision_groups": [
+      {
+        "prefix": "HR_GRIPPER_HAND_F1_",
+        "expected_count": 3
+      },
+      {
+        "prefix": "HR_GRIPPER_HAND_F2_",
+        "expected_count": 3
+      },
+      {
+        "prefix": "HR_GRIPPER_HAND_T_",
+        "expected_count": 3
+      },
+      {
+        "prefix": "HR_GRIPPER_LAYOUT_PART_",
+        "expected_count": 4
+      }
+    ],
+    "disjoint_groups": [
+      "HR_GRIPPER_HAND_F1_",
+      "HR_GRIPPER_HAND_F2_",
+      "HR_GRIPPER_HAND_T_"
+    ],
+    "channel_probes": [
+      {
+        "object": "HR_GRIPPER_PALM",
+        "axis": "Z",
+        "open_points_mm": [
+          [
+            -11.5,
+            -5.5
+          ],
+          [
+            11.5,
+            -5.5
+          ],
+          [
+            -27.5,
+            -5.5
+          ]
+        ],
+        "solid_points_mm": [
+          [
+            0.0,
+            -5.5
+          ]
+        ]
+      },
+      {
+        "object": "HR_GRIPPER_PALM",
+        "axis": "Y",
+        "open_points_mm": [
+          [
+            0.0,
+            -28.1
+          ]
+        ],
+        "solid_points_mm": [
+          [
+            0.0,
+            -19.0
+          ],
+          [
+            0.0,
+            -16.0
+          ]
+        ]
+      }
+    ],
+    "expected_shells_per_object": 1,
+    "expected_shared_mesh_count": 2
+  },
+  "readiness": {
+    "selection_prefix": "HR_GRIPPER_LAYOUT_PART_",
+    "expected_selection_count": 4,
+    "forbidden_issue_codes": [
+      "no_mesh",
+      "non_manifold_edges",
+      "inconsistent_normals",
+      "degenerate_geometry",
+      "zero_volume",
+      "intersections"
+    ],
+    "max_footprint_mm": [
+      256.0,
+      256.0
+    ]
+  }
+}

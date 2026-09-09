@@ -121,6 +121,10 @@ if (( REAL )); then
     # claim (expected_shared_mesh_count) and not a limit of the generator.
     _run hard "hand-v3 gradient fixture contract" "$PY" scripts/verify/generated_artifact_verify_real.py scripts/verify/contracts/hand_v3_gradient.json
     _run hard "hand-v3 gradient fixture finger (same scene)" "$PY" scripts/verify/generated_artifact_verify_real.py scripts/verify/contracts/hand_v3_gradient_finger.json --skip-generate
+    # The three-station instance: the same generator at a finger count it had
+    # never been built at, which is the whole reason it exists.
+    _run hard "hand-gripper contract" "$PY" scripts/verify/generated_artifact_verify_real.py scripts/verify/contracts/hand_gripper.json
+    _run hard "hand-gripper finger (same scene)" "$PY" scripts/verify/generated_artifact_verify_real.py scripts/verify/contracts/hand_gripper_finger.json --skip-generate
     # The human-scale instance: the compact link through the same generator.
     _run hard "hand-compact contract" "$PY" scripts/verify/generated_artifact_verify_real.py scripts/verify/contracts/hand_compact.json
     _run hard "hand-compact finger (same scene)" "$PY" scripts/verify/generated_artifact_verify_real.py scripts/verify/contracts/hand_compact_finger.json --skip-generate
