@@ -311,6 +311,9 @@ def test_no_src_package_is_an_island() -> None:
         for package in sorted((PROJECT_ROOT / "src").iterdir())
         if package.is_dir()
         and package.name != "__pycache__"
+        # A directory holding only bytecode caches is a shell left by a deleted
+        # package, not a package.
+        and any(package.rglob("*.py"))
         and not _first_party_importers(package.name, production)
     ]
     assert islands == [], f"src packages nothing in production imports: {islands}"
