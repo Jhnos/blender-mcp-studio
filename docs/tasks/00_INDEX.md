@@ -2,13 +2,13 @@
 
 Read this file first after a new conversation, compaction, or terminal restart.
 
-## 接手(2026-09-09,V01.0R.00B)
+## 接手(2026-09-09,V01.0R.00C)
 
-- **沒有進行中的任務。** 使用者 2026-09-09 選定的三步順序走完前兩步:
-  10 交付路徑、11 碎片預算實測,都已驗收歸檔。第三步是**第四個實例**,
-  但它的形態(幾指、幾關節、什麼尺寸)還沒定,**在等使用者給**——沒有形態就不要捏造任務。
-- 第四個實例做出來時要**走產品路徑**(`POST /api/instances/{slug}/build`),
-  不要再跑腳本;那是任務 10 存在的意義。
+- **等驗收:** 12 第四個實例 `hand-gripper`(兩指＋對位拇指,三站九節)。真機首建即
+  20/14 全過,`--real` 30 條全綠,並且是**走產品路徑**建成的——任務 10 第一次被用在新東西上。
+- **在等使用者的:** ①`hand-gripper` 三張渲染圖的 Lane B 裁決(通過才發布 `models/hand-gripper/`);
+  ②07 印 V3 指節試片並量七項。
+- 使用者 2026-09-09 選定的三步順序(交付路徑 → 決定性閘門硬化 → 第四個實例)已走完。
 - **在等使用者的:** 07 印 V3 指節試片並量七項(`scripts/analyse_coupon.py --instance hand-v3` 判讀)。
 - **閘門只在 Mac 跑**;Windows 端改碼、只 stage 明確路徑。
 - **在等使用者的:** 07 印 V3 指節試片並量七項(`scripts/analyse_coupon.py --instance hand-v3` 判讀)。
@@ -17,6 +17,7 @@ Read this file first after a new conversation, compaction, or terminal restart.
 
 | State | Task | Priority |
 |---|---|---|
+| AWAITING-ACCEPTANCE | [`12_hand-gripper.md`](12_hand-gripper.md) | **第四個實例:三站夾爪**——兩指＋對位拇指,九節。真機首建 20/14 全過,走產品路徑建成;`--real` 30 條全綠。**等 Lane B 才發布** |
 | WAITING-ON-USER | [`07_hand-v3-coupon.md`](07_hand-v3-coupon.md) | **印一件指節、量七項公差**——幾何側全部完成且真機驗證通過,往下每一件事都要從這一件實體反推。**使用者執行** |
 | AWAITING-ACCEPTANCE | [`06_hand-v3.md`](06_hand-v3.md) | 靈巧手 V3:文件樹 21 檔 + 追溯矩陣 22 條;域規格、手指、掌盤、整手、佈局全部做完,兩份真機契約 11/11 全綠,印製包已發布;**實體列印與台架量測未做** |
 | AWAITING-ACCEPTANCE | [`05_octopus-hand-v2.md`](05_octopus-hand-v2.md) | 章魚手 V2:角點對齊手臂 + 加強莖 + 瞄準式抓取墊 + 每臂電線孔 + 全面倒角;兩份契約真機全綠,包已發布;實體列印未做,視覺 rubric 未判 |

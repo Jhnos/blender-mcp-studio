@@ -5,6 +5,24 @@
 
 ## [Unreleased]
 
+### V01.0R.00C — 第四個實例 hand-gripper:兩指＋對位拇指,走產品路徑建成
+
+#### Added
+
+- `HAND_INSTANCES["hand-gripper"]` 與 `scripts/model_hand_gripper.py`:三站九節,compact 連桿。
+  `row_finger_count` 第一次被建在 4 以外的值上,而它立刻擋下 compact 的拇指擺位
+  (24 mm 外偏在 40 mm 掌盤上懸空)。新擺位取掃描的**鄰域穩健點**而非最佳點——
+  照餘裕排序時最佳解全部貼在掃描邊界,那是目標函數看不到的地方。
+- `scripts/verify/contracts/hand_gripper*.json` 兩份契約,並進 `ci.sh --real`(真機首建即 20/14 全過)。
+- `docs/hand-framework/determinism.json` 增列 `hand-gripper`:`PHALANX_2` 差 2、其餘 0,
+  與 hand-compact 同型,預算 `2` 由第二個實例獨立確認。
+- `docs/tasks/12_hand-gripper.md`。
+
+#### Changed
+
+- `docs/hand-framework/v8-results.md` 增列 `hand-gripper` 的狀態行。
+- `src/verification/determinism_record.py`:未量過的實例改拋可讀訊息而非 `KeyError`。
+
 ### V01.0R.00B — 任務 11 驗收歸檔
 
 #### Changed
