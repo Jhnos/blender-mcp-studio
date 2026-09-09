@@ -87,6 +87,11 @@ if (( REAL )); then
     _run hard "installed LaunchAgents match this checkout" "$PY" scripts/check_installed_plists.py
     _run hard "REST pipeline (nonce + independent oracle)" "$PY" scripts/verify/mcp_verify_rest.py
     _run hard "MCP protocol (nonce + independent oracle)" "$PY" scripts/verify/mcp_verify_real.py
+    # The conversation path — the project's stated Phase 1 — had a verifier that
+    # was never referenced here and did not even import. An unreferenced script
+    # and a broken one look identical from outside. 5/5 since the scene list
+    # stopped being the addon's first ten objects.
+    _run hard "chat path (WS + REST, independent oracle)" "$PY" scripts/verify/mcp_verify_chat.py
     _run hard "print readiness (real Blender fixtures)" "$PY" scripts/verify/print_readiness_verify_real.py
     _run hard "batch transform (one Undo, independent oracle)" "$PY" scripts/verify/batch_transform_verify_real.py
     # Every contract under scripts/verify/contracts runs here (DEFERRALS D-004,

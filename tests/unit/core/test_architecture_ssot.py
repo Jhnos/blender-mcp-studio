@@ -203,6 +203,14 @@ def test_real_ci_gates_batch_transform_single_undo() -> None:
     assert "scripts/verify/batch_transform_verify_real.py" in ci
 
 
+def test_real_ci_gates_the_conversation_path() -> None:
+    """Phase 1 is the project's stated vision and was the one delivery path with
+    no real-machine gate — its verifier was unreferenced here and did not import."""
+    ci = (PROJECT_ROOT / "scripts" / "ci.sh").read_text()
+
+    assert "scripts/verify/mcp_verify_chat.py" in ci
+
+
 def test_real_ci_gates_the_hand_contracts() -> None:
     """The contract system caught ten defects this campaign while being run by hand.
 
