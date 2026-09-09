@@ -3,10 +3,25 @@
 from __future__ import annotations
 
 import re
-from typing import Any
+from typing import Any, TypedDict
 
 DIRECTIONS = ("down", "left", "right", "up")
 CLIPS = {"idle": (2, 2), "walk": (6, 8), "interact": (4, 8)}
+MARKER_KINDS = ("talk", "quest", "deliver", "investigate", "locked", "exit")
+
+
+class RoleStyle(TypedDict):
+    label: str
+    coat: tuple[float, float, float, float]
+    skin: tuple[float, float, float, float]
+
+
+ROLES: dict[str, RoleStyle] = {
+    "traveler": {"label": "旅人", "coat": (0.035, 0.27, 0.30, 1), "skin": (0.64, 0.37, 0.21, 1)},
+    "guide": {"label": "嚮導", "coat": (0.46, 0.14, 0.045, 1), "skin": (0.80, 0.59, 0.38, 1)},
+    "guard": {"label": "守衛", "coat": (0.12, 0.20, 0.40, 1), "skin": (0.48, 0.25, 0.14, 1)},
+    "artisan": {"label": "工匠", "coat": (0.32, 0.09, 0.34, 1), "skin": (0.72, 0.45, 0.28, 1)},
+}
 
 
 def actor_spec(asset_id: str, label: str) -> dict[str, Any]:

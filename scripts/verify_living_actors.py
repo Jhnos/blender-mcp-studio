@@ -20,7 +20,7 @@ camera = bpy.data.objects["LW_sprite_camera"]
 foot = world_to_camera_view(scene, camera, Vector((0, 0, 0)))
 assert abs(foot.x - 0.5) < 1e-5 and abs(foot.y - 0.25) < 1e-5
 records = []
-for role in ("traveler", "guide"):
+for role in ("traveler", "guide", "guard", "artisan"):
     rig = bpy.data.objects[f"LW_{role}_rig"]
     rig.location = (0, 0, 0)
     rig.rotation_euler = (0, 0, 0)
@@ -40,7 +40,7 @@ for role in ("traveler", "guide"):
         o.data.materials and len(o.data.polygons) > 0 and not o.hide_viewport for o in meshes
     )
     assert all(any(m.type == "ARMATURE" and m.object == rig for m in o.modifiers) for o in meshes)
-    for other in ("traveler", "guide"):
+    for other in ("traveler", "guide", "guard", "artisan"):
         for obj in bpy.data.collections["LW_" + other].objects:
             obj.hide_render = other != role
     for clip, count in [("idle", 2), ("walk", 6), ("interact", 4)]:
@@ -86,17 +86,26 @@ assert (
         [
             c
             for c in bpy.data.collections
-            if c.name.startswith(("LM_talk_", "LM_quest_", "LM_deliver_"))
+            if c.name.startswith(
+                (
+                    "LM_talk_",
+                    "LM_quest_",
+                    "LM_deliver_",
+                    "LM_investigate_",
+                    "LM_locked_",
+                    "LM_exit_",
+                )
+            )
         ]
     )
-    == 9
+    == 18
 )
 (OUT / "verification.json").write_text(
     json.dumps(
         {
             "passed": True,
             "records": records,
-            "marker_count": 9,
+            "marker_count": 18,
             "anchor": [0.5, 0.75],
             "measured_root_projection": [foot.x, 1 - foot.y],
             "root_world": [0, 0, 0],

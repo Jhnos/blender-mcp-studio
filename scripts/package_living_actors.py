@@ -51,13 +51,22 @@ def publish(destination: Path) -> None:
         shutil.copyfile(
             source / (actor["portrait"] + ".png"), destination / (actor["portrait"] + ".png")
         )
-    atlas = Image.new("RGBA", (192, 192))
-    for i in range(9):
+    marker_count = len(manifest["marker_kinds"]) * 3
+    atlas = Image.new("RGBA", (192, len(manifest["marker_kinds"]) * 64))
+    for i in range(marker_count):
         image = Image.open(source / "markers" / f"{i:02d}.png").convert("RGBA")
         assert image.size == (64, 64) and image.getchannel("A").getbbox()
         atlas.paste(image, ((i % 3) * 64, (i // 3) * 64))
     atlas.save(destination / "markers-atlas.png")
     for name in ("actors-preview.png", "markers-preview.png"):
+        preview = Image.open(source / name).convert("RGBA")
+        bounds = preview.getchannel("A").getbbox()
+        assert (
+            bounds
+            and min(bounds[:2]) > 0
+            and bounds[2] < preview.width
+            and bounds[3] < preview.height
+        ), (name, bounds)
         shutil.copyfile(source / name, destination / name)
     manifest["source_sha256"] = {
         name: hashlib.sha256((source / name).read_bytes()).hexdigest()

@@ -36,9 +36,45 @@
       "clip": "interact",
       "frames": 4,
       "unique_poses": 3
+    },
+    {
+      "actor": "guard",
+      "clip": "idle",
+      "frames": 2,
+      "unique_poses": 2
+    },
+    {
+      "actor": "guard",
+      "clip": "walk",
+      "frames": 6,
+      "unique_poses": 3
+    },
+    {
+      "actor": "guard",
+      "clip": "interact",
+      "frames": 4,
+      "unique_poses": 3
+    },
+    {
+      "actor": "artisan",
+      "clip": "idle",
+      "frames": 2,
+      "unique_poses": 2
+    },
+    {
+      "actor": "artisan",
+      "clip": "walk",
+      "frames": 6,
+      "unique_poses": 3
+    },
+    {
+      "actor": "artisan",
+      "clip": "interact",
+      "frames": 4,
+      "unique_poses": 3
     }
   ],
-  "marker_count": 9,
+  "marker_count": 18,
   "anchor": [
     0.5,
     0.75

@@ -4,7 +4,7 @@ Read this file first after a new conversation, compaction, or terminal restart.
 
 | State | Task | Priority |
 |---|---|---|
-| **ACTIVE** | [`11_living-world-actors.md`](11_living-world-actors.md) | 旅人與嚮導、動畫與可玩交談切片 |
+| **ACTIVE** | [`11_living-world-actors.md`](11_living-world-actors.md) | 四角色、18事件標記與送件流程；後續B/C仍在範圍 |
 | **ACTIVE** | [`10_world-kit-expansion.md`](10_world-kit-expansion.md) | 18種跨建築、戶外與機關素材；两材質、狀態差分與正式素材目錄 |
 | **ACTIVE** | [`08_hand-framework.md`](08_hand-framework.md) | 靈巧手框架:規格→規劃→執行三層,契約由規格生成,先逐面數重現 `models/hand-v3/`,再讓精簡連桿以同一套程式產生整手;契約閘門進 `--real`。M0 文件樹已建 |
 | WAITING-ON-USER | [`07_hand-v3-coupon.md`](07_hand-v3-coupon.md) | **印一件指節、量七項公差**——幾何側全部完成且真機驗證通過,往下每一件事都要從這一件實體反推。**使用者執行** |

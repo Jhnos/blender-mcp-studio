@@ -7,7 +7,7 @@ import math
 import bpy
 
 from scripts.blender_mesh_primitives import material, move_to_collection
-from scripts.living_asset_contract import CLIPS
+from scripts.living_asset_contract import CLIPS, ROLES
 
 
 def build_actor(role: str) -> tuple[bpy.types.Object, bpy.types.Collection]:
@@ -37,14 +37,16 @@ def build_actor(role: str) -> tuple[bpy.types.Object, bpy.types.Collection]:
     rig.select_set(False)
     rig.show_in_front = True
     colors = {
-        "skin": (0.64, 0.37, 0.21, 1) if role == "traveler" else (0.80, 0.59, 0.38, 1),
-        "coat": (0.035, 0.27, 0.30, 1) if role == "traveler" else (0.46, 0.14, 0.045, 1),
+        "skin": ROLES[role]["skin"],
+        "coat": ROLES[role]["coat"],
         "trim": (0.80, 0.51, 0.13, 1),
         "boots": (0.07, 0.035, 0.024, 1),
         "pants": (0.08, 0.12, 0.15, 1),
         "hair": (0.075, 0.035, 0.018, 1),
         "eyes": (0.015, 0.021, 0.023, 1),
         "paper": (0.80, 0.75, 0.54, 1),
+        "steel": (0.31, 0.38, 0.46, 1),
+        "leather": (0.30, 0.13, 0.055, 1),
     }
     mats = {k: material("LW_" + role + "_" + k, v) for k, v in colors.items()}
 
@@ -94,11 +96,23 @@ def build_actor(role: str) -> tuple[bpy.types.Object, bpy.types.Collection]:
         part("rucksack", (0, 0.245, 1.00), (0.38, 0.22, 0.42), "boots")
         part("bedroll", (0, 0.24, 1.25), (0.46, 0.19, 0.14), "paper")
         part("scarf", (0.08, -0.195, 1.075), (0.105, 0.055, 0.25), "trim")
-    else:
+    elif role == "guide":
         part("shoulder-cape", (0, 0.08, 1.12), (0.67, 0.38, 0.20), "trim")
         part("cap", (0, 0.01, 1.745), (0.35, 0.31, 0.075), "coat", "head", True)
         part("hat-brim", (0, -0.09, 1.65), (0.66, 0.48, 0.055), "coat", "head")
         part("scroll-case", (0.265, 0.05, 0.79), (0.14, 0.18, 0.39), "paper")
+    elif role == "guard":
+        part("breastplate", (0, -0.19, 1.04), (0.49, 0.08, 0.34), "steel")
+        part("helmet", (0, 0.025, 1.66), (0.30, 0.26, 0.12), "steel", "head", True)
+        part("crest", (0, 0.06, 1.785), (0.07, 0.30, 0.09), "trim", "head")
+        part("shield", (0.43, -0.10, 0.90), (0.25, 0.12, 0.44), "steel", "arm.L")
+        part("shield-emblem", (0.43, -0.18, 0.93), (0.08, 0.025, 0.22), "trim", "arm.L")
+    elif role == "artisan":
+        part("apron", (0, -0.195, 0.91), (0.40, 0.065, 0.54), "leather")
+        part("apron-pocket", (0.05, -0.24, 0.87), (0.22, 0.03, 0.15), "trim")
+        part("headband", (0, -0.04, 1.61), (0.51, 0.42, 0.065), "trim", "head")
+        part("hammer-handle", (-0.37, -0.075, 0.82), (0.055, 0.07, 0.42), "leather", "arm.R")
+        part("hammer-head", (-0.37, -0.075, 1.055), (0.30, 0.12, 0.14), "steel", "arm.R")
     for clip, (count, _) in CLIPS.items():
         rig.animation_data_create()
         action = bpy.data.actions.new(f"LW_{role}_{clip}")

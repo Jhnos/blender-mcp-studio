@@ -3,9 +3,9 @@
 **Status:** ACTIVE
 
 User authorized continued implementation of PVR's living-world asset plan.
-First delivery: traveler and guide, editable shared rig, four directions and idle/walk/interact,
-two portraits, nine conversation/quest/delivery markers; independent encounter pack with guide,
-parcel retrieval and return. Remaining four-role A/B/C expansion stays in PVR STATUS.
+Full A delivery: four original roles, shared editable rig, four directions and idle/walk/interact,
+four portraits and eighteen event markers. Keep the released two-role encounter independently playable;
+full courier gameplay and subsequent B/C expansion stay in PVR STATUS.
 
 ## Hand-off
 
@@ -16,9 +16,12 @@ parcel retrieval and return. Remaining four-role A/B/C expansion stays in PVR ST
 - Use existing headless Blender generator workflow; no public runtime capability changes.
 - Saved-file verifier must reopen rig/actions, project feet and rerender sample frames.
 - Full CI and real tier required; source branch remains independent of unrelated hand work.
-- Saved files and 96frames/9markers generated; named actions, rooted rigs, full-face portrait bounds and regenerated sample pixels verified.
+- Saved files and 192frames/18markers generated; named actions, rooted rigs, full-face portrait bounds and regenerated sample pixels verified.
 - `scripts/ci.sh --real` passed, including saved Blender file reopening and actual REST/MCP checks.
-- Independent asset review round 2 confirms full-face portraits, unclipped sprites and distinguishable markers.
+- Independent full-cast asset review confirms four full-face portraits, unclipped 192 sprites, full-body preview and eighteen distinguishable markers.
+
+- Full-cast final CI: `/tmp/living-full-cast-ci-final.log`; independent review: `tmp/living-full-cast-release/visual-review.md`.
+- Preview expansion originally clipped outer characters; corrected orthographic framing and added alpha-bound publishing rejection.
 
 ### Open failures
 
@@ -27,4 +30,4 @@ parcel retrieval and return. Remaining four-role A/B/C expansion stays in PVR ST
 
 ### Next step
 
-- Expand the remaining guard/artisan roles from the PVR living-world requirement matrix after sealing the two-role gameplay evidence; preserve the shared camera, root and clip contracts.
+- Complete courier public game evidence in PVR; then implement six effects and six items under the existing plan, keeping the complete A/B/C scope active.

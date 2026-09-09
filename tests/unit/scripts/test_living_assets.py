@@ -28,3 +28,13 @@ def test_actor_contract_rejects(defect):
         spec["clips"]["idle-down"]["fps"] = 0
     with pytest.raises(ValueError):
         validate_actor(spec)
+
+
+def test_full_cast_and_event_vocabulary_are_declared():
+    from scripts.living_asset_contract import MARKER_KINDS, ROLES
+
+    assert set(ROLES) == {"traveler", "guide", "guard", "artisan"}
+    assert {role["label"] for role in ROLES.values()} == {"旅人", "嚮導", "守衛", "工匠"}
+    assert len({role["coat"] for role in ROLES.values()}) == 4
+    assert MARKER_KINDS == ("talk", "quest", "deliver", "investigate", "locked", "exit")
+    assert len(MARKER_KINDS) * 3 == 18

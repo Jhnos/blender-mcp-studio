@@ -14,7 +14,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 from scripts.blender_generator_runner import run_generator  # noqa: E402
 from scripts.living_actor_geometry import build_actor  # noqa: E402
-from scripts.living_asset_contract import CLIPS, DIRECTIONS, actor_spec  # noqa: E402
+from scripts.living_asset_contract import CLIPS, DIRECTIONS, ROLES, actor_spec  # noqa: E402
 
 OUT = ROOT / "models/living-actors"
 
@@ -54,7 +54,7 @@ def build() -> None:
         obj.name = "LW_" + name
         obj.data.energy, obj.data.size = energy, 5
         obj.rotation_euler = (-obj.location).to_track_quat("-Z", "Y").to_euler()
-    actors = {role: build_actor(role) for role in ("traveler", "guide")}
+    actors = {role: build_actor(role) for role in ROLES}
     specs = []
     for role, (rig, group) in actors.items():
         for _, other in actors.values():
@@ -80,15 +80,15 @@ def build() -> None:
         scene.render.filepath = str(OUT / (role + "-portrait.png"))
         bpy.ops.render.render(write_still=True)
         scene.camera = camera
-        specs.append(actor_spec(role, "旅人" if role == "traveler" else "嚮導"))
+        specs.append(actor_spec(role, str(ROLES[role]["label"])))
     for _rig, group in actors.values():
         for obj in group.objects:
             obj.hide_render = False
     # Catalog presentation uses translated roots; source frames always use origin zero.
-    actors["traveler"][0].location.x = -0.55
-    actors["guide"][0].location.x = 0.55
-    scene.render.resolution_x, scene.render.resolution_y = 768, 768
-    camera.data.ortho_scale = 3.5
+    for index, (rig, _) in enumerate(actors.values()):
+        rig.location.x = (index - 1.5) * 1.1
+    scene.render.resolution_x, scene.render.resolution_y = 1536, 768
+    camera.data.ortho_scale = 5.5
     scene.render.filepath = str(OUT / "actors-preview.png")
     bpy.ops.render.render(write_still=True)
     camera.data.ortho_scale = 3
@@ -106,7 +106,8 @@ def build() -> None:
         json.dumps(
             {
                 "schema_version": 1,
-                "content_version": "1.0.0",
+                "content_version": "2.0.0",
+                "marker_kinds": ["talk", "quest", "deliver", "investigate", "locked", "exit"],
                 "tile_pixels": 64,
                 "camera_source": "world-kit.blend:WK_sprite_camera",
                 "actors": specs,

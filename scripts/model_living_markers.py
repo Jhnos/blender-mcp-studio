@@ -12,6 +12,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 from scripts.blender_generator_runner import run_generator  # noqa: E402
 from scripts.blender_mesh_primitives import material  # noqa: E402
+from scripts.living_asset_contract import MARKER_KINDS  # noqa: E402
 
 OUT = ROOT / "models/living-actors"
 
@@ -39,7 +40,7 @@ def build() -> None:
     ink = material("LM_ink", (0.96, 0.91, 0.73, 1))
     colors = ((0.11, 0.14, 0.17, 1), (0.045, 0.31, 0.39, 1), (0.12, 0.34, 0.18, 1))
     all_groups = []
-    for kind_index, kind in enumerate(("talk", "quest", "deliver")):
+    for kind_index, kind in enumerate(MARKER_KINDS):
         for state in range(3):
             group = bpy.data.collections.new(f"LM_{kind}_{state}")
             scene.collection.children.link(group)
@@ -88,7 +89,7 @@ def build() -> None:
             elif kind == "quest":
                 mesh("stem", (0, 0.12, 0.11), (0.14, 0.42, 0.08), ink)
                 mesh("dot", (0, -0.25, 0.12), (0.10, 0.10, 0.06), ink, True)
-            else:
+            elif kind == "deliver":
                 mesh("parcel", (0, 0, 0.11), (0.59, 0.44, 0.08), ink)
                 mesh(
                     "ribbon-v",
@@ -97,6 +98,37 @@ def build() -> None:
                     material("LM_ribbon", (0.25, 0.13, 0.03, 1)),
                 )
                 mesh("ribbon-h", (0, 0, 0.17), (0.62, 0.065, 0.03), bpy.data.materials["LM_ribbon"])
+            elif kind == "investigate":
+                mesh("lens-rim", (-0.09, 0.10, 0.11), (0.25, 0.25, 0.055), ink, True)
+                mesh(
+                    "lens",
+                    (-0.09, 0.10, 0.17),
+                    (0.16, 0.16, 0.03),
+                    material("LM_lens", (0.06, 0.18, 0.24, 1)),
+                    True,
+                )
+                handle = mesh("handle", (0.18, -0.18, 0.13), (0.10, 0.34, 0.055), ink)
+                handle.rotation_euler.z = 0.72
+            elif kind == "locked":
+                mesh("lock-body", (0, -0.12, 0.11), (0.47, 0.38, 0.075), ink)
+                mesh("shackle-top", (0, 0.30, 0.11), (0.36, 0.075, 0.075), ink)
+                for x in (-0.145, 0.145):
+                    mesh("shackle-side", (x, 0.18, 0.11), (0.075, 0.25, 0.075), ink)
+                mesh(
+                    "keyhole",
+                    (0, -0.10, 0.17),
+                    (0.055, 0.08, 0.03),
+                    material("LM_keyhole", (0.04, 0.06, 0.08, 1)),
+                    True,
+                )
+            else:
+                mesh("door-post", (-0.30, 0, 0.11), (0.065, 0.69, 0.08), ink)
+                mesh("door-top", (-0.09, 0.31, 0.11), (0.46, 0.065, 0.08), ink)
+                mesh("door-bottom", (-0.09, -0.31, 0.11), (0.46, 0.065, 0.08), ink)
+                mesh("arrow-stem", (0.13, 0, 0.13), (0.42, 0.075, 0.08), ink)
+                for y, angle in ((0.075, 0.8), (-0.075, -0.8)):
+                    tip = mesh("arrow-tip", (0.32, y, 0.13), (0.07, 0.24, 0.08), ink)
+                    tip.rotation_euler.z = angle
             # State is encoded by both shape and color: dot/diamond/check in the corner.
             if state == 0:
                 mesh("unavailable", (0.34, -0.34, 0.22), (0.22, 0.045, 0.035), ink)
@@ -117,14 +149,14 @@ def build() -> None:
         for obj in group.objects:
             obj.location += Vector(((i % 3) * 1.5, (i // 3) * 1.5, 0))
             obj.hide_render = False
-    camera.location = Vector((1.5, 1.5, 6))
-    camera.data.ortho_scale = 5
-    scene.render.resolution_x = scene.render.resolution_y = 768
+    camera.location = Vector((1.5, 3.75, 6))
+    camera.data.ortho_scale = 9.5
+    scene.render.resolution_x, scene.render.resolution_y = 768, 1536
     scene.render.filepath = str(OUT / "markers-preview.png")
     bpy.ops.render.render(write_still=True)
     scene.render.filepath = "//markers-preview.png"
     bpy.ops.wm.save_as_mainfile(filepath=str(OUT / "living-markers.blend"))
-    print("LIVING_MARKERS_GENERATED", 9)
+    print("LIVING_MARKERS_GENERATED", len(MARKER_KINDS) * 3)
 
 
 if __name__ == "__main__":
