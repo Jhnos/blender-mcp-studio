@@ -10,10 +10,20 @@ import json
 import random
 import socket
 import ssl
+import sys
 import time
 import urllib.request
+from pathlib import Path
 
-from src.infrastructure.narrowing import (
+# Every other verifier in this directory does this; this one never did, so it
+# raised ModuleNotFoundError on its first line of real work. Nobody noticed
+# because it is not in ci.sh — an unreferenced script and a broken one look
+# identical from outside.
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+from src.infrastructure.narrowing import (  # noqa: E402
     as_sequence,
     as_str,
     as_str_keyed_exact,
