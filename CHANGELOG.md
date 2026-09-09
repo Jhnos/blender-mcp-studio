@@ -5,6 +5,13 @@
 
 ## [Unreleased]
 
+### V01.0R.004 — 任務 09(核心邊界收債)使用者驗收,歸檔
+
+#### Changed
+
+- 使用者 2026-09-09「09 可以歸檔」:`docs/tasks/09_core-boundaries.md` → `archive/`,索引改列已驗收。
+  `docs/tasks/` 現在沒有 ACTIVE 任務——剩下唯一一件是 07 印試片(WAITING-ON-USER),不捏造進行中任務。
+
 ### V01.0R.003 — 件數守衛的整字比對真的是整字
 
 #### Fixed
