@@ -181,6 +181,10 @@ FastAPI 的 lifespan 擁有 Blender 的 connect/disconnect；組合後的 FastMC
   輸入只有 slug，而 slug 只能索引 `HAND_INSTANCES` 這個封閉集合。程式碼字串由登錄表條目
   單獨決定，由 `test_generation_code_is_registry_derived.py` 釘住——這是「沒有 client 能作者
   `execute_code`」這句話在 REST 側的實作。
+- 產生器需要 `importlib` 重載模組，而 sandbox 擋 `importlib`。豁免的形式是**一組字串**
+  而不是一個受信任的呼叫者：`authorized_generator_code()` 由登錄表與各自的契約在啟動時推導，
+  只有**逐字相同**的字串跳過 blocklist；差一個字元、或在後面接上任何東西，都照舊被擋。
+  `test_sandbox_generator_exemption.py` 連反向測試一起釘住。
 - annotations 是 host UX hint，**不是** authorization；identity middleware 與
   registry 才是實際強制的邊界。
 - `clientInfo.name` 可被觀測作協定遙測，但不參與 authorization、catalog 或

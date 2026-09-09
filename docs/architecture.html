@@ -116,7 +116,7 @@
       "id": "generation_adapter", "level": "adapter", "label": "BlenderInstanceBuilder",
       "responsibility": "Run one instance's generator in the shared Blender and measure the exported meshes",
       "inputs": ["HandInstance"], "outputs": ["InstanceBuild"],
-      "invariants": ["reload list comes from the derived contract, never retyped", "face count and dimensions, never a hash", "no request data reaches the generated code"], "dependsOn": ["blender_adapter"],
+      "invariants": ["reload list comes from the derived contract, never retyped", "face count and dimensions, never a hash", "no request data reaches the generated code", "sandbox admits the string, not the caller: byte-for-byte equality with the registry derivation"], "dependsOn": ["blender_adapter"],
       "adr": "docs/tasks/10_generation-delivery-path.md §Specification", "status": "confirmed",
       "anchor": {"path": "src/adapters/generation/blender_instance_builder.py", "kind": "class", "symbol": "BlenderInstanceBuilder"}
     },
