@@ -5,6 +5,21 @@
 
 ## [Unreleased]
 
+### V01.0R.00D — 發布 models/hand-gripper/(使用者 Lane B 通過)
+
+#### Added
+
+- `models/hand-gripper/`:五個網格、blend、三張圖與 manifest。件數九節、兩個零件號
+  (三個近端、六個遠端),佈局 137.0 × 80.5 mm。
+- `tests/unit/scripts/test_hand_gripper_print_package.py`:位元組逐項對照;README 的
+  件數詞、尺寸三元組、對指距離與靜止淨距都由網格與規格反推驗證。另加一條「掌盤必須比
+  四指版窄」——如果哪天不成立,代表列數已經碰不到幾何了。
+- `ci.sh --real` 增加 `hand-gripper regenerated package matches shipped`;真機 **31 條全綠**。
+
+#### Changed
+
+- `docs/hand-framework/v8-results.md`:`hand-gripper` 轉為已發布。
+
 ### V01.0R.00C — 第四個實例 hand-gripper:兩指＋對位拇指,走產品路徑建成
 
 #### Added
