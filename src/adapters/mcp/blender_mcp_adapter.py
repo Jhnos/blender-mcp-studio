@@ -6,9 +6,11 @@ import asyncio
 import contextlib
 import json
 import logging
+from dataclasses import replace
 
 from src.adapters.blender_scene_decoding import decode_object_details, decode_scene_summary
 from src.adapters.mcp.blender_tool_codegen import is_translatable, translate
+from src.adapters.scene_listing import list_scene_objects
 from src.adapters.viewport_capture import capture_viewport
 from src.core.domain.command import Command
 from src.core.domain.exceptions import BlenderConnectionError, SceneOperationError
@@ -290,7 +292,17 @@ class BlenderMCPAdapter(BlenderPort):
         return result
 
     async def scene_summary(self) -> SceneSummary:
-        return decode_scene_summary(await self._query("get_scene_info", {}))
+        """Metadata from the addon, the object list from a bounded read of our own.
+
+        The addon's summary caps its list at ten while reporting the true total,
+        so taking both from it produced a summary that contradicted itself for
+        every real scene.
+        """
+        summary = decode_scene_summary(await self._query("get_scene_info", {}))
+        objects, truncated = await list_scene_objects(
+            lambda code: self._query(_EXECUTE_CODE_TOOL, {"code": code})
+        )
+        return replace(summary, objects=objects, objects_truncated=truncated)
 
     async def object_details(self, name: str) -> ObjectDetails:
         return decode_object_details(await self._query("get_object_info", {"name": name}))

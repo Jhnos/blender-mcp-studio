@@ -75,6 +75,12 @@ class SceneSummary:
     object_count: int
     materials_count: int
     objects: tuple[SceneObjectSummary, ...]
+    #: True when `objects` holds fewer entries than `object_count` because a cap
+    #: was reached. Stated rather than inferred: a reader comparing the two
+    #: numbers cannot tell a cap from objects that failed to decode, and the
+    #: previous behaviour — silently listing the first ten of two hundred — is
+    #: exactly what this field exists to make visible.
+    objects_truncated: bool = False
 
 
 @dataclass(frozen=True, slots=True)
