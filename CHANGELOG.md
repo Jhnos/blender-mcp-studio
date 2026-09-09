@@ -5,6 +5,14 @@
 
 ## [Unreleased]
 
+### V01.0R.009 — 任務 10 驗收歸檔,開任務 11(碎片預算改由實測支撐)
+
+#### Changed
+
+- 使用者 2026-09-09「10 可以歸檔」:`docs/tasks/10_generation-delivery-path.md` → `archive/`。
+- `docs/tasks/11_determinism-budget.md`:探針從第一站的單指擴到所有 `chains` 與 `palm`,
+  量測落檔並帶日期;`sliver_budgets()` 小於實測值即紅。明確不碰幾何,`models/` 位元組不動。
+
 ### V01.0R.008 — 產生器接上交付路徑,真機 27 條全綠
 
 #### Added

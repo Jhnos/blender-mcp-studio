@@ -1,6 +1,6 @@
 # 參數化產生器接上交付路徑
 
-**Status:** AWAITING-ACCEPTANCE
+**Status:** ACCEPTED (2026-09-09)
 
 ## Goal
 

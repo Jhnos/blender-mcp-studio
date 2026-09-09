@@ -2,18 +2,21 @@
 
 Read this file first after a new conversation, compaction, or terminal restart.
 
-## 接手(2026-09-09,V01.0R.008)
+## 接手(2026-09-09,V01.0R.009)
 
-- **等驗收:** 10 參數化產生器接上交付路徑已完成,`--real` 27 條全綠。
-  使用者 2026-09-09 選定的三步順序是 **10 → 決定性閘門硬化 → 第四個實例**;
-  10 驗收後才動下一步。
+- **進行中:** 11 碎片預算改由實測支撐——`SLIVER_TRIANGLES_PER_PART = 2` 目前只有規劃推導、
+  沒有量測背書;決定性探針也只涵蓋第一站的單指。本任務**不碰幾何**,`models/` 位元組不動。
+- 使用者 2026-09-09 選定的三步順序是 **交付路徑 → 決定性閘門硬化 → 第四個實例**;
+  10 已驗收歸檔,現在是第二步。
+- **在等使用者的:** 07 印 V3 指節試片並量七項(`scripts/analyse_coupon.py --instance hand-v3` 判讀)。
+- **閘門只在 Mac 跑**;Windows 端改碼、只 stage 明確路徑。
 - **在等使用者的:** 07 印 V3 指節試片並量七項(`scripts/analyse_coupon.py --instance hand-v3` 判讀)。
 - **接手第一步:** `git log --oneline -5`,然後讀 10 號任務檔的 hand-off 段。
 - **閘門只在 Mac 跑**;Windows 端改碼、只 stage 明確路徑。
 
 | State | Task | Priority |
 |---|---|---|
-| AWAITING-ACCEPTANCE | [`10_generation-delivery-path.md`](10_generation-delivery-path.md) | **參數化產生器接上交付路徑**——port + use case + REST endpoint,走既有 `AppRuntime` 與同一條 socket;sandbox 的豁免鍵在逐字相同的推導字串而非呼叫者;MCP 九項 catalog 未動。`--real` 27 條全綠,交付路徑閘門 5/5 重現已發布的包 |
+| ACTIVE | [`11_determinism-budget.md`](11_determinism-budget.md) | **碎片預算改由實測支撐**——探針從第一站的單指擴到所有 `chains` 與 `palm`,量測落檔並帶日期;預算小於實測值即紅。不碰幾何 |
 | WAITING-ON-USER | [`07_hand-v3-coupon.md`](07_hand-v3-coupon.md) | **印一件指節、量七項公差**——幾何側全部完成且真機驗證通過,往下每一件事都要從這一件實體反推。**使用者執行** |
 | AWAITING-ACCEPTANCE | [`06_hand-v3.md`](06_hand-v3.md) | 靈巧手 V3:文件樹 21 檔 + 追溯矩陣 22 條;域規格、手指、掌盤、整手、佈局全部做完,兩份真機契約 11/11 全綠,印製包已發布;**實體列印與台架量測未做** |
 | AWAITING-ACCEPTANCE | [`05_octopus-hand-v2.md`](05_octopus-hand-v2.md) | 章魚手 V2:角點對齊手臂 + 加強莖 + 瞄準式抓取墊 + 每臂電線孔 + 全面倒角;兩份契約真機全綠,包已發布;實體列印未做,視覺 rubric 未判 |
@@ -22,6 +25,8 @@ Read this file first after a new conversation, compaction, or terminal restart.
 | AWAITING-ACCEPTANCE | [`02_tendon-universal-joint.md`](02_tendon-universal-joint.md) | V6 PIN models checksum-controlled under models/ (PR #4 merged 2026-09-05, `901cb53`); physical print coupon remains |
 
 `WAITING-ON-USER` = 機器側已完成,下一步只有使用者能做(印、量、裁決);它不是 ACTIVE,checkpoint 不會把它當進行中。
+
+Accepted 2026-09-09: [`archive/10_generation-delivery-path.md`](archive/10_generation-delivery-path.md) — 參數化產生器接上交付路徑:`POST /api/instances/{slug}/build` 與 `GET /api/instances`,sandbox 的豁免鍵在逐字相同的推導字串而非呼叫者;`--real` 27 條全綠,交付路徑閘門 5/5 重現已發布的包;使用者「10 可以歸檔」(V01.0R.009)。
 
 Accepted 2026-09-09: [`archive/09_core-boundaries.md`](archive/09_core-boundaries.md) — 核心邊界收債:port 回傳 typed DTO、外部服務與 LLM provider 的 domain error → 502、孤島刪除;使用者「09 可以歸檔」(V01.0R.004)。
 
