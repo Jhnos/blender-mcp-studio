@@ -5,6 +5,19 @@
 
 ## [Unreleased]
 
+### V01.0R.006 — 開任務 10:參數化產生器接上交付路徑
+
+#### Added
+
+- `docs/tasks/10_generation-delivery-path.md`:把「產生一個已註冊的機械實例」做成 port + use case + REST endpoint,
+  走既有 `AppRuntime` 與同一條序列化 socket。範圍限手實例三個 slug;MCP 的九項 catalog 明文不動
+  (`docs/01-architecture.md:177` 是刻意的安全邊界,不是債)。輸入只有 slug,request body 不得參與產生器程式碼組裝。
+
+#### Changed
+
+- `docs/tasks/00_INDEX.md`:新增 ACTIVE 列與新的接手段;使用者 2026-09-09 選定三步順序
+  「交付路徑 → 決定性閘門硬化 → 第四個實例」。
+
 ### V01.0R.005 — 5S:死腳本歸檔、接手 SOP 補「沒有任務」的情況、決定性探針入庫
 
 #### Added
