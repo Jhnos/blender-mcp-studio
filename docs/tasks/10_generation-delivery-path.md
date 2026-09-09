@@ -1,6 +1,6 @@
 # 參數化產生器接上交付路徑
 
-**Status:** ACTIVE
+**Status:** AWAITING-ACCEPTANCE
 
 ## Goal
 
@@ -78,18 +78,18 @@ CI 專用路徑。做完之後，第四個實例可以用產品做出來，不�
   上回三個實例與各自宣告的檔案清單（2026-09-09 實測）。
 - `--real` 既有 26 條閘門在重啟後**全部照舊通過**——新路徑沒有改到任何既有行為。
 
+- **sandbox 相撞已解，形式由使用者裁決（2026-09-09）**：`BlenderCodeSandbox` 擋 `importlib`，
+  而產生器必須 `importlib.reload` 才能讓常駐 Blender 吃到新碼。豁免的是**一組字串**，
+  不是一個受信任的呼叫者——`authorized_generator_code()` 在啟動時由登錄表與各自的契約
+  推導，只有逐字相同的字串跳過 blocklist。builder 與 sandbox 共用同一個
+  `generator_code_for`，不留兩份會漂移的推導。
+- `--real` **27 條全綠**（2026-09-09，含新閘門）。交付路徑那條實測 10 s，
+  5/5 網格重現已發布的包（整手 48248 面，落在碎片預算內），API 回報的數字與磁碟位元組一致。
+
 ### Open failures
 
-- **`hand-compact built through the REST delivery path` 紅（HTTP 502）。**
-  端點回的訊息是 `Security: blocked code (importlib — dynamic import)`。
-  這不是 bug，是設計相撞：`BlenderMCPAdapter._dispatch` 對每一次 `execute_code`
-  套 `BlenderCodeSandbox`，而它的 blocklist 擋 `importlib`、`sys`、`subprocess`；
-  產生器 bootstrap 正好要用 `importlib.reload` 才能讓常駐 Blender 吃到新碼
-  （`docs/LESSONS_LEARNED.md:33` 說明為什麼不能不 reload）。
-  現行 CI 路徑之所以能跑，是因為它**直連 socket、根本沒經過 sandbox**。
-  取捨與選項見任務討論；未經使用者裁決前不動 sandbox。
+- 無。剩下的只有使用者驗收。
 
 ### Next step
 
-- 使用者裁決 sandbox 的豁免形式後實作；預設方案是「逐字比對由登錄表＋契約重新
-  推導出來的字串才放行」，並附 should-fire。
+- 使用者裁決是否歸檔；歸檔後照既定順序做決定性閘門硬化，再做第四個實例。

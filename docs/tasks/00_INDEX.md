@@ -2,18 +2,18 @@
 
 Read this file first after a new conversation, compaction, or terminal restart.
 
-## 接手(2026-09-09,V01.0R.006)
+## 接手(2026-09-09,V01.0R.008)
 
-- **進行中:** 10 參數化產生器接上交付路徑——把「產生一個已註冊的實例」做成 port + use case + REST,
-  讓平台自己做得到這五輪一直在做的事。使用者 2026-09-09 選定的三步順序是
-  **10 → 決定性閘門硬化 → 第四個實例**。
+- **等驗收:** 10 參數化產生器接上交付路徑已完成,`--real` 27 條全綠。
+  使用者 2026-09-09 選定的三步順序是 **10 → 決定性閘門硬化 → 第四個實例**;
+  10 驗收後才動下一步。
 - **在等使用者的:** 07 印 V3 指節試片並量七項(`scripts/analyse_coupon.py --instance hand-v3` 判讀)。
 - **接手第一步:** `git log --oneline -5`,然後讀 10 號任務檔的 hand-off 段。
 - **閘門只在 Mac 跑**;Windows 端改碼、只 stage 明確路徑。
 
 | State | Task | Priority |
 |---|---|---|
-| ACTIVE | [`10_generation-delivery-path.md`](10_generation-delivery-path.md) | **參數化產生器接上交付路徑**——port + use case + REST endpoint,走既有 `AppRuntime` 與同一條 socket;MCP 的九項 catalog 不動。範圍限手實例三個 slug |
+| AWAITING-ACCEPTANCE | [`10_generation-delivery-path.md`](10_generation-delivery-path.md) | **參數化產生器接上交付路徑**——port + use case + REST endpoint,走既有 `AppRuntime` 與同一條 socket;sandbox 的豁免鍵在逐字相同的推導字串而非呼叫者;MCP 九項 catalog 未動。`--real` 27 條全綠,交付路徑閘門 5/5 重現已發布的包 |
 | WAITING-ON-USER | [`07_hand-v3-coupon.md`](07_hand-v3-coupon.md) | **印一件指節、量七項公差**——幾何側全部完成且真機驗證通過,往下每一件事都要從這一件實體反推。**使用者執行** |
 | AWAITING-ACCEPTANCE | [`06_hand-v3.md`](06_hand-v3.md) | 靈巧手 V3:文件樹 21 檔 + 追溯矩陣 22 條;域規格、手指、掌盤、整手、佈局全部做完,兩份真機契約 11/11 全綠,印製包已發布;**實體列印與台架量測未做** |
 | AWAITING-ACCEPTANCE | [`05_octopus-hand-v2.md`](05_octopus-hand-v2.md) | 章魚手 V2:角點對齊手臂 + 加強莖 + 瞄準式抓取墊 + 每臂電線孔 + 全面倒角;兩份契約真機全綠,包已發布;實體列印未做,視覺 rubric 未判 |

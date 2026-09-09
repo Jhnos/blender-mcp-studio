@@ -5,6 +5,25 @@
 
 ## [Unreleased]
 
+### V01.0R.008 — 產生器接上交付路徑,真機 27 條全綠
+
+#### Added
+
+- `POST /api/instances/{slug}/build` 與 `GET /api/instances`:產生一個已註冊的機械實例現在是產品能力,
+  不再只有 CI 腳本做得到。`MechanicalGenerationService` + `InstanceBuilderPort` + `BlenderInstanceBuilder`,
+  走既有 `AppRuntime` 與同一條序列化 socket。輸入只有 slug;產出的零件清單與登錄表宣告不符即 502。
+- `src/adapters/generation/authorized_code.py`:sandbox 的豁免是**一組由登錄表推導的字串**,
+  不是受信任的呼叫者。只有逐字相同才跳過 blocklist,差一個字元或後接內容都照擋。
+- `scripts/verify/generation_delivery_verify_real.py`:清空 `tmp/hand-compact/` 後走公開 REST 端點重建,
+  比 API 回報的數字與磁碟位元組,再對已發布 manifest 走同一份碎片預算。實測 10 s,5/5 重現。
+- `tests/unit/adapters/test_sandbox_generator_exemption.py`、`test_generation_code_is_registry_derived.py`:
+  含反向測試(改一個字元就該被擋)。
+
+#### Changed
+
+- `docs/architecture.html` 多兩個節點四條邊;`docs/01-architecture.md` 記錄生成端點的輸入面與豁免形式;
+  `docs/30-verification.md` 新增閘門列與順序理由(交付路徑必須最後跑)。
+
 ### V01.0R.006 — 開任務 10:參數化產生器接上交付路徑
 
 #### Added
