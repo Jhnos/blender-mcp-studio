@@ -1,0 +1,77 @@
+{
+  "files": {
+    "compact_assembly.png": {
+      "bytes": 1192737,
+      "sha256": "cac681f928235c6e9ee74562093efb9fed57cd8338ae55ee5a1ac795932cf893"
+    },
+    "compact_joint_detail.png": {
+      "bytes": 970976,
+      "sha256": "5e8fe522d92a145dd39f595e79633bd5d6c7fe9f8b971fb6c6d55235d23d276f"
+    },
+    "compact_print_layout.png": {
+      "bytes": 1664904,
+      "sha256": "c0439fa241df7a7f487d155c3a34fb91934bc3e92595fc65f9118536e6088826"
+    },
+    "finger_compact_mm.stl": {
+      "bytes": 447584,
+      "dimensions_mm": [
+        17.000006675720215,
+        15.00000286102295,
+        149.0
+      ],
+      "sha256": "c8fa0e076f88ea7b41949eb7b864fecc1778172609839181b9e50e861d9d71d6",
+      "triangle_count": 8950
+    },
+    "hand_compact.blend": {
+      "bytes": 1637177,
+      "sha256": "1dded10f6d8aeccc928d10f126fbf8436b5ac331874383a52cff69a7febfd880"
+    },
+    "hand_compact_mm.stl": {
+      "bytes": 2412284,
+      "dimensions_mm": [
+        110.0,
+        30.02602195739746,
+        230.50000381469727
+      ],
+      "sha256": "9258d356513d0bf384b25a5495f40bf89403431a94739c3ace28aaab10ad37a7",
+      "triangle_count": 48244
+    },
+    "palm_mm.stl": {
+      "bytes": 174984,
+      "dimensions_mm": [
+        110.0,
+        29.999998092651367,
+        86.50000381469727
+      ],
+      "sha256": "9d9096441d760392a39bf8e19682d3ab688d7174b1eb9caff60f6e6a3cbe3438",
+      "triangle_count": 3498
+    },
+    "phalanx_base_mm.stl": {
+      "bytes": 148984,
+      "dimensions_mm": [
+        17.000006675720215,
+        15.00000286102295,
+        53.0
+      ],
+      "sha256": "201966c567a0910a0e5501000b215cfd8844026e2d165cc9c5b2b5c2372dd49c",
+      "triangle_count": 2978
+    },
+    "phalanx_distal_mm.stl": {
+      "bytes": 149384,
+      "dimensions_mm": [
+        17.000006675720215,
+        15.00000286102295,
+        53.0
+      ],
+      "sha256": "bb4c87444c97a8a5db572a3130f58b728365626f960dd854595cb912951348ab",
+      "triangle_count": 2986
+    }
+  },
+  "model_revision": "hand-compact-V1",
+  "source_generator": "scripts/model_hand_compact.py",
+  "units": "mm",
+  "verification_contracts": [
+    "scripts/verify/contracts/hand_compact.json",
+    "scripts/verify/contracts/hand_compact_finger.json"
+  ]
+}
