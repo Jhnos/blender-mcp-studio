@@ -30,8 +30,10 @@ scripts/ci.sh --real   # T3 REST/MCP/readiness/batch + hand-v3 契約與重現�
 | hollow side hinge | 生成 | 3 |
 | octopus hand V1 ×2 | 生成、同場景 tips | 20 |
 | octopus hand V2 ×2 | 生成、同場景 tips | 26 |
+| generation delivery path | **清空** `tmp/hand-compact/`，走公開 REST endpoint 重建，比 API 回報的數字與磁碟上的位元組，再對 `models/hand-compact/manifest.json` 走同一份碎片預算 | 未量（首跑後補） |
 
-順序是硬的：手指契約重用手契約生成的場景；差分讀那次生成匯出的 STL。三條由
+順序是硬的：手指契約重用手契約生成的場景；差分讀那次生成匯出的 STL；
+交付路徑閘門**最後**跑，因為它會清空 `tmp/hand-compact/` 再自己重建——排在前面就會抽掉別人的輸入。三條由
 `test_real_ci_gates_the_hand_contracts` 釘在 `ci.sh` 裡；`test_real_ci_runs_every_contract` 釘住 `contracts/` 下
 **每一個**檔案都在 `--real`、走對的 checker、且場景重用有先生成（[[DEFERRALS]] D-004，2026-09-09 `done`）。整個 T3 約 75 s。
 

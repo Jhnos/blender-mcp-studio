@@ -112,6 +112,7 @@ def _runtime(blender: BlenderPort) -> AppRuntime:
         snapshot_store=marker,
         polyhaven=marker,
         text3d=None,
+        mechanical_generation=marker,
         conversational_modeling=marker,
         modeling_pipeline=marker,
         iterative_refinement=None,

@@ -46,9 +46,9 @@
 | 層 | 主要構件 | 責任 |
 |---|---|---|
 | Presentation | FastAPI routers、FastMCP server | HTTP/WS/MCP framing、schema。**不做 error mapping、不組裝 use case、不含 `bpy` 原始碼** |
-| Application | `AppRuntime`、`SceneOperationsService`、`PrintReadinessService`、`BatchTransformService` | composition、lifecycle、use-case orchestration |
+| Application | `AppRuntime`、`SceneOperationsService`、`PrintReadinessService`、`BatchTransformService`、`MechanicalGenerationService` | composition、lifecycle、use-case orchestration |
 | Domain | scene/print-readiness/batch-transform immutable values、窄 ports | Client-neutral language 與 inward dependency contract |
-| Adapter | `BlenderMCPAdapter`、`BlenderPrintReadinessAdapter`、`BlenderBatchTransformAdapter`、`src/adapters/blender_scripts/`、`BlenderSocketClient` | addon translation、inspection、single-Undo batch mutation、**`bpy` 腳本 ACL**、locking、TCP |
+| Adapter | `BlenderMCPAdapter`、`BlenderPrintReadinessAdapter`、`BlenderBatchTransformAdapter`、`BlenderInstanceBuilder`、`src/adapters/blender_scripts/`、`BlenderSocketClient` | addon translation、inspection、single-Undo batch mutation、**`bpy` 腳本 ACL**、locking、TCP |
 | Engine | Blender + addon | 執行 `bpy` 並保存 3D scene state |
 
 ### Web frontend 模組邊界
@@ -177,6 +177,10 @@ FastAPI 的 lifespan 擁有 Blender 的 connect/disconnect；組合後的 FastMC
 - `/api/health` 是**唯一**的 identity exemption，存在理由是讓 watchdog 探測 process。
 - MCP public catalog 固定九項 curated tools，刻意不含 `execute_code`；第九項
   `check_print_readiness` 是唯讀、冪等且 30 秒 timeout。
+- `POST /api/instances/{slug}/build` 會在 Blender 裡跑 Python，所以它**沒有 request body**：
+  輸入只有 slug，而 slug 只能索引 `HAND_INSTANCES` 這個封閉集合。程式碼字串由登錄表條目
+  單獨決定，由 `test_generation_code_is_registry_derived.py` 釘住——這是「沒有 client 能作者
+  `execute_code`」這句話在 REST 側的實作。
 - annotations 是 host UX hint，**不是** authorization；identity middleware 與
   registry 才是實際強制的邊界。
 - `clientInfo.name` 可被觀測作協定遙測，但不參與 authorization、catalog 或

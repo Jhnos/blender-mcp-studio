@@ -19,6 +19,7 @@ from src.core.ports.vision_port import VisionPort
 from src.core.use_cases.batch_transform import BatchTransformService
 from src.core.use_cases.conversational_modeling import ConversationalModelingUseCase
 from src.core.use_cases.iterative_refinement import IterativeRefinementUseCase
+from src.core.use_cases.mechanical_generation import MechanicalGenerationService
 from src.core.use_cases.modeling_pipeline import ModelingPipelineUseCase
 from src.core.use_cases.print_readiness import PrintReadinessService
 from src.core.use_cases.scene_export import SceneExportService
@@ -44,6 +45,7 @@ class AppRuntime:
     snapshot_store: SnapshotStorePort
     polyhaven: PolyHavenPort
     text3d: Text3DGenerationPort | None
+    mechanical_generation: MechanicalGenerationService
 
     # Use cases are assembled here, not in delivery adapters. Building them in a
     # router hides the wiring behind ``app.state``'s ``Any`` and puts a
@@ -60,6 +62,7 @@ def build_runtime(env_file: Path | None = None) -> AppRuntime:
     from src.adapters.events.in_memory_event_bus import InMemoryEventBus
     from src.adapters.export.blender_scene_exporter import BlenderSceneExportAdapter
     from src.adapters.factory.concrete_adapter_factory import ConcreteAdapterFactory
+    from src.adapters.generation.blender_instance_builder import BlenderInstanceBuilder
     from src.adapters.mcp.factory import build_blender_adapter
     from src.adapters.polyhaven.polyhaven_adapter import PolyHavenAdapter
     from src.adapters.print_readiness.blender_print_readiness import BlenderPrintReadinessAdapter
@@ -96,6 +99,7 @@ def build_runtime(env_file: Path | None = None) -> AppRuntime:
         snapshot_store=SQLiteSnapshotStore(),
         polyhaven=PolyHavenAdapter(),
         text3d=build_text3d_adapter(),
+        mechanical_generation=MechanicalGenerationService(BlenderInstanceBuilder(blender)),
         conversational_modeling=ConversationalModelingUseCase(
             llm=llm,
             blender=blender,

@@ -105,6 +105,22 @@
       "anchor": {"path": "src/core/use_cases/batch_transform.py", "kind": "class", "symbol": "BatchTransformService"}
     },
     {
+      "id": "generation_service", "level": "application", "label": "MechanicalGenerationService",
+      "responsibility": "Resolve a registered instance slug and check the build against the part list it declares",
+      "inputs": ["instance slug"], "outputs": ["InstanceBuild"],
+      "invariants": ["the registry is the whole input surface", "a build that contradicts the declared part list is an error, not a result"], "dependsOn": ["generation_adapter"],
+      "adr": "docs/tasks/10_generation-delivery-path.md §Specification", "status": "confirmed",
+      "anchor": {"path": "src/core/use_cases/mechanical_generation.py", "kind": "class", "symbol": "MechanicalGenerationService"}
+    },
+    {
+      "id": "generation_adapter", "level": "adapter", "label": "BlenderInstanceBuilder",
+      "responsibility": "Run one instance's generator in the shared Blender and measure the exported meshes",
+      "inputs": ["HandInstance"], "outputs": ["InstanceBuild"],
+      "invariants": ["reload list comes from the derived contract, never retyped", "face count and dimensions, never a hash", "no request data reaches the generated code"], "dependsOn": ["blender_adapter"],
+      "adr": "docs/tasks/10_generation-delivery-path.md §Specification", "status": "confirmed",
+      "anchor": {"path": "src/adapters/generation/blender_instance_builder.py", "kind": "class", "symbol": "BlenderInstanceBuilder"}
+    },
+    {
       "id": "blender_adapter", "level": "adapter", "label": "BlenderMCPAdapter",
       "responsibility": "Translate client-neutral commands to the addon dialect at one chokepoint",
       "inputs": ["BlenderPort commands"], "outputs": ["execute_code addon calls"],
@@ -161,6 +177,10 @@
     {"from": "app_runtime", "to": "scene_service", "contract": "constructs once", "data": "same service", "critical": true},
     {"from": "app_runtime", "to": "print_service", "contract": "constructs once", "data": "same service", "critical": true},
     {"from": "app_runtime", "to": "batch_service", "contract": "constructs once", "data": "same service", "critical": true},
+    {"from": "rest_ws", "to": "generation_service", "contract": "InstanceCatalogPort", "data": "instance slug"},
+    {"from": "app_runtime", "to": "generation_service", "contract": "constructs once", "data": "same service", "critical": true},
+    {"from": "generation_service", "to": "generation_adapter", "contract": "InstanceBuilderPort", "data": "HandInstance / InstanceBuild", "critical": true},
+    {"from": "generation_adapter", "to": "blender_adapter", "contract": "BlenderPort", "data": "registry-derived execute_code", "critical": true},
     {"from": "scene_service", "to": "blender_adapter", "contract": "BlenderPort", "data": "Command / ToolResult", "critical": true},
     {"from": "print_service", "to": "print_adapter", "contract": "PrintReadinessPort", "data": "inspection spec/result", "critical": true},
     {"from": "print_adapter", "to": "blender_adapter", "contract": "BlenderPort", "data": "bounded read-only execute_code", "critical": true},

@@ -21,6 +21,7 @@ from api.routers import (
     batch_transform,
     chat,
     generate3d,
+    generation,
     history,
     materials,
     objects,
@@ -39,6 +40,7 @@ from src.core.domain.exceptions import (
     DomainError,
     ExternalServiceError,
     LLMConnectionError,
+    UnknownInstanceError,
 )
 
 logger = logging.getLogger(__name__)
@@ -118,6 +120,7 @@ def _publish_runtime_state(app: FastAPI, runtime: AppRuntime) -> None:
     app.state.snapshot_store = runtime.snapshot_store
     app.state.polyhaven = runtime.polyhaven
     app.state.text3d = runtime.text3d
+    app.state.mechanical_generation = runtime.mechanical_generation
     app.state.conversational_modeling = runtime.conversational_modeling
     app.state.modeling_pipeline = runtime.modeling_pipeline
     app.state.iterative_refinement = runtime.iterative_refinement
@@ -129,9 +132,11 @@ def _register_domain_error_handlers(app: FastAPI) -> None:
 
     Registration order does not matter, but *specificity* does: Starlette walks
     ``type(exc).__mro__`` and takes the first registered class it finds. Because
-    ``BlenderConnectionError`` and ``LLMConnectionError`` inherit from
-    ``DomainError`` directly, they are found before the base class and keep their
-    503. Registering only ``DomainError`` would silently collapse every 503 into
+    ``BlenderConnectionError``, ``LLMConnectionError`` and
+    ``UnknownInstanceError`` inherit from ``DomainError`` directly, they are
+    found before the base class and keep their 503 (or, for an unregistered
+    instance slug, 404). Registering only ``DomainError`` would collapse every
+    one of those into
     a 422 — ``tests/e2e/test_rest_error_contract.py`` asserts the hierarchy this
     depends on, so the assumption cannot rot unnoticed.
 
@@ -155,8 +160,12 @@ def _register_domain_error_handlers(app: FastAPI) -> None:
         logger.warning("external service failed: %s", exc)
         return JSONResponse(status_code=502, content={"detail": str(exc)})
 
+    async def _not_found(_: Request, exc: Exception) -> JSONResponse:
+        return JSONResponse(status_code=404, content={"detail": str(exc)})
+
     app.add_exception_handler(BlenderConnectionError, _unavailable)
     app.add_exception_handler(LLMConnectionError, _unavailable)
+    app.add_exception_handler(UnknownInstanceError, _not_found)
     app.add_exception_handler(ExternalServiceError, _bad_gateway)
     app.add_exception_handler(DomainError, _unprocessable)
 
@@ -226,6 +235,7 @@ def create_app(
     app.include_router(batch_transform.router)
     app.include_router(scene_export.router)
     app.include_router(print_readiness.router)
+    app.include_router(generation.router)
 
     @app.get("/api/health")
     async def health() -> dict[str, str]:

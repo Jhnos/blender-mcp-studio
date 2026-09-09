@@ -57,3 +57,22 @@ class LLMProviderError(ExternalServiceError):
 
 class BlenderConnectionError(DomainError):
     """Raised when Blender MCP socket is unreachable."""
+
+
+class UnknownInstanceError(DomainError):
+    """A build was asked for a slug that is not in the instance registry.
+
+    The registry is the whole input surface of the generation path: the slug
+    indexes a closed set, and nothing else from the request reaches the code
+    Blender runs. A slug that is not in it is a 404, not a malformed request.
+    """
+
+
+class MechanicalGenerationError(ExternalServiceError):
+    """A generator ran inside Blender and did not produce what it declared.
+
+    Blender is outside this process. A generator that raises, or that ships a
+    part list the instance does not declare, is that external system failing —
+    a 502. It is not a 200 with surprising content: the manifest, the package
+    tests and the README are all written against the declared list.
+    """

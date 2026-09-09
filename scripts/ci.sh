@@ -127,6 +127,11 @@ if (( REAL )); then
     # Published 2026-09-09 on the user's Lane B verdict (D-008): from here the shipped
     # bytes are re-derived on every real run, the same rule as hand-v3.
     _run hard "hand-compact regenerated package matches shipped" "$PY" scripts/verify/regenerated_package_matches_shipped.py --package hand-compact
+    # Last on purpose: it empties tmp/hand-compact and rebuilds through the public
+    # REST endpoint, so it must not run before the checks that read what the script
+    # path generated. Proves the product's own delivery path produces the shipped
+    # geometry, not only that a CI-only entry point can.
+    _run hard "hand-compact built through the REST delivery path" "$PY" scripts/verify/generation_delivery_verify_real.py --package hand-compact
   else
     # Explicit SKIP, never a silent pass: with Blender down this tier is vacuous.
     printf '  %sSKIP%s MCP pipeline — Blender addon not listening on 9876 %s(start it: launchctl kickstart -k gui/$(id -u)/com.blender-mcp.blender)%s\n' \

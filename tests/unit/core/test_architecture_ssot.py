@@ -31,6 +31,16 @@ CODE_ANCHORS = {
         "class",
         "BatchTransformService",
     ),
+    "generation_service": (
+        "src/core/use_cases/mechanical_generation.py",
+        "class",
+        "MechanicalGenerationService",
+    ),
+    "generation_adapter": (
+        "src/adapters/generation/blender_instance_builder.py",
+        "class",
+        "BlenderInstanceBuilder",
+    ),
     "blender_adapter": (
         "src/adapters/mcp/blender_mcp_adapter.py",
         "class",
@@ -220,6 +230,11 @@ def test_real_ci_gates_the_hand_contracts() -> None:
         "scripts/verify/regenerated_package_matches_shipped.py --package hand-compact"
     )
     assert compact < compact_diff
+
+    # The delivery-path check empties tmp/hand-compact and rebuilds through REST,
+    # so it has to come after everything that reads what the script path exported.
+    delivery = ci.index("scripts/verify/generation_delivery_verify_real.py --package hand-compact")
+    assert compact_diff < delivery
 
 
 def test_real_ci_runs_every_contract() -> None:
