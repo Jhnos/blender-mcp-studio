@@ -1,6 +1,6 @@
 # 對話能產出可印的零件
 
-**Status:** ACTIVE
+**Status:** AWAITING-ACCEPTANCE
 
 ## Goal
 
@@ -56,3 +56,19 @@
 ### Next step
 
 - 寫那個會紅的測試,再把 `MechanicalGenerationService` 注進 use case。
+
+---
+
+## 動工後的修正(2026-09-09)
+
+**本任務檔的規格自相矛盾,我寫的時候沒看出來。** 它同時要求
+「把對話驗證器接進 `ci.sh --real`」和「H6 本任務不修」——但那支驗證器**因為 H6 而 exit 1**,
+所以兩件事不能同時成立。把明知會紅的閘門加進 `ci.sh`,會讓每次跑都紅,
+然後所有人學會忽略它;這正是本輪稍早為試片判讀寫下的同一條理由。
+
+處置:**能力照做,閘門不加**,H6 連同閘門移到 15 號任務。
+
+H6 的根因已查明:上游 addon 的 `__init__.py:283` 註解寫著
+`# Collect minimal object information (limit to first 10 objects)`。
+`/api/scene` 回的 `object_count` 是真的(209),`objects` 清單只有 10 筆。
+不是本專案截斷的,但**前端顯示的是我們的責任**。
