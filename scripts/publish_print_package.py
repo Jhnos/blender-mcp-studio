@@ -94,6 +94,7 @@ PACKAGES: dict[str, Package] = {
     # Registered so the publish path exists; not published until the user has
     # judged the renders (DEFERRALS D-008). models/hand-compact/ does not exist.
     "hand-compact": hand_package("hand-compact", revision="hand-compact-V1"),
+    "hand-gripper": hand_package("hand-gripper", revision="hand-gripper-V1"),
     "octopus-hand-v2": Package(
         slug="octopus-hand-v2",
         # V2.1, not V2, because "octopus-hand-V2" already names a published set of bits

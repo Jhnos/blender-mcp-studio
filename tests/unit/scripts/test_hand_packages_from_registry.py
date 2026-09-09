@@ -10,7 +10,7 @@ from src.core.domain.hand_instances import HAND_INSTANCES
 
 
 def test_hand_packages_are_their_registered_instances() -> None:
-    for slug in ("hand-v3", "hand-compact"):
+    for slug in ("hand-v3", "hand-compact", "hand-gripper"):
         package = PACKAGES[slug]
         instance = HAND_INSTANCES[slug]
 
