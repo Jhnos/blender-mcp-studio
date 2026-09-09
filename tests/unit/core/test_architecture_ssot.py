@@ -213,6 +213,14 @@ def test_real_ci_gates_the_hand_contracts() -> None:
     real_tier = ci.index("T3 · real machine (MCP↔Blender)")
     assert real_tier < hand, "the hand gates belong inside the --real tier"
 
+    # The human-scale package shipped on the user's Lane B verdict (D-008); its
+    # differential runs after the contracts that regenerate its exports.
+    compact = ci.index("scripts/verify/contracts/hand_compact_finger.json --skip-generate")
+    compact_diff = ci.index(
+        "scripts/verify/regenerated_package_matches_shipped.py --package hand-compact"
+    )
+    assert compact < compact_diff
+
 
 def test_real_ci_runs_every_contract() -> None:
     """A contract nobody runs is a hand-run contract, and those run when someone remembers.
