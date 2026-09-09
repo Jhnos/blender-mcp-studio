@@ -39,6 +39,9 @@ from src.infrastructure.narrowing import (  # noqa: E402
     as_str_keyed_exact,
 )
 from src.verification.generator_imports import reload_modules_for  # noqa: E402
+from src.verification.package_reproduction import (  # noqa: E402
+    SLIVER_TRIANGLES_PER_PART as SLIVER_BUDGET,
+)
 
 GEOMETRY = "scripts.hand_geometry"
 PRIMITIVES = "scripts.blender_mesh_primitives"
@@ -178,6 +181,14 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         default=None,
         help="write the measured per-part spread here (default: print only)",
     )
+    parser.add_argument(
+        "--against-budget",
+        action="store_true",
+        help=(
+            "exit on the sliver budget instead of on exact agreement: vertex ordering "
+            "may differ, a finished part's triangle count may not drift past the budget"
+        ),
+    )
     return parser.parse_args(argv)
 
 
@@ -211,6 +222,21 @@ def main(argv: list[str] | None = None) -> int:
         merged = _merged_record(args.json, args.instance, args.runs, spreads)
         args.json.write_text(json.dumps(merged, indent=2, sort_keys=True) + "\n", encoding="utf-8")
         print(f"wrote {args.json}")
+
+    if args.against_budget:
+        # The criterion a CI gate can hold. Differing vertex orderings are the
+        # exact solver's known behaviour and they are present on nearly every
+        # boolean step; a gate that failed on them would be red forever and
+        # would teach everyone to ignore it. What must not drift is the finished
+        # part's triangle count beyond what the package differential tolerates.
+        over = {part: spread for part, spread in spreads.items() if spread > SLIVER_BUDGET}
+        for part, spread in sorted(over.items()):
+            print(f"FAIL {part}: final spread {spread} exceeds the budget of {SLIVER_BUDGET}")
+        if over:
+            return 1
+        worst = max(spreads.values(), default=0)
+        print(f"PASS every part's final count stays within {SLIVER_BUDGET} (worst seen {worst})")
+        return 0
 
     if unstable == 0:
         print("PASS every run agrees")

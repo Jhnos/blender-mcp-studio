@@ -1,0 +1,26 @@
+{
+  "instances": {
+    "hand-compact": {
+      "parts": {
+        "HK_COMPACT_PALM": 0,
+        "HK_COMPACT_PHALANX_1": 0,
+        "HK_COMPACT_PHALANX_2": 2
+      }
+    },
+    "hand-v3": {
+      "parts": {
+        "HJ_V3_PALM": 0,
+        "HJ_V3_PHALANX_1": 0
+      }
+    },
+    "hand-v3-gradient": {
+      "parts": {
+        "HG_V3G_PALM": 0,
+        "HG_V3G_PHALANX_1": 0,
+        "HG_V3G_PHALANX_2": 0
+      }
+    }
+  },
+  "measured_on": "2026-09-09",
+  "runs": 4
+}

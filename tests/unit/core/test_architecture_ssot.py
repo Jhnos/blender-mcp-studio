@@ -236,6 +236,11 @@ def test_real_ci_gates_the_hand_contracts() -> None:
     delivery = ci.index("scripts/verify/generation_delivery_verify_real.py --package hand-compact")
     assert compact_diff < delivery
 
+    # The determinism probe is what makes the sliver budget a measured number
+    # rather than a planned one; a gate outside ci.sh is a gate that is not run.
+    assert "scripts/verify/build_determinism_probe.py --instance hand-compact" in ci
+    assert "--against-budget" in ci
+
 
 def test_real_ci_runs_every_contract() -> None:
     """A contract nobody runs is a hand-run contract, and those run when someone remembers.

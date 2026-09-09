@@ -132,6 +132,11 @@ if (( REAL )); then
     # path generated. Proves the product's own delivery path produces the shipped
     # geometry, not only that a CI-only entry point can.
     _run hard "hand-compact built through the REST delivery path" "$PY" scripts/verify/generation_delivery_verify_real.py --package hand-compact
+    # The measured half of the sliver budget. Vertex ordering differs on nearly
+    # every boolean step — that is the exact solver, not a defect — so this runs
+    # on the budget criterion, not on exact agreement. The checked-in record in
+    # docs/hand-framework/determinism.json is what the unit gate compares against.
+    _run hard "hand-compact build determinism within budget" "$PY" scripts/verify/build_determinism_probe.py --instance hand-compact --runs 3 --against-budget
   else
     # Explicit SKIP, never a silent pass: with Blender down this tier is vacuous.
     printf '  %sSKIP%s MCP pipeline — Blender addon not listening on 9876 %s(start it: launchctl kickstart -k gui/$(id -u)/com.blender-mcp.blender)%s\n' \

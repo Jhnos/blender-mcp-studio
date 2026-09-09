@@ -31,6 +31,7 @@ scripts/ci.sh --real   # T3 REST/MCP/readiness/batch + hand-v3 契約與重現�
 | octopus hand V1 ×2 | 生成、同場景 tips | 20 |
 | octopus hand V2 ×2 | 生成、同場景 tips | 26 |
 | generation delivery path | **清空** `tmp/hand-compact/`，走公開 REST endpoint 重建，比 API 回報的數字與磁碟上的位元組，再對 `models/hand-compact/manifest.json` 走同一份碎片預算 | 10 |
+| build determinism within budget | 同一零件在常駐 Blender 重建 3 次，判準是**完成品的面數差不超過碎片預算**——頂點順序幾乎每一步都不同，那是 exact solver 的性質不是缺陷，拿它當紅燈的閘門會永遠紅 | 18 |
 
 順序是硬的：手指契約重用手契約生成的場景；差分讀那次生成匯出的 STL；
 交付路徑閘門**最後**跑，因為它會清空 `tmp/hand-compact/` 再自己重建——排在前面就會抽掉別人的輸入。三條由
