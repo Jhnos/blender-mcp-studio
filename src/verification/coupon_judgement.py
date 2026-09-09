@@ -54,6 +54,7 @@ def boolean_checks(link: FingerLinkSpec) -> dict[str, str]:
         "C7": "兩孔之間與孔到銷孔的壁目視無裂、無穿",
     }
 
+
 ITEM_ORDER = ("C1", "C2", "C3", "C4", "C5", "C6", "C7")
 
 Measurement = Sequence[float] | bool | None
