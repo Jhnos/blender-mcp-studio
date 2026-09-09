@@ -238,3 +238,17 @@ def test_client_name_does_not_change_capabilities_or_catalog() -> None:
 
     assert all(observation == observations[0] for observation in observations)
     assert observations[0][1] == _EXPECTED_TOOLS
+
+
+def test_the_public_catalog_stays_nine_and_never_gains_the_generation_tools() -> None:
+    """`docs/01-architecture.md` fixes the public catalogue at nine curated tools.
+
+    The conversation inside this process gained `list_instances` and
+    `build_instance`; that list and this catalogue are different surfaces, and
+    the only thing keeping them apart is that nobody added one to the other.
+    This is the check that notices if somebody does.
+    """
+    from src.core.use_cases.conversational_modeling import GENERATION_TOOL_NAMES
+
+    assert len(_EXPECTED_TOOLS) == 9
+    assert not (_EXPECTED_TOOLS & GENERATION_TOOL_NAMES)

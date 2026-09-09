@@ -20,11 +20,14 @@ from src.core.domain.events import (
     LLMCalledEvent,
     MessageAddedEvent,
 )
-from src.core.domain.exceptions import SceneCreationError
+from src.core.domain.exceptions import DomainError, SceneCreationError
+from src.core.domain.hand_instances import HAND_INSTANCES
 from src.core.domain.session import Session
 from src.core.ports.blender_port import BlenderPort
 from src.core.ports.event_bus_port import EventBusPort
 from src.core.ports.llm_port import LLMChatPort, LLMToolChatPort, ToolDefinition
+from src.core.ports.mcp_port import ToolResult
+from src.core.ports.mechanical_generation_port import InstanceCatalogPort
 from src.core.ports.prompt_builder_port import PromptBuilderPort
 
 try:
@@ -133,6 +136,48 @@ _BLENDER_TOOLS: list[ToolDefinition] = [
     ),
 ]
 
+#: The project's own generators, offered to the conversation.
+#:
+#: Distinct from the public MCP catalogue, which `docs/01-architecture.md` fixes
+#: at nine curated tools. That catalogue is what an outside client may call;
+#: this list is what the LLM inside this process may call, and the two have
+#: never been the same set.
+#:
+#: The slug is an enum rather than a free string so the closed set is visible to
+#: the model. It is not the enforcement — the application resolves the slug
+#: against the registry and refuses anything else — but a model shown the
+#: choices asks for one of them instead of inventing "hand-v4".
+_GENERATION_TOOLS: list[ToolDefinition] = [
+    ToolDefinition(
+        name="list_instances",
+        description=(
+            "List the registered mechanical hand instances this studio can build, "
+            "with the files each one declares."
+        ),
+    ),
+    ToolDefinition(
+        name="build_instance",
+        description=(
+            "Build one registered mechanical hand instance in Blender and export its "
+            "meshes. Use this when the user asks for a hand, a gripper, or a printable "
+            "part — not create_object, which only makes primitives."
+        ),
+        parameters={
+            "slug": {
+                "type": "string",
+                "description": "Which registered instance to build",
+                "enum": sorted(HAND_INSTANCES),
+            }
+        },
+        required_params=("slug",),
+    ),
+]
+
+#: Routing is by name, decided before dispatch. Trying Blender first and falling
+#: back on failure would make "the generator raised" indistinguishable from
+#: "this was never a Blender tool".
+GENERATION_TOOL_NAMES = frozenset(tool.name for tool in _GENERATION_TOOLS)
+
 
 class ConversationalModelingUseCase:
     """Transforms user dialogue into Blender operations via LLM + MCP.
@@ -148,12 +193,32 @@ class ConversationalModelingUseCase:
         blender: BlenderPort,
         event_bus: EventBusPort | None = None,
         prompt_builder: PromptBuilderPort | None = None,
+        generation: InstanceCatalogPort | None = None,
     ) -> None:
         self._llm = llm
         self._blender = blender
         self._bus = event_bus
         self._prompt_builder = prompt_builder
+        self._generation = generation
         self._use_tool_calling = isinstance(llm, LLMToolChatPort)
+
+    def available_tools(self, user_message: str = "") -> list[ToolDefinition]:
+        """What this conversation may call, given what is wired into it.
+
+        The generation tools are appended *after* the semantic router has had
+        its say. The router exists to keep the prompt small by dropping tools
+        the message does not look like; dropping the one tool that makes a
+        printable part, because the user said "夾爪" rather than a word the
+        router knows, would be a silent loss of the whole capability.
+        """
+        routed = (
+            _router.select_tools(user_message, _BLENDER_TOOLS)
+            if _router is not None
+            else list(_BLENDER_TOOLS)
+        )
+        if self._generation is None:
+            return list(routed)
+        return [*routed, *_GENERATION_TOOLS]
 
     def system_prompt(self, context: dict[str, object] | None = None) -> str:
         """The prompt this use case would send, exposed for streaming callers.
@@ -217,7 +282,7 @@ class ConversationalModelingUseCase:
             # Dispatch the domain command as-is. Rewriting high-level tools the
             # addon can't handle (create_object, …) into execute_code is the
             # socket adapter's job, not ours — we don't know which backend we hold.
-            result = await self._blender.execute(command)
+            result = await self._dispatch(command)
             if not result.success:
                 await self._emit(
                     CommandFailedEvent(
@@ -240,6 +305,62 @@ class ConversationalModelingUseCase:
 
         return updated_session, assistant_reply, blender_output
 
+    async def _dispatch(self, command: Command) -> ToolResult:
+        """Route by tool name, decided before anything is attempted."""
+        if command.tool_name not in GENERATION_TOOL_NAMES:
+            return await self._blender.execute(command)
+        if self._generation is None:
+            return ToolResult(
+                success=False,
+                output=None,
+                error=f"{command.tool_name} is not available: no generation service is wired",
+            )
+        return await self._run_generation(command)
+
+    async def _run_generation(self, command: Command) -> ToolResult:
+        """Domain errors become a failed result, not an exception.
+
+        A conversation turn that raises loses the assistant's reply along with
+        it. The user asked for a hand that does not exist; the honest answer is
+        a message saying so, in the same turn.
+        """
+        assert self._generation is not None
+        try:
+            if command.tool_name == "list_instances":
+                summaries = await self._generation.list_instances()
+                output = json.dumps(
+                    [
+                        {
+                            "slug": summary.slug,
+                            "family": summary.family,
+                            "parts": list(summary.declared_parts),
+                        }
+                        for summary in summaries
+                    ],
+                    ensure_ascii=False,
+                )
+                return ToolResult(success=True, output=output, error=None)
+
+            slug = command.arguments.get("slug")
+            if not isinstance(slug, str):
+                return ToolResult(
+                    success=False, output=None, error="build_instance needs a slug string"
+                )
+            build = await self._generation.build(slug)
+            output = json.dumps(
+                {
+                    "slug": build.slug,
+                    "output_dir": build.output_dir,
+                    "parts": [
+                        {"name": part.name, "faces": part.face_count} for part in build.parts
+                    ],
+                },
+                ensure_ascii=False,
+            )
+            return ToolResult(success=True, output=output, error=None)
+        except DomainError as exc:
+            return ToolResult(success=False, output=None, error=str(exc))
+
     async def _chat_with_tools(self, session: Session) -> tuple[Command | None, str]:
         """Native tool calling path — structured, no regex.
 
@@ -250,11 +371,7 @@ class ConversationalModelingUseCase:
 
         # Semantic pre-filtering: only send relevant tools to the LLM
         user_msg = session.messages[-1].content if session.messages else ""
-        tools = (
-            _router.select_tools(user_msg, _BLENDER_TOOLS)
-            if _router is not None
-            else _BLENDER_TOOLS
-        )
+        tools = self.available_tools(user_msg)
 
         response = await self._llm.chat_with_tools(
             messages=session.messages,

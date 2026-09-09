@@ -84,6 +84,7 @@ def build_runtime(env_file: Path | None = None) -> AppRuntime:
     event_bus = InMemoryEventBus()
     prompt_builder = BlenderContextPromptBuilder()
     vision = build_vision_adapter()
+    generation = MechanicalGenerationService(BlenderInstanceBuilder(blender))
     return AppRuntime(
         blender=blender,
         scene_operations=SceneOperationsService(blender),
@@ -100,12 +101,13 @@ def build_runtime(env_file: Path | None = None) -> AppRuntime:
         snapshot_store=SQLiteSnapshotStore(),
         polyhaven=PolyHavenAdapter(),
         text3d=build_text3d_adapter(),
-        mechanical_generation=MechanicalGenerationService(BlenderInstanceBuilder(blender)),
+        mechanical_generation=generation,
         conversational_modeling=ConversationalModelingUseCase(
             llm=llm,
             blender=blender,
             event_bus=event_bus,
             prompt_builder=prompt_builder,
+            generation=generation,
         ),
         modeling_pipeline=ModelingPipelineUseCase(blender=blender, llm=llm),
         iterative_refinement=(
