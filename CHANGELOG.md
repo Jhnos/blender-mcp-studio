@@ -5,6 +5,19 @@
 
 ## [Unreleased]
 
+### V01.0R.001 — 發布位元組簽入;差分閘門改用規劃推導的碎片預算
+
+#### Added
+
+- `models/hand-compact/` 的十個檔(五 STL、blend、三張圖、manifest)從生成它們的 Mac 簽入;真機 T3 全綠(21 條閘門),T1/T2 全綠。
+
+#### Fixed
+
+- 差分閘門發布後第一跑就紅:整手 48240 ≠ 48244,再跑 48236、48248。探針證明 exact boolean solver 的輸出順序不定,
+  cleanup 門檻把它變成每零件 ±2 面(V3 從沒抖只是碎片離門檻遠)。差分改用**規劃推導的碎片預算**(每布林零件 ±2,
+  `sliver_budgets(instance)`;預設 0 = 精確),FF-18 + LESSONS 記錄。
+- `08-instances` 的整手／佈局數字寫著更早一次擺位的 234.5 / 90.5,位元組是 230.5 / 86.5;加守衛對照 manifest 與佈局規劃。
+
 ### V01.0R.000 — `models/hand-compact/` 發布:使用者 Lane B 通過三張圖
 
 #### Added
@@ -14,13 +27,6 @@
 - `test_hand_compact_print_package.py`:逐檔面數／尺寸／sha 對照;README 的尺寸句、五件／十件／十五件、可達性三數、
   靜止淨距 3.48 mm 全部由規格機器對照;整手 230.5 放得進床身,README 不准抄 V3 的「太高」。
 - `ci.sh --real` 加 `regenerated_package_matches_shipped.py --package hand-compact`,`test_real_ci_gates_the_hand_contracts` 釘住順序。
-
-#### Fixed
-
-- 差分閘門發布後第一跑就紅:整手 48240 ≠ 48244,再跑 48236、48248。探針證明 exact boolean solver 的輸出順序不定,
-  cleanup 門檻把它變成每零件 ±2 面(V3 從沒抖只是碎片離門檻遠)。差分改用**規劃推導的碎片預算**(每布林零件 ±2,
-  `sliver_budgets(instance)`;預設 0 = 精確),FF-18 + LESSONS 記錄。
-- `08-instances` 的整手／佈局數字寫著更早一次擺位的 234.5 / 90.5,位元組是 230.5 / 86.5;加守衛對照 manifest 與佈局規劃。
 
 #### Changed
 
