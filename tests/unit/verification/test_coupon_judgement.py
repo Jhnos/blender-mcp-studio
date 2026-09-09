@@ -135,3 +135,22 @@ def test_a_coupon_where_nothing_applies_is_not_a_pass() -> None:
     from src.verification.coupon_judgement import ItemVerdict
 
     assert not coupon_passed([ItemVerdict("C3", "N/A", "no seat")])
+
+
+def test_the_yes_no_wording_carries_the_link_it_is_judging() -> None:
+    """Should-fire on the real defect: the wording used to hard-code V3's Ø4.0
+    pin and a Ø2.0 probe wire, and the compact link's tendon bore is 1.5 mm —
+    narrower than the wire the words told you to push through it."""
+    from src.core.domain.compact_link import CompactHingeLinkSpec
+    from src.core.domain.hinge_chain import HingePhalanxSpec
+    from src.verification.coupon_judgement import boolean_checks
+
+    compact = boolean_checks(CompactHingeLinkSpec())
+    v3 = boolean_checks(HingePhalanxSpec())
+
+    assert "Ø2.0 銷" in compact["C2"]
+    assert "Ø4.0 銷" in v3["C2"]
+    assert "Ø1.5" in compact["C5"]
+    assert compact["C5"] != v3["C5"]
+    for wording in (*compact.values(), *v3.values()):
+        assert "Ø2.0 線" not in wording, "the probe wire is no longer a literal"

@@ -26,13 +26,33 @@ BEARING_SEAT_TOLERANCE_MM = (-0.15, 0.10)
 #: Readings per hole, turned 90° between them.
 READINGS_PER_HOLE = 2
 
+#: What each yes/no item asks, with no dimension in it. The CLI shows these as
+#: help text, where no link is known yet.
 BOOLEAN_CHECKS: dict[str, str] = {
-    "C2": "Ø4.0 銷能手推穿過兩個耳片",
-    "C4": "MR84 壓入後不自己掉出來",
-    "C5": "腱孔(掌側)Ø2.0 線可穿過全長",
-    "C6": "走線孔(背側)Ø2.0 線可穿過全長",
+    "C2": "銷能手推穿過兩個耳片",
+    "C4": "軸承壓入後不自己掉出來",
+    "C5": "腱孔(掌側)全長通透",
+    "C6": "走線孔(背側)全長通透",
     "C7": "兩孔之間與孔到銷孔的壁目視無裂、無穿",
 }
+
+
+def boolean_checks(link: FingerLinkSpec) -> dict[str, str]:
+    """The same items, with this link's own dimensions in them.
+
+    The wording used to carry V3's numbers as literals — a Ø4.0 pin and a Ø2.0
+    probe wire. On the compact link the pin is 2 mm and the tendon bore is
+    1.5 mm, so a person following those words would try to push a wire through
+    a hole narrower than the wire and record a failure the part does not have.
+    Prose beside a measurement has to come from the same spec the band does.
+    """
+    return {
+        "C2": f"Ø{link.pin_diameter_mm:.1f} 銷能手推穿過兩個耳片",
+        "C4": "軸承壓入後不自己掉出來",
+        "C5": f"腱孔(掌側)Ø{link.tendon_hole_diameter_mm:.1f} 全長通透(用比它細的線穿)",
+        "C6": f"走線孔(背側)Ø{link.tendon_hole_diameter_mm:.1f} 全長通透(用比它細的線穿)",
+        "C7": "兩孔之間與孔到銷孔的壁目視無裂、無穿",
+    }
 
 ITEM_ORDER = ("C1", "C2", "C3", "C4", "C5", "C6", "C7")
 
@@ -152,7 +172,7 @@ def judge_coupon(
             readings: Sequence[float] = () if given is None or isinstance(given, bool) else given
             verdicts.append(_judge_band(bands[item], readings))
             continue
-        what = BOOLEAN_CHECKS[item]
+        what = boolean_checks(link)[item]
         if given is None:
             verdicts.append(ItemVerdict(item, "VACUOUS", f"未量:{what}"))
         elif given is True:
