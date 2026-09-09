@@ -22,6 +22,7 @@
 | D-002 | `api/routers/{vision,pipelines,generate3d}.py` 整包 `except Exception → 500`,因為 LLM／text-3D／pipeline 沒有 domain error 型別 | `ExternalServiceError` 家族由 adapter 在邊界拋出,`api/main.py` 對映 502;router 不再自己翻譯;預算棘輪擋回流 | **done**(V01.0Q.005) |
 | D-003 | `PreviewStage.tsx` 的 `react-hooks/refs` 定點豁免 | 三個觸發條件親驗皆未成立,維持並記錄日期;同類的 `ObjectListNode` 豁免補登為 D-009 | **評估完成**(維持) |
 | 順手 | 截圖暫存檔的 dance 在 chat／snapshots／ws 迴圈／refinement 各一份 | 全部改走 `BlenderPort.viewport_screenshot()`,閘門擋住原始工具名回流 | **done** |
+| 續 D-002 | LLM adapter 讓 httpx／SDK 例外直接逃出,use case 再整包包成 `LLMConnectionError("LLM chat failed")`,529 變 503、cause 丟失 | `LLMProviderError`(502)／`LLMConnectionError`(503)在 Anthropic 與 Ollama 三條路徑(chat／stream／tools)的邊界翻譯;use case 不再包;`chat.py` 預算 3 → 2 | **done**(V01.0Q.007) |
 | 順手 | `src/workflows` 是初版留下的孤島:沒有任何 REST／MCP／UI 路徑到得了 | 刪除;`00-context` 的範圍改寫成真正在跑的 pipeline;`test_no_src_package_is_an_island` 擋下一個 | **done** |
 
 ## Acceptance checks
@@ -35,16 +36,16 @@
 
 ### Verified facts
 
-- D-001 done(V01.0Q.004)、D-002 done(V01.0Q.005):見規格表;真機 REST／MCP 閘門與 REST 契約測試為證。
-- D-003 親驗三個觸發條件都未成立,維持;`ObjectListNode` 同類豁免補登 D-009。
-- 四份截圖暫存檔 dance 收斂到 typed port;`src/workflows` 孤島刪除(引用它的只有它自己的測試與 yaml);
-  930 個單元測試綠,`ci.sh --real` 全綠。
-- router 裡剩的整包 except 有預算(`chat.py` 3 個是 WebSocket 每輪的錯誤幀,`ws_manager.py` 2 個是背景迴圈守衛),只能往下。
+- D-001 done(V01.0Q.004)、D-002 done(V01.0Q.005)、D-002 續:LLM adapter(V01.0Q.007);D-003 評估維持、D-009 補登;
+  截圖 dance 收斂、`src/workflows` 孤島刪除(V01.0Q.006)。
+- LLM 邊界翻譯的紅測試先抓到自己一個缺陷:串流回應未讀就取 `.text`,在 handler 裡再拋 `ResponseNotRead`——改用狀態行。
+- 929 個單元測試綠,`ci.sh --real` 全綠(17 份契約 + 差分)。
+- router 裡剩的整包 except:`chat.py` 2(WS 錯誤幀)、`ws_manager.py` 2(背景迴圈守衛),預算只能往下。
 
 ### Open failures
 
-- 沒有機器檢查在失敗。核心側三條延後全部處理完;機器側無待辦。
+- 沒有機器檢查在失敗。核心側登記在案的債全部處理完;機器側無待辦。
 
 ### Next step(使用者)
 
-- 驗收:核心邊界收債的方向(port 回傳 typed DTO、外部服務 502、孤島刪除)是否符合你的期待;通過就把本檔移到 `archive/`。
+- 驗收核心邊界收債的方向(port 回傳 typed DTO、外部服務與 LLM provider → 502、孤島刪除);通過就把本檔移到 `archive/`。

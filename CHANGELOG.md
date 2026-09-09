@@ -5,6 +5,24 @@
 
 ## [Unreleased]
 
+### V01.0Q.007 — LLM provider 的失敗在 adapter 邊界翻成 domain error
+
+#### Added
+
+- `LLMProviderError`(`ExternalServiceError` 之下,502):provider 答了但失敗(4xx／5xx／529 overloaded);
+  `LLMConnectionError`(503)保留給連不上。Anthropic 與 Ollama adapter 在 chat／stream／tool calling 三條路徑的
+  邊界翻譯,cause 串起來;八個 should-fire 測試用 respx 與注入的 SDK client。
+
+#### Changed
+
+- `ConversationalModelingUseCase` 不再把一切包成 `LLMConnectionError("LLM chat failed")`——那會把 provider 的 529 變成 503
+  並丟掉 cause;domain error 原樣傳出,其他例外是 bug、照 bug 傳。
+- `chat.py` 串流路徑的 Blender 包裝縮到 domain error;router 整包 except 預算 `chat.py` 3 → 2。
+
+#### Fixed
+
+- 紅測試抓到自己的缺陷:串流回應未讀就取 `.text`,在 handler 裡再拋一個例外。改用狀態行描述。
+
 ### V01.0Q.006 — 截圖只走 typed port;工作流引擎孤島刪除;D-003 評估、D-009 補登
 
 #### Changed

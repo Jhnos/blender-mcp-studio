@@ -89,7 +89,8 @@ Dependency rule：外層依賴內層；domain/application 不 import FastAPI、F
 `delete_object(name)`、`apply_material(spec)`。
 
 錯誤對映只在 `api/main.py` 一處：`BlenderConnectionError`／`LLMConnectionError` → 503，
-`ExternalServiceError`（vision、text-3D 這類外部服務答了但失敗）→ 502，其餘 `DomainError` → 422。
+`ExternalServiceError`（vision、text-3D、LLM provider 答了但失敗，含 `LLMProviderError`）→ 502，其餘 `DomainError` → 422。
+LLM 與 vision 的 adapter 在邊界把 httpx／SDK 的例外翻成這些型別並串起 cause；use case 不再自己包一層。
 router 不自己把例外翻成 HTTP；`test_routers_do_not_translate_arbitrary_exceptions` 以預算棘輪擋住（D-002）。
 
 `SceneOperationsService` 同時實作這兩個 incoming port，且**只**依賴 `BlenderPort`。

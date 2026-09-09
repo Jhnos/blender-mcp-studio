@@ -44,7 +44,9 @@
 **狀態**：`done`（2026-09-09；2026-09-05 記錄）——`ExternalServiceError`（`VisionAnalysisError`／`TextTo3DError`）
 由 vision 與 text-3D adapter 在邊界拋出，`api/main.py` 對映 502；`vision.py`／`pipelines.py`／`generate3d.py` 的四個整包
 `except Exception` 刪除，pipeline 內的 Blender 斷線現在是 503 而非 500。`test_routers_do_not_translate_arbitrary_exceptions`
-以預算棘輪擋住回流（`chat.py`／`snapshots.py`／`ws_manager.py` 仍各有幾處，預算只能往下）。
+以預算棘輪擋住回流。2026-09-09 續：LLM adapter 也在邊界翻成 `LLMProviderError`（502）／`LLMConnectionError`（503），
+use case 不再把一切包成「LLM chat failed」；`chat.py` 剩兩處是 WebSocket 每輪的錯誤幀（Starlette 的例外中介層不管 WS），
+`ws_manager.py` 兩處是背景迴圈守衛——都在預算裡，只能往下。
 
 **現況**：`api/routers/vision.py`、`pipelines.py`、`generate3d.py` 仍有
 `except Exception → 500` 的整包捕捉。
