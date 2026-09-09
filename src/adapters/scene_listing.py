@@ -18,6 +18,7 @@ from __future__ import annotations
 import json
 from collections.abc import Awaitable, Callable
 
+from src.adapters.blender_scene_decoding import decode_vector
 from src.core.domain.exceptions import SceneOperationError
 from src.core.domain.scene_operations import SceneObjectSummary
 from src.infrastructure.narrowing import as_nonempty_str, as_sequence, as_str
@@ -68,19 +69,15 @@ async def list_scene_objects(
             raise SceneOperationError(f"a scene listing row is malformed: {row!r}")
         name = as_nonempty_str(fields[0])
         object_type = as_nonempty_str(fields[1])
-        location = as_sequence(fields[2])
-        if name is None or object_type is None or location is None or len(location) != 3:
+        if name is None or object_type is None:
             raise SceneOperationError(f"a scene listing row is malformed: {row!r}")
-        coordinates = []
-        for value in location:
-            if not isinstance(value, (int, float)) or isinstance(value, bool):
-                raise SceneOperationError(f"a location component is not a number: {value!r}")
-            coordinates.append(float(value))
         objects.append(
             SceneObjectSummary(
                 name=name,
                 object_type=object_type,
-                location=(coordinates[0], coordinates[1], coordinates[2]),
+                # The same decoder the addon reply uses. A second copy here is
+                # how the two paths end up disagreeing about what a location is.
+                location=decode_vector(fields[2], f"{name} location"),
             )
         )
     return tuple(objects), truncated

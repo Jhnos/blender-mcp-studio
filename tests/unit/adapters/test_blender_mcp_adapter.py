@@ -161,12 +161,21 @@ async def test_socket_client_rejects_untranslated_high_level_tool() -> None:
 
 
 class _StubMCP(MCPPort):
-    """Returns a preset output for any tool call — isolates get_scene_info."""
+    """Returns a preset output for any tool call — isolates get_scene_info.
 
-    def __init__(self, output: object) -> None:
+    `scene_summary` now takes its object list from a bounded `execute_code`
+    read of its own, because the addon's summary caps that list at ten while
+    reporting the true total. The listing reply is answered separately here so
+    a scene test still exercises only the decoding it means to.
+    """
+
+    def __init__(self, output: object, listing: object | None = None) -> None:
         self._output = output
+        self._listing = listing
 
     async def call_tool(self, tool_name: str, arguments: dict[str, object]) -> ToolResult:
+        if tool_name == "execute_code" and self._listing is not None:
+            return ToolResult(success=True, output={"result": self._listing})
         return ToolResult(success=True, output=self._output)
 
     async def list_tools(self) -> list[ToolDefinition]:
@@ -177,10 +186,13 @@ class _StubMCP(MCPPort):
     async def disconnect(self) -> None: ...
 
 
-def _adapter_with(output: object) -> BlenderMCPAdapter:
+def _adapter_with(output: object, listing: object | None = None) -> BlenderMCPAdapter:
     adapter = BlenderMCPAdapter("localhost", 9999)
-    adapter._mcp = _StubMCP(output)  # type: ignore[assignment]  # inject fake transport
+    adapter._mcp = _StubMCP(output, listing)  # type: ignore[assignment]  # fake transport
     return adapter
+
+
+SCENE_LISTING = '[["Cube", "MESH", [0.0, 0.0, 0.0]]]'
 
 
 SCENE_REPLY: dict[str, object] = {
@@ -194,10 +206,11 @@ SCENE_REPLY: dict[str, object] = {
 @pytest.mark.asyncio
 async def test_scene_summary_is_decoded_from_the_socket_reply() -> None:
     """The adapter decodes the addon's dialect; the use case never sees a dict (D-001)."""
-    scene = await _adapter_with(SCENE_REPLY).scene_summary()
+    scene = await _adapter_with(SCENE_REPLY, SCENE_LISTING).scene_summary()
 
     assert scene.name == "Scene"
     assert scene.objects[0].name == "Cube"
+    assert not scene.objects_truncated
 
 
 @pytest.mark.asyncio

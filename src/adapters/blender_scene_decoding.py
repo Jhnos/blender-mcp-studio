@@ -44,7 +44,9 @@ def _boolean(value: object, field: str) -> bool:
     return value
 
 
-def _vector(value: object, field: str) -> Vector3:
+def decode_vector(value: object, field: str) -> Vector3:
+    """Three finite numbers as a `Vector3`. Public so the scene listing decodes
+    a location the same way the addon reply does — one narrowing, not two."""
     items: Sequence[object] = sequence(value, field, SceneOperationError)
     numbers: list[float] = []
     for item in items:
@@ -79,7 +81,7 @@ def decode_scene_summary(raw: object) -> SceneSummary:
             SceneObjectSummary(
                 name=_text(entry["name"], "object name"),
                 object_type=_text(entry["type"], "object type"),
-                location=_vector(entry["location"], "object location"),
+                location=decode_vector(entry["location"], "object location"),
             )
         )
     return SceneSummary(
@@ -100,9 +102,9 @@ def decode_object_details(raw: object) -> ObjectDetails:
     return ObjectDetails(
         name=_text(data["name"], "object name"),
         object_type=_text(data["type"], "object type"),
-        location=_vector(data["location"], "location"),
-        rotation=_vector(data["rotation"], "rotation"),
-        scale=_vector(data["scale"], "scale"),
+        location=decode_vector(data["location"], "location"),
+        rotation=decode_vector(data["rotation"], "rotation"),
+        scale=decode_vector(data["scale"], "scale"),
         visible=_boolean(data["visible"], "visible"),
         materials=_strings(data["materials"], "materials"),
     )
