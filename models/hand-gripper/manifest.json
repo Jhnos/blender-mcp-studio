@@ -1,0 +1,77 @@
+{
+  "files": {
+    "finger_gripper_mm.stl": {
+      "bytes": 447584,
+      "dimensions_mm": [
+        17.000006675720215,
+        15.00000286102295,
+        149.0
+      ],
+      "sha256": "d25a4039b832231b6c8099581543aafc089ffd1a7c083728cee042728451d141",
+      "triangle_count": 8950
+    },
+    "gripper_assembly.png": {
+      "bytes": 1090360,
+      "sha256": "5ff4ffb25c9a44c657c13e28e67f3ac08536151c22f9f075c2e9ee86bf646d55"
+    },
+    "gripper_joint_detail.png": {
+      "bytes": 970968,
+      "sha256": "6ccc7011444430905daabdda02bcf7e92a62eb5011cad14ca79aa369e4849e1d"
+    },
+    "gripper_print_layout.png": {
+      "bytes": 1635402,
+      "sha256": "9823f9fb49e2a213da03f0aef995388f573eff2a9a12d22e890620c6cb7b481a"
+    },
+    "hand_gripper.blend": {
+      "bytes": 1832761,
+      "sha256": "656186a11e3bc5c6408bef9f62341017aed01773627570257b16b981ada4a95b"
+    },
+    "hand_gripper_mm.stl": {
+      "bytes": 1446884,
+      "dimensions_mm": [
+        82.22536087036133,
+        30.252805709838867,
+        224.5
+      ],
+      "sha256": "2c7a7364fce593d9b3bc3c77dfb127779f5222e41cc7a97421883829a916b8b9",
+      "triangle_count": 28936
+    },
+    "palm_mm.stl": {
+      "bytes": 104384,
+      "dimensions_mm": [
+        56.0,
+        29.999998092651367,
+        80.5
+      ],
+      "sha256": "9f2707a2b54f8a193864c1dab7b7c47cb1f411945536c357e0e5f40733872fa9",
+      "triangle_count": 2086
+    },
+    "phalanx_base_mm.stl": {
+      "bytes": 148984,
+      "dimensions_mm": [
+        17.000006675720215,
+        15.00000286102295,
+        53.0
+      ],
+      "sha256": "5e62d5cb4a1ebfe21af76f252a1f5621562916183dade73e6ffc04b51aa3231e",
+      "triangle_count": 2978
+    },
+    "phalanx_distal_mm.stl": {
+      "bytes": 149384,
+      "dimensions_mm": [
+        17.000006675720215,
+        15.00000286102295,
+        53.0
+      ],
+      "sha256": "adb9105bfa2fab53c630d3954035d3601082cd927935e465f49315c25a8e7cca",
+      "triangle_count": 2986
+    }
+  },
+  "model_revision": "hand-gripper-V1",
+  "source_generator": "scripts/model_hand_gripper.py",
+  "units": "mm",
+  "verification_contracts": [
+    "scripts/verify/contracts/hand_gripper.json",
+    "scripts/verify/contracts/hand_gripper_finger.json"
+  ]
+}

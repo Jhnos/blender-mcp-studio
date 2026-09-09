@@ -125,6 +125,9 @@ if (( REAL )); then
     # never been built at, which is the whole reason it exists.
     _run hard "hand-gripper contract" "$PY" scripts/verify/generated_artifact_verify_real.py scripts/verify/contracts/hand_gripper.json
     _run hard "hand-gripper finger (same scene)" "$PY" scripts/verify/generated_artifact_verify_real.py scripts/verify/contracts/hand_gripper_finger.json --skip-generate
+    # Published 2026-09-09 on the user's Lane B verdict: from here the shipped bytes
+    # are re-derived on every real run, the same rule as hand-v3 and hand-compact.
+    _run hard "hand-gripper regenerated package matches shipped" "$PY" scripts/verify/regenerated_package_matches_shipped.py --package hand-gripper
     # The human-scale instance: the compact link through the same generator.
     _run hard "hand-compact contract" "$PY" scripts/verify/generated_artifact_verify_real.py scripts/verify/contracts/hand_compact.json
     _run hard "hand-compact finger (same scene)" "$PY" scripts/verify/generated_artifact_verify_real.py scripts/verify/contracts/hand_compact_finger.json --skip-generate
