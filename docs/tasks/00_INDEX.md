@@ -4,12 +4,10 @@ Read this file first after a new conversation, compaction, or terminal restart.
 
 ## 接手(2026-09-09,V01.0R.00E)
 
-- **沒有進行中的任務。** 10、11、12 都已由使用者驗收歸檔;使用者選定的三步順序
-  (交付路徑 → 決定性閘門硬化 → 第四個實例)已走完。`--real` 31 條全綠。
-- **在等使用者的:** ①07 印 V3 指節試片並量七項(`scripts/analyse_coupon.py --instance hand-v3` 判讀);
-  ②`hand-gripper` 也可以印了(九節,佈局 137 × 80.5 mm,四件裡門檻最低);③下一個開發目標。
-- **四件包都已發布,四件都沒印過。** 螢幕上能驗的這一輪大致驗到頂了;
-  下一個真正的資訊只能從實體來。沒有新目標就不要捏造任務(checkpoint 第一項因此為紅,是誠實狀態)。
+- **進行中:** 13 讓對話能產出可印的零件(使用者 2026-09-09 選定)。之後接 14 第五個實例(每指三關節)。
+- **在等使用者的:** 印。工作單已交付:07 的 V3 試片七項,以及 `hand-gripper` 九節。
+  **四件包都已發布,四件都沒印過**——下一筆實體資料會是這個專案的第一筆。
+- 10、11、12 都已驗收歸檔;`--real` 31 條全綠。
 - **在等使用者的:** 07 印 V3 指節試片並量七項(`scripts/analyse_coupon.py --instance hand-v3` 判讀)。
 - **閘門只在 Mac 跑**;Windows 端改碼、只 stage 明確路徑。
 - **在等使用者的:** 07 印 V3 指節試片並量七項(`scripts/analyse_coupon.py --instance hand-v3` 判讀)。
@@ -18,6 +16,8 @@ Read this file first after a new conversation, compaction, or terminal restart.
 
 | State | Task | Priority |
 |---|---|---|
+| ACTIVE | [`13_conversation-reaches-the-generators.md`](13_conversation-reaches-the-generators.md) | **對話能產出可印的零件**——把產生能力接進對話的工具清單(與公開九項目錄無關),並把從沒被引用過的對話驗證器接進 `--real` |
+| TODO | [`14_hand-long.md`](14_hand-long.md) | **第五個實例:每指三關節**——`joint_count` 第一次建在 2 以外;主要風險是指掌比 |
 | WAITING-ON-USER | [`07_hand-v3-coupon.md`](07_hand-v3-coupon.md) | **印一件指節、量七項公差**——幾何側全部完成且真機驗證通過,往下每一件事都要從這一件實體反推。**使用者執行** |
 | AWAITING-ACCEPTANCE | [`06_hand-v3.md`](06_hand-v3.md) | 靈巧手 V3:文件樹 21 檔 + 追溯矩陣 22 條;域規格、手指、掌盤、整手、佈局全部做完,兩份真機契約 11/11 全綠,印製包已發布;**實體列印與台架量測未做** |
 | AWAITING-ACCEPTANCE | [`05_octopus-hand-v2.md`](05_octopus-hand-v2.md) | 章魚手 V2:角點對齊手臂 + 加強莖 + 瞄準式抓取墊 + 每臂電線孔 + 全面倒角;兩份契約真機全綠,包已發布;實體列印未做,視覺 rubric 未判 |
