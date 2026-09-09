@@ -17,6 +17,7 @@ from anthropic.types.message_create_params import (
     MessageCreateParamsNonStreaming,
 )
 
+from src.core.domain.exceptions import LLMConnectionError, LLMProviderError
 from src.core.domain.session import Message
 from src.core.ports.llm_port import (
     LLMPort,
@@ -49,6 +50,17 @@ def _first_text(blocks: Iterable[ContentBlock]) -> str:
     claude_vision_adapter and the tool-calling branch below.
     """
     return next((b.text for b in blocks if b.type == "text"), "")
+
+
+def _translate(exc: anthropic.APIError) -> Exception:
+    """The boundary: the SDK's failure becomes the domain's, with the cause kept.
+
+    A status error means Anthropic answered and failed (502, including 529
+    overloaded); a connection or timeout error means it was not reached (503).
+    """
+    if isinstance(exc, anthropic.APIStatusError):
+        return LLMProviderError(f"Anthropic answered {exc.status_code}: {exc.message}")
+    return LLMConnectionError(f"Anthropic unreachable: {exc}")
 
 
 class AnthropicAdapter(LLMPort):
@@ -86,7 +98,10 @@ class AnthropicAdapter(LLMPort):
         if system_prompt:
             kwargs["system"] = system_prompt
 
-        response = await self._client.messages.create(**kwargs)
+        try:
+            response = await self._client.messages.create(**kwargs)
+        except anthropic.APIError as exc:
+            raise _translate(exc) from exc
         return LLMResponse(
             content=_first_text(response.content),
             provider=self.provider_name,
@@ -110,9 +125,12 @@ class AnthropicAdapter(LLMPort):
         if system_prompt:
             kwargs["system"] = system_prompt
 
-        async with self._client.messages.stream(**kwargs) as stream:
-            async for text in stream.text_stream:
-                yield text
+        try:
+            async with self._client.messages.stream(**kwargs) as stream:
+                async for text in stream.text_stream:
+                    yield text
+        except anthropic.APIError as exc:
+            raise _translate(exc) from exc
 
     async def chat_with_tools(
         self,
@@ -130,7 +148,10 @@ class AnthropicAdapter(LLMPort):
         if system_prompt:
             kwargs["system"] = system_prompt
 
-        response = await self._client.messages.create(**kwargs)
+        try:
+            response = await self._client.messages.create(**kwargs)
+        except anthropic.APIError as exc:
+            raise _translate(exc) from exc
 
         tool_calls: list[ToolCall] = []
         text_parts: list[str] = []

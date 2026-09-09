@@ -194,7 +194,7 @@ async def _handle_streaming(
                     blender_out = str(result.output) if result.output else None
                 else:
                     blender_out = f"❌ {result.error}"
-            except Exception as exc:
+            except (SceneOperationError, BlenderConnectionError) as exc:
                 blender_out = f"❌ {exc}"
 
         updated = session.add_message("assistant", accumulated)

@@ -18,6 +18,7 @@ from collections.abc import AsyncGenerator
 
 import httpx
 
+from src.core.domain.exceptions import LLMConnectionError, LLMProviderError
 from src.core.domain.session import Message
 from src.core.ports.llm_port import (
     LLMPort,
@@ -49,6 +50,18 @@ class OllamaAdapter(LLMPort):
         self._base_url = base_url.rstrip("/")
         self._timeout = timeout
 
+    def _translate(self, exc: httpx.HTTPError) -> Exception:
+        """The boundary: httpx's failure becomes the domain's, with the cause kept.
+
+        A status error means Ollama answered and failed (502); anything else in
+        httpx's hierarchy — connect, read, timeout — means it was not reached (503).
+        """
+        if isinstance(exc, httpx.HTTPStatusError):
+            return LLMProviderError(
+                f"Ollama answered {exc.response.status_code}: {exc.response.text[:200]}"
+            )
+        return LLMConnectionError(f"Ollama unreachable at {self._base_url}: {exc}")
+
     async def chat(
         self,
         messages: list[Message],
@@ -61,13 +74,16 @@ class OllamaAdapter(LLMPort):
             "options": {"temperature": 0.3},
         }
 
-        async with httpx.AsyncClient(timeout=self._timeout) as client:
-            resp = await client.post(
-                f"{self._base_url}/api/chat",
-                json=payload,
-            )
-            resp.raise_for_status()
-            data = resp.json()
+        try:
+            async with httpx.AsyncClient(timeout=self._timeout) as client:
+                resp = await client.post(
+                    f"{self._base_url}/api/chat",
+                    json=payload,
+                )
+                resp.raise_for_status()
+                data = resp.json()
+        except httpx.HTTPError as exc:
+            raise self._translate(exc) from exc
 
         content: str = data["message"]["content"]
         content = self._strip_thinking(content)
@@ -99,36 +115,39 @@ class OllamaAdapter(LLMPort):
         }
 
         in_think = False
-        async with (
-            httpx.AsyncClient(timeout=self._timeout) as client,
-            client.stream(
-                "POST",
-                f"{self._base_url}/api/chat",
-                json=payload,
-            ) as resp,
-        ):
-            resp.raise_for_status()
-            async for line in resp.aiter_lines():
-                if not line.strip():
-                    continue
-                try:
-                    chunk = _json.loads(line)
-                except _json.JSONDecodeError:
-                    continue
-                token: str = chunk.get("message", {}).get("content", "")
-                if not token:
-                    continue
-                # Strip <think> blocks on-the-fly
-                if "<think>" in token:
-                    in_think = True
-                if in_think:
-                    if "</think>" in token:
-                        in_think = False
-                        token = token.split("</think>", 1)[-1]
-                    else:
+        try:
+            async with (
+                httpx.AsyncClient(timeout=self._timeout) as client,
+                client.stream(
+                    "POST",
+                    f"{self._base_url}/api/chat",
+                    json=payload,
+                ) as resp,
+            ):
+                resp.raise_for_status()
+                async for line in resp.aiter_lines():
+                    if not line.strip():
                         continue
-                if token:
-                    yield token
+                    try:
+                        chunk = _json.loads(line)
+                    except _json.JSONDecodeError:
+                        continue
+                    token: str = chunk.get("message", {}).get("content", "")
+                    if not token:
+                        continue
+                    # Strip <think> blocks on-the-fly
+                    if "<think>" in token:
+                        in_think = True
+                    if in_think:
+                        if "</think>" in token:
+                            in_think = False
+                            token = token.split("</think>", 1)[-1]
+                        else:
+                            continue
+                    if token:
+                        yield token
+        except httpx.HTTPError as exc:
+            raise self._translate(exc) from exc
 
     async def chat_with_tools(
         self,
@@ -146,13 +165,16 @@ class OllamaAdapter(LLMPort):
             "options": {"temperature": 0.1},  # lower temp for structured calls
         }
 
-        async with httpx.AsyncClient(timeout=self._timeout) as client:
-            resp = await client.post(
-                f"{self._base_url}/api/chat",
-                json=payload,
-            )
-            resp.raise_for_status()
-            data = resp.json()
+        try:
+            async with httpx.AsyncClient(timeout=self._timeout) as client:
+                resp = await client.post(
+                    f"{self._base_url}/api/chat",
+                    json=payload,
+                )
+                resp.raise_for_status()
+                data = resp.json()
+        except httpx.HTTPError as exc:
+            raise self._translate(exc) from exc
 
         message = data.get("message", {})
         raw_tool_calls = message.get("tool_calls") or []

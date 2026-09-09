@@ -186,13 +186,13 @@ class ConversationalModelingUseCase:
             )
         )
 
-        try:
-            if self._use_tool_calling:
-                command, assistant_reply = await self._chat_with_tools(session)
-            else:
-                command, assistant_reply = await self._chat_fallback(session)
-        except Exception as e:
-            raise LLMConnectionError("LLM chat failed") from e
+        # The adapters raise LLMConnectionError / LLMProviderError at their
+        # boundary; rewrapping here used to turn a provider's 529 into a 503
+        # and lose the cause. Anything else is a bug and propagates as one.
+        if self._use_tool_calling:
+            command, assistant_reply = await self._chat_with_tools(session)
+        else:
+            command, assistant_reply = await self._chat_fallback(session)
 
         await self._emit(
             LLMCalledEvent(

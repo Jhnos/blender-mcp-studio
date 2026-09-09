@@ -47,5 +47,13 @@ class TextTo3DError(ExternalServiceError):
     """The text-to-3D provider could not produce a mesh."""
 
 
+class LLMProviderError(ExternalServiceError):
+    """The LLM provider was reached and answered with a failure.
+
+    Distinct from ``LLMConnectionError`` (unreachable, a 503): a 4xx/5xx or
+    an overloaded model is the provider's failure, a 502.
+    """
+
+
 class BlenderConnectionError(DomainError):
     """Raised when Blender MCP socket is unreachable."""
