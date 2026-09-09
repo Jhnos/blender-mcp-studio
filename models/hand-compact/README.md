@@ -65,8 +65,9 @@ compared triangle for triangle on every real run):
   check — a straight thumb brushed the third finger by eight faces — which is why the
   offline placement model now refuses a thumb whose rest clearance is not positive. At rest
   the straight thumb clears the nearest finger by 3.48 mm.
-- No interference across a joint's full ±50° travel, and the finger's closure trajectory
-  is measured against the plan's.
+- No interference across a joint's full ±50° travel, and none along the finger's
+  coordinated closing motion — every joint moving at once, in the plan's shares — with
+  zero overlapping faces at every step.
 - The print plate is 191.0 × 86.5 mm against a 256 mm bed, measured down two independent
   paths and required to agree.
 - The palm is a single connected solid; all five tendon channels and the air port are

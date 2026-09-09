@@ -101,14 +101,19 @@ def test_the_readme_describes_the_package_that_shipped() -> None:
     units = palm.finger.link.assembly_unit_count
     base_prints, distal_prints = chains, chains * (units - 1)
     total = base_prints + distal_prints
-    assert WORDS[total] in readme, f"the README never says how many parts to print ({total})"
+
+    def says(word: str, text: str) -> bool:
+        # Whole words only: "ten" must not be satisfied by "tendon".
+        return re.search(rf"{word}", text, re.IGNORECASE) is not None
+
+    assert says(WORDS[total], readme), f"the README never says how many parts to print ({total})"
     for count, word in WORDS.items():
         if count not in {base_prints, distal_prints, total}:
-            assert word not in readme, f"the README still says {word}; the hand takes {total}"
+            assert not says(word, readme), f"the README still says {word}; the hand takes {total}"
     base_line = next(line for line in readme.splitlines() if "phalanx_base_mm.stl" in line)
     distal_line = next(line for line in readme.splitlines() if "phalanx_distal_mm.stl" in line)
-    assert WORDS[base_prints] in base_line
-    assert WORDS[distal_prints] in distal_line
+    assert says(WORDS[base_prints], base_line)
+    assert says(WORDS[distal_prints], distal_line)
 
 
 def test_the_readme_quotes_the_reach_and_the_clearance_the_spec_computes() -> None:
