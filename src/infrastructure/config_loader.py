@@ -21,5 +21,3 @@ def load_llm_providers(config_dir: Path | None = None) -> dict[str, object]:
 def load_mcp_servers(config_dir: Path | None = None) -> dict[str, object]:
     base = config_dir or Path(__file__).parent.parent.parent / "config"
     return load_yaml(base / "mcp_servers.yaml")
-
-

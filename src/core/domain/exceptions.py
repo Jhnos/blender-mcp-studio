@@ -49,4 +49,3 @@ class TextTo3DError(ExternalServiceError):
 
 class BlenderConnectionError(DomainError):
     """Raised when Blender MCP socket is unreachable."""
-

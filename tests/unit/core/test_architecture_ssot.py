@@ -309,7 +309,8 @@ def test_no_src_package_is_an_island() -> None:
     islands = [
         package.name
         for package in sorted((PROJECT_ROOT / "src").iterdir())
-        if package.is_dir() and package.name != "__pycache__"
+        if package.is_dir()
+        and package.name != "__pycache__"
         and not _first_party_importers(package.name, production)
     ]
     assert islands == [], f"src packages nothing in production imports: {islands}"
