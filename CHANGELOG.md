@@ -5,6 +5,22 @@
 
 ## [Unreleased]
 
+### V01.0Q.006 — 截圖只走 typed port;工作流引擎孤島刪除;D-003 評估、D-009 補登
+
+#### Changed
+
+- chat、snapshots、viewport 廣播迴圈、iterative refinement 各自一份的「暫存檔 + 原始截圖工具 + 讀檔」收斂為
+  `BlenderPort.viewport_screenshot()`;可恢復的失敗改只攔 domain error,兩個背景迴圈守衛保留(迴圈不能因一個 bug 停擺)。
+  `test_screenshots_go_through_the_typed_port` 擋住原始工具名回流。
+- `src/workflows`(引擎、yaml、腳本)刪除:初版留下的孤島,只有它自己的測試與 yaml 引用它,沒有任何 REST／MCP／UI
+  路徑到得了;`00-context` 的「腳本驅動 Workflow 引擎」改寫成真正在跑的 `config/modeling_pipeline.yaml` + `POST /api/pipeline`。
+  `test_no_src_package_is_an_island` 擋下一個。未用的 `WorkflowError` 與 `load_workflow` 一併移除。
+
+#### Added
+
+- DEFERRALS D-003 重新評估(三個觸發條件都未成立,維持);D-009 補登 `ObjectListNode` 的 `set-state-in-effect` 定點豁免。
+- 任務 09 機器側完成,改 AWAITING-ACCEPTANCE。
+
 ### V01.0Q.005 — 外部服務失敗是 domain error,一處對映 502(D-002 done)
 
 #### Added

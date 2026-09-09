@@ -60,7 +60,7 @@
 
 ## D-003 · `PreviewStage` 的 `react-hooks/refs` 定點豁免
 
-**狀態**：`deferred`（2026-09-05 記錄）
+**狀態**：`deferred`（2026-09-05 記錄；2026-09-09 重新評估——三個觸發條件都未成立：`ExportPanel` 仍用 `useImperativeHandle`、`eslint-plugin-react-hooks` 仍是 ^7.0.1、`react-hooks/refs` 的豁免在 `web/src` 只有這一處）
 
 **現況**：`web/src/components/PreviewStage.tsx` 的 `commands = useMemo(...)` 帶一行
 `eslint-disable-next-line react-hooks/refs`。被豁免的是 `openPrintReadiness` 與
@@ -162,3 +162,24 @@ callback，讓規則在分析到那裡時就停住、沒往下看。移除自我
 **觸發條件**：使用者 Lane B 驗收通過。
 
 **目前的防護**：`publish_print_package.py` 不會自動跑；`08_hand-framework.md` 的驗收條件。
+
+---
+
+## D-009 · `ObjectListNode` 的 `react-hooks/set-state-in-effect` 定點豁免
+
+**狀態**：`deferred`（2026-09-09 記錄）
+
+**現況**：`web/src/mdr/nodes/ObjectListNode.tsx` 的 `useEffect(() => { void refresh() }, …)` 帶一行
+`eslint-disable-next-line react-hooks/set-state-in-effect`。被豁免的是「掛載與場景變動時非同步抓
+物件清單再 `setState`」——setState 發生在 `await` 之後，是與外部系統同步的 effect，不是級聯 render。
+理由寫在程式碼旁；本條讓它在 DEFERRALS 也看得見（與 D-003 同類：定點豁免不得只活在程式碼裡）。
+
+**為何不動**：正解是把資料抓取交給 query hook（TanStack Query 一類）或 React 19 的 `use()`；為一個節點
+引進資料層是抽象投資，目前只有一處。
+
+**觸發條件（任一成立就升為 `due`）**：
+- 第二個 MDR 節點需要同樣的豁免；或
+- 專案引進資料抓取 hook 層；或
+- `react-hooks` 規則能辨認「await 之後的 setState」。
+
+**目前的防護**：豁免是定點的；`web/src` 的 lint 是硬閘門，任何新增的豁免都會在 review 的 diff 裡。
