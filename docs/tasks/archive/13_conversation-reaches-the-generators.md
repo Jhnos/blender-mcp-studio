@@ -1,6 +1,6 @@
 # 對話能產出可印的零件
 
-**Status:** AWAITING-ACCEPTANCE
+**Status:** ACCEPTED (2026-09-09)
 
 ## Goal
 

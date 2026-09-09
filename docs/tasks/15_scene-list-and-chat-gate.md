@@ -1,6 +1,6 @@
 # 場景清單不再只有十個,對話路徑才能有閘門
 
-**Status:** TODO
+**Status:** ACTIVE
 
 ## Goal
 

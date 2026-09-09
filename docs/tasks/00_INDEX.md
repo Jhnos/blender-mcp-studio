@@ -2,10 +2,10 @@
 
 Read this file first after a new conversation, compaction, or terminal restart.
 
-## 接手(2026-09-09,V01.0R.011)
+## 接手(2026-09-09,V01.0R.012)
 
-- **等驗收:** 13 對話能產出可印的零件(能力已完成、閘門全綠;那半個閘門移到 15 號,理由見任務檔)。
-- **排隊中:** 15 場景清單只有十個(擋著對話路徑的閘門)、14 第五個實例(每指三關節)。
+- **進行中:** 15 場景清單只有十個——擋著對話路徑的閘門。之後接 14 第五個實例。
+- 13 已驗收歸檔:對話現在能呼叫本專案自己的產生器。
 - **在等使用者的:** 印。工作單已交付——07 的 V3 試片七項,以及 `hand-gripper` 九節。
   **四件包都已發布,四件都沒印過**;下一筆實體資料會是這個專案的第一筆。
 - **接手第一步:** `git log --oneline -5`,然後讀最上面那個任務檔的 hand-off 段。
@@ -13,8 +13,7 @@ Read this file first after a new conversation, compaction, or terminal restart.
 
 | State | Task | Priority |
 |---|---|---|
-| AWAITING-ACCEPTANCE | [`13_conversation-reaches-the-generators.md`](13_conversation-reaches-the-generators.md) | **對話能產出可印的零件**——`list_instances` / `build_instance` 進對話工具清單(與公開九項目錄無關,有守衛盯著不合流)。閘門那半移到 15 號:驗證器因 H6 必紅,明知會紅的閘門不進 CI |
-| TODO | [`15_scene-list-and-chat-gate.md`](15_scene-list-and-chat-gate.md) | **場景清單不再只有十個**——上游 addon 截斷到 10,前端因此看不到真實場景;修好才能把對話驗證器接進 `--real` |
+| ACTIVE | [`15_scene-list-and-chat-gate.md`](15_scene-list-and-chat-gate.md) | **場景清單不再只有十個**——上游 addon 截斷到 10,前端因此看不到真實場景;修好才能把對話驗證器接進 `--real` |
 | TODO | [`14_hand-long.md`](14_hand-long.md) | **第五個實例:每指三關節**——`joint_count` 第一次建在 2 以外;主要風險是指掌比 |
 | WAITING-ON-USER | [`07_hand-v3-coupon.md`](07_hand-v3-coupon.md) | **印一件指節、量七項公差**——幾何側全部完成且真機驗證通過,往下每一件事都要從這一件實體反推。**使用者執行** |
 | AWAITING-ACCEPTANCE | [`06_hand-v3.md`](06_hand-v3.md) | 靈巧手 V3:文件樹 21 檔 + 追溯矩陣 22 條;域規格、手指、掌盤、整手、佈局全部做完,兩份真機契約 11/11 全綠,印製包已發布;**實體列印與台架量測未做** |
@@ -24,6 +23,8 @@ Read this file first after a new conversation, compaction, or terminal restart.
 | AWAITING-ACCEPTANCE | [`02_tendon-universal-joint.md`](02_tendon-universal-joint.md) | V6 PIN models checksum-controlled under models/ (PR #4 merged 2026-09-05, `901cb53`); physical print coupon remains |
 
 `WAITING-ON-USER` = 機器側已完成,下一步只有使用者能做(印、量、裁決);它不是 ACTIVE,checkpoint 不會把它當進行中。
+
+Accepted 2026-09-09: [`archive/13_conversation-reaches-the-generators.md`](archive/13_conversation-reaches-the-generators.md) — 對話能產出可印的零件:`list_instances` / `build_instance` 進對話工具清單,與公開九項目錄分離且有守衛;使用者「13 可以歸檔」(V01.0R.012)。
 
 Accepted 2026-09-09: [`archive/12_hand-gripper.md`](archive/12_hand-gripper.md) — 第四個實例三站夾爪:兩指＋對位拇指九節,真機首建 20/14 全過,走產品路徑建成,使用者 Lane B 通過後發布 `models/hand-gripper/`;使用者「12 可以歸檔」(V01.0R.00E)。
 
