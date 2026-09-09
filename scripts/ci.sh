@@ -124,6 +124,9 @@ if (( REAL )); then
     # The human-scale instance: the compact link through the same generator.
     _run hard "hand-compact contract" "$PY" scripts/verify/generated_artifact_verify_real.py scripts/verify/contracts/hand_compact.json
     _run hard "hand-compact finger (same scene)" "$PY" scripts/verify/generated_artifact_verify_real.py scripts/verify/contracts/hand_compact_finger.json --skip-generate
+    # Published 2026-09-09 on the user's Lane B verdict (D-008): from here the shipped
+    # bytes are re-derived on every real run, the same rule as hand-v3.
+    _run hard "hand-compact regenerated package matches shipped" "$PY" scripts/verify/regenerated_package_matches_shipped.py --package hand-compact
   else
     # Explicit SKIP, never a silent pass: with Blender down this tier is vacuous.
     printf '  %sSKIP%s MCP pipeline — Blender addon not listening on 9876 %s(start it: launchctl kickstart -k gui/$(id -u)/com.blender-mcp.blender)%s\n' \

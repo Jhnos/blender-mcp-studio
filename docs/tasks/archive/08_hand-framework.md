@@ -1,6 +1,6 @@
 # 靈巧手框架 — 把「換連桿」變成參數
 
-**Status:** AWAITING-ACCEPTANCE
+**Status:** ACCEPTED (2026-09-09, Lane B 三張圖通過;`hand-compact` 已發布)
 
 ## Goal
 
@@ -59,7 +59,5 @@
 
 ### Next step(使用者)
 
-- **Lane B 三題**(看 `tmp/hand-compact/` 三張圖,或本對話附的檔案):像不像手?握姿順不順?針筒好不好推?
-  通過 → `python3 scripts/publish_print_package.py hand-compact`(D-008),包進 `models/hand-compact/`,
-  再把 `regenerated_package_matches_shipped.py --package hand-compact` 接進 `--real`。
-- 印 `models/hand-v3/phalanx_mm.stl` 試片(`07_hand-v3-coupon.md`,C1–C7)——所有實體判斷都從它反推。
+- 無。使用者 2026-09-09 裁決「三張圖可以」,`models/hand-compact/` 已發布(V01.0R.000),本檔歸檔。
+  往下只剩實體:印試片(`07_hand-v3-coupon.md`,WAITING-ON-USER)。
