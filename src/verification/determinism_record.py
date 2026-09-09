@@ -38,8 +38,17 @@ class DeterminismRecord:
     spreads: Mapping[str, Mapping[str, int]]
 
     def max_spread(self, slug: str) -> int:
-        """The worst part in one instance. Zero parts means zero observed spread,
-        which is honest: nothing was measured, so nothing was seen to differ."""
+        """The worst part in one instance.
+
+        An unmeasured instance raises rather than answering 0. Answering 0 would
+        report "nothing was seen to differ" for something nobody looked at, and
+        a `KeyError` says only that a dict lookup failed.
+        """
+        if slug not in self.spreads:
+            raise KeyError(
+                f"{slug} has no determinism measurement in this record "
+                f"(taken {self.measured_on}); run build_determinism_probe.py --instance {slug}"
+            )
         return max(self.spreads[slug].values(), default=0)
 
 

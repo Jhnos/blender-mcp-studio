@@ -1,5 +1,12 @@
 {
   "instances": {
+    "hand-gripper": {
+      "parts": {
+        "HR_GRIPPER_PALM": 0,
+        "HR_GRIPPER_PHALANX_1": 0,
+        "HR_GRIPPER_PHALANX_2": 2
+      }
+    },
     "hand-compact": {
       "parts": {
         "HK_COMPACT_PALM": 0,
