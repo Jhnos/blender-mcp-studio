@@ -23,6 +23,8 @@ full courier gameplay and subsequent B/C expansion stay in PVR STATUS.
 - Full-cast final CI: `/tmp/living-full-cast-ci-final.log`; independent review: `tmp/living-full-cast-release/visual-review.md`.
 - Preview expansion originally clipped outer characters; corrected orthographic framing and added alpha-bound publishing rejection.
 
+- Source editing instructions now specify render isolation and exact assembled-preview camera settings; doc-only T1/T2 passed (`/tmp/full-cast-source-doc-ci.log`). Blend geometry is unchanged from the real-verified source.
+
 ### Open failures
 
 - No asset or real-Blender gate failures. Full PVR public journey is tracked in its living-world verification report.

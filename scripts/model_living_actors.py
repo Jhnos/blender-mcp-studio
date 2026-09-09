@@ -1,4 +1,4 @@
-"""Render the first actor slice using the delivered World Kit orthographic camera."""
+"""Render four editable actors using the delivered World Kit orthographic camera."""
 
 from __future__ import annotations
 

@@ -1,4 +1,4 @@
-"""Nine editable low-poly event badges, rendered without external fonts."""
+"""Eighteen editable low-poly event badges, rendered without external fonts."""
 
 from __future__ import annotations
 

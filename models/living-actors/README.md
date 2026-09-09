@@ -3,7 +3,11 @@
 Four original low-poly actors share the same seven-bone hierarchy and rigid skin weights.
 Open living-actors.blend; select LW_traveler_rig, LW_guide_rig, LW_guard_rig or LW_artisan_rig and choose its named
 idle/walk/interact Action in the Action Editor. Catalog roots sit at x=-1.65/-0.55/+0.55/+1.65;
-reset a selected root to zero when rendering a sprite with LW_sprite_camera.
+For a single-character render, disable render visibility for the other three LW_* collections in the
+Outliner, reset the selected rig root to (0,0,0), and select LW_sprite_camera. Viewport hiding alone
+does not exclude other characters from the rendered PNG. For the assembled preview, restore the catalog root positions and render all four collections with
+LW_sprite_camera at orthographic scale 5.5 and 1536×768; restore scale 3 and 128×192 for sprites.
+The batch generator performs this isolation and framing for every output automatically.
 
 The actual World Kit sprite camera is reused: 128×192 RGBA, 64px/metre, foot anchor (64,144).
 The anchor is the projected ground-root center, not the visible shoe silhouette; toe and lifted-foot
