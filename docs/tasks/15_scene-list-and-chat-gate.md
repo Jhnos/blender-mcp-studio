@@ -1,6 +1,6 @@
 # 場景清單不再只有十個,對話路徑才能有閘門
 
-**Status:** ACTIVE
+**Status:** AWAITING-ACCEPTANCE
 
 ## Goal
 
@@ -45,3 +45,16 @@
 ### Next step
 
 - 寫那個會紅的測試,再改 `scene_summary()`。
+
+---
+
+## 結果(2026-09-09)
+
+- `scene_summary()` 的 metadata 仍取自 addon,清單改由 adapter 自己有上界地讀。
+  上界 500,遠高於實測最大場景(209);**碰到上界會由 `objects_truncated` 說出來**,
+  不是靠讀者比對兩個數字去猜——那分不出「上限」和「解碼失敗」。
+- 位置解碼共用 `decode_vector`(從私有改公開),不留第二份narrowing。
+- **H6 綠了:5/5。** 前端現在看得到自己建立的物件。
+- `mcp_verify_chat.py` 進 `ci.sh --real` 並由 `test_real_ci_gates_the_conversation_path` 釘住。
+  **對話路徑第一次有真機閘門。**
+- `--real` 32 條全綠。
