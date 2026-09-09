@@ -147,3 +147,49 @@ def test_a_regenerated_file_nobody_expected_is_reported_not_ignored() -> None:
 
     assert report.passed
     assert "extra_mm.stl" in report.summary
+
+
+# --- the sliver budget -------------------------------------------------------
+#
+# Blender's exact boolean solver does not order its output deterministically:
+# the same compact phalanx built eight times in one session gave six distinct
+# vertex orderings from the first union on, and the cleanup thresholds then
+# turned that into 2976 or 2978 triangles (one sliver quad) from run to run.
+# V3 never showed it only because its slivers sit clear of the thresholds.
+# The budget is derived from the plan — two triangles per booleaned part —
+# never typed in by hand, and zero stays the default so every existing
+# should-fire case above still fires.
+
+
+def test_a_sliver_inside_the_budget_passes_and_one_outside_fires() -> None:
+    expected = ExpectedMesh("phalanx_mm.stl", 3434, (24.0, 22.0, 67.0), sliver_budget=2)
+
+    assert compare_mesh(expected, _stl(3436, (24.0, 22.0, 67.0))).passed
+    assert compare_mesh(expected, _stl(3432, (24.0, 22.0, 67.0))).passed
+    outside = compare_mesh(expected, _stl(3437, (24.0, 22.0, 67.0)))
+    assert not outside.passed
+    assert "3437" in outside.reason and "budget" in outside.reason
+
+
+def test_the_budget_is_two_triangles_per_booleaned_part_from_the_plan() -> None:
+    from src.core.domain.hand_instances import HAND_INSTANCES
+    from src.verification.package_reproduction import sliver_budgets
+
+    compact = sliver_budgets(HAND_INSTANCES["hand-compact"])
+    assert compact == {
+        "phalanx_base_mm.stl": 2,
+        "phalanx_distal_mm.stl": 2,
+        "palm_mm.stl": 2,
+        "finger_compact_mm.stl": 6,
+        "hand_compact_mm.stl": 32,
+    }
+    v3 = sliver_budgets(HAND_INSTANCES["hand-v3"])
+    assert v3["hand_v3_mm.stl"] == 32 and v3["phalanx_mm.stl"] == 2
+
+
+def test_the_manifest_reader_carries_the_budget_it_is_given() -> None:
+    expected = expected_from_manifest(
+        MANIFEST, ["phalanx_mm.stl", "palm_mm.stl"], sliver_budgets={"phalanx_mm.stl": 2}
+    )
+    assert expected["phalanx_mm.stl"].sliver_budget == 2
+    assert expected["palm_mm.stl"].sliver_budget == 0
