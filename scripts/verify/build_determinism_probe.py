@@ -245,9 +245,7 @@ def main(argv: list[str] | None = None) -> int:
     return 1
 
 
-def _merged_record(
-    path: Path, slug: str, runs: int, spreads: dict[str, int]
-) -> dict[str, object]:
+def _merged_record(path: Path, slug: str, runs: int, spreads: dict[str, int]) -> dict[str, object]:
     """Replace this instance's entry, keep the others.
 
     Measuring one instance must not silently drop the numbers taken for another;

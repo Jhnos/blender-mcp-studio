@@ -52,7 +52,7 @@ def test_the_budget_covers_the_measured_spread(slug: str) -> None:
     record = _record()
     measured = record.max_spread(slug)
 
-    assert SLIVER_TRIANGLES_PER_PART >= measured, (
+    assert measured <= SLIVER_TRIANGLES_PER_PART, (
         f"{slug} was measured at {measured} triangles of spread on "
         f"{record.measured_on} but the budget is {SLIVER_TRIANGLES_PER_PART}"
     )
@@ -63,7 +63,7 @@ def test_every_measured_part_is_covered_not_only_the_worst_one() -> None:
     for slug, parts in record.spreads.items():
         assert parts, f"{slug} records no parts"
         for part, spread in parts.items():
-            assert SLIVER_TRIANGLES_PER_PART >= spread, f"{slug}/{part} spread {spread}"
+            assert spread <= SLIVER_TRIANGLES_PER_PART, f"{slug}/{part} spread {spread}"
 
 
 def test_the_gate_fires_when_a_measurement_exceeds_the_budget(tmp_path: Path) -> None:
