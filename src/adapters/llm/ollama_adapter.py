@@ -57,8 +57,11 @@ class OllamaAdapter(LLMPort):
         httpx's hierarchy — connect, read, timeout — means it was not reached (503).
         """
         if isinstance(exc, httpx.HTTPStatusError):
+            # reason_phrase, not .text: on a streaming response the body has not
+            # been read and .text raises ResponseNotRead from inside the handler.
+            response = exc.response
             return LLMProviderError(
-                f"Ollama answered {exc.response.status_code}: {exc.response.text[:200]}"
+                f"Ollama answered {response.status_code} {response.reason_phrase}"
             )
         return LLMConnectionError(f"Ollama unreachable at {self._base_url}: {exc}")
 
