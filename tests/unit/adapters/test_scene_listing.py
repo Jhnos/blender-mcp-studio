@@ -38,7 +38,7 @@ async def test_a_scene_larger_than_the_addons_cap_comes_back_whole() -> None:
     assert len(objects) == 209
     assert not truncated
     assert objects[0].name == "obj_0"
-    assert objects[-1].location == (0.0, 1.0, 2.0)
+    assert objects[-1].location.as_list() == [0.0, 1.0, 2.0]
 
 
 @pytest.mark.asyncio
