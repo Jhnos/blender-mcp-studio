@@ -5,6 +5,19 @@
 
 ## [Unreleased]
 
+### V01.0R.005 — 5S:死腳本歸檔、接手 SOP 補「沒有任務」的情況、決定性探針入庫
+
+#### Added
+
+- `scripts/verify/build_determinism_probe.py`:FF-18 的處方變成可跑的東西——同一零件在常駐 Blender 重建 N 次,逐步比面數與頂點雜湊。
+- `docs/tasks/00_INDEX.md` 頂端「接手」段:沒有進行中任務時在等誰、第一步做什麼。
+
+#### Changed
+
+- `AGENTS.md`、`docs/README.md`、專案 skill 的接手 SOP:`WAITING-ON-USER` 不是進行中;沒有任務就不要捏造。skill 新增「手實例」一節與發布順序。
+- `docs/KNOWLEDGE.md` 多一列:與機器或 agent 工具耦合的操作細節放 agent 私有 memory,不進 repo。
+- `scripts/run_workflow.sh` 刪除(指向已刪的 `src.workflows`);`scripts/integrate_tailnet.sh`(寫死 tailnet 位址,零引用)與 `scripts/setup_env.sh`(README 已直接寫 conda 指令)移到 `scripts/archive/`。
+
 ### V01.0R.004 — 任務 09(核心邊界收債)使用者驗收,歸檔
 
 #### Changed

@@ -18,6 +18,7 @@
 | 產出物 contract 流程 | `verification/` | 一個模型版本一個 rubric 檔 |
 | 已完成的 campaign | `archive/` | 整包移入，**不得據以推斷現況** |
 | 跨專案通用的做法 | 全域 skill 或全域 agent 規則 | 不放本 repo |
+| 與某台機器或某個 agent 工具耦合的操作細節(兩機同步、shell 陷阱) | agent 的私有 memory | 不放本 repo:換人換機就不成立 |
 
 判準：**與本專案耦合的 → 專案檔；換個專案仍成立的 → 全域。**
 

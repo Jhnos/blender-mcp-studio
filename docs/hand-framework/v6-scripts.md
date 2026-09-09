@@ -22,11 +22,12 @@
 | SF-12 | 同上,`hand_compact*.json` | **PASS**(M6):真機 20/14;第一次 19/20(拇指擦過 F3),重掃後全過 |
 | SF-13 | `scripts/ci.sh --real` 首跑計時 | **已量**(M1):三條閘門合計 8 s,見 [[hand-framework/v8-results]] |
 | SF-17 | `checkpoint_check.sh .` | **既有** |
+| FF-18 | `scripts/verify/build_determinism_probe.py --instance <slug> --runs N` | **已建**(V01.0R.005):同一零件在常駐 Blender 重建 N 次,逐步比面數與頂點雜湊;新零件上任何「精確相等」規則之前先跑 |
 
 ## 每片收尾的固定順序(Mac)
 
 ```bash
-# 推到 Mac,清場再跑(stash -u 是本輪被咬過的紀律)
+# 推到 Mac,清場再跑。stash -u 只在 Mac 沒有未追蹤的發布位元組時用——它會把剛發布的 models/<slug>/ 一起收走
 git push blendermac main:synced-main --force
 ssh blendermac 'cd ~/Blender_MCP_drawer && git stash -u -q; git reset --hard synced-main -q && scripts/ci.sh'
 

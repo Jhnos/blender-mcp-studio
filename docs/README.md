@@ -40,7 +40,8 @@ Blender MCP Studio 的文件樹。**一檔一主題，互相 `[[wikilink]]` 指�
 
 ## 接手 SOP
 
-1. 讀 [[tasks/00_INDEX]] 找到 ACTIVE 或 AWAITING-ACCEPTANCE 的任務。
+1. 讀 [[tasks/00_INDEX]] 找到 ACTIVE 或 AWAITING-ACCEPTANCE 的任務;`WAITING-ON-USER` 不是進行中。
+   一個都沒有時就是沒有進行中的工作——索引頂端的「接手」段寫著在等誰;不要捏造任務。
 2. 讀該任務檔的 hand-off 段，然後 `git log --oneline -5`。
 3. 除錯前先查 [[LESSONS_LEARNED]] 有無同 class 教訓。
 4. 依上表只載入這一步需要的檔；**不要重新掃描整個 repo** 去重建已完成的工作。

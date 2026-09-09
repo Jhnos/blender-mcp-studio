@@ -11,7 +11,8 @@ binding repository policy and this skill as the task-specific execution path.
 ## Orient without rescanning
 
 1. Read `docs/tasks/00_INDEX.md`.
-2. Read the linked `ACTIVE` or `AWAITING-ACCEPTANCE` task and its hand-off.
+2. Read the linked `ACTIVE` or `AWAITING-ACCEPTANCE` task and its hand-off. `WAITING-ON-USER`
+   is not in progress; with no open task, the index's resume block is the hand-off.
 3. Run `git log --oneline -5` and `git status --short --branch`.
 4. Before debugging, search `docs/LESSONS_LEARNED.md` for the failure class.
 5. Open only the architecture or client document named by the task.
@@ -109,6 +110,18 @@ pair zero-overlap neutral checks with displaced stop-contact samples; renders ar
 Keep product/readiness prefixes disjoint from presentation and diagnostic object prefixes;
 the contract's expected selection count is the fail-loud guard against namespace pollution.
 
+## Hand instances (spec → plan → execute)
+
+Any tendon-driven hand is one registered instance in `src/core/domain/hand_instances.py`;
+`docs/hand-framework/README.md` is the tree to read before touching a generator, contract or
+package. Domain computes, `src/core/planning/` turns numbers into named plans, `scripts/hand_*.py`
+executes plans only (a literal scan enforces it). Contracts are generated
+(`scripts/verify/build_hand_contracts.py <slug>`) and committed. Publishing is: Lane B on the
+renders first, then `scripts/publish_print_package.py --package <slug>` on the machine that ran
+the contracts, a README mirroring `models/hand-v3/README.md` with its guard tests, and the
+`regenerated_package_matches_shipped.py` differential wired into `--real`. Before trusting any
+exact-count rule on a new part, run `scripts/verify/build_determinism_probe.py --instance <slug>`.
+
 ## Record what you learned
 
 Searching `docs/LESSONS_LEARNED.md` is only half the loop; this skill used to describe only
@@ -131,6 +144,7 @@ with a firing trigger. `docs/KNOWLEDGE.md` holds the full placement map.
 ## Close the milestone
 
 - Update the task hand-off with verified facts, open failures, and one next step.
-- Run the knowledge 5S scanner; archive accepted task/campaign material.
+- Do the 5S pass in `docs/KNOWLEDGE.md` (budgets, archive by moving, no silent deletes);
+  archive accepted task/campaign material.
 - Update `VERSION` and `CHANGELOG.md` through the version-management tools.
 - Commit without unrelated files, run the checkpoint checker, then push without force.

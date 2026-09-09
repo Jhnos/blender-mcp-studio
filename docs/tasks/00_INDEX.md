@@ -2,6 +2,15 @@
 
 Read this file first after a new conversation, compaction, or terminal restart.
 
+## 接手(2026-09-09,V01.0R.005)
+
+- **沒有進行中的任務。** 08(靈巧手框架)與 09(核心邊界收債)都已由使用者驗收歸檔;
+  `models/hand-compact/` 已發布,真機 21 條閘門全綠。
+- **在等使用者的:** 07 印 V3 指節試片並量七項(`scripts/analyse_coupon.py --instance hand-v3` 判讀);
+  下一個開發目標(第四個實例、或核心功能)由使用者給。
+- **接手第一步:** `git log --oneline -5`;若使用者給了新目標,從 `templates/task_template.md` 開新任務檔並改本表;
+  沒有新目標就不要捏造任務(checkpoint C1 因此為紅,是誠實狀態)。
+
 | State | Task | Priority |
 |---|---|---|
 | WAITING-ON-USER | [`07_hand-v3-coupon.md`](07_hand-v3-coupon.md) | **印一件指節、量七項公差**——幾何側全部完成且真機驗證通過,往下每一件事都要從這一件實體反推。**使用者執行** |

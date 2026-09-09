@@ -8,7 +8,9 @@ application services.
 
 ## Start and resume here
 
-1. Read `docs/tasks/00_INDEX.md` and the linked `ACTIVE` or `AWAITING-ACCEPTANCE` task.
+1. Read `docs/tasks/00_INDEX.md`. Open the linked `ACTIVE` or `AWAITING-ACCEPTANCE` task if
+   there is one; a `WAITING-ON-USER` task is not in progress. When none is open, nothing is
+   in progress: the index's resume block says what is waiting on whom. Do not invent a task.
 2. Read that task's hand-off section, then run `git log --oneline -5`.
 3. Before debugging, search `docs/LESSONS_LEARNED.md` for the same failure class.
 4. Open `docs/README.md` and load only the topic files its "when to read" column
