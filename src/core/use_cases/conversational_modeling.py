@@ -21,19 +21,18 @@ from src.core.domain.events import (
     MessageAddedEvent,
 )
 from src.core.domain.exceptions import SceneCreationError
-
 from src.core.domain.session import Session
 from src.core.ports.blender_port import BlenderPort
 from src.core.ports.event_bus_port import EventBusPort
 from src.core.ports.llm_port import LLMChatPort, LLMToolChatPort, ToolDefinition
 from src.core.ports.mcp_port import ToolResult
 from src.core.ports.mechanical_generation_port import InstanceCatalogPort
+from src.core.ports.prompt_builder_port import PromptBuilderPort
 from src.core.use_cases.conversation_generation import (
     GENERATION_TOOL_NAMES,
     GENERATION_TOOLS,
     run_generation_tool,
 )
-from src.core.ports.prompt_builder_port import PromptBuilderPort
 
 try:
     from src.adapters.prompt.semantic_tool_router import SemanticToolRouter
