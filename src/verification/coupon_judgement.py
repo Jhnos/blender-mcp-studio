@@ -64,11 +64,25 @@ class ItemVerdict:
     reading_notes: tuple[str, ...] = ()
 
 
+#: Items that only exist on a link with a rolling element. A bearingless link
+#: bores its lug to the pin and stops, so there is no seat to measure and no
+#: MR84 to press in. Asking for them anyway would make the coupon unpassable on
+#: three of the four published packages, and an unpassable check teaches people
+#: to ignore the result rather than to take a reading.
+BEARING_ITEMS = ("C3", "C4")
+
+
 def coupon_bands(link: FingerLinkSpec) -> tuple[Band, ...]:
-    """The two dimensional bands, nominal from the link, offsets from the protocol."""
+    """The dimensional bands, nominal from the link, offsets from the protocol.
+
+    A bearingless link gets one band, not two: its `bearing_seat_diameter_mm` is
+    held equal to the bore so that a consumer subtracting a seat removes
+    nothing, and quoting that equality as a second acceptance band would dress a
+    non-existent feature up as a measured one.
+    """
     pin_low, pin_high = PIN_BORE_TOLERANCE_MM
     seat_low, seat_high = BEARING_SEAT_TOLERANCE_MM
-    return (
+    pin = (
         Band(
             "C1",
             "銷孔直徑",
@@ -76,6 +90,11 @@ def coupon_bands(link: FingerLinkSpec) -> tuple[Band, ...]:
             link.printed_pin_bore_mm + pin_low,
             link.printed_pin_bore_mm + pin_high,
         ),
+    )
+    if not link.has_bearing_seat:
+        return pin
+    return (
+        *pin,
         Band(
             "C3",
             "軸承座直徑",
@@ -120,6 +139,15 @@ def judge_coupon(
     verdicts: list[ItemVerdict] = []
     for item in ITEM_ORDER:
         given = measurements.get(item)
+        if not link.has_bearing_seat and item in BEARING_ITEMS:
+            # Stated as its own status, never folded into PASS: "there was
+            # nothing to measure" and "it measured within band" are different
+            # facts, and a results table that spells both PASS loses the one
+            # that says how much of the part was actually checked.
+            verdicts.append(
+                ItemVerdict(item, "N/A", "這條連桿無軸承座:銷孔直接鑽到銷,沒有東西可壓入")
+            )
+            continue
         if item in bands:
             readings: Sequence[float] = () if given is None or isinstance(given, bool) else given
             verdicts.append(_judge_band(bands[item], readings))
@@ -135,7 +163,14 @@ def judge_coupon(
 
 
 def coupon_passed(verdicts: Sequence[ItemVerdict]) -> bool:
-    return bool(verdicts) and all(verdict.status == "PASS" for verdict in verdicts)
+    """Every applicable item passed, and at least one item was applicable.
+
+    The second clause matters: without it a coupon whose every item was ruled
+    inapplicable would report a pass, which is the "vacuously true" failure this
+    file already refuses for a hole nobody measured twice.
+    """
+    applicable = [verdict for verdict in verdicts if verdict.status != "N/A"]
+    return bool(applicable) and all(verdict.status == "PASS" for verdict in applicable)
 
 
 def result_rows(verdicts: Sequence[ItemVerdict], date: str) -> list[str]:

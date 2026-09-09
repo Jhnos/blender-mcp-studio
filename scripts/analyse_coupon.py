@@ -79,7 +79,7 @@ def main(argv: list[str] | None = None) -> int:
     passed = coupon_passed(verdicts)
     counts = {
         status: sum(1 for v in verdicts if v.status == status)
-        for status in ("PASS", "FAIL", "VACUOUS")
+        for status in ("PASS", "FAIL", "VACUOUS", "N/A")
     }
     print(("COUPON PASS" if passed else "COUPON NOT PASSED") + f" — {counts}")
     return 0 if passed else 1

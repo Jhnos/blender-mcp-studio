@@ -84,3 +84,54 @@ def test_result_rows_are_one_reading_per_row_never_averaged() -> None:
 
     assert len([r for r in rows if r.startswith("| 2026-09-10 | C1 |")]) == 2
     assert not any("4.50" in r for r in rows), "the two readings were averaged away"
+
+
+def test_a_bearingless_link_has_one_band_not_two() -> None:
+    """The compact link holds its seat diameter equal to the bore so that a
+    consumer subtracting a seat removes nothing. Quoting that equality as an
+    acceptance band would present a feature that is not there as measured."""
+    from src.core.domain.compact_link import CompactHingeLinkSpec
+
+    bands = coupon_bands(CompactHingeLinkSpec())
+
+    assert [band.item for band in bands] == ["C1"]
+
+
+def test_the_bearing_items_are_not_applicable_on_a_bearingless_link() -> None:
+    from src.core.domain.compact_link import CompactHingeLinkSpec
+
+    verdicts = {
+        verdict.item: verdict
+        for verdict in judge_coupon(
+            CompactHingeLinkSpec(),
+            {"C1": (2.40, 2.42), "C2": True, "C5": True, "C6": True, "C7": True},
+        )
+    }
+
+    assert verdicts["C3"].status == "N/A"
+    assert verdicts["C4"].status == "N/A"
+    assert coupon_passed(tuple(verdicts.values()))
+
+
+def test_the_same_readings_on_a_bearing_link_do_not_pass() -> None:
+    """Should-fire. If N/A leaked into the link that does have a seat, the
+    coupon would go green on a part whose bearing nobody checked."""
+    from src.core.domain.hinge_chain import HingePhalanxSpec
+
+    verdicts = judge_coupon(
+        HingePhalanxSpec(),
+        {"C1": (4.50, 4.52), "C2": True, "C5": True, "C6": True, "C7": True},
+    )
+    by_item = {verdict.item: verdict for verdict in verdicts}
+
+    assert by_item["C3"].status == "VACUOUS"
+    assert by_item["C4"].status == "VACUOUS"
+    assert not coupon_passed(verdicts)
+
+
+def test_a_coupon_where_nothing_applies_is_not_a_pass() -> None:
+    """Every item N/A would otherwise be vacuously true — the exact shape this
+    module already refuses for a hole measured once."""
+    from src.verification.coupon_judgement import ItemVerdict
+
+    assert not coupon_passed([ItemVerdict("C3", "N/A", "no seat")])
