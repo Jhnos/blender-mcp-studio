@@ -84,9 +84,9 @@ def test_the_generation_tools_are_offered_only_when_the_service_is_wired() -> No
     without, _ = _use_case(None)
 
     offered = {tool.name for tool in with_service.available_tools("做一隻夾爪")}
-    assert GENERATION_TOOL_NAMES <= offered
+    assert offered >= GENERATION_TOOL_NAMES
 
-    assert not GENERATION_TOOL_NAMES & {tool.name for tool in without.available_tools("做一隻夾爪")}
+    assert not {tool.name for tool in without.available_tools("做一隻夾爪")} & GENERATION_TOOL_NAMES
 
 
 def test_the_generation_tools_survive_the_semantic_router() -> None:
@@ -97,7 +97,7 @@ def test_the_generation_tools_survive_the_semantic_router() -> None:
 
     for message in ("夾爪", "make me a hand", "", "完全無關的句子"):
         offered = {tool.name for tool in use_case.available_tools(message)}
-        assert GENERATION_TOOL_NAMES <= offered, message
+        assert offered >= GENERATION_TOOL_NAMES, message
 
 
 def test_the_offered_slugs_are_exactly_the_registry() -> None:

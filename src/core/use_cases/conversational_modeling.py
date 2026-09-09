@@ -142,7 +142,6 @@ _BLENDER_TOOLS: list[ToolDefinition] = [
 ]
 
 
-
 class ConversationalModelingUseCase:
     """Transforms user dialogue into Blender operations via LLM + MCP.
 
