@@ -1,6 +1,6 @@
 # 第四個實例:三站夾爪(兩指＋對位拇指)
 
-**Status:** AWAITING-ACCEPTANCE
+**Status:** ACCEPTED (2026-09-09)
 
 ## Goal
 
