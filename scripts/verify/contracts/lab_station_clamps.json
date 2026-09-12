@@ -1,5 +1,5 @@
 {
-  "name": "lab-station-fit-prototype-only",
+  "name": "lab-station-probe-clamps-fit-prototype",
   "generator_script": "scripts/model_lab_station.py",
   "reload_modules": [
     "src.core.domain.lab_station",
@@ -123,8 +123,8 @@
     ]
   },
   "readiness": {
-    "selection_prefix": "LS_CHECK_fit_",
-    "expected_selection_count": 9,
+    "selection_prefix": "LS_CHECK_clamp_",
+    "expected_selection_count": 10,
     "forbidden_issue_codes": [
       "no_mesh",
       "non_manifold_edges",

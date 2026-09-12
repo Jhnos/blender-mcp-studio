@@ -675,3 +675,24 @@ def test_a_part_number_count_of_zero_is_refused(tmp_path: Path) -> None:
 
     with pytest.raises(ValueError):
         contract_from_mapping(mapping, tmp_path)
+
+
+def test_oracle_orders_mixed_numbered_and_named_parts_without_type_error(tmp_path: Path) -> None:
+    import ast
+    import re
+    from types import SimpleNamespace
+
+    from src.verification.generated_artifact_oracle import oracle_code
+
+    source = oracle_code(contract_from_mapping(_mapping(), tmp_path))
+    function = next(
+        node
+        for node in ast.parse(source).body
+        if isinstance(node, ast.FunctionDef) and node.name == "natural_key"
+    )
+    namespace = {"re": re}
+    exec(compile(ast.Module(body=[function], type_ignores=[]), "oracle_key", "exec"), namespace)
+    key = namespace["natural_key"]
+    assert callable(key)
+    objects = [SimpleNamespace(name=name) for name in ("FX_cap", "FX_10", "FX_2")]
+    assert [obj.name for obj in sorted(objects, key=key)] == ["FX_2", "FX_10", "FX_cap"]

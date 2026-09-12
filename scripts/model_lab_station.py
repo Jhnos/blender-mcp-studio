@@ -25,6 +25,8 @@ from scripts.blender_mesh_primitives import (  # noqa: E402
     material,
 )
 from scripts.hollow_hinge_render import m  # noqa: E402
+from scripts.lab_station_clamp import clamp_hardware, lined_jaw, rod_keeper  # noqa: E402
+from scripts.lab_station_clamp_check import verify_clamp_assembly, verify_jaw_service  # noqa: E402
 from scripts.lab_station_joints import (  # noqa: E402
     add_screen_ears,
     placed_plate,
@@ -42,7 +44,7 @@ from scripts.lab_station_render import render_views  # noqa: E402
 from scripts.lab_station_rig import create_arm_rig, verify_independence  # noqa: E402
 from src.core.domain.lab_station import LabStationSpec, Point  # noqa: E402
 
-OUTPUT = PROJECT_ROOT / "tmp" / "lab-station-v3"
+OUTPUT = PROJECT_ROOT / "tmp" / "lab-station-v4"
 
 
 def box(name: str, size: Point, at: Point, mat: bpy.types.Material) -> bpy.types.Object:
@@ -93,7 +95,12 @@ def export_prototype(obj: bpy.types.Object, name: str) -> dict[str, object]:
     dimensions = [round(float(v) * 1000, 3) for v in obj.dimensions]
     check = obj.copy()
     check.data = obj.data.copy()
-    check.name = "LS_CHECK_" + ("lift_" if "_lift_" in name else "fit_") + name
+    group = (
+        "clamp_"
+        if any(tag in name for tag in ("_clamp_", "_liner_", "_rod_keeper"))
+        else ("lift_" if "_lift_" in name else "fit_")
+    )
+    check.name = "LS_CHECK_" + group + name
     bpy.context.collection.objects.link(check)
     check.location.x = m(260 * len([o for o in scene_objects() if o.name.startswith("LS_CHECK_")]))
     check.location.y = m(450)
@@ -128,6 +135,7 @@ def build() -> None:
     teal = material("LS_TEAL", (0.04, 0.51, 0.53, 1))
     amber = material("LS_AMBER", (0.95, 0.47, 0.10, 1))
     steel = material("LS_STEEL", (0.55, 0.63, 0.69, 1), 0.6)
+    soft = material("LS_SOFT", (0.22, 0.22, 0.24, 1))
     blue = material("LS_BLUE", (0.10, 0.30, 0.49, 1))
     parts: list[dict[str, object]] = []
 
@@ -254,23 +262,23 @@ def build() -> None:
             knob_at = (point[0] + side * 18, point[1], point[2])
             groups[index].append(cylinder(f"REF_{label}_knob_{index}", 12, 10, knob_at, color, "X"))
         probe = spec.probe_origin(side)
-        holder_point = (probe[0], probe[1], probe[2] - 28)
-        holder = box(f"REF_{label}_holder", (20, 30, 18), holder_point, color)
-        groups[3].append(holder)
         frame_lift, carrier_lift, rods = build_lift(label, side, probe, color, steel)
+        cap, liners = lined_jaw(carrier_lift, label, side, probe, color, soft)
+        keeper = rod_keeper(frame_lift, label, side, probe, color)
+        for obj in [cap, keeper, *liners]:
+            parts.append(export_prototype(obj, obj.name.removeprefix("LS_FIT_")))
         parts.append(export_prototype(frame_lift, label + "_lift_frame"))
         parts.append(export_prototype(carrier_lift, label + "_lift_carrier"))
-        groups[2].extend([frame_lift, *rods])
-        groups[3].append(carrier_lift)
+        moving_hardware, fixed_hardware = clamp_hardware(label, side, probe, steel)
+        groups[2].extend([frame_lift, keeper, *rods, *fixed_hardware])
+        groups[3].extend([carrier_lift, cap, *liners, *moving_hardware])
         if side == -1:
-            hole(holder, holder_point, 4, 25)
             groups[3].append(
                 cylinder("REF_glass_capillary", 3, 102, (probe[0], probe[1], probe[2] - 69), steel)
             )
         else:
             for dy, radius, name in ((-6.0, 6.0, "E201C"), (8.0, 3.0, "DS18B20")):
                 y = probe[1] + dy
-                hole(holder, (probe[0], y, holder_point[2]), radius + 0.5, 25)
                 groups[3].append(
                     cylinder("REF_" + name, radius, 115, (probe[0], y, probe[2] - 69), steel)
                 )
@@ -278,6 +286,10 @@ def build() -> None:
             label, (root, elbow, wrist), groups[0], groups[1], groups[2], groups[3], bases
         )
 
+    (OUTPUT / "clamp-assembly.json").write_text(
+        json.dumps(verify_clamp_assembly(), indent=2) + "\n"
+    )
+    (OUTPUT / "jaw-service.json").write_text(json.dumps(verify_jaw_service(), indent=2) + "\n")
     (OUTPUT / "probe-lift.json").write_text(json.dumps(verify_lifts(), indent=2) + "\n")
     (OUTPUT / "probe-parking.json").write_text(json.dumps(verify_parking(), indent=2) + "\n")
     (OUTPUT / "joint-motion.json").write_text(
@@ -297,7 +309,7 @@ def build() -> None:
             area.spaces.active.region_3d.view_distance = 0.65
             area.spaces.active.region_3d.view_location = (0, -0.075, 0.095)
             area.spaces.active.clip_start = 0.0001
-    bpy.ops.wm.save_as_mainfile(filepath=str(OUTPUT / "lab_station_v3.blend"))
+    bpy.ops.wm.save_as_mainfile(filepath=str(OUTPUT / "lab_station_v4.blend"))
     manifest = {
         "stage": "straight-extraction-and-fit-prototype",
         "project_version": (PROJECT_ROOT / "VERSION").read_text().strip(),

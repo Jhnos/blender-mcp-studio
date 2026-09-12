@@ -67,14 +67,19 @@ def verify_lifts(travel: float = 100) -> dict[str, object]:
         rods = [o for o in fixed if o.name.startswith("LS_REF_" + label + "_guide_rod_")]
         assert len(moving) >= 3 and len(rods) == 2 and len(fixed) >= 20
         fixed_matrices = {o.name: o.matrix_world.copy() for o in fixed}
+        fixed_trees = {o.name: tree(o) for o in fixed}
         probes = [bpy.data.objects[name] for name in names]
         initial = {o.name: vertices(o) for o in probes}
         samples = []
         try:
             for height in range(0, int(travel) + 1, 5):
                 set_pose(control, probe_slide_mm=height)
+                moving_trees = {o.name: tree(o) for o in moving}
                 intersections = [
-                    (a.name, b.name) for a in moving for b in fixed if tree(a).overlap(tree(b))
+                    (a.name, b.name)
+                    for a in moving
+                    for b in fixed
+                    if moving_trees[a.name].overlap(fixed_trees[b.name])
                 ]
                 drift = max(
                     abs(o.matrix_world[i][j] - fixed_matrices[o.name][i][j])
@@ -116,9 +121,9 @@ def verify_lifts(travel: float = 100) -> dict[str, object]:
                     if b in rods:
                         continue
                     if (
-                        swept.overlap(tree(b))
+                        swept.overlap(fixed_trees[b.name])
                         or inside(vertices(b)[0], swept)
-                        or inside(vertices(a)[0], tree(b))
+                        or inside(vertices(a)[0], fixed_trees[b.name])
                     ):
                         swept_hits.append((a.name, b.name))
             if swept_hits:
@@ -167,11 +172,12 @@ def verify_parking() -> dict[str, object]:
             fixed_trees = {o.name: tree(o) for o in fixed}
             for angle in range(0, 46, 3):
                 set_pose(control, yaw_deg=sign * angle)
+                moving_trees = {o.name: tree(o) for o in moving}
                 hits = [
                     (a.name, b.name)
                     for a in moving
                     for b in fixed
-                    if tree(a).overlap(fixed_trees[b.name])
+                    if moving_trees[a.name].overlap(fixed_trees[b.name])
                 ]
                 samples.append({"head": label, "yaw_deg": sign * angle, "intersections": hits})
                 if hits:

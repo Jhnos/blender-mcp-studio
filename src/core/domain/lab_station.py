@@ -74,3 +74,33 @@ class LabStationSpec:
             (root[i] + wrist[i]) / 2 + height * normal[i] for i in range(3)
         )
         return root, elbow, wrist
+
+
+@dataclass(frozen=True, slots=True)
+class ProbeClampSpec:
+    """Replaceable soft liners; geometry is not a glass pressure qualification."""
+
+    split_gap_mm: float = 0.8
+    jaw_depth_mm: float = 46.0
+    bolt_y_mm: tuple[float, float] = (-18.0, 18.0)
+
+    def __post_init__(self) -> None:
+        values = (self.split_gap_mm, self.jaw_depth_mm, *self.bolt_y_mm)
+        if (
+            not all(isfinite(v) for v in values)
+            or not 0 < self.split_gap_mm <= 1.2
+            or self.jaw_depth_mm / 2 - max(abs(y) for y in self.bolt_y_mm) < 4.8
+        ):
+            raise ValueError("Invalid jaw gap or fastener edge wall")
+
+    def bores(self, dual: bool) -> tuple[tuple[float, float], ...]:
+        return ((-6.0, 7.2), (8.0, 4.2)) if dual else ((0.0, 4.2),)
+
+    def liner_outer_radius(self, bore: float) -> float:
+        return bore - 0.1
+
+    def liner_inner_radius(self, bore: float) -> float:
+        return bore - 1.1
+
+    def liner_flange_radius(self, bore: float) -> float:
+        return bore + 0.9

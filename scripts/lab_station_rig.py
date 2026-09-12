@@ -117,7 +117,7 @@ def verify_independence(labels: Sequence[str]) -> list[dict[str, object]]:
     """Exercise every control against another real head; prove isolation, not collision safety."""
     if len(labels) < 2:
         raise ValueError("Independence needs at least two arms")
-    heads = {label: bpy.data.objects[f"LS_REF_{label}_holder"] for label in labels}
+    heads = {label: bpy.data.objects[f"LS_FIT_{label}_clamp_cap"] for label in labels}
     baseline = {label: obj.matrix_world.copy() for label, obj in heads.items()}
     records: list[dict[str, object]] = []
     for label in labels:

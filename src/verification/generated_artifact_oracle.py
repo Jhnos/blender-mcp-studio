@@ -57,7 +57,7 @@ from mathutils.bvhtree import BVHTree
 config = json.loads({json.dumps(config_json)})
 def natural_key(obj):
     suffix = re.search(r'(\\d+)$', obj.name)
-    return int(suffix.group(1)) if suffix else obj.name
+    return (0, int(suffix.group(1)), obj.name) if suffix else (1, 0, obj.name)
 def world_tree(obj, transform=None):
     bm = bmesh.new()
     bm.from_mesh(obj.data)

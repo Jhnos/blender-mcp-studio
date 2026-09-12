@@ -26,7 +26,14 @@ def verify_motion() -> dict[str, object]:
         if obj.type == "MESH"
         and (
             obj.name.startswith(
-                ("LS_REF_capillary", "LS_REF_pH_temp", "LS_FIT_capillary", "LS_FIT_pH_temp")
+                (
+                    "LS_REF_capillary",
+                    "LS_REF_pH_temp",
+                    "LS_FIT_capillary",
+                    "LS_FIT_pH_temp",
+                    "LS_HW_capillary",
+                    "LS_HW_pH_temp",
+                )
             )
             or obj.name
             in (

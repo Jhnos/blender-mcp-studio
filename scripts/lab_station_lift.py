@@ -13,15 +13,15 @@ def build_lift(
     """Return fixed frame, moving carrier and reference Ø8 rods at the low position."""
     px, y, pz = probe
     x, z = px + side * 40, pz - 28
-    frame = block(f"LS_FIT_{label}_lift_frame", (36, 8, 144), (x, y + 20, z + 50), mat)
+    frame = block(f"LS_FIT_{label}_lift_frame", (36, 8, 144), (x, y + 28, z + 50), mat)
     for level in (-22, 122):
-        boolean(frame, block("LS_TOOL_end", (36, 34, 8), (x, y + 7, z + level), mat), "UNION")
+        boolean(frame, block("LS_TOOL_end", (36, 42, 8), (x, y + 11, z + level), mat), "UNION")
     # A rear mounting pad stays behind the complete moving-carrier sweep.
-    boolean(frame, block("LS_TOOL_mount", (58, 20, 12), ((px + x) / 2, y + 30, pz), mat), "UNION")
+    boolean(frame, block("LS_TOOL_mount", (58, 20, 12), ((px + x) / 2, y + 36, pz), mat), "UNION")
     for hole_x in (px - 6, px + 6):
         boolean(
             frame,
-            add_cylinder("LS_TOOL_mount_hole", 1.8, 24, (hole_x, y + 30, pz), "Y"),
+            add_cylinder("LS_TOOL_mount_hole", 1.8, 24, (hole_x, y + 36, pz), "Y"),
             "DIFFERENCE",
         )
     carrier = block(f"LS_FIT_{label}_lift_carrier", (36, 20, 32), (x, y, z), mat)

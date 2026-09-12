@@ -84,6 +84,7 @@ def render_views(
     cup.hide_render = False
     lid.location.z -= m(180)
     screen_pivot.location.z -= m(180)
+    render_clamp_views(scene, camera, output)
     # Face-up duplicates show the actual printable teeth without assembly occlusion.
     saved_visibility = [
         (obj, obj.hide_render) for obj in list(bpy.context.scene.objects) if obj.type == "MESH"
@@ -114,3 +115,45 @@ def render_views(
     look_at(camera, (0, -75, 120))
     bpy.context.view_layer.update()
     return camera
+
+
+def render_clamp_views(scene: bpy.types.Scene, camera: bpy.types.Object, output: Path) -> None:
+    """Actual assembly and exploded service view; restore every pose and visibility flag."""
+    meshes = [o for o in scene.objects if o.type == "MESH"]
+    state = [(o, o.hide_render, o.location.copy()) for o in meshes]
+    camera_state = (camera.location.copy(), camera.rotation_euler.copy(), camera.data.ortho_scale)
+    try:
+        for obj in meshes:
+            obj.hide_render = not (
+                obj.name.startswith(("LS_FIT_pH_temp", "LS_HW_pH_temp", "LS_REF_pH_temp_guide"))
+                or obj.name in ("LS_REF_E201C", "LS_REF_DS18B20")
+            )
+        camera.location = (m(160), m(-280), m(200))
+        camera.data.ortho_scale = m(125)
+        look_at(camera, (28, -135, 140))
+        scene.render.filepath = str(output / "clamp-detail.png")
+        bpy.ops.render.render(write_still=True)
+        for obj in meshes:
+            if obj.name == "LS_FIT_pH_temp_clamp_cap" or (
+                obj.name.startswith("LS_HW_pH_temp_jaw") and obj.name.endswith("_nut")
+            ):
+                obj.location.x -= m(50)
+            elif obj.name.startswith("LS_FIT_pH_temp_liner") and obj.name.endswith("_mate"):
+                obj.location.x -= m(24)
+            elif obj.name.startswith("LS_HW_pH_temp_jaw"):
+                obj.location.x += m(40)
+            elif obj.name == "LS_FIT_pH_temp_rod_keeper" or obj.name.startswith(
+                "LS_HW_pH_temp_keeper"
+            ):
+                obj.location.z += m(-10 if obj.name.endswith("_nut") else 20)
+        camera.location = (m(220), m(-350), m(290))
+        camera.data.ortho_scale = m(260)
+        look_at(camera, (25, -130, 190))
+        scene.render.filepath = str(output / "clamp-exploded.png")
+        bpy.ops.render.render(write_still=True)
+    finally:
+        for obj, hidden, location in state:
+            obj.hide_render = hidden
+            obj.location = location
+        camera.location, camera.rotation_euler, camera.data.ortho_scale = camera_state
+        bpy.context.view_layer.update()

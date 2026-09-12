@@ -57,6 +57,10 @@
 - 螢幕在升程 0／100 mm 各 16 個角度通過；STL 獨立 parser 13 件尺寸誤差 <0.01 mm。V01.0R.014 封存此工程 checkpoint，保留 ACTIVE；依使用者持續推進指示不要求清除上下文。
 - 5S：模型說明由舊 `lab-station-v1.md` 移入單一 DCC 目錄，無重複進度表；來源／結果分離；生成件留 `tmp/`；AGENTS／技能未膨脹。
 
+- V4：23 件 STL 三份 real contract 通過；兩片式軟襯、可拆夾蓋、導桿壓蓋及 8 組金屬五金參考；拆夾路徑 126 個取樣無表面干涉。螢幕收折已加入 LS_HW_，選取測試先紅再綠；focused 42 passed，ruff 通過。
+- V01.0R.015：`scripts/ci.sh --real` exit 0，T1／T2／T3 全部 hard gates green，完整紀錄 `tmp/lab-station-v4/ci-real.log`；共用 oracle 排序修正通過所有既有模型回歸。23 件試配與模型未正式發布，保留 ACTIVE。
+- 本輪 5S：幾何、夾具檢查與渲染分檔；輸出留 tmp，無新增執行通道；來源與裝配限制同步 DCC。下一步先完成滑座 M4 鎖緊五金與防滑保持，再完成腕部到背架承力介面。
+
 ### Open failures
 
 - 材料、精確瓶口／瓶高、零件型號、負載、工作溫度與液體尚未確定。
