@@ -76,6 +76,9 @@
 - V6 5S：來源／輸出分開；腕部幾何模組沿用 primitive／Boolean；25 件試配描述與 manifest 對齊；無公開 execute_code、無新增執行通道。此 checkpoint 保留 ACTIVE，下一步腕部保持與工具空間，以及肘端實際連接。
 - 下輪先完成完整 gate／checkpoint；腕部扳手空間、防鬆、預緊保持力與肘端连接仍需完成，不能把本輪當全機製造合格。
 
+- V7：先以真模型重現實心腕軸頭阻擋六角扳手（`tmp/lab-station-v6/red-wrist-tools.log`），補六角孔後工具就位包絡通過。工具視圖與檢查共用 `wrist_tool_envelopes`；新增圖片腕部前視被背架遮擋，已改後視待完整重建。ruff／兩檔 explicit-package-bases mypy 通過。V01.0R.018 完整 `scripts/ci.sh --real` exit 0，全部 hard gates green；日誌 `tmp/lab-station-v7/ci-real.log`。已檢視新後視圖，工具入口可辨認。5S：工具包絡由同一 helper 供檢查與渲染，診斷形體不留在模型或 STL，25 件數量不變。
+- 下一步轉到肘端的實際装配：齒盤／上下臂連接、穿軸、釋放間隙與硬體保持；腕部工具手柄擺幅、保持力與防鬆仍未取得資格，未解除全機 H6。
+
 ### Open failures
 
 - 材料、精確瓶口／瓶高、零件型號、負載、工作溫度與液體尚未確定。

@@ -114,6 +114,7 @@ def render_views(
     camera.data.ortho_scale = m(620)
     look_at(camera, (0, -75, 120))
     bpy.context.view_layer.update()
+    render_wrist_tools(scene, camera, output)
     return camera
 
 
@@ -155,5 +156,35 @@ def render_clamp_views(scene: bpy.types.Scene, camera: bpy.types.Object, output:
         for obj, hidden, location in state:
             obj.hide_render = hidden
             obj.location = location
+        camera.location, camera.rotation_euler, camera.data.ortho_scale = camera_state
+        bpy.context.view_layer.update()
+
+
+def render_wrist_tools(scene: bpy.types.Scene, camera: bpy.types.Object, output: Path) -> None:
+    """Show the same tool envelopes used by the assembly verifier."""
+    from scripts.blender_mesh_primitives import assign
+    from scripts.lab_station_wrist import wrist_tool_envelopes
+
+    visibility = [(o, o.hide_render) for o in scene.objects if o.type == "MESH"]
+    camera_state = (camera.location.copy(), camera.rotation_euler.copy(), camera.data.ortho_scale)
+    tools = wrist_tool_envelopes("pH_temp")
+    try:
+        for obj, _ in visibility:
+            obj.hide_render = obj.name not in (
+                "LS_FIT_pH_temp_lift_frame",
+                "LS_REF_pH_temp_link_1",
+            ) and not obj.name.startswith("LS_HW_pH_temp_wrist")
+        for tool in tools:
+            assign(tool, bpy.data.objects["LS_FIT_capillary_lift_frame"].data.materials[0])
+        camera.location = (m(155), m(70), m(235))
+        camera.data.ortho_scale = m(190)
+        look_at(camera, (15, -75, 177))
+        scene.render.filepath = str(output / "wrist-tool-access.png")
+        bpy.ops.render.render(write_still=True)
+    finally:
+        for obj, hidden in visibility:
+            obj.hide_render = hidden
+        for tool in tools:
+            bpy.data.objects.remove(tool, do_unlink=True)
         camera.location, camera.rotation_euler, camera.data.ortho_scale = camera_state
         bpy.context.view_layer.update()

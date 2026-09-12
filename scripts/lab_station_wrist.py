@@ -36,6 +36,11 @@ def build_wrist(
         cleanup_mesh(part)
     shaft = add_cylinder(f"LS_HW_{label}_wrist_axle", 2.5, 35, (x + 3.5, y, z), "X")
     boolean(shaft, add_cylinder("LS_TOOL_axle_head", 4.25, 5.2, (x - 16.5, y, z), "X"), "UNION")
+    boolean(
+        shaft,
+        add_cylinder("LS_TOOL_hex_drive", 2.42, 3.6, (x - 17.6, y, z), "X", vertices=6),
+        "DIFFERENCE",
+    )
     nut = add_cylinder(f"LS_HW_{label}_wrist_nut", 4.6, 4, (x + 16, y, z), "X", vertices=6)
     boolean(nut, add_cylinder("LS_TOOL_thread", 2.6, 6, (x + 16, y, z), "X"), "DIFFERENCE")
     washers = []
@@ -106,8 +111,16 @@ def _verify_wrist_assembly_parked() -> dict[str, object]:
                 for obj in moving:
                     obj.location = original[obj.name]
                 bpy.context.view_layer.update()
+        verify_wrist_tools(label, parts)
     return {
         "samples": rows,
+        "tool_envelopes": {
+            "allen_across_flats_mm": 4,
+            "allen_length_mm": 55,
+            "socket_outer_diameter_mm": 13,
+            "socket_length_mm": 40,
+            "scope": "Assumed straight tool bodies only; no handle swing, torque or selected product qualification.",
+        },
         "scope": "Both probes raised, other arm parked outward 45 degrees; 2 mm sampled straight insertion, nominal unthreaded geometry; no preload, wrench envelope or load qualification.",
     }
 
@@ -121,3 +134,34 @@ def verify_wrist_assembly() -> dict[str, object]:
     finally:
         for label in ("capillary", "pH_temp"):
             set_pose(bpy.data.objects["LS_CTRL_" + label], probe_slide_mm=0, yaw_deg=0)
+
+
+def verify_wrist_tools(label: str, parts: list[bpy.types.Object]) -> None:
+    """Conservative straight tool envelopes in the already parked service pose."""
+    from scripts.lab_station_motion_check import tree
+
+    allen, socket = wrist_tool_envelopes(label)
+    try:
+        bpy.context.view_layer.update()
+        obstacles = {o.name: tree(o) for o in parts}
+        for tool in (allen, socket):
+            hits = [name for name, solid in obstacles.items() if tree(tool).overlap(solid)]
+            if hits:
+                raise ValueError(f"Wrist tool access obstructed: {label}, {tool.name}, {hits}")
+    finally:
+        for tool in (allen, socket):
+            bpy.data.objects.remove(tool, do_unlink=True)
+
+
+def wrist_tool_envelopes(label: str) -> tuple[bpy.types.Object, bpy.types.Object]:
+    """Share exact verification geometry with the visible tool-access view."""
+    from src.core.domain.lab_station import LabStationSpec
+
+    side = -1 if label == "capillary" else 1
+    x, y, z = LabStationSpec().arm_points(side)[2]
+    allen = add_cylinder("LS_DIAG_wrist_allen", 2.3094, 55, (x - 43.7, y, z), "X", vertices=6)
+    socket = add_cylinder("LS_DIAG_wrist_socket", 6.5, 40, (x + 34.2, y, z), "X")
+    boolean(
+        socket, add_cylinder("LS_TOOL_socket_cavity", 4.85, 42, (x + 34.2, y, z), "X"), "DIFFERENCE"
+    )
+    return allen, socket
