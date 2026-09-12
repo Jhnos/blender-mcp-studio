@@ -75,6 +75,18 @@ class LabStationSpec:
         )
         return root, elbow, wrist
 
+    def elbow_necks(self, side: int) -> tuple[Point, Point]:
+        """Keep both links outside the tooth faces until beyond the plate radius."""
+        root, elbow, wrist = self.arm_points(side)
+        result = []
+        for target, offset in ((root, -14), ((wrist[0], wrist[1], wrist[2] + 26), 14)):
+            dy, dz = target[1] - elbow[1], target[2] - elbow[2]
+            length = sqrt(dy * dy + dz * dz)
+            result.append(
+                (elbow[0] + offset, elbow[1] + 30 * dy / length, elbow[2] + 30 * dz / length)
+            )
+        return result[0], result[1]
+
 
 @dataclass(frozen=True, slots=True)
 class ProbeClampSpec:

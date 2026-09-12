@@ -64,3 +64,14 @@ def test_straight_extraction_clears_rim_and_keeps_wrist_out_of_the_path() -> Non
 def test_extraction_stroke_cannot_exceed_guide_or_fail_clearance(travel: float) -> None:
     with pytest.raises(ValueError, match="stroke"):
         LabStationSpec(lift_travel_mm=travel)
+
+
+def test_elbow_necks_leave_the_tooth_plane_before_rejoining_links() -> None:
+    spec = LabStationSpec()
+    for side in (-1, 1):
+        _, elbow, _ = spec.arm_points(side)
+        upper, lower = spec.elbow_necks(side)
+        assert upper[0] == pytest.approx(elbow[0] - 14)
+        assert lower[0] == pytest.approx(elbow[0] + 14)
+        for neck in (upper, lower):
+            assert math.dist(neck[1:], elbow[1:]) >= 29.99

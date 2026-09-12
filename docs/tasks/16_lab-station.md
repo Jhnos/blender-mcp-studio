@@ -79,6 +79,18 @@
 - V7：先以真模型重現實心腕軸頭阻擋六角扳手（`tmp/lab-station-v6/red-wrist-tools.log`），補六角孔後工具就位包絡通過。工具視圖與檢查共用 `wrist_tool_envelopes`；新增圖片腕部前視被背架遮擋，已改後視待完整重建。ruff／兩檔 explicit-package-bases mypy 通過。V01.0R.018 完整 `scripts/ci.sh --real` exit 0，全部 hard gates green；日誌 `tmp/lab-station-v7/ci-real.log`。已檢視新後視圖，工具入口可辨認。5S：工具包絡由同一 helper 供檢查與渲染，診斷形體不留在模型或 STL，25 件數量不變。
 - 下一步轉到肘端的實際装配：齒盤／上下臂連接、穿軸、釋放間隙與硬體保持；腕部工具手柄擺幅、保持力與防鬆仍未取得資格，未解除全機 H6。
 
+- V8 肘端實測：舊版上下臂互穿，且軸穿過實心連桿，完整配對證據 `tmp/lab-station-v8/red-elbow-interface.json`。領域 elbow_necks 先紅再綠，11 個 domain tests 通過。
+- 新 `scripts/lab_station_arm.py`：上下臂各 ±14 mm 側向接座，先沿 YZ 離齒盤 30 mm 再回接連桿；齒盘與各自臂一體布林，打通 Ø5.4 軸孔，補名義 M5×60 螺栓與螺母。原布林後再穿孔造成 139 條非流形邊，改成先穿孔再接齒盤修復；目前 25 件專屬 fit contract 通過，中立姿態上下臂／軸／螺母無表面干涉。
+- 尚未封存 V8。下一步：新增上臂 STL，將上下臂獨立 readiness 分批；加入肘部軸向脫齒控制、鎖定／釋放轉角負對照及五金保持／裝入。不得以中立姿態通過宣稱可調角或承重；root/shoulder 仍為參考組裝。
+
+- V8 肘部新控制 `elbow_release_mm`：缺控制先紅，加入軸向 0..2 mm 位移後通過兩側各五狀態（0°合齒、7.5°合齒必須撞齒、7.5°脫齒無交叉、15°脫齒與合齒無交叉）。這只查上下臂局部網格，不能當全臂可動證據。
+- 上臂新增 STL，重命名下臂為 arm_lower，清除 V8 輸出內舊 lower 檔；合計 27 件。readiness 獨立 arm 4 件／lift 4 件，新增 `lab_station_arms.json` 與 CI gate。首次手臂契約抓到退化面 1 與自交 3，先三角化後局部 0.01 mm 合點、0.005 mm 退化清理後 arm contract 通過、無截斷，沒有放寬契約。證據 `tmp/lab-station-v8/verification-arms.log`。
+- 尚未封存版本；已將脫齒加入兩頭隔離檢查，最新生成正在執行：exec session `88576`，tmp/lab-station-v8/verification.log。先輪詢同一 handle，再跑其餘三份 skip-generate 契約與完整 gate。仍需肘部五金保持／裝入、全臂姿態、肩根承力；readonly angle samples 不替代負載測試。
+
+- V8 最新生成通過，隔離案例 12 個；四份契約曾全部通過。封存前補查脫齒五金，先紅重現螺栓跟隨下臂平移撞上臂（red-elbow-release-hardware.log）；改成 bolt 隸屬上臂、nut 隸屬下臂，五狀態檢查重新通過。ruff／三檔 explicit-package-bases mypy 通過。
+- V01.0R.019 完整 `scripts/ci.sh --real` exit 0，所有 hard gates green，包含四份工作站契約；日誌 `tmp/lab-station-v8/ci-real.log`。肩根仍為參考幾何，肘部墊片／裝入／保持、全臂動作與承力均未完成，不能解除 H6。
+- 5S：新增 arm 模組僅處理偏置接座與既有齒盤接合；臂件独立 readiness 分批，無放寬取樣或退化判準；V8 清除旧命名的兩件下臂 STL，輸出 27 件與契約一致。下步補肘部保持／裝入再轉肩根，不重跑已封存的設計工作。
+
 ### Open failures
 
 - 材料、精確瓶口／瓶高、零件型號、負載、工作溫度與液體尚未確定。

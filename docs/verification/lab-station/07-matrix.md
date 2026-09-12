@@ -1,6 +1,6 @@
 # VOC 追溯
 
-Population: 本次 V6 產生的 LS_ 兩頭、三探頭、單杯與 HMI；排除歷史模型、LS_CHECK_ 佈局副本與 LS_DIAG_；任何必要族群為零即 FAIL。
+Population: 本次 V8 產生的 LS_ 兩頭、三探頭、單杯與 HMI；排除歷史模型、LS_CHECK_ 佈局副本與 LS_DIAG_；任何必要族群為零即 FAIL。
 
 | ID | Requirement | Tier | User-visible | Kind | Verified-by |
 |---|---|---|---|---|---|
@@ -18,3 +18,4 @@ Population: 本次 V6 產生的 LS_ 兩頭、三探頭、單杯與 HMI；排除�
 | R12 | 鬆開滑座鎖定可升降，旋入可接觸導桿 | engineering | yes | behavior | artifact:probe-lift.json/slide_locks |
 | R13 | 腕部兩成員可轉動且不穿插 | engineering | yes | behavior | artifact:probe-lift.json/wrist_interface_samples |
 | R14 | 腕軸與墊片可依順序裝入 | engineering | yes | behavior | artifact:wrist-assembly.json |
+| R15 | 肘端先脫齒才可越過半齒角，五金不堵行程 | engineering | yes | behavior | artifact:elbow-release.json |

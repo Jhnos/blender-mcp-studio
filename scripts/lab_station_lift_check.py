@@ -51,6 +51,20 @@ def verify_lifts(travel: float = 100) -> dict[str, object]:
     for label in ("capillary", "pH_temp"):
         frame = bpy.data.objects[f"LS_FIT_{label}_lift_frame"]
         link = bpy.data.objects[f"LS_REF_{label}_link_1"]
+        upper = bpy.data.objects[f"LS_REF_{label}_link_0"]
+        if not upper.get("elbow_integrated") or not link.get("elbow_integrated"):
+            raise ValueError(f"Elbow mounting population missing: {label}")
+        elbow_bolt = bpy.data.objects[f"LS_HW_{label}_elbow_bolt"]
+        elbow_nut = bpy.data.objects[f"LS_HW_{label}_elbow_nut"]
+        for a, b in (
+            (upper, link),
+            (upper, elbow_bolt),
+            (link, elbow_bolt),
+            (upper, elbow_nut),
+            (link, elbow_nut),
+        ):
+            if tree(a).overlap(tree(b)):
+                raise ValueError(f"Elbow assembly interpenetrates: {a.name}, {b.name}")
         if not frame.get("wrist_tongue") or not link.get("wrist_fork"):
             raise ValueError(f"Wrist interface population missing: {label}")
         pairs = len(tree(frame).overlap(tree(link)))

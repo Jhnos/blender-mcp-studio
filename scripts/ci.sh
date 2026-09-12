@@ -97,6 +97,7 @@ if (( REAL )); then
     _run hard "lab station fit prototype (not load or assembly acceptance)" "$PY" scripts/verify/generated_artifact_verify_real.py scripts/verify/contracts/lab_station.json
     _run hard "lab station lift parts (same scene)" "$PY" scripts/verify/generated_artifact_verify_real.py scripts/verify/contracts/lab_station_lifts.json --skip-generate
     _run hard "lab station clamp parts (same scene)" "$PY" scripts/verify/generated_artifact_verify_real.py scripts/verify/contracts/lab_station_clamps.json --skip-generate
+    _run hard "lab station arm parts (same scene)" "$PY" scripts/verify/generated_artifact_verify_real.py scripts/verify/contracts/lab_station_arms.json --skip-generate
     # Every contract under scripts/verify/contracts runs here (DEFERRALS D-004,
     # resolved 2026-09-09 once the hand gates measured seconds, not minutes).
     # Scenes are reused in the documented order: a base contract generates, the
