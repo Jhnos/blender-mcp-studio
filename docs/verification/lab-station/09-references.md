@@ -21,3 +21,7 @@ V4 搜尋（2026-09-12）：`openscad/MCAD` 的 nuts_and_bolts、`JohK/nutsnbolt
 - [Armstrong-SCARA](https://github.com/ttsalo/Armstrong-SCARA)：列印臂與購買軸承／金屬軸的裝配案例；SCARA 拓撲不直接套用為本案升降。
 
 查找在建立 rotary 概念與驗證入口前完成。沿用本專案 primitive、jaw、driver 與 BlenderSocketOracle；未複製上游程式或載入新 CAD 引擎，也不把他案承載說明當成本案證據。
+
+## 底座固定的前置查找
+
+建立 `lab_station_base` 前查閱 [ODRI actuator shell preparation](https://github.com/open-dynamic-robot-initiative/open_robot_actuator_hardware/blob/master/mechanics/actuator_module_v1/details/details_shell_preparation.md)、[PAROL6](https://github.com/Source-robotics/PAROL6-Desktop-robot-arm) 與 [Thor](https://github.com/AngelLM/Thor)。採用旋轉支座、軸套與金屬穿軸分工的配置思路；實際尺寸由本機箱空間決定，沒有複製程式或引用他案承載作為本案資格。

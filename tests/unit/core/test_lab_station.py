@@ -102,3 +102,25 @@ def test_rotary_lift_closes_four_bar_and_keeps_head_vertical() -> None:
         spec.joints(101)
     with pytest.raises(ValueError):
         RotaryLiftSpec(length_mm=40)
+
+
+def test_simple_arm_extracts_with_two_fixed_length_links() -> None:
+    from math import dist
+
+    from src.core.domain.lab_station import SimpleArmSpec
+
+    spec = SimpleArmSpec()
+    for amount in range(101):
+        root, elbow, tip = spec.planar_joints(amount)
+        assert dist(root, elbow) == pytest.approx(150)
+        assert dist(elbow, tip) == pytest.approx(150)
+        assert tip[0] == pytest.approx(spec.reach_mm)
+        assert tip[1] == pytest.approx(72 + amount)
+    assert 108 + spec.planar_joints(100)[2][1] - 125 > 110
+
+
+def test_simple_arm_rejects_unreachable_pose() -> None:
+    from src.core.domain.lab_station import SimpleArmSpec
+
+    with pytest.raises(ValueError, match="reach"):
+        SimpleArmSpec().planar_joints(300)

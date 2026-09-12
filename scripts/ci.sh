@@ -99,6 +99,7 @@ if (( REAL )); then
     _run hard "lab station clamp parts (same scene)" "$PY" scripts/verify/generated_artifact_verify_real.py scripts/verify/contracts/lab_station_clamps.json --skip-generate
     _run hard "lab station arm parts (same scene)" "$PY" scripts/verify/generated_artifact_verify_real.py scripts/verify/contracts/lab_station_arms.json --skip-generate
     _run hard "lab station right arm parts (same scene)" "$PY" scripts/verify/generated_artifact_verify_real.py scripts/verify/contracts/lab_station_arms_right.json --skip-generate
+    _run hard "simple two-link study (not print or load qualification)" "$PY" -m scripts.verify.lab_simple_verify_real
     _run hard "rotary lift concept motion (not print or load qualification)" "$PY" -m scripts.verify.lab_rotary_verify_real
     _run hard "rotary left support mesh contract" "$PY" scripts/verify/generated_artifact_verify_real.py scripts/verify/contracts/lab_rotary_support_capillary.json
     _run hard "rotary right support mesh contract" "$PY" scripts/verify/generated_artifact_verify_real.py scripts/verify/contracts/lab_rotary_support_pH_temp.json --skip-generate

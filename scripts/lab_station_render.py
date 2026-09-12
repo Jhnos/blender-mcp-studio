@@ -221,3 +221,52 @@ def render_rotary_views(output: Path) -> None:
     bpy.ops.render.render(write_still=True)
     camera.location, camera.rotation_euler = saved_location, saved_rotation
     camera.data.ortho_scale = saved_scale
+    render_base_section(output)
+
+
+def render_base_section(output: Path) -> None:
+    """Diagnostic cutaway copies; never cut or export the assembled originals."""
+    from scripts.blender_mesh_primitives import boolean
+    from scripts.lab_station_joints import block
+
+    scene = bpy.context.scene
+    camera = scene.camera
+    assert camera is not None
+    saved = (camera.location.copy(), camera.rotation_euler.copy(), camera.data.ortho_scale)
+    visibility = [(o, o.hide_render) for o in scene.objects if o.type == "MESH"]
+    copies = []
+    try:
+        for obj, _ in visibility:
+            obj.hide_render = True
+        for name in ("LS_FIT_chassis", "LS_FIT_lid", "LR_capillary_mount_envelope"):
+            source = bpy.data.objects[name]
+            copy = source.copy()
+            copy.data = source.data.copy()
+            copy.parent = None
+            copy.matrix_world = source.matrix_world.copy()
+            copy.name = "LR_DIAG_base_section"
+            copy.hide_render = False
+            scene.collection.objects.link(copy)
+            copies.append(copy)
+            boolean(
+                copy,
+                block(
+                    "LR_TOOL_section", (500, 400, 500), (-98, -155, 100), source.data.materials[0]
+                ),
+                "DIFFERENCE",
+            )
+        for obj, _ in visibility:
+            if obj.name.startswith("LR_BASE_capillary_"):
+                obj.hide_render = False
+        camera.location = (-0.22, -0.15, 0.125)
+        camera.data.ortho_scale = 0.14
+        look_at(camera, (-98, 45, 45))
+        scene.render.filepath = str(output / "base-section.png")
+        bpy.ops.render.render(write_still=True)
+    finally:
+        for obj in copies:
+            bpy.data.objects.remove(obj, do_unlink=True)
+        for obj, hidden in visibility:
+            obj.hide_render = hidden
+        camera.location, camera.rotation_euler, camera.data.ortho_scale = saved
+        bpy.context.view_layer.update()

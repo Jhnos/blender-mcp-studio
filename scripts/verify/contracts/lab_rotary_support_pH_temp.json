@@ -14,6 +14,7 @@
     "scripts.lab_station_joints",
     "scripts.lab_station_motion_check",
     "scripts.lab_station_arm",
+    "scripts.lab_station_base",
     "scripts.lab_station_clamp",
     "scripts.lab_station_wrist",
     "scripts.lab_station_render"

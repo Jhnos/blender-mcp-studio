@@ -155,3 +155,13 @@
 - V01.0R.01H 待完整 CI，新增腕部斷接負對照；渲染搬到既有 lab_station_render，沒有新模組。底座仍只接觸上蓋、沒有機箱固定／底板承力，不能說全部斷接已修完。下一步先完成底座機箱連接，並維持整條實際介面檢查；不以單件水密代替整機連接。
 
 - V01.0R.01H 首次完整 CI 唯一失敗為共用肩部偏置變更使舊 V10 肩座擋折屏；改 neck_plane_mm 參數，預設保留 13 mm，rotary 顯式 12 mm。最終 scripts/ci.sh --real exit 0，所有 hard gates green，ci-01H-final.log，session 4868 已結束。新 working.png 已檢視；14 結構件、14 控制隔離、10 肩部狀態與 6 腕部同軸介面案例核對，red-wrist-disconnection.json 移開叉耳會被拒絕。5S：渲染移到既有 render 模組、契約 reload 清單更新，無新模組或放寬判準。下一步最高優先：底座至機箱的實際固定／底板承力，然後全臂介面／載荷／線材；不可宣稱所有斷接已完成。
+
+- V01.0R.01I：底座未保持的 RED 已確認（red-base-retention.log）；新增獨立 lab_station_base，旋轉腳軸頸／金屬軸套／M5×90 穿軸與薄螺母／上下墊片，支承柱接 6 mm 底板與側壁，8 mm 底腳避讓頭部。泵浦佔位內移 10 mm。base-final.log focused exit 0，兩侧十個止擋位移、共同開孔、中立間隙與移走墊片負對照通過；base-section.png 已檢視，為切開副本。5S：新模組前已查 GitHub，沿用原語意工具；model 375 行，生成件留 tmp，R24／參考／限制同步。準備完整 CI，尚未提交。下一步新機箱／旋轉腳網格匯出契約、穿軸／工具裝入與整體受力；不可宣稱整機可印可承重。
+
+- V01.0R.01I 首次完整 CI 全綠（ci-01I-final.log），但尺寸複查發現新支柱高出上蓋底面 0.2 mm，原守衛漏掉機箱／上蓋配合。補查先紅（red-base-lid.log），支柱頂端降至 75.9 mm，上蓋底面 76 mm；加入凸柱穿入負對照。首次全綠不足以接受修改後模型，需完整重跑。
+
+- 使用者中止複雜機構方向並明確要求「開始」簡化。01I 舊底座補查後 CI rechecked exit 0，但新主線改為 `model_lab_simple.py`：雙節臂每頭 150+150 mm，四調整點，取消四連桿／長穿軸／軸套／墊片；HMI 支座整合上蓋。`SimpleArmSpec` 先紅後綠，15 domain tests；新真機入口驗 202 個探頭／杯壁取樣、另一頭不動、22 個單臂空間姿態與三個雙臂展示姿態，移走上臂材料必須失敗。右臂原撞 LCD，鏡射局部錯位後通過；先挖孔再聯集留下內部蓋面，改實體聯集後開孔，實體孔檢查通過。`/tmp/lab-simple-final.log` exit 0。新主線仍為光滑關節概念，齒槽、埋入螺母、探頭夾紧、五金裝入、完整收折路徑／受力未完成，不能冒稱製造模型。準備本輪完整 CI。
+
+- 簡化版首次完整 CI exit 1（tmp/lab-station-simple/ci-simple-final.log），新簡化 gate 通過，但旧 V10 重建被「使用中函式庫不可覆寫」拒絕。簡化生成器直接 append 會保留原來源，改沿用 rotary 的獨立 baseline 副本載入；清回已知生成場景後 focused independent-load.log exit 0。入口增加禁止持有可重建來源庫的檢查。需完整重跑，不將首次整體執行稱為成功。
+
+- V01.0R.01I 最終 `scripts/ci.sh --real` exit 0，所有 hard gates green，tmp/lab-station-simple/ci-simple-rechecked.log，session 14080 結束。獨立 baseline 修復已由整套重建確認；簡化模型 202 探頭／杯壁取樣、22 單臂空間取樣與三展示姿態通過，斷接材料負對照會拒絕。working／parked 圖已檢視。5S：新主線導航 12-simple-concept、R25、範圍與五金表同步；新生成器 <300 行，重用原語、domain／oracle，生成件留 tmp。下一步只細化簡化版齒槽、埋入螺母、探頭夾緊與完整取出／停放路徑，保持減件方向；未發布 STL 或承重資格。

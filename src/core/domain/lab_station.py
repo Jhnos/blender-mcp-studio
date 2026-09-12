@@ -151,3 +151,24 @@ class RotaryLiftSpec:
             (0, -excursion, lift_mm),
             (0, -excursion, lift_mm + self.spacing_mm),
         )
+
+
+@dataclass(frozen=True, slots=True)
+class SimpleArmSpec:
+    """Two-link manual arm; inverse kinematics describes a coordinated hand motion."""
+
+    link_mm: float = 150.0
+    reach_mm: float = sqrt(80**2 + 190**2)
+    working_rise_mm: float = 72.0
+
+    def planar_joints(self, lift_mm: float = 0) -> tuple[tuple[float, float], ...]:
+        forward, rise = self.reach_mm, self.working_rise_mm + lift_mm
+        chord = sqrt(forward**2 + rise**2)
+        if (
+            not all(isfinite(v) for v in (forward, rise, self.link_mm))
+            or not 0 < chord < 2 * self.link_mm
+        ):
+            raise ValueError("Pose outside two-link reach")
+        height = sqrt(self.link_mm**2 - chord**2 / 4)
+        elbow = (forward / 2 - rise / chord * height, rise / 2 + forward / chord * height)
+        return ((0.0, 0.0), elbow, (forward, rise))

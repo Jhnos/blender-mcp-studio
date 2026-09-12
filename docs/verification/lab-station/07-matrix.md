@@ -27,3 +27,5 @@ Population: 本次 V10 產生的 LS_ 兩頭、三探頭、單杯與 HMI；排除
 | R21 | rotary 肘部六角扳手與套筒直段可就位 | engineering | yes | behavior | artifact:rotary/elbow-tools.json,rotary/red-elbow-drive.json |
 | R22 | 四件 rotary 支撐匯出單位正確且無契約禁止的網格缺陷 | engineering | yes | behavior | artifact:lab_rotary_support_capillary.json,lab_rotary_support_pH_temp.json |
 | R23 | 肩／腕具有實體兩成員介面，腕部斷接必須被拒絕 | voc | yes | behavior | artifact:rotary/shoulder-release.json,rotary/wrist-interface.json,rotary/red-wrist-disconnection.json |
+| R24 | rotary 底座具共同穿軸與位移止擋，移走擋件必須被拒絕 | voc | yes | behavior | artifact:rotary/base-retention.json,rotary/red-base-stop.json,rotary/red-base-lid.json |
+| R25 | 簡化為兩支獨立雙節臂，調整機構 10 螺絲／10 螺母且不需軸套與獨立墊片 | voc | yes | behavior | artifact:simple/verification.json,simple/red-disconnection.json |

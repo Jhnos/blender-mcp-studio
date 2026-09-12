@@ -19,6 +19,7 @@ from scripts.lab_station_arm import (
     joint_hardware,
     rotary_pivot_hardware,
 )
+from scripts.lab_station_base import build_base_mounts, verify_base_mounts
 from scripts.lab_station_clamp import lined_jaw
 from scripts.lab_station_joints import block
 from scripts.lab_station_motion_check import (
@@ -253,7 +254,11 @@ def inspect_assembly_motion() -> dict[str, object]:
             if not other.name.startswith("LS_") or not tree(obj).overlap(tree(other)):
                 continue
             minimum = min((obj.matrix_world @ v.co).z for v in obj.data.vertices) * 1000
-            if "mount_envelope" in obj.name and other.name == "LS_FIT_lid" and minimum >= 79.99:
+            if (
+                "mount_envelope" in obj.name
+                and other.name == "LS_FIT_lid"
+                and (minimum >= 79.99 or obj.get("yaw_spigot"))
+            ):
                 contacts.append({"mount": obj.name, "bottom_mm": minimum})
             else:
                 static_hits.append((obj.name, other.name))
@@ -327,6 +332,8 @@ def main() -> None:
         ("pH_temp", 1, (0.05, 0.6, 0.64, 1)),
     ):
         build_head(label, side, material("LR_" + label, color), metal)
+    build_base_mounts(metal)
+    (OUTPUT / "base-retention.json").write_text(json.dumps(verify_base_mounts(), indent=2))
     (OUTPUT / "wrist-interface.json").write_text(
         json.dumps(verify_rotary_wrist_interfaces(), indent=2)
     )

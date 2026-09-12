@@ -18,6 +18,42 @@ if {str(root)!r} not in sys.path:
 for name in {modules!r}:
     importlib.reload(importlib.import_module(name))
 model = runpy.run_path({str(script)!r}, run_name='__main__')
+chassis = bpy.data.objects['LS_FIT_chassis']
+saved_chassis = chassis.data.copy()
+try:
+    plug = model['add_cylinder']('LR_TOOL_lid_collision', 2, 1, (-88, 45, 76))
+    model['boolean'](chassis, plug, 'UNION')
+    try:
+        model['verify_base_mounts']()
+    except ValueError as error:
+        if 'Base support penetrates lid' not in str(error):
+            raise
+        (model['OUTPUT'] / 'red-base-lid.json').write_text(json.dumps({{'rejected': True, 'reason': str(error)}}))
+    else:
+        raise RuntimeError('Tower penetration into lid was accepted')
+finally:
+    changed = chassis.data
+    chassis.data = saved_chassis
+    if changed.users == 0:
+        bpy.data.meshes.remove(changed)
+model['verify_base_mounts']()
+stop = bpy.data.objects['LR_BASE_capillary_washer_upper']
+saved_stop = stop.matrix_world.copy()
+try:
+    stop.location.x += 0.1
+    bpy.context.view_layer.update()
+    try:
+        model['verify_base_mounts']()
+    except ValueError as error:
+        if 'Base retaining stop absent' not in str(error):
+            raise
+        (model['OUTPUT'] / 'red-base-stop.json').write_text(json.dumps({{'rejected': True, 'reason': str(error)}}))
+    else:
+        raise RuntimeError('Disconnected base stop was accepted')
+finally:
+    stop.matrix_world = saved_stop
+    bpy.context.view_layer.update()
+model['verify_base_mounts']()
 import bmesh
 support = bpy.data.objects['LR_capillary_support_envelope_0']
 original_mesh = support.data
