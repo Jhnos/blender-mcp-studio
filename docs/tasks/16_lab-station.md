@@ -142,3 +142,7 @@
 - V01.0R.01E：網格基線 elbow-mesh-baseline.json 抓到四件支撐各 15／438／107／711 非流形邊，部分有退化面。固定接頸改實心 beam，不再挪用含孔圓耳的 bar，沿用 finish_arm 後四件單殼／零非流形／零退化通過。裝入檢查抓到立起 HMI 阻擋內側墊片；先收折到 tilt_step=0 後 216 取樣通過。曾誤用 tilt_deg 與反向端點，已依 screen_control 既有定義修正，沒有改變螢幕語意。focused 重建 exit 0，日誌 support-mesh-verification.log。準備完整 CI 與開面負對照。5S：沿用既有梁、收尾與裝入驗證，模組最多 349 行；生成件留 tmp，R20 同步。
 
 - V01.0R.01E 完整 scripts/ci.sh --real exit 0，所有 hard gates green，tmp/lab-station-rotary/ci-01E.log，session 17752 已結束。support-mesh.json 四件均單殼／零非流形／零退化；red-support-mesh.json 開面後 3 邊拒絕；elbow-assembly.json 216 取樣通過。新局部圖已檢视，固定接頸無多餘圓耳孔。下一步工具空間、四件支撐自交／匯出契約，再肩／腕／底板承力，整機仍未完成。
+
+- V01.0R.01F：工具基線 red-elbow-tools.log 重現實心螺栓頭擋住扳手，rotary 螺栓補 4 mm 名義內六角孔；兩側六角扳手與套筒四項就位、封孔負對照通過，focused log elbow-tools-final.log exit 0。沿用現有 arm／motion 模組，最大 356 行，新增 R21；不更動 V10 螺栓或公開工具。待完整 CI。自交／匯出契約、手柄掃掠與承力仍需完成。
+
+- V01.0R.01F 完整 scripts/ci.sh --real exit 1，唯一失敗為 model_lab_rotary.py 格式，所有真機項目通過。ruff format 後 scripts/ci.sh exit 0，T1／T2 全綠；證據 ci-01F.log／ci-01F-static-final.log，不將初次命令稱為成功。已檢視六角孔局部圖，elbow-tools.json 四項零表面碰撞、red-elbow-drive.json 封孔拒絕。下一步優先補四件支撐自交／匯出契約，再處理工具掃掠與肩／腕／底座承力。

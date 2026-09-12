@@ -40,6 +40,26 @@ finally:
     support.data = original_mesh
     bpy.data.meshes.remove(broken_mesh)
 model['verify_rotary_support_meshes']()
+bolt = bpy.data.objects['LR_capillary_elbow_bolt']
+original_bolt_mesh = bolt.data.copy()
+center = bpy.data.objects['LR_PIVOT_capillary_elbow'].matrix_world.translation * 1000
+try:
+    plug = model['add_cylinder']('LR_TOOL_closed_drive', 2.6, 3.8, (center.x - 31.3, center.y, center.z), 'X')
+    model['boolean'](bolt, plug, 'UNION')
+    try:
+        model['verify_rotary_elbow_tools']()
+    except ValueError as error:
+        if 'Rotary elbow tool obstructed' not in str(error):
+            raise
+        (model['OUTPUT'] / 'red-elbow-drive.json').write_text(json.dumps({{'rejected': True, 'reason': str(error)}}))
+    else:
+        raise RuntimeError('Closed hex drive was accepted')
+finally:
+    changed_mesh = bolt.data
+    bolt.data = original_bolt_mesh
+    if changed_mesh.users == 0:
+        bpy.data.meshes.remove(changed_mesh)
+model['verify_rotary_elbow_tools']()
 joint = bpy.data.objects['LR_PIVOT_capillary_yaw']
 failed_driver = joint.animation_data.drivers[0].driver
 saved_expression = failed_driver.expression

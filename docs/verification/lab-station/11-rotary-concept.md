@@ -14,6 +14,7 @@
 - `assembly-motion.json`：每頭 21 個位置對其他固定網格的表面碰撞，以及固定支撐對既有外殼／HMI 的靜態碰撞。只豁免底面位於 80 mm 的支座／上蓋名義接觸；不代表支座已固定。
 - `support-mesh.json`／`red-support-mesh.json`：四件肘部支撐各為單一連通體、零非流形邊與退化面；故意開面必須拒絕。尚不包含自交與完整 readiness。
 - `elbow-assembly.json`：先將 HMI 收折（`tilt_step=0`，先脫齒），再依序由外側裝入螺栓與墊片、內側墊片、螺母。兩側共 216 個 2 mm 步距取樣；組裝時需支撐臂件，未模擬螺紋旋入或預緊。
+- `elbow-tools.json`／`red-elbow-drive.json`：收折 HMI 後的名義 4 mm 六角扳手直段與薄壁套筒就位；封住六角孔必須拒絕。只查直段表面碰撞，未含工具裝入掃掠、手柄擺幅、實際產品與施力。
 - `elbow-detail.png`：支撐肘部齒盤與穿軸局部圖。
 - `elbow-release.json`：每側五狀態，包含未脫齒轉半齒的必須干涉案例；`elbow_release_mm` 為 0..2 mm。僅查肘部成員與穿軸五金，不代表全臂任意姿態安全。
 - `pivot-detail.png`：名義螺栓、墊片與軸套的局部視圖。
@@ -43,4 +44,4 @@ $HOME/miniconda3/envs/blender-mcp/bin/python -m scripts.verify.lab_rotary_verify
 
 參考與沿用決策見 [09-references](09-references.md)。完整需求追溯见 [07-matrix](07-matrix.md)。
 
-肘部兩段支撐已整合齒盤；目前保留 `support_envelope` 名稱以免被當成已通過製造契約的零件。接回段繞過齒盤與升降連桿。肩部／腕部的實體可裝配介面，以及肘部工具空間、網格自交與預緊保持力仍未取得資格。
+肘部兩段支撐已整合齒盤；目前保留 `support_envelope` 名稱以免被當成已通過製造契約的零件。接回段繞過齒盤與升降連桿。肩部／腕部的實體可裝配介面，以及肘部工具手柄／裝入掃掠、網格自交與預緊保持力仍未取得資格。

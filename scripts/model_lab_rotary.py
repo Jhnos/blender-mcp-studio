@@ -24,6 +24,7 @@ from scripts.lab_station_motion_check import (
     tree,
     verify_coupled_motion,
     verify_rotary_elbow_assembly,
+    verify_rotary_elbow_tools,
     verify_rotary_elbows,
     verify_rotary_screen,
     verify_rotary_support_meshes,
@@ -149,6 +150,13 @@ def build_head(label: str, side: int, mat: bpy.types.Material, metal: bpy.types.
     for member in (upper, lower):
         finish_arm(member)
     hardware = joint_hardware(middle, label, metal)
+    boolean(
+        hardware[0],
+        add_cylinder(
+            "LR_TOOL_elbow_hex", 2.42, 3.6, offset(middle, (-31.3, 0, 0)), "X", vertices=6
+        ),
+        "DIFFERENCE",
+    )
     for obj in hardware:
         obj.name = "LR_" + obj.name.removeprefix("LS_HW_")
     create_rotary_support_rig(label, root, middle, a)
@@ -303,6 +311,7 @@ def main() -> None:
     (OUTPUT / "elbow-assembly.json").write_text(
         json.dumps(verify_rotary_elbow_assembly(), indent=2)
     )
+    (OUTPUT / "elbow-tools.json").write_text(json.dumps(verify_rotary_elbow_tools(), indent=2))
     (OUTPUT / "elbow-release.json").write_text(json.dumps(verify_rotary_elbows(), indent=2))
     (OUTPUT / "articulation.json").write_text(json.dumps(verify_rotary_articulation(), indent=2))
     (OUTPUT / "motion.json").write_text(json.dumps(verify(), indent=2))

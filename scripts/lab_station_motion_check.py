@@ -311,3 +311,43 @@ def verify_rotary_elbow_assembly() -> dict[str, object]:
         return verify_elbow_assembly(("LS_", "LR_"), "LR_")
     finally:
         set_pose(screen, **saved)
+
+
+def verify_rotary_elbow_tools() -> dict[str, object]:
+    """Check nominal straight tool bodies in the folded-screen assembly pose."""
+    from scripts.lab_station_arm import rotary_elbow_tools
+    from scripts.lab_station_rig import set_pose
+
+    screen = bpy.data.objects["LS_SCREEN_CONTROL"]
+    saved = {key: float(screen[key]) for key in ("tilt_step", "release_mm")}
+    rows: list[dict[str, object]] = []
+    try:
+        set_pose(screen, tilt_step=0, release_mm=2)
+        obstacles = {
+            o.name: tree(o)
+            for o in bpy.context.scene.objects
+            if o.type == "MESH"
+            and not o.hide_render
+            and o.name.startswith(("LS_", "LR_"))
+            and not o.name.startswith(("LS_CHECK_", "LS_DIAG_", "LR_DIAG_"))
+        }
+        for label in ("capillary", "pH_temp"):
+            tools = rotary_elbow_tools(label)
+            try:
+                bpy.context.view_layer.update()
+                for tool in tools:
+                    hits = [name for name, mesh in obstacles.items() if tree(tool).overlap(mesh)]
+                    if hits:
+                        raise ValueError(
+                            f"Rotary elbow tool obstructed: {label}, {tool.name}, {hits}"
+                        )
+                    rows.append({"head": label, "tool": tool.name, "surface_collisions": 0})
+            finally:
+                for tool in tools:
+                    bpy.data.objects.remove(tool, do_unlink=True)
+    finally:
+        set_pose(screen, **saved)
+    return {
+        "samples": rows,
+        "scope": "Nominal straight tool bodies at seating only; no insertion sweep, handles, thread or torque qualification.",
+    }

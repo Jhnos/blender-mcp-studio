@@ -337,3 +337,15 @@ def rotary_pivot_hardware(
     for part in parts:
         assign(part, mat)
     return parts
+
+
+def rotary_elbow_tools(label: str) -> tuple[bpy.types.Object, bpy.types.Object]:
+    """Nominal straight 4 mm hex key and thin socket envelopes; no handle sweep."""
+    center = bpy.data.objects[f"LR_PIVOT_{label}_elbow"].matrix_world.translation * 1000
+    x, y, z = center
+    allen = add_cylinder("LR_DIAG_elbow_allen", 2.3094, 55, (x - 57.5, y, z), "X", vertices=6)
+    socket = add_cylinder("LR_DIAG_elbow_socket", 6.5, 40, (x + 46, y, z), "X")
+    boolean(
+        socket, add_cylinder("LR_TOOL_socket_cavity", 4.85, 42, (x + 46, y, z), "X"), "DIFFERENCE"
+    )
+    return allen, socket
