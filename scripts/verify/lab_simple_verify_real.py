@@ -40,6 +40,32 @@ model['verify_interfaces']('capillary')
 print('Reduced arm study and disconnected-material control passed')
 """
     print(BlenderSocketOracle("127.0.0.1", 9876, timeout=180).execute(code))
+    script = root / "scripts/model_lab_platform.py"
+    modules = reload_modules_for(root, script)
+    code = f"""import bpy, importlib, runpy, sys, json
+from mathutils import Matrix
+sys.path.insert(0, {str(root)!r})
+for name in {modules!r}:
+    importlib.reload(importlib.import_module(name))
+model = runpy.run_path({str(script)!r}, run_name='__main__')
+part = bpy.data.objects['S_capillary_follower']
+saved = part.data.copy()
+try:
+    part.data.transform(Matrix.Translation((0, 0.1, 0)))
+    try:
+        model['verify_local']('capillary')
+    except ValueError as error:
+        (model['OUTPUT'] / 'red-disconnection.json').write_text(json.dumps({{'rejected': True, 'reason': str(error)}}))
+    else:
+        raise RuntimeError('Disconnected follower was accepted')
+finally:
+    changed = part.data
+    part.data = saved
+    bpy.data.meshes.remove(changed)
+model['verify_local']('capillary')
+print('Electrode arm and displaced-follower control passed')
+"""
+    print(BlenderSocketOracle("127.0.0.1", 9876, timeout=180).execute(code))
 
 
 if __name__ == "__main__":

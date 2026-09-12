@@ -16,4 +16,6 @@
 
 使用者模型說明：[10-model](10-model.md)。
 
-最新活動臂候選：[11-rotary-concept](11-rotary-concept.md)。
+簡化基線：[12-simple-concept](12-simple-concept.md)。
+
+電極臂延伸：[13-electrode-arm](13-electrode-arm.md)。

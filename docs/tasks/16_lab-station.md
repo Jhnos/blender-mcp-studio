@@ -165,3 +165,9 @@
 - 簡化版首次完整 CI exit 1（tmp/lab-station-simple/ci-simple-final.log），新簡化 gate 通過，但旧 V10 重建被「使用中函式庫不可覆寫」拒絕。簡化生成器直接 append 會保留原來源，改沿用 rotary 的獨立 baseline 副本載入；清回已知生成場景後 focused independent-load.log exit 0。入口增加禁止持有可重建來源庫的檢查。需完整重跑，不將首次整體執行稱為成功。
 
 - V01.0R.01I 最終 `scripts/ci.sh --real` exit 0，所有 hard gates green，tmp/lab-station-simple/ci-simple-rechecked.log，session 14080 結束。獨立 baseline 修復已由整套重建確認；簡化模型 202 探頭／杯壁取樣、22 單臂空間取樣與三展示姿態通過，斷接材料負對照會拒絕。working／parked 圖已檢視。5S：新主線導航 12-simple-concept、R25、範圍與五金表同步；新生成器 <300 行，重用原語、domain／oracle，生成件留 tmp。下一步只細化簡化版齒槽、埋入螺母、探頭夾緊與完整取出／停放路徑，保持減件方向；未發布 STL 或承重資格。
+
+- 使用者拒絕獨立五連桿候選，要求參考常見設計，再接受 Agilent／ELMETRON／GOnDO 電極臂方向並要求延伸。已停用 five-bar domain，候選原稿留 tmp/lab-station-platform/rejected-fivebar；保留 simple 基線。新增 ElectrodeArmSpec 先紅後綠，16 domain tests。model_lab_platform 改成肩鉸鍊＋前臂平行雙桿＋三角末端，手調探頭角度；借用商用品用途，不冒稱整臂自動水平。
+- electrode focused 真機入口 exit 0（/tmp/lab-electrode-verified.log）：46 單頭位置、六結構件全配對自碰／共同孔軸、雙頭／HMI／外殼／杯壁、16 折屏角度與移走 follower 負對照通過；已檢視 working／raised。修正舊夾座碰三角板、內側 follower 擋 LCD、夾座側移後兩頭相碰；改一體外側夾座、follower 外側錯層與根部 yaw 補償保持共杯位置。這些是既有「全配對／閉合」失效類別，沿用實網格守衛。
+- 五金範圍：12 螺絲／12 螺母，4 列印被動軸包絡，零軸套／獨立墊片；被動軸尚無防脫，不是製造件。下一步被動軸保持、旋鈕齒槽與夾頭固定；全五金互碰／連續掃掠／線材／負載仍未驗。5S：新說明 13-electrode-arm 接入導航及 R26，生成件留 tmp，沿用 oracle 入口，不新增公開通道。完整 CI 待跑。
+
+- V01.0R.01J 完整 `scripts/ci.sh --real` exit 0，全部 hard gates green，日誌 tmp/lab-station-electrode/ci-real.log，session 69710 結束。四張視圖皆已檢視；前臂及螢幕仍為有明確驗證邊界的概念模型。5S：模組 250 行、沿用驗證入口，未發布 STL；下一步在此電極臂上完成被動軸防脫、齒槽／旋鈕與夾緊，禁止回到被拒絕的五連桿候選。

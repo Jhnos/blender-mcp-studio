@@ -29,3 +29,4 @@ Population: 本次 V10 產生的 LS_ 兩頭、三探頭、單杯與 HMI；排除
 | R23 | 肩／腕具有實體兩成員介面，腕部斷接必須被拒絕 | voc | yes | behavior | artifact:rotary/shoulder-release.json,rotary/wrist-interface.json,rotary/red-wrist-disconnection.json |
 | R24 | rotary 底座具共同穿軸與位移止擋，移走擋件必須被拒絕 | voc | yes | behavior | artifact:rotary/base-retention.json,rotary/red-base-stop.json,rotary/red-base-lid.json |
 | R25 | 簡化為兩支獨立雙節臂，調整機構 10 螺絲／10 螺母且不需軸套與獨立墊片 | voc | yes | behavior | artifact:simple/verification.json,simple/red-disconnection.json |
+| R26 | 參考實驗室電極臂，前臂雙桿加三角平台；肩與前臂共同定位，兩頭獨立 | voc | yes | behavior | artifact:electrode/verification.json,electrode/red-disconnection.json |
