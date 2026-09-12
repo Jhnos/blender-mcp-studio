@@ -148,6 +148,21 @@ def clamp_hardware(
     x, y, pz = probe
     z = pz - 28
     moving, fixed = [], []
+    # Released M4x12 thumb screw: flat tip 0.5 mm clear of the outer guide rod.
+    lock_x = x + side * 50
+    screw = add_cylinder(f"LS_HW_{label}_slide_lock_screw", 2, 12, (lock_x, y - 10.5, z), "Y")
+    boolean(
+        screw,
+        add_cylinder("LS_TOOL_thumb", 7, 4.2, (lock_x, y - 18.5, z), "Y"),
+        "UNION",
+    )
+    nut = add_cylinder(
+        f"LS_HW_{label}_slide_lock_nut", 4.04, 3.2, (lock_x, y - 8.4, z), "Y", vertices=6
+    )
+    boolean(nut, add_cylinder("LS_TOOL_m4_thread", 2.1, 5, (lock_x, y - 8.4, z), "Y"), "DIFFERENCE")
+    for obj in (screw, nut):
+        assign(obj, mat)
+        moving.append(obj)
     for dy in ProbeClampSpec().bolt_y_mm:
         moving.extend(
             hardware_set(

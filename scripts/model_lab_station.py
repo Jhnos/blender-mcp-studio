@@ -44,7 +44,7 @@ from scripts.lab_station_render import render_views  # noqa: E402
 from scripts.lab_station_rig import create_arm_rig, verify_independence  # noqa: E402
 from src.core.domain.lab_station import LabStationSpec, Point  # noqa: E402
 
-OUTPUT = PROJECT_ROOT / "tmp" / "lab-station-v4"
+OUTPUT = PROJECT_ROOT / "tmp" / "lab-station-v5"
 
 
 def box(name: str, size: Point, at: Point, mat: bpy.types.Material) -> bpy.types.Object:
@@ -309,7 +309,7 @@ def build() -> None:
             area.spaces.active.region_3d.view_distance = 0.65
             area.spaces.active.region_3d.view_location = (0, -0.075, 0.095)
             area.spaces.active.clip_start = 0.0001
-    bpy.ops.wm.save_as_mainfile(filepath=str(OUTPUT / "lab_station_v4.blend"))
+    bpy.ops.wm.save_as_mainfile(filepath=str(OUTPUT / "lab_station_v5.blend"))
     manifest = {
         "stage": "straight-extraction-and-fit-prototype",
         "project_version": (PROJECT_ROOT / "VERSION").read_text().strip(),

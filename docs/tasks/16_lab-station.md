@@ -61,6 +61,10 @@
 - V01.0R.015：`scripts/ci.sh --real` exit 0，T1／T2／T3 全部 hard gates green，完整紀錄 `tmp/lab-station-v4/ci-real.log`；共用 oracle 排序修正通過所有既有模型回歸。23 件試配與模型未正式發布，保留 ACTIVE。
 - 本輪 5S：幾何、夾具檢查與渲染分檔；輸出留 tmp，無新增執行通道；來源與裝配限制同步 DCC。下一步先完成滑座 M4 鎖緊五金與防滑保持，再完成腕部到背架承力介面。
 
+- V5：先由真模型重現缺少滑座鎖緊螺絲，再加入兩組 M4×12 名義五金。`tmp/lab-station-v5/red-missing-lock.log` 為失敗證據；fit contract 通過，52 focused tests 與 ruff 通過。實際間隙 0.50002／0.50001 mm；0.49 mm 旋入無卡阻、0.7 mm 過行程能抓到撞桿。已檢視 clamp-detail.png。
+- V01.0R.016：完整 `scripts/ci.sh --real` exit 0、全部 hard gates green，紀錄 `tmp/lab-station-v5/ci-real.log`；補充追溯文件後 DCC 16 passed。保持力、二次防墜、旋鈕操作包絡與鎖緊狀態防誤升降仍未取得證據，不能宣告滑座承載合格。
+- 5S：沿用既有五金與升降檢查模組，沒有新增通道；V5 輸出獨立於 V4；新增 S7／R12 與失效追溯，AGENTS／技能不變。下一步完成腕部到背架的實際螺栓連接；已詢問探頭含線重量、最高溫度與液體種類，未答覆不阻止幾何裝配工作。
+
 ### Open failures
 
 - 材料、精確瓶口／瓶高、零件型號、負載、工作溫度與液體尚未確定。

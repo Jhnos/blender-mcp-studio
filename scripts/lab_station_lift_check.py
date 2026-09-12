@@ -45,6 +45,51 @@ def inside(point: Vector, solid: BVHTree) -> bool:
 
 
 def verify_lifts(travel: float = 100) -> dict[str, object]:
+    locks = []
+    for label in ("capillary", "pH_temp"):
+        for component in ("screw", "nut"):
+            name = f"LS_HW_{label}_slide_lock_{component}"
+            if name not in bpy.data.objects:
+                raise ValueError(f"Slide lock assembly missing: {name}")
+        screw = bpy.data.objects[f"LS_HW_{label}_slide_lock_screw"]
+        nut = bpy.data.objects[f"LS_HW_{label}_slide_lock_nut"]
+        carrier = bpy.data.objects[f"LS_FIT_{label}_lift_carrier"]
+        side = -1 if label == "capillary" else 1
+        rod = bpy.data.objects[f"LS_REF_{label}_guide_rod_{side * 10}"]
+        points = vertices(screw)
+        tip = Vector(
+            (
+                (min(p.x for p in points) + max(p.x for p in points)) / 2,
+                max(p.y for p in points),
+                (min(p.z for p in points) + max(p.z for p in points)) / 2,
+            )
+        )
+        hit, _, _, distance = tree(rod).ray_cast(tip, Vector((0, 1, 0)))
+        if hit is None or distance is None or abs(distance * 1000 - 0.5) > 0.01:
+            raise ValueError(f"Slide lock cannot reach rod with 0.5 mm take-up: {label}")
+        original = screw.location.copy()
+        try:
+            for advance in (0.0, 0.49):
+                screw.location.y = original.y + advance / 1000
+                bpy.context.view_layer.update()
+                if any(tree(screw).overlap(tree(part)) for part in (nut, carrier, rod)):
+                    raise ValueError(f"Slide lock blocked before rod contact: {label}, {advance}")
+            # Negative control: deliberately overtravel into the rod must be detected.
+            screw.location.y = original.y + 0.7 / 1000
+            bpy.context.view_layer.update()
+            if not tree(screw).overlap(tree(rod)):
+                raise ValueError(f"Slide lock overtravel was not detected: {label}")
+        finally:
+            screw.location = original
+            bpy.context.view_layer.update()
+        locks.append(
+            {
+                "head": label,
+                "released_gap_mm": distance * 1000,
+                "overtravel_detected": True,
+                "holding_force_qualified": False,
+            }
+        )
     all_meshes = [
         o
         for o in bpy.context.scene.objects
@@ -146,6 +191,7 @@ def verify_lifts(travel: float = 100) -> dict[str, object]:
         "rim_mm": 110,
         "clearance_plane_mm": 120,
         "heads": reports,
+        "slide_locks": locks,
         "scope": "Straight extraction at the documented arm pose; rigid geometry only, not load or cable qualification.",
     }
 
