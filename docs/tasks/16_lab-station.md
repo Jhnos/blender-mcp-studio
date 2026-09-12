@@ -125,3 +125,12 @@
 - V01.0R.01B 最終完整 `scripts/ci.sh --real` exit 0，全部 hard gates green；日誌 tmp/lab-station-rotary/ci-final.log，session 46584 已結束。初次 ci-real.log 的六件手臂超過 20000 面分析上限而失敗，且執行中改 CI 檔造成尾端解析錯誤 exit 2；已凍結腳本並完整重跑，不能把初次命令說成成功。
 - V10 六件臂分成左右各三件 readiness，新增 lab_station_arms_right.json，維持禁止截斷；四連桿 gate 則只驗運動與場景表面碰撞，沒有冒用 readiness。新候選三張圖皆已實際檢視，文件與來源已入導航，DCC 16 passed。
 - 下一步以 rotary 候選為主：補四連桿所有移動件互相干涉及雙頭同動；將支撐／轉軸佔位改成真正可裝配、可鎖定且能保持的機構，完成機箱底板承力。V10 夾具新逐名完整性守衛的缺件負對照尚需納入；不回到線性滑座主方案。
+
+- 使用者明確要求四連桿僅負責升降，保留其他位置的原鉸鍊自由度。已加入每頭 base_yaw_deg／shoulder_deg／elbow_deg／wrist_deg，加上 lift_mm 共五個獨立控制；腕部手動調角，不自動對地補償。真 Blender 10 個隔離案例通過；支撐仍是包絡，尚非可鎖定的實體關節。
+- 本輪未提交：新增 M5 名義轉軸／三墊片／螺母／雙軸套包絡，末端外移由 66 改 74 mm；同頭移動件配對、雙頭 121 高度組合、折屏取樣及交叉侵入負對照均由 focused 真機生成通過，日誌 tmp/lab-station-rotary/articulation-verification.log（exit 0）。新增控制最初 driver 無效，完整建立屬性／父子關係後重新編譯解決；缺控制負對照 red-missing-articulation.log。尚未跑本輪完整 CI／版本 checkpoint。下一步補支撐實體齒槽關節與抬起後側移姿態碰撞，更新概念頁並完成 gates；不能把五個控制的隔離測試當任意姿態安全或承力證據。
+
+- V01.0R.01C focused 重建 exit 0，新增停用 yaw 驅動的 red-articulation.json 通過，恢復後 10 項正例通過；入口主動 reload 三個既有 helper。已檢視 pivot-detail.png，五金可見。5S：沿用既有模組（最大 337 行），更新概念頁與 R18 追溯；生成件留 tmp，沒有公開任意執行通道。準備完整 CI，尚未提交。
+
+- 首次 V01.0R.01C 完整 CI exit 1，唯一失敗為嵌入字串內的專案 import 守衛，真機項目通過；修正為沿用 reload_modules_for 推導完整相依閉包，並設定根目錄後以資料清單載入。該守衛 5 個 focused tests 通過，無放寬規則；將重新完整跑 CI。
+
+- V01.0R.01C 最終完整 scripts/ci.sh --real exit 0，全部 hard gates green，日誌 tmp/lab-station-rotary/ci-01C-final.log，session 62719 已結束。首次失敗紀錄保留 ci-01C.log。下一步將 rotary 肘部支撐包絡改為實體兩成員與齒槽／脫齒介面，再驗證轉動和裝入；肩／腕、底座承力與全姿態仍未完成。

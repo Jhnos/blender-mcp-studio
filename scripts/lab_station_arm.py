@@ -301,3 +301,37 @@ def verify_shoulder_release() -> dict[str, object]:
         "samples": rows,
         "scope": "Local shoulder meshes only; chassis bearing, load and retention unqualified.",
     }
+
+
+def rotary_pivot_hardware(
+    name: str, point: Point, side: int, mat: bpy.types.Material
+) -> list[bpy.types.Object]:
+    """Nominal M5x35 shoulder-less bolt, three washers and nut; no thread qualification."""
+    x, y, z = point
+    bolt = add_cylinder(name, 2.5, 35, (x + side * 8, y, z), "X")
+    boolean(bolt, add_cylinder("LR_TOOL_head", 4.25, 5, (x - side * 12, y, z), "X"), "UNION")
+    boolean(
+        bolt,
+        add_cylinder("LR_TOOL_hex", 2.42, 3.6, (x - side * 13.7, y, z), "X", vertices=6),
+        "DIFFERENCE",
+    )
+    nut = add_cylinder(
+        name.replace("_pin_", "_nut_"), 4.6, 4, (x + side * 17.7, y, z), "X", vertices=6
+    )
+    boolean(nut, add_cylinder("LR_TOOL_thread", 2.6, 6, (x + side * 17.7, y, z), "X"), "DIFFERENCE")
+    parts = [bolt, nut]
+    for label, distance in (("inner", -7), ("spacer", 7), ("outer", 15)):
+        center = (x + side * distance, y, z)
+        washer = add_cylinder(name.replace("_pin_", "_washer_" + label + "_"), 5, 1, center, "X")
+        boolean(washer, add_cylinder("LR_TOOL_washer", 2.65, 3, center, "X"), "DIFFERENCE")
+        parts.append(washer)
+    for label, distance, depth in (("frame", 0, 12), ("link", 11, 6)):
+        center = (x + side * distance, y, z)
+        sleeve = add_cylinder(
+            name.replace("_pin_", "_sleeve_" + label + "_"), 4, depth, center, "X"
+        )
+        boolean(sleeve, add_cylinder("LR_TOOL_sleeve", 2.6, depth + 2, center, "X"), "DIFFERENCE")
+        parts.append(sleeve)
+    for part in parts:
+        assign(part, mat)
+    return parts

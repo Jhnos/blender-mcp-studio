@@ -12,15 +12,23 @@ from mathutils import Vector
 
 from scripts.blender_mesh_primitives import add_cylinder, assign, boolean, material
 from scripts.hollow_hinge_render import look_at
+from scripts.lab_station_arm import rotary_pivot_hardware
 from scripts.lab_station_clamp import lined_jaw
 from scripts.lab_station_joints import block
-from scripts.lab_station_motion_check import tree
-from scripts.lab_station_rig import attach, driver, pivot, set_pose
+from scripts.lab_station_motion_check import tree, verify_coupled_motion, verify_rotary_screen
+from scripts.lab_station_rig import (
+    attach,
+    create_rotary_support_rig,
+    driver,
+    pivot,
+    set_pose,
+    verify_rotary_articulation,
+)
 from src.core.domain.lab_station import LabStationSpec, Point, RotaryLiftSpec
 
 ROOT = Path(__file__).resolve().parents[1]
 OUTPUT = ROOT / "tmp/lab-station-rotary"
-HEAD_OFFSET_MM = 66.0
+HEAD_OFFSET_MM = 74.0
 
 
 def bar(name: str, a: Point, b: Point, mat: bpy.types.Material) -> bpy.types.Object:
@@ -31,7 +39,7 @@ def bar(name: str, a: Point, b: Point, mat: bpy.types.Material) -> bpy.types.Obj
     obj.rotation_euler = direction.to_track_quat("Z", "Y").to_euler()
     for point in (a, b):
         boolean(obj, add_cylinder("LR_TOOL_ear", 8, 6, point, "X"), "UNION")
-        boolean(obj, add_cylinder("LR_TOOL_bore", 2.7, 8, point, "X"), "DIFFERENCE")
+        boolean(obj, add_cylinder("LR_TOOL_bore", 4.1, 8, point, "X"), "DIFFERENCE")
     return obj
 
 
@@ -75,7 +83,7 @@ def build_head(label: str, side: int, mat: bpy.types.Material, metal: bpy.types.
     driver(moving, control, "location", 2, "lift_mm*0.001", ("lift_mm",))
     for index, (start, end) in enumerate(((a, c), (b, d))):
         for body, point in ((base, start), (head, end)):
-            boolean(body, add_cylinder("LR_TOOL_hole", 2.7, 16, point, "X"), "DIFFERENCE")
+            boolean(body, add_cylinder("LR_TOOL_hole", 4.1, 16, point, "X"), "DIFFERENCE")
         shift = (side * 11, 0, 0)
         start, end = offset(start, shift), offset(end, shift)
         link = bar(f"LR_{label}_bar_{index}", start, end, mat)
@@ -93,12 +101,12 @@ def build_head(label: str, side: int, mat: bpy.types.Material, metal: bpy.types.
             ("lift_mm",),
         )
         for name, point, parent in (("base", start, None), ("head", end, moving)):
-            pin = add_cylinder(
-                f"LR_{label}_pin_{index}_{name}", 2.5, 30, offset(point, (-side * 5.5, 0, 0)), "X"
+            hardware = rotary_pivot_hardware(
+                f"LR_{label}_pin_{index}_{name}", offset(point, (-side * 11, 0, 0)), side, metal
             )
-            assign(pin, metal)
             if parent is not None:
-                attach(pin, parent)
+                for part in hardware:
+                    attach(part, parent)
     probe_data = (
         (("glass", 0, 3, 102),) if side < 0 else (("pH", -6, 6, 115), ("temperature", 8, 3, 115))
     )
@@ -115,6 +123,7 @@ def build_head(label: str, side: int, mat: bpy.types.Material, metal: bpy.types.
     terminal = a
     for i, (start, end) in enumerate(((root, middle), (middle, neck), (neck, terminal))):
         bar(f"LR_{label}_support_envelope_{i}", start, end, mat)
+    create_rotary_support_rig(label, root, middle, a)
     bpy.context.view_layer.update()
 
 
@@ -157,7 +166,7 @@ def verify() -> dict[str, object]:
                             raise ValueError("Rotating link does not close at its physical pivot")
                     pin = bpy.data.objects[f"LR_{label}_pin_{i}_head"]
                     # Pin centres are offset from the bar's plane, by design.
-                    actual = pin.matrix_world.translation - Vector((side * 5.5 / 1000, 0, 0))
+                    actual = pin.matrix_world.translation - Vector((side * 8 / 1000, 0, 0))
                     if (actual - expected[i + 2]).length > 1e-6:
                         raise ValueError("Four-bar head pivot did not follow the analytical path")
                 rows.append({"head": label, "lift_mm": amount, "vessel_intersections": hits})
@@ -176,8 +185,9 @@ def inspect_assembly_motion() -> dict[str, object]:
     static_hits = []
     contacts = []
     for obj in meshes:
-        if not obj.name.startswith("LR_") or not any(
-            tag in obj.name for tag in ("_fixed", "support_envelope", "mount_envelope")
+        if not obj.name.startswith("LR_") or not (
+            obj.name.endswith("_base")
+            or any(tag in obj.name for tag in ("_fixed", "support_envelope", "mount_envelope"))
         ):
             continue
         for other in meshes:
@@ -195,7 +205,7 @@ def inspect_assembly_motion() -> dict[str, object]:
             for o in meshes
             if o.name.startswith("LR_" + label + "_")
             and not any(tag in o.name for tag in ("support_envelope", "mount_envelope", "_fixed"))
-            and not ("_pin_" in o.name and o.name.endswith("_base"))
+            and not o.name.endswith("_base")
         ]
         obstacles = {o.name: tree(o) for o in meshes if o not in moving}
         try:
@@ -258,7 +268,10 @@ def main() -> None:
         ("pH_temp", 1, (0.05, 0.6, 0.64, 1)),
     ):
         build_head(label, side, material("LR_" + label, color), metal)
+    (OUTPUT / "articulation.json").write_text(json.dumps(verify_rotary_articulation(), indent=2))
     (OUTPUT / "motion.json").write_text(json.dumps(verify(), indent=2))
+    (OUTPUT / "coupled-motion.json").write_text(json.dumps(verify_coupled_motion(), indent=2))
+    (OUTPUT / "screen-motion.json").write_text(json.dumps(verify_rotary_screen(), indent=2))
     assembly = inspect_assembly_motion()
     (OUTPUT / "assembly-motion.json").write_text(json.dumps(assembly, indent=2))
     if assembly["unresolved_surface_collisions"] or assembly["unresolved_static_collisions"]:
@@ -279,6 +292,15 @@ def main() -> None:
         bpy.ops.render.render(write_still=True)
     set_pose(bpy.data.objects["LR_CTRL_capillary"], lift_mm=0)
     set_pose(bpy.data.objects["LR_CTRL_pH_temp"], lift_mm=0)
+    saved_location, saved_rotation = camera.location.copy(), camera.rotation_euler.copy()
+    saved_scale = camera.data.ortho_scale
+    camera.location = (0.29, -0.28, 0.23)
+    camera.data.ortho_scale = 0.15
+    look_at(camera, (92, -128, 170))
+    scene.render.filepath = str(OUTPUT / "pivot-detail.png")
+    bpy.ops.render.render(write_still=True)
+    camera.location, camera.rotation_euler = saved_location, saved_rotation
+    camera.data.ortho_scale = saved_scale
     bpy.ops.wm.save_as_mainfile(filepath=str(OUTPUT / "rotary-concept.blend"))
 
 

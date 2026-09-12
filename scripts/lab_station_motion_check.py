@@ -1,6 +1,7 @@
 """Actual mesh regression probes; sampled clearances are not physical load tests."""
 
 import math
+from itertools import combinations, product
 
 import bpy
 from mathutils import Matrix
@@ -89,4 +90,124 @@ def verify_motion() -> dict[str, object]:
         "screen_sweep": samples,
         "coupon_engagement": coupon,
         "scope": "Sampled surface intersections only; no force, cable, containment or full arm sweep acceptance.",
+    }
+
+
+def verify_coupled_motion() -> dict[str, object]:
+    """Include all moving pairs within each head and a Cartesian grid between heads."""
+    cache: dict[str, dict[int, dict[str, BVHTree]]] = {}
+    internal_pairs = 0
+    for label in ("capillary", "pH_temp"):
+        control = bpy.data.objects["LR_CTRL_" + label]
+        meshes = [
+            o
+            for o in bpy.context.scene.objects
+            if o.type == "MESH"
+            and not o.hide_render
+            and o.name.startswith("LR_" + label + "_")
+            and not any(tag in o.name for tag in ("support_envelope", "mount_envelope", "_fixed"))
+            and not o.name.endswith("_base")
+        ]
+        required = {
+            f"LR_{label}_{suffix}"
+            for suffix in ("head", "bar_0", "bar_1", "clamp_cap", "pin_0_head", "pin_1_head")
+        }
+        required.update(
+            f"LR_{label}_{part}_{i}_head"
+            for part in (
+                "nut",
+                "washer_inner",
+                "washer_spacer",
+                "washer_outer",
+                "sleeve_frame",
+                "sleeve_link",
+            )
+            for i in (0, 1)
+        )
+        required.update(
+            f"LR_{label}_liner_{i}{suffix}"
+            for i in range(1 if label == "capillary" else 2)
+            for suffix in ("", "_mate")
+        )
+        required.update(
+            f"LR_{label}_probe_{name}"
+            for name in (("glass",) if label == "capillary" else ("pH", "temperature"))
+        )
+        if not required <= {o.name for o in meshes}:
+            raise ValueError("Coupled motion population incomplete")
+        cache[label] = {}
+        try:
+            for amount in range(0, 101, 10):
+                set_pose(control, lift_mm=amount)
+                sample = {o.name: tree(o) for o in meshes}
+                cache[label][amount] = sample
+                for (a, ta), (b, tb) in combinations(sample.items(), 2):
+                    internal_pairs += 1
+                    if ta.overlap(tb):
+                        raise ValueError(f"Internal rotary collision: {label}, {amount}, {a}, {b}")
+        finally:
+            set_pose(control, lift_mm=0)
+    cross_pairs = 0
+    poses = []
+    for left, right in product(cache["capillary"], cache["pH_temp"]):
+        for (a, ta), (b, tb) in product(
+            cache["capillary"][left].items(), cache["pH_temp"][right].items()
+        ):
+            cross_pairs += 1
+            if ta.overlap(tb):
+                raise ValueError(f"Cross-head rotary collision: {left}, {right}, {a}, {b}")
+        poses.append({"capillary_mm": left, "pH_temp_mm": right})
+    return {
+        "poses": poses,
+        "internal_pair_checks": internal_pairs,
+        "cross_pair_checks": cross_pairs,
+        "scope": "11 positions per head, all 121 Cartesian combinations; surface intersections only, no continuous motion, containment, flex or cables.",
+    }
+
+
+def verify_rotary_screen() -> dict[str, object]:
+    screen = bpy.data.objects["LS_SCREEN_CONTROL"]
+    controls = [bpy.data.objects["LR_CTRL_" + name] for name in ("capillary", "pH_temp")]
+    prior = [{"lift_mm": float(c["lift_mm"])} for c in controls]
+    screen_prior = {key: float(screen[key]) for key in ("tilt_step", "release_mm")}
+    moving = [
+        bpy.data.objects[name]
+        for name in (
+            "LS_FIT_lcd_front",
+            "LS_FIT_lcd_back",
+            "LS_REF_touch_glass",
+            "LS_REF_lcd_pcb",
+            "LS_REF_terminal_allowance",
+        )
+    ]
+    obstacles = [
+        o
+        for o in bpy.context.scene.objects
+        if o.type == "MESH" and o.name.startswith("LR_") and not o.hide_render
+    ]
+    if len(obstacles) < 40:
+        raise ValueError("Rotary screen population incomplete")
+    rows = []
+    try:
+        for left, right in product((0, 50, 100), repeat=2):
+            for c, height in zip(controls, (left, right), strict=True):
+                set_pose(c, lift_mm=height)
+            fixed = {o.name: tree(o) for o in obstacles}
+            for angle in range(0, 76, 5):
+                set_pose(screen, tilt_step=angle / 15, release_mm=2)
+                for obj in moving:
+                    body = tree(obj)
+                    hits = [name for name, mesh in fixed.items() if body.overlap(mesh)]
+                    if hits:
+                        raise ValueError(
+                            f"Rotary screen collision: {left}, {right}, {angle}, {obj.name}, {hits}"
+                        )
+                rows.append({"left_mm": left, "right_mm": right, "screen_deg": angle})
+    finally:
+        for c, values in zip(controls, prior, strict=True):
+            set_pose(c, **values)
+        set_pose(screen, **screen_prior)
+    return {
+        "samples": rows,
+        "scope": "144 discrete combinations, surface collision only; not continuous motion, containment or cable qualification.",
     }

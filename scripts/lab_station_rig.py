@@ -170,3 +170,96 @@ def verify_independence(labels: Sequence[str]) -> list[dict[str, object]]:
             finally:
                 set_pose(control, **{prop: before})
     return records
+
+
+def create_rotary_support_rig(label: str, root: Point, elbow: Point, wrist: Point) -> None:
+    """Restore independent support joints; wrist compensation is explicitly manual."""
+    control = bpy.data.objects["LR_CTRL_" + label]
+    yaw = pivot(f"LR_PIVOT_{label}_yaw", root)
+    shoulder = pivot(f"LR_PIVOT_{label}_shoulder", root, yaw)
+    forearm = pivot(f"LR_PIVOT_{label}_elbow", elbow, shoulder)
+    head = pivot(f"LR_PIVOT_{label}_wrist", wrist, forearm)
+    for name, obj, axis in (
+        ("base_yaw_deg", yaw, 2),
+        ("shoulder_deg", shoulder, 0),
+        ("elbow_deg", forearm, 0),
+        ("wrist_deg", head, 0),
+    ):
+        control[name] = 0.0
+        control.id_properties_ui(name).update(
+            min=-45.0,
+            max=45.0,
+            description="Independent joint; pose study range, not a collision-safe limit",
+        )
+        driver(obj, control, "rotation_euler", axis, name + "*0.017453292519943295", (name,))
+    attach(bpy.data.objects[f"LR_{label}_support_envelope_0"], shoulder)
+    for index in (1, 2):
+        attach(bpy.data.objects[f"LR_{label}_support_envelope_{index}"], forearm)
+    for obj in list(bpy.context.scene.objects):
+        if obj.name.startswith("LR_" + label + "_") and (
+            obj.name.endswith("_base") or obj.name.endswith("_fixed")
+        ):
+            attach(obj, head)
+    for name in ("hinge_0", "hinge_1", "moving"):
+        obj = bpy.data.objects[f"LR_{label}_{name}"]
+        bpy.context.view_layer.update()
+        local = head.matrix_world.inverted() @ obj.matrix_world
+        attach(obj, head)
+        if name == "moving":
+            for curve in obj.animation_data.drivers:
+                if curve.data_path == "location":
+                    expression = curve.driver.expression
+                    curve.driver.expression = (
+                        f"{local.translation[curve.array_index]!r}+({expression})"
+                    )
+    # Recompile after all custom properties and parent dependencies exist.
+    control.update_tag()
+    for obj in (yaw, shoulder, forearm, head):
+        for curve in obj.animation_data.drivers:
+            curve.driver.expression += "+0"
+    bpy.context.view_layer.update()
+
+
+def verify_rotary_articulation() -> list[dict[str, object]]:
+    """Every declared joint must move its own head and leave every other-head mesh fixed."""
+    rows = []
+    for label, other in (("capillary", "pH_temp"), ("pH_temp", "capillary")):
+        control = bpy.data.objects["LR_CTRL_" + label]
+        head = bpy.data.objects[f"LR_{label}_head"]
+        other_meshes = [
+            o
+            for o in bpy.context.scene.objects
+            if o.type == "MESH" and o.name.startswith("LR_" + other + "_")
+        ]
+        if not other_meshes:
+            raise ValueError("Other articulated head missing")
+        for prop in ("base_yaw_deg", "shoulder_deg", "elbow_deg", "wrist_deg", "lift_mm"):
+            if prop not in control:
+                raise ValueError(f"Articulation control missing: {label}.{prop}")
+            saved = float(control[prop])
+            before = head.matrix_world.copy()
+            fixed = {o.name: o.matrix_world.copy() for o in other_meshes}
+            try:
+                set_pose(control, **{prop: saved + 15})
+                own_delta = max(
+                    abs(head.matrix_world[r][c] - before[r][c]) for r in range(4) for c in range(4)
+                )
+                other_delta = max(
+                    abs(o.matrix_world[r][c] - fixed[o.name][r][c])
+                    for o in other_meshes
+                    for r in range(4)
+                    for c in range(4)
+                )
+                if own_delta <= 1e-6 or other_delta > 1e-8:
+                    raise ValueError(f"Articulation independence failed: {label}.{prop}")
+                rows.append(
+                    {
+                        "head": label,
+                        "control": prop,
+                        "own_delta": own_delta,
+                        "other_delta": other_delta,
+                    }
+                )
+            finally:
+                set_pose(control, **{prop: saved})
+    return rows
