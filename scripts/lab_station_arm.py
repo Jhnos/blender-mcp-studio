@@ -175,7 +175,9 @@ def finish_arm(obj: bpy.types.Object) -> None:
     cleanup_mesh(obj)
 
 
-def verify_elbow_assembly() -> dict[str, object]:
+def verify_elbow_assembly(
+    scene_prefixes: tuple[str, ...] = ("LS_",), hardware_prefix: str = "LS_HW_"
+) -> dict[str, object]:
     """Nominal rigid insertion sequence; the frame must be supported during assembly."""
     from scripts.lab_station_motion_check import tree
 
@@ -183,7 +185,7 @@ def verify_elbow_assembly() -> dict[str, object]:
         o
         for o in bpy.context.scene.objects
         if o.type == "MESH"
-        and o.name.startswith("LS_")
+        and o.name.startswith(scene_prefixes)
         and not o.hide_render
         and not o.name.startswith(("LS_CHECK_", "LS_DIAG_"))
     ]
@@ -192,7 +194,7 @@ def verify_elbow_assembly() -> dict[str, object]:
     rows = []
     for label in ("capillary", "pH_temp"):
         names = [
-            f"LS_HW_{label}_elbow_{suffix}"
+            f"{hardware_prefix}{label}_elbow_{suffix}"
             for suffix in ("bolt", "nut", "washer_left", "washer_right")
         ]
         if any(name not in bpy.data.objects for name in names):

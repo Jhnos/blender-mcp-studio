@@ -12,14 +12,21 @@ from mathutils import Vector
 
 from scripts.blender_mesh_primitives import add_cylinder, assign, boolean, material
 from scripts.hollow_hinge_render import look_at
-from scripts.lab_station_arm import connect_serrated_joint, joint_hardware, rotary_pivot_hardware
+from scripts.lab_station_arm import (
+    connect_serrated_joint,
+    finish_arm,
+    joint_hardware,
+    rotary_pivot_hardware,
+)
 from scripts.lab_station_clamp import lined_jaw
 from scripts.lab_station_joints import block
 from scripts.lab_station_motion_check import (
     tree,
     verify_coupled_motion,
+    verify_rotary_elbow_assembly,
     verify_rotary_elbows,
     verify_rotary_screen,
+    verify_rotary_support_meshes,
 )
 from scripts.lab_station_rig import (
     attach,
@@ -36,12 +43,17 @@ OUTPUT = ROOT / "tmp/lab-station-rotary"
 HEAD_OFFSET_MM = 74.0
 
 
-def bar(name: str, a: Point, b: Point, mat: bpy.types.Material) -> bpy.types.Object:
+def beam(name: str, a: Point, b: Point, mat: bpy.types.Material) -> bpy.types.Object:
     direction = Vector(b) - Vector(a)
     center: Point = tuple((a[i] + b[i]) / 2 for i in range(3))  # type: ignore[assignment]
     obj = block(name, (6, 12, direction.length), (0, 0, 0), mat)
     obj.location = tuple(v / 1000 for v in center)
     obj.rotation_euler = direction.to_track_quat("Z", "Y").to_euler()
+    return obj
+
+
+def bar(name: str, a: Point, b: Point, mat: bpy.types.Material) -> bpy.types.Object:
+    obj = beam(name, a, b, mat)
     for point in (a, b):
         boolean(obj, add_cylinder("LR_TOOL_ear", 8, 6, point, "X"), "UNION")
         boolean(obj, add_cylinder("LR_TOOL_bore", 4.1, 8, point, "X"), "DIFFERENCE")
@@ -128,12 +140,14 @@ def build_head(label: str, side: int, mat: bpy.types.Material, metal: bpy.types.
     terminal = a
     upper_neck = offset(middle, (-14, 30, 0))
     lower_neck = offset(middle, (14, 30, 0))
-    upper = bar(f"LR_{label}_support_envelope_0", root, upper_neck, mat)
+    upper = beam(f"LR_{label}_support_envelope_0", root, upper_neck, mat)
     turn = (neck[0], lower_neck[1], neck[2] + 25)
-    lower = bar(f"LR_{label}_support_envelope_1", lower_neck, turn, mat)
-    boolean(lower, bar("LR_TOOL_lower_return", turn, neck, mat), "UNION")
-    bar(f"LR_{label}_support_envelope_2", neck, terminal, mat)
-    connect_serrated_joint(upper, lower, middle, (upper_neck, lower_neck), label, mat, bar)
+    lower = beam(f"LR_{label}_support_envelope_1", lower_neck, turn, mat)
+    boolean(lower, beam("LR_TOOL_lower_return", turn, neck, mat), "UNION")
+    beam(f"LR_{label}_support_envelope_2", neck, terminal, mat)
+    connect_serrated_joint(upper, lower, middle, (upper_neck, lower_neck), label, mat, beam)
+    for member in (upper, lower):
+        finish_arm(member)
     hardware = joint_hardware(middle, label, metal)
     for obj in hardware:
         obj.name = "LR_" + obj.name.removeprefix("LS_HW_")
@@ -285,6 +299,10 @@ def main() -> None:
         ("pH_temp", 1, (0.05, 0.6, 0.64, 1)),
     ):
         build_head(label, side, material("LR_" + label, color), metal)
+    (OUTPUT / "support-mesh.json").write_text(json.dumps(verify_rotary_support_meshes(), indent=2))
+    (OUTPUT / "elbow-assembly.json").write_text(
+        json.dumps(verify_rotary_elbow_assembly(), indent=2)
+    )
     (OUTPUT / "elbow-release.json").write_text(json.dumps(verify_rotary_elbows(), indent=2))
     (OUTPUT / "articulation.json").write_text(json.dumps(verify_rotary_articulation(), indent=2))
     (OUTPUT / "motion.json").write_text(json.dumps(verify(), indent=2))

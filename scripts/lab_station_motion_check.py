@@ -258,3 +258,56 @@ def verify_rotary_elbows() -> list[dict[str, object]]:
         finally:
             set_pose(control, **saved)
     return rows
+
+
+def verify_rotary_support_meshes() -> list[dict[str, object]]:
+    """Check the four elbow members are single connected, closed meshes; not full readiness."""
+    import bmesh
+
+    rows: list[dict[str, object]] = []
+    for label in ("capillary", "pH_temp"):
+        for index in (0, 1):
+            obj = bpy.data.objects[f"LR_{label}_support_envelope_{index}"]
+            mesh = bmesh.new()
+            mesh.from_mesh(obj.data)
+            try:
+                unseen = set(mesh.verts)
+                shells = 0
+                while unseen:
+                    shells += 1
+                    pending = [unseen.pop()]
+                    while pending:
+                        vertex = pending.pop()
+                        for edge in vertex.link_edges:
+                            other = edge.other_vert(vertex)
+                            if other in unseen:
+                                unseen.remove(other)
+                                pending.append(other)
+                bad_edges = sum(not edge.is_manifold for edge in mesh.edges)
+                small_faces = sum(face.calc_area() < 1e-12 for face in mesh.faces)
+                row = {
+                    "part": obj.name,
+                    "shells": shells,
+                    "nonmanifold_edges": bad_edges,
+                    "degenerate_faces": small_faces,
+                }
+                if shells != 1 or bad_edges or small_faces:
+                    raise ValueError(f"Rotary support mesh invalid: {row}")
+                rows.append(row)
+            finally:
+                mesh.free()
+    return rows
+
+
+def verify_rotary_elbow_assembly() -> dict[str, object]:
+    """Fold the HMI before inserting inward-facing elbow washers and nuts."""
+    from scripts.lab_station_arm import verify_elbow_assembly
+    from scripts.lab_station_rig import set_pose
+
+    screen = bpy.data.objects["LS_SCREEN_CONTROL"]
+    saved = {key: float(screen[key]) for key in ("tilt_step", "release_mm")}
+    try:
+        set_pose(screen, tilt_step=0, release_mm=2)
+        return verify_elbow_assembly(("LS_", "LR_"), "LR_")
+    finally:
+        set_pose(screen, **saved)

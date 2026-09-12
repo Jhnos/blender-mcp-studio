@@ -16,6 +16,30 @@ if {str(root)!r} not in sys.path:
 for name in {modules!r}:
     importlib.reload(importlib.import_module(name))
 model = runpy.run_path({str(script)!r}, run_name='__main__')
+import bmesh
+support = bpy.data.objects['LR_capillary_support_envelope_0']
+original_mesh = support.data
+broken_mesh = original_mesh.copy()
+support.data = broken_mesh
+edit = bmesh.new()
+edit.from_mesh(broken_mesh)
+edit.faces.ensure_lookup_table()
+bmesh.ops.delete(edit, geom=[edit.faces[0]], context='FACES_ONLY')
+edit.to_mesh(broken_mesh)
+edit.free()
+try:
+    try:
+        model['verify_rotary_support_meshes']()
+    except ValueError as error:
+        if 'Rotary support mesh invalid' not in str(error):
+            raise
+        (model['OUTPUT'] / 'red-support-mesh.json').write_text(json.dumps({{'rejected': True, 'reason': str(error)}}))
+    else:
+        raise RuntimeError('Open support mesh was accepted')
+finally:
+    support.data = original_mesh
+    bpy.data.meshes.remove(broken_mesh)
+model['verify_rotary_support_meshes']()
 joint = bpy.data.objects['LR_PIVOT_capillary_yaw']
 failed_driver = joint.animation_data.drivers[0].driver
 saved_expression = failed_driver.expression

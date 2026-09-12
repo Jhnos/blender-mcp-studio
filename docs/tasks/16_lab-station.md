@@ -138,3 +138,7 @@
 - V01.0R.01D：舊 rotary 肘部被 integrated tooth 守衛拒絕後，沿用 connect_serrated_joint／joint_hardware 建兩成員齒盤與 2 mm 脫齒。右側下臂斜穿齒盤，改回接路徑後又碰升降桿；最後改從齒盤後上方繞回，focused 生成 exit 0，兩側五狀態與整機升降／折屏通過，tmp/lab-station-rotary/elbow-verification.log。新增 elbow-detail.png 與脫齒隔離項，待完整 CI。5S：僅沿用既有模組，沒有新增模組／公開執行通道；來源與 tmp 生成件分離，R19 與概念頁同步。
 
 - V01.0R.01D 完整 scripts/ci.sh --real exit 1，唯一失敗為新增 rows 的 mypy 容器型別推導；T3 真機全數通過。補明確 list[dict[str, object]] 註記後 scripts/ci.sh exit 0，T1／T2 全綠。證據分別 ci-01D.log 與 ci-01D-static-final.log；不宣稱第一次完整命令成功。肘部 10 狀態、含脫齒 12 隔離案例與局部圖已核對。下一步肘部五金裝入／工具空間、支撐網格製造契約，再進肩／腕／底座承力，仍 ACTIVE。
+
+- V01.0R.01E：網格基線 elbow-mesh-baseline.json 抓到四件支撐各 15／438／107／711 非流形邊，部分有退化面。固定接頸改實心 beam，不再挪用含孔圓耳的 bar，沿用 finish_arm 後四件單殼／零非流形／零退化通過。裝入檢查抓到立起 HMI 阻擋內側墊片；先收折到 tilt_step=0 後 216 取樣通過。曾誤用 tilt_deg 與反向端點，已依 screen_control 既有定義修正，沒有改變螢幕語意。focused 重建 exit 0，日誌 support-mesh-verification.log。準備完整 CI 與開面負對照。5S：沿用既有梁、收尾與裝入驗證，模組最多 349 行；生成件留 tmp，R20 同步。
+
+- V01.0R.01E 完整 scripts/ci.sh --real exit 0，所有 hard gates green，tmp/lab-station-rotary/ci-01E.log，session 17752 已結束。support-mesh.json 四件均單殼／零非流形／零退化；red-support-mesh.json 開面後 3 邊拒絕；elbow-assembly.json 216 取樣通過。新局部圖已檢视，固定接頸無多餘圓耳孔。下一步工具空間、四件支撐自交／匯出契約，再肩／腕／底板承力，整機仍未完成。
