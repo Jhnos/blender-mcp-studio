@@ -68,6 +68,7 @@ def create_arm_rig(
         ("shoulder_deg", "Shoulder angle offset from the displayed rest pose", -35.0, 35.0),
         ("elbow_deg", "Elbow angle offset from the displayed rest pose", -45.0, 45.0),
         ("elbow_release_mm", "Axial tooth release before changing elbow angle", 0.0, 2.0),
+        ("shoulder_release_mm", "Axial tooth release before changing shoulder angle", 0.0, 2.0),
         ("head_tilt_deg", "Independent head pitch; zero keeps probes vertical", -30.0, 30.0),
         (
             "probe_slide_mm",
@@ -92,6 +93,14 @@ def create_arm_rig(
     radians = "*0.017453292519943295"
     driver(control, control, "rotation_euler", 2, "yaw_deg" + radians, ("yaw_deg",))
     driver(shoulder, control, "rotation_euler", 0, "shoulder_deg" + radians, ("shoulder_deg",))
+    driver(
+        shoulder,
+        control,
+        "location",
+        0,
+        f"{shoulder.location.x!r}+shoulder_release_mm*0.001",
+        ("shoulder_release_mm",),
+    )
     driver(forearm, control, "rotation_euler", 0, "elbow_deg" + radians, ("elbow_deg",))
     driver(
         forearm,
@@ -138,10 +147,11 @@ def verify_independence(labels: Sequence[str]) -> list[dict[str, object]]:
             "head_tilt_deg",
             "probe_slide_mm",
             "elbow_release_mm",
+            "shoulder_release_mm",
         ):
             before = float(control[prop])
             try:
-                set_pose(control, **{prop: before + (2 if prop == "elbow_release_mm" else 15)})
+                set_pose(control, **{prop: before + (2 if prop.endswith("release_mm") else 15)})
                 deltas = {
                     name: max(
                         abs(obj.matrix_world[row][column] - baseline[name][row][column])

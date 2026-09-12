@@ -1,4 +1,4 @@
-"""Trusted local packaging prototype; arms and bought parts are reference geometry only."""
+"""Trusted local fit prototype; mechanical load and bought-part fit remain unqualified."""
 
 from __future__ import annotations
 
@@ -26,17 +26,18 @@ from scripts.blender_mesh_primitives import (  # noqa: E402
 )
 from scripts.hollow_hinge_render import m  # noqa: E402
 from scripts.lab_station_arm import (  # noqa: E402
-    connect_elbow,
-    elbow_hardware,
+    build_shoulder,
+    connect_serrated_joint,
     finish_arm,
+    joint_hardware,
     verify_elbow_assembly,
     verify_elbow_release,
+    verify_shoulder_release,
 )
 from scripts.lab_station_clamp import clamp_hardware, lined_jaw, rod_keeper  # noqa: E402
 from scripts.lab_station_clamp_check import verify_clamp_assembly, verify_jaw_service  # noqa: E402
 from scripts.lab_station_joints import (  # noqa: E402
     add_screen_ears,
-    placed_plate,
     screen_bracket,
     screen_control,
     serrated_plate,
@@ -52,7 +53,7 @@ from scripts.lab_station_rig import create_arm_rig, verify_independence  # noqa:
 from scripts.lab_station_wrist import build_wrist, verify_wrist_assembly  # noqa: E402
 from src.core.domain.lab_station import LabStationSpec, Point  # noqa: E402
 
-OUTPUT = PROJECT_ROOT / "tmp" / "lab-station-v9"
+OUTPUT = PROJECT_ROOT / "tmp" / "lab-station-v10"
 
 
 def box(name: str, size: Point, at: Point, mat: bpy.types.Material) -> bpy.types.Object:
@@ -243,42 +244,28 @@ def build() -> None:
         necks = spec.elbow_necks(side)
         groups: list[list[bpy.types.Object]] = [[], [], [], []]
         bases: list[bpy.types.Object] = []
-        cylinder(f"REF_{label}_root", 13, 28, (root[0], root[1], 94), dark)
-        for index, (a, b) in enumerate(((root, elbow), (elbow, wrist))):
+        for index, b in enumerate((elbow, wrist)):
             end = (b[0], b[1], b[2] + 26) if index == 1 else b
-            start = a if index == 0 else necks[1]
+            start = spec.shoulder_neck(side) if index == 0 else necks[1]
             end = necks[0] if index == 0 else end
             link = beam(f"REF_{label}_link_{index}", start, end, color)
             arms.append(link)
             groups[index].append(link)
-        connect_elbow(groups[0][0], groups[1][0], elbow, necks, label, color, beam)
+        connect_serrated_joint(groups[0][0], groups[1][0], elbow, necks, label, color, beam)
+        rotor, shoulder_hardware = build_shoulder(
+            groups[0][0], root, spec.shoulder_neck(side), label, color, steel, beam
+        )
+        bolt, nut, left, right = shoulder_hardware
+        bases.extend([rotor, bolt, left])
+        groups[0].extend([nut, right])
+        apply_transform(rotor)
+        parts.append(export_prototype(rotor, label + "_arm_shoulder_rotor"))
         finish_arm(groups[0][0])
         apply_transform(groups[0][0])
         parts.append(export_prototype(groups[0][0], label + "_arm_upper"))
-        elbow_bolt, elbow_nut, elbow_left, elbow_right = elbow_hardware(elbow, label, steel)
+        elbow_bolt, elbow_nut, elbow_left, elbow_right = joint_hardware(elbow, label, steel)
         groups[0].extend([elbow_bolt, elbow_left])
         groups[1].extend([elbow_nut, elbow_right])
-        for index, point in enumerate((root,)):
-            if index < 2:
-                fixed = placed_plate(
-                    f"LS_REF_{label}_fixed_{index}", dark, (point[0] - 4.7, point[1], point[2]), 1
-                )
-                moving = placed_plate(
-                    f"LS_REF_{label}_moving_{index}",
-                    color,
-                    (point[0] + 4.7, point[1], point[2]),
-                    -1,
-                )
-                (bases if index == 0 else groups[index - 1]).append(fixed)
-                groups[index].append(moving)
-                groups[index].append(
-                    cylinder(f"REF_{label}_axle_{index}", 2.5, 36, point, steel, "X")
-                )
-            if index < 2:
-                knob_at = (point[0] + side * 18, point[1], point[2])
-                groups[index].append(
-                    cylinder(f"REF_{label}_knob_{index}", 12, 10, knob_at, color, "X")
-                )
         probe = spec.probe_origin(side)
         frame_lift, carrier_lift, rods = build_lift(label, side, probe, color, steel)
         wrist_hardware = build_wrist(frame_lift, groups[1][0], wrist, label, color, steel)
@@ -309,6 +296,7 @@ def build() -> None:
             label, (root, elbow, wrist), groups[0], groups[1], groups[2], groups[3], bases
         )
 
+    (OUTPUT / "shoulder-release.json").write_text(json.dumps(verify_shoulder_release(), indent=2))
     (OUTPUT / "clamp-assembly.json").write_text(
         json.dumps(verify_clamp_assembly(), indent=2) + "\n"
     )
@@ -339,7 +327,7 @@ def build() -> None:
             area.spaces.active.region_3d.view_distance = 0.65
             area.spaces.active.region_3d.view_location = (0, -0.075, 0.095)
             area.spaces.active.clip_start = 0.0001
-    bpy.ops.wm.save_as_mainfile(filepath=str(OUTPUT / "lab_station_v9.blend"))
+    bpy.ops.wm.save_as_mainfile(filepath=str(OUTPUT / "lab_station_v10.blend"))
     manifest = {
         "stage": "straight-extraction-and-fit-prototype",
         "project_version": (PROJECT_ROOT / "VERSION").read_text().strip(),

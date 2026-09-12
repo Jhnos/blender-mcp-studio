@@ -105,3 +105,23 @@
 - 優先完成探頭軟夾與滑座的實際固定、背架到腕部的螺栓介面、導桿防脫、根部與底座承力、平台連接、LCD PCB 保持、線材與全姿態／載荷驗證。
 
 - V9 5S：沿用 arm 模組，未新增執行通道；27 件輸出、契約與說明一致，生成件保留 tmp；已檢視 probe-raised.png。下一步完成肩根到機箱底部的實際承力連接。
+
+
+- V10 肩根基線已量測，舊 root／固定齒盤／上臂／軸有多處互穿；證據 tmp/lab-station-v10/red-shoulder-interface.json。肩根守衛先拒絕舊模型，domain shoulder_neck 測試先紅再綠。
+- 沿用 arm 模組，將接合／五金 helper 命名為 connect_serrated_joint／joint_hardware，加入肩部一體支座、上臂活動齒盤與 shoulder_release_mm。新增兩件肩部 rotor，契約改 29 件；肩部局部五狀態曾通過，完整回歸仍待通過。
+- 修復布林軸孔共面造成一／兩條四面共邊：齒盤孔半徑 2.75、軸座 2.7。縮短肩部軸向尺寸並加入螺栓頭／墊片座，因直接沿用肘部寬接座會擋住折平 LCD。最後一次失敗為 LCD 後罩與右肩支座／螺栓互穿，已將固定接頸外移 1 mm、減薄螺栓頭；重建中 exec session `96569`，tmp/lab-station-v10/verification.log。先輪詢此 handle，勿並行啟動 Blender 驗證。
+- 夾具場景完整性改為必要零件逐名核對，原 >=50 因合併件數失效；新名單 48 件，缺件負對照仍待補。58 focused tests、四檔 mypy 通過；版本未 bump、未提交。支座到機箱的軸承／底板承力連接未完成，不能聲稱整機可承重。
+
+- 使用者最新修正：質疑線性滑座對 3D 列印的適用性，提出增加活動臂／自由度。接下來優先評估以獨立平行四連桿取代末端導桿滑座；不得繼續把直線滑座當定案。V10 最新 fit 生成 exit 0（session 96569 已結束），肩部／折屏修正獲得局部與 fit 契約證據；其餘 readiness、完整 CI、版本 checkpoint 未跑。
+- 純解析候選：130 mm 平行桿，自 -22.62° 到 +22.62° 提升 100 mm，最大水平偏移 10 mm，向 -Y 運動時原有三探頭在假設 ID66 mm 圓筒內保有正間隙。tmp/lab-station-v10/rotary-lift-concept.json；尚非實體四連桿、臂間／瓶口掃掠或承載驗證。下一步依此候選建可見的旋轉式升降概念並檢查機構空間，保留兩頭獨立。
+
+- 四連桿候選已建立 scripts/model_lab_rotary.py 與純領域 RotaryLiftSpec。先紅再綠的閉合／行程測試，13 個領域測試通過。以實際桿端局部座標驗證旋轉後的閉合；停掉單桿驅動會被拒絕（red-broken-link.json），重新啟用後正例通過。
+- 第一輪整機探測發現下桿撞支撐與右側螢幕；改成末端架向外 66 mm、支撐由軸後方接入，最新 202 個探頭取樣與 42 個整機姿態通過；固定支撐對外殼／HMI 無非名義接觸，見 tmp/lab-station-rotary/assembly-motion.json。已檢視 working／both-raised 圖；生成器再現 motion 與負對照通過，非製造資格。
+- 新真機入口 scripts/verify/lab_rotary_verify_real.py 已接入 ci.sh --real，沿用既有 oracle；無新增公開執行通道。三個動作圖、模型、報告由同一生成器再現；來源參考與限制寫於 11-rotary-concept.md。
+- V01.0R.01B 準備完整 gates；未提交。四連桿所有移動件相互干涉、全組合／線材、實體轉軸與鎖定／平衡、機箱承力仍未完成；使用者資料缺口仍保留。
+
+- V01.0R.01B 完整 CI 執行中：exec session `21530`，tmp/lab-station-rotary/ci-real.log。接手輪詢此 handle，勿並行重建 Blender。5S：新增概念頁納入導航，舊滑座頁標示為基線；新模組沿用原語意與工具，單檔低於 400 行，生成件留 tmp。
+
+- V01.0R.01B 最終完整 `scripts/ci.sh --real` exit 0，全部 hard gates green；日誌 tmp/lab-station-rotary/ci-final.log，session 46584 已結束。初次 ci-real.log 的六件手臂超過 20000 面分析上限而失敗，且執行中改 CI 檔造成尾端解析錯誤 exit 2；已凍結腳本並完整重跑，不能把初次命令說成成功。
+- V10 六件臂分成左右各三件 readiness，新增 lab_station_arms_right.json，維持禁止截斷；四連桿 gate 則只驗運動與場景表面碰撞，沒有冒用 readiness。新候選三張圖皆已實際檢視，文件與來源已入導航，DCC 16 passed。
+- 下一步以 rotary 候選為主：補四連桿所有移動件互相干涉及雙頭同動；將支撐／轉軸佔位改成真正可裝配、可鎖定且能保持的機構，完成機箱底板承力。V10 夾具新逐名完整性守衛的缺件負對照尚需納入；不回到線性滑座主方案。

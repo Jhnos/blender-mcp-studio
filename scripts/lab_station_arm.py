@@ -1,6 +1,7 @@
 """Side-mounted elbow teeth connected to links through offset necks."""
 
 from collections.abc import Callable
+from typing import Literal
 
 import bmesh
 import bpy
@@ -10,7 +11,7 @@ from scripts.lab_station_joints import placed_plate
 from src.core.domain.lab_station import Point
 
 
-def connect_elbow(
+def connect_serrated_joint(
     upper: bpy.types.Object,
     lower: bpy.types.Object,
     point: Point,
@@ -18,29 +19,80 @@ def connect_elbow(
     label: str,
     mat: bpy.types.Material,
     beam: Callable[[str, Point, Point, bpy.types.Material], bpy.types.Object],
+    joint: Literal["elbow", "shoulder"] = "elbow",
 ) -> None:
     x, y, z = point
     for link, neck, sign in ((upper, necks[0], -1), (lower, necks[1], 1)):
-        center = (x + sign * 14, y, z)
+        center = (x + sign * (13 if joint == "shoulder" else 14), y, z)
         boolean(link, beam("TOOL_elbow_neck", center, neck, mat), "UNION")
-        boolean(link, add_cylinder("LS_TOOL_elbow_hub", 14, 20, center, "X"), "UNION")
+        hub_center = (x + sign * (7 if joint == "shoulder" else 14), y, z)
+        boolean(
+            link,
+            add_cylinder(
+                "LS_TOOL_elbow_hub", 14, 5 if joint == "shoulder" else 20, hub_center, "X"
+            ),
+            "UNION",
+        )
         boolean(link, add_cylinder("LS_TOOL_elbow_bore", 2.7, 70, point, "X"), "DIFFERENCE")
-        plate = placed_plate("LS_TOOL_elbow_teeth", mat, (x + sign * 4.7, y, z), -sign)
+        if joint == "shoulder":
+            boolean(
+                link,
+                add_cylinder("LS_TOOL_shoulder_seat", 5.3, 25, (x + sign * 22, y, z), "X"),
+                "DIFFERENCE",
+            )
+            if sign < 0:
+                boolean(
+                    link,
+                    add_cylinder("LS_TOOL_shoulder_head_seat", 8.3, 20, (x - 25.3, y, z), "X"),
+                    "DIFFERENCE",
+                )
+        plate = placed_plate(
+            "LS_TOOL_elbow_teeth",
+            mat,
+            (x + sign * 4.7, y, z),
+            -sign,
+            2.75,
+        )
         boolean(link, plate, "UNION")
         cleanup_mesh(link)
-        link["elbow_integrated"] = True
+        link[joint + "_integrated"] = True
 
 
-def elbow_hardware(point: Point, label: str, mat: bpy.types.Material) -> list[bpy.types.Object]:
+def joint_hardware(
+    point: Point, label: str, mat: bpy.types.Material, joint: Literal["elbow", "shoulder"] = "elbow"
+) -> list[bpy.types.Object]:
     x, y, z = point
-    bolt = add_cylinder(f"LS_HW_{label}_elbow_bolt", 2.5, 60, (x + 4, y, z), "X")
-    boolean(bolt, add_cylinder("LS_TOOL_elbow_head", 8, 6.2, (x - 29, y, z), "X"), "UNION")
-    nut = add_cylinder(f"LS_HW_{label}_elbow_nut", 4.6, 4, (x + 28, y, z), "X", vertices=6)
-    boolean(nut, add_cylinder("LS_TOOL_elbow_thread", 2.6, 6, (x + 28, y, z), "X"), "DIFFERENCE")
+    compact = joint == "shoulder"
+    bolt = add_cylinder(
+        f"LS_HW_{label}_{joint}_bolt",
+        2.5,
+        35 if compact else 60,
+        (x + (2 if compact else 4), y, z),
+        "X",
+    )
+    boolean(
+        bolt,
+        add_cylinder(
+            "LS_TOOL_elbow_head",
+            8,
+            4.2 if compact else 6.2,
+            (x - (17.6 if compact else 29), y, z),
+            "X",
+        ),
+        "UNION",
+    )
+    nut = add_cylinder(
+        f"LS_HW_{label}_{joint}_nut", 4.6, 4, (x + (13.5 if compact else 28), y, z), "X", vertices=6
+    )
+    boolean(
+        nut,
+        add_cylinder("LS_TOOL_elbow_thread", 2.6, 6, (x + (13.5 if compact else 28), y, z), "X"),
+        "DIFFERENCE",
+    )
     washers = []
-    for offset, name in ((-25, "left"), (25, "right")):
+    for offset, name in ((-10.5 if compact else -25, "left"), (10.5 if compact else 25, "right")):
         center = (x + offset, y, z)
-        washer = add_cylinder(f"LS_HW_{label}_elbow_washer_{name}", 5, 1, center, "X")
+        washer = add_cylinder(f"LS_HW_{label}_{joint}_washer_{name}", 5, 1, center, "X")
         boolean(
             washer, add_cylinder("LS_TOOL_elbow_washer_hole", 2.65, 3, center, "X"), "DIFFERENCE"
         )
@@ -180,4 +232,72 @@ def verify_elbow_assembly() -> dict[str, object]:
     return {
         "samples": rows,
         "scope": "2 mm sampled rigid insertion only; no thread, preload or load qualification.",
+    }
+
+
+def build_shoulder(
+    upper: bpy.types.Object,
+    point: Point,
+    neck: Point,
+    label: str,
+    mat: bpy.types.Material,
+    metal: bpy.types.Material,
+    beam: Callable[[str, Point, Point, bpy.types.Material], bpy.types.Object],
+) -> tuple[bpy.types.Object, list[bpy.types.Object]]:
+    """Serrated rotor and upper arm; chassis bearing/retention remains a separate interface."""
+    x, y, z = point
+    rotor = add_cylinder(f"LS_FIT_{label}_shoulder_rotor", 26, 5, (x, y, 82.5))
+    assign(rotor, mat)
+    fixed_neck = (x - 13, y, 84)
+    connect_serrated_joint(rotor, upper, point, (fixed_neck, neck), label, mat, beam, "shoulder")
+    finish_arm(rotor)
+    return rotor, joint_hardware(point, label, metal, "shoulder")
+
+
+def verify_shoulder_release() -> dict[str, object]:
+    from scripts.lab_station_motion_check import tree
+    from scripts.lab_station_rig import set_pose
+
+    rows = []
+    for label in ("capillary", "pH_temp"):
+        control = bpy.data.objects["LS_CTRL_" + label]
+        upper = bpy.data.objects[f"LS_REF_{label}_link_0"]
+        rotor = bpy.data.objects.get(f"LS_FIT_{label}_shoulder_rotor")
+        if rotor is None or not upper.get("shoulder_integrated"):
+            raise ValueError(f"Shoulder reference is not an assembled interface: {label}")
+        try:
+            for angle, release, expected in (
+                (0, 0, False),
+                (7.5, 0, True),
+                (7.5, 2, False),
+                (15, 2, False),
+                (15, 0, False),
+            ):
+                set_pose(control, shoulder_deg=angle, shoulder_release_mm=release)
+                pairs = len(tree(rotor).overlap(tree(upper)))
+                if bool(pairs) != expected:
+                    raise ValueError(
+                        f"Shoulder tooth release failed: {label}, {angle}, {release}, {pairs}"
+                    )
+                for suffix in ("bolt", "nut", "washer_left", "washer_right"):
+                    hardware = bpy.data.objects[f"LS_HW_{label}_shoulder_{suffix}"]
+                    for part in (rotor, upper):
+                        if tree(hardware).overlap(tree(part)):
+                            raise ValueError(
+                                f"Shoulder hardware obstructed: {label}, {angle}, {release}, {suffix}"
+                            )
+                rows.append(
+                    {
+                        "head": label,
+                        "angle_deg": angle,
+                        "release_mm": release,
+                        "intersection_pairs": pairs,
+                        "expected_intersection": expected,
+                    }
+                )
+        finally:
+            set_pose(control, shoulder_deg=0, shoulder_release_mm=0)
+    return {
+        "samples": rows,
+        "scope": "Local shoulder meshes only; chassis bearing, load and retention unqualified.",
     }

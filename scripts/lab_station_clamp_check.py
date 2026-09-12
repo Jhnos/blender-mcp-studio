@@ -50,7 +50,62 @@ def verify_clamp_assembly() -> dict[str, object]:
         and not obj.name.startswith(("LS_CHECK_", "LS_DIAG_", "LS_HW_"))
         and not obj.hide_render
     ]
-    assert len(parts) >= 50, "Empty/incomplete assembly cannot pass"
+    required_parts = {
+        "LS_FIT_" + name
+        for name in (
+            "chassis",
+            "lid",
+            "lcd_front",
+            "lcd_back",
+            "sample_tray",
+            "spill_dish",
+            "screen_bracket_left",
+            "screen_bracket_right",
+        )
+    }
+    required_parts.update(
+        f"LS_FIT_{label}_{suffix}"
+        for label in ("capillary", "pH_temp")
+        for suffix in (
+            "clamp_cap",
+            "lift_carrier",
+            "lift_frame",
+            "rod_keeper",
+            "shoulder_rotor",
+            "liner_0",
+            "liner_0_mate",
+        )
+    )
+    required_parts.update({"LS_FIT_pH_temp_liner_1", "LS_FIT_pH_temp_liner_1_mate"})
+    required_parts.update(
+        f"LS_REF_{label}_{suffix}"
+        for label in ("capillary", "pH_temp")
+        for suffix in ("guide_rod_-10", "guide_rod_10", "link_0", "link_1")
+    )
+    required_parts.update(
+        "LS_REF_" + name
+        for name in (
+            "DS18B20",
+            "E201C",
+            "glass_capillary",
+            "lcd_pcb",
+            "pH_board_UNCONFIRMED",
+            "partition",
+            "power_board_UNCONFIRMED",
+            "pressure_board_UNCONFIRMED",
+            "pump_envelope_UNCONFIRMED",
+            "screen_bolt_-1",
+            "screen_bolt_1",
+            "screen_knob_-1",
+            "screen_knob_1",
+            "terminal_allowance",
+            "touch_glass",
+            "vessel_250ml_ENVELOPE",
+        )
+    )
+    missing = required_parts - {o.name for o in parts}
+    if missing:
+        raise ValueError(f"Incomplete clamp assembly population: {sorted(missing)}")
     part_trees = {o.name: tree(o) for o in parts}
     results = []
     for label, side in (("capillary", -1), ("pH_temp", 1)):

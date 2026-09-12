@@ -1,5 +1,5 @@
 {
-  "name": "lab-station-probe-clamps-fit-prototype",
+  "name": "lab-station-right-arm-fit-prototype-only",
   "generator_script": "scripts/model_lab_station.py",
   "reload_modules": [
     "src.core.domain.lab_station",
@@ -148,8 +148,8 @@
     ]
   },
   "readiness": {
-    "selection_prefix": "LS_CHECK_clamp_",
-    "expected_selection_count": 10,
+    "selection_prefix": "LS_CHECK_arm_pH_temp_",
+    "expected_selection_count": 3,
     "forbidden_issue_codes": [
       "no_mesh",
       "non_manifold_edges",

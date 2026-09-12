@@ -1,6 +1,8 @@
-# 共杯雙臂量測工作站 — V9 肘端裝入／脫齒／工具空間／腕部叉耳／滑座鎖緊／可拆軟夾／直上抽出／折疊螢幕試配原型
+# 共杯雙臂量測工作站 — V10 肩端接合／肘端裝入／脫齒／工具空間／腕部叉耳／滑座鎖緊／可拆軟夾／直上抽出／折疊螢幕試配原型
 
-這是可開啟的 Blender 幾何模型與二十七件外殼試配 STL，不是完整製造發布。STL 以 mm 匯出，Bambu Studio 使用 100% 比例；二十七件分開排盤。上下臂已匯出試配；臂根支座、電子零件與容器仍為參考幾何，肩部接合尚未完成。
+> 使用者已提出以活動臂取代線性滑座；最新候選見 [11-rotary-concept](11-rotary-concept.md)。本頁保留為 V10 共用外殼與舊升降基線。
+
+這是可開啟的 Blender 幾何模型與二十九件外殼試配 STL，不是完整製造發布。STL 以 mm 匯出，Bambu Studio 使用 100% 比例；二十九件分開排盤。上下臂已匯出試配；肩部齒盤已與支座／上臂接合，支座到機箱的軸承與固定仍未完成；電子零件與容器仍為參考幾何。
 
 ## 已採用的需求
 
@@ -31,7 +33,7 @@
 
 ## 檔案
 
-- `lab_station_v9.blend`：組装配置，可編輯。`LS_REF_` 為參考形體；`LS_FIT_` 為試配外殼；隱藏的 `LS_CHECK_` 是檢測佈局副本，不是額外零件。
+- `lab_station_v10.blend`：組装配置，可編輯。`LS_REF_` 為參考形體；`LS_FIT_` 為試配外殼；隱藏的 `LS_CHECK_` 是檢測佈局副本，不是額外零件。
 - `assembly.png`、`side.png`、`top.png`、`service.png`：實際 Blender 渲染；service 移開機箱與抬高上蓋／螢幕以顯示佔位空間，不是實際拆卸運動。
 - `fit-prototypes/`：機箱、上蓋、樣品平台、接液盤、LCD 前框與後罩、左右螢幕支架、齒盤試片、兩組升降背架與滑座；全部是試配件。
 - `manifest.json`：版本用途與 Blender 量測。
@@ -42,9 +44,9 @@
 
 毛細管頭與 pH／溫度頭是兩個獨立末端，沒有共用頭架、軸、連接桿或控制父物件；前後錯開 16 mm、高度錯開 30 mm。仍沿用先前兩臂分組，pH 與溫度目前共用右夾頭；若需求是三個探頭各自活動，需要拆第三個夾頭。
 
-在 Blender 選取 `LS_CTRL_capillary` 或 `LS_CTRL_pH_temp`，於 Object Properties 的 Custom Properties 調整 `yaw_deg`、`shoulder_deg`、`elbow_deg`、`head_tilt_deg`、`probe_slide_mm`。角度為相對展示姿態的偏移。每個控制只驅動自己的臂。
+在 Blender 選取 `LS_CTRL_capillary` 或 `LS_CTRL_pH_temp`，於 Object Properties 的 Custom Properties 調整 `yaw_deg`、`shoulder_deg`、`elbow_deg`、`head_tilt_deg`、`probe_slide_mm`、`elbow_release_mm`、`shoulder_release_mm`。角度為相對展示姿態的偏移。每個控制只驅動自己的臂。
 
-`independent-motion.png` 展示只直上提起毛細管 100 mm，右側保持原位；`independent-motion.json` 記錄 10 組真 Blender 控制隔離測試。模型以腕部補償保持探頭直立，實體仍需手動調整腕部，並不代表已設計自動調平機構。屬性範圍是姿態研究範圍，不是已確認無碰撞的機械行程。
+`independent-motion.png` 展示只直上提起毛細管 100 mm，右側保持原位；`independent-motion.json` 記錄 14 組真 Blender 控制隔離測試。模型以腕部補償保持探頭直立，實體仍需手動調整腕部，並不代表已設計自動調平機構。屬性範圍是姿態研究範圍，不是已確認無碰撞的機械行程。
 
 ## 齒槽與折疊控制
 
@@ -71,7 +73,7 @@ V2 的 35 mm 微調行程不足，不能當作可换杯的設計。V3 的腕關�
 
 ## 可拆夾爪與防脫：V4
 
-V4 新增兩件夾蓋、六件半圓軟襯、兩件導桿壓蓋；V6 加入兩支下臂，V8 再加入兩支上臂，目前合計二十七件獨立 STL。每根探頭的襯套分成兩半，可從側面裝入，不需把玻璃硬塞過窄縫；上下凸緣阻止襯套沿孔滑出。軟襯是待選材試配件，不能用剛性材料代替後宣稱玻璃保持已合格。
+V4 新增兩件夾蓋、六件半圓軟襯、兩件導桿壓蓋；V6 加入兩支下臂，V8 再加入兩支上臂，目前合計二十九件獨立 STL。每根探頭的襯套分成兩半，可從側面裝入，不需把玻璃硬塞過窄縫；上下凸緣阻止襯套沿孔滑出。軟襯是待選材試配件，不能用剛性材料代替後宣稱玻璃保持已合格。
 
 每個夾頭以兩顆 M3×35 螺栓從外側穿入，螺母位於可拆夾蓋；兩組導桿壓蓋各用兩顆 M3×14。合計 8 顆 M3 螺母、8 片墊片；模型中的 `LS_HW_` 為金屬五金參考，不匯出列印。此清單只涵蓋夾爪與導桿壓蓋，不是全機 BOM。
 
@@ -135,3 +137,12 @@ MCP readiness 回報 `review`：後罩、齒槽與支架有薄壁取樣提醒，
 - Waveshare 官方文件：https://docs.waveshare.com/ESP32-S3-Touch-LCD-5
 - 觸控版尺寸圖：https://docs.waveshare.com/assets/images/ESP32-S3-Touch-LCD-5-touch-size-2-f55a9abf7b42455adbc880b71b4b92f9.webp
 - P2S 原廠規格：https://csm.bblcdn.com/hub/cb24b13a195541199f3f820270a7df3b.pdf
+
+
+## 肩端齒盤與支座：V10
+
+支座、固定齒盤為一件；活動齒盤與上臂為一件。上臂先沿齒盤外側離開 30 mm，再接回肘部，避免連桿穿過固定齒盤。肩部使用名義 M5×35 螺栓、兩側墊片與螺母，縮短軸向外包絡以讓螢幕收折；尚未驗證螺紋、預緊、防鬆或承載。齒盤孔半徑 2.75 mm、軸座孔半徑 2.7 mm，避免布林孔壁共面；是試配尺寸。
+
+`shoulder_release_mm` 提供 0..2 mm 軸向退出，調角後回到 0。`shoulder-release.json` 比較兩側各五個狀態：合齒 0°、7.5°，及脫齒 7.5°／15°與重新合齒 15°。7.5° 未退出必須撞齒，是負對照；僅驗局部接頭。
+
+新增兩件 `*_arm_shoulder_rotor_mm.stl`。支座底盤仍未接上實際機箱軸承、穿軸或底板固定；目前不能把支座放在上蓋的示意位置當作可承重或已完成的水平旋轉機構。

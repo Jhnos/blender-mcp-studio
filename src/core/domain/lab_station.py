@@ -75,6 +75,14 @@ class LabStationSpec:
         )
         return root, elbow, wrist
 
+    def shoulder_neck(self, side: int) -> Point:
+        """Leave the moving tooth half before the upper link returns toward the elbow."""
+        root, _, _ = self.arm_points(side)
+        target = self.elbow_necks(side)[0]
+        dy, dz = target[1] - root[1], target[2] - root[2]
+        length = sqrt(dy * dy + dz * dz)
+        return root[0] + 14, root[1] + 30 * dy / length, root[2] + 30 * dz / length
+
     def elbow_necks(self, side: int) -> tuple[Point, Point]:
         """Keep both links outside the tooth faces until beyond the plate radius."""
         root, elbow, wrist = self.arm_points(side)
@@ -116,3 +124,30 @@ class ProbeClampSpec:
 
     def liner_flange_radius(self, bore: float) -> float:
         return bore + 0.9
+
+
+@dataclass(frozen=True, slots=True)
+class RotaryLiftSpec:
+    """Ideal parallelogram path, independent of the Blender implementation."""
+
+    length_mm: float = 130.0
+    stroke_mm: float = 100.0
+    spacing_mm: float = 40.0
+
+    def __post_init__(self) -> None:
+        values = (self.length_mm, self.stroke_mm, self.spacing_mm)
+        if not all(isfinite(v) and v > 0 for v in values) or self.stroke_mm >= 2 * self.length_mm:
+            raise ValueError("Rotary lift dimensions must be positive and avoid the toggle")
+
+    def joints(self, lift_mm: float) -> tuple[Point, Point, Point, Point]:
+        if not isfinite(lift_mm) or not 0 <= lift_mm <= self.stroke_mm:
+            raise ValueError("Lift lies outside the mechanism stroke")
+        half = self.stroke_mm / 2
+        reach = sqrt(self.length_mm**2 - half**2)
+        excursion = sqrt(self.length_mm**2 - (lift_mm - half) ** 2) - reach
+        return (
+            (0, reach, half),
+            (0, reach, half + self.spacing_mm),
+            (0, -excursion, lift_mm),
+            (0, -excursion, lift_mm + self.spacing_mm),
+        )

@@ -75,3 +75,30 @@ def test_elbow_necks_leave_the_tooth_plane_before_rejoining_links() -> None:
         assert lower[0] == pytest.approx(elbow[0] + 14)
         for neck in (upper, lower):
             assert math.dist(neck[1:], elbow[1:]) >= 29.99
+
+
+def test_shoulder_neck_keeps_link_outside_fixed_tooth_half() -> None:
+    spec = LabStationSpec()
+    for side in (-1, 1):
+        root, _, _ = spec.arm_points(side)
+        neck = spec.shoulder_neck(side)
+        assert neck[0] == pytest.approx(root[0] + 14)
+        assert math.dist(neck[1:], root[1:]) == pytest.approx(30)
+        assert neck[2] > root[2]
+
+
+def test_rotary_lift_closes_four_bar_and_keeps_head_vertical() -> None:
+    from src.core.domain.lab_station import RotaryLiftSpec
+
+    spec = RotaryLiftSpec()
+    for lift in range(101):
+        a, b, c, d = spec.joints(lift)
+        assert math.dist(a, c) == pytest.approx(130)
+        assert math.dist(b, d) == pytest.approx(130)
+        assert tuple(d[i] - c[i] for i in range(3)) == pytest.approx((0, 0, 40))
+        assert c[2] == pytest.approx(lift)
+        assert -10 <= c[1] <= 0
+    with pytest.raises(ValueError):
+        spec.joints(101)
+    with pytest.raises(ValueError):
+        RotaryLiftSpec(length_mm=40)

@@ -15,3 +15,5 @@
 | [09-references](09-references.md) | 選擇沿用的設計 |
 
 使用者模型說明：[10-model](10-model.md)。
+
+最新活動臂候選：[11-rotary-concept](11-rotary-concept.md)。
