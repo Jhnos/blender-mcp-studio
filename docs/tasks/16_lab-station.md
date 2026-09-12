@@ -134,3 +134,7 @@
 - 首次 V01.0R.01C 完整 CI exit 1，唯一失敗為嵌入字串內的專案 import 守衛，真機項目通過；修正為沿用 reload_modules_for 推導完整相依閉包，並設定根目錄後以資料清單載入。該守衛 5 個 focused tests 通過，無放寬規則；將重新完整跑 CI。
 
 - V01.0R.01C 最終完整 scripts/ci.sh --real exit 0，全部 hard gates green，日誌 tmp/lab-station-rotary/ci-01C-final.log，session 62719 已結束。首次失敗紀錄保留 ci-01C.log。下一步將 rotary 肘部支撐包絡改為實體兩成員與齒槽／脫齒介面，再驗證轉動和裝入；肩／腕、底座承力與全姿態仍未完成。
+
+- V01.0R.01D：舊 rotary 肘部被 integrated tooth 守衛拒絕後，沿用 connect_serrated_joint／joint_hardware 建兩成員齒盤與 2 mm 脫齒。右側下臂斜穿齒盤，改回接路徑後又碰升降桿；最後改從齒盤後上方繞回，focused 生成 exit 0，兩側五狀態與整機升降／折屏通過，tmp/lab-station-rotary/elbow-verification.log。新增 elbow-detail.png 與脫齒隔離項，待完整 CI。5S：僅沿用既有模組，沒有新增模組／公開執行通道；來源與 tmp 生成件分離，R19 與概念頁同步。
+
+- V01.0R.01D 完整 scripts/ci.sh --real exit 1，唯一失敗為新增 rows 的 mypy 容器型別推導；T3 真機全數通過。補明確 list[dict[str, object]] 註記後 scripts/ci.sh exit 0，T1／T2 全綠。證據分別 ci-01D.log 與 ci-01D-static-final.log；不宣稱第一次完整命令成功。肘部 10 狀態、含脫齒 12 隔離案例與局部圖已核對。下一步肘部五金裝入／工具空間、支撐網格製造契約，再進肩／腕／底座承力，仍 ACTIVE。

@@ -22,3 +22,4 @@ Population: 本次 V10 產生的 LS_ 兩頭、三探頭、單杯與 HMI；排除
 | R16 | 肩端齒盤與上臂／支座接合，脫齒時五金不堵行程 | engineering | yes | behavior | artifact:shoulder-release.json |
 | R17 | 以旋轉連桿取代滑座，抬升時維持直立且兩頭獨立 | voc | yes | behavior | artifact:rotary/motion.json,rotary/assembly-motion.json |
 | R18 | 四連桿之外保留底座／肩／肘／末端独立調整 | voc | yes | behavior | artifact:rotary/articulation.json,rotary/red-articulation.json |
+| R19 | rotary 肘部兩成員齒盤接合，脫齒後能調角 | engineering | yes | behavior | artifact:rotary/elbow-release.json |

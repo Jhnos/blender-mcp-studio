@@ -211,3 +211,50 @@ def verify_rotary_screen() -> dict[str, object]:
         "samples": rows,
         "scope": "144 discrete combinations, surface collision only; not continuous motion, containment or cable qualification.",
     }
+
+
+def verify_rotary_elbows() -> list[dict[str, object]]:
+    """Require connected tooth members and discriminate locked/released half-pitch poses."""
+    from scripts.lab_station_rig import set_pose
+
+    rows: list[dict[str, object]] = []
+    for label in ("capillary", "pH_temp"):
+        control = bpy.data.objects["LR_CTRL_" + label]
+        upper = bpy.data.objects[f"LR_{label}_support_envelope_0"]
+        lower = bpy.data.objects[f"LR_{label}_support_envelope_1"]
+        if not all(o.get("elbow_integrated") for o in (upper, lower)):
+            raise ValueError("Rotary elbow is not an integrated tooth interface: " + label)
+        if "elbow_release_mm" not in control:
+            raise ValueError("Rotary elbow release control missing: " + label)
+        saved = {key: float(control[key]) for key in ("elbow_deg", "elbow_release_mm")}
+        try:
+            for angle, release, expected in (
+                (0, 0, False),
+                (7.5, 0, True),
+                (7.5, 2, False),
+                (15, 2, False),
+                (15, 0, False),
+            ):
+                set_pose(control, elbow_deg=angle, elbow_release_mm=release)
+                overlap = bool(tree(upper).overlap(tree(lower)))
+                if overlap != expected:
+                    raise ValueError(
+                        f"Rotary elbow tooth mismatch: {label}, {angle}, {release}, {overlap}"
+                    )
+                for suffix in ("bolt", "nut", "washer_left", "washer_right"):
+                    part = bpy.data.objects[f"LR_{label}_elbow_{suffix}"]
+                    if any(tree(part).overlap(tree(link)) for link in (upper, lower)):
+                        raise ValueError(
+                            f"Rotary elbow hardware collision: {label}, {angle}, {release}, {suffix}"
+                        )
+                rows.append(
+                    {
+                        "head": label,
+                        "angle_deg": angle,
+                        "release_mm": release,
+                        "tooth_collision_expected": expected,
+                    }
+                )
+        finally:
+            set_pose(control, **saved)
+    return rows

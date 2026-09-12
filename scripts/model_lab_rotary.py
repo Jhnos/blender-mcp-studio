@@ -12,10 +12,15 @@ from mathutils import Vector
 
 from scripts.blender_mesh_primitives import add_cylinder, assign, boolean, material
 from scripts.hollow_hinge_render import look_at
-from scripts.lab_station_arm import rotary_pivot_hardware
+from scripts.lab_station_arm import connect_serrated_joint, joint_hardware, rotary_pivot_hardware
 from scripts.lab_station_clamp import lined_jaw
 from scripts.lab_station_joints import block
-from scripts.lab_station_motion_check import tree, verify_coupled_motion, verify_rotary_screen
+from scripts.lab_station_motion_check import (
+    tree,
+    verify_coupled_motion,
+    verify_rotary_elbows,
+    verify_rotary_screen,
+)
 from scripts.lab_station_rig import (
     attach,
     create_rotary_support_rig,
@@ -121,9 +126,21 @@ def build_head(label: str, side: int, mat: bpy.types.Material, metal: bpy.types.
     middle = (root[0] + side * 25, (root[1] + a[1]) / 2, a[2] - 20)
     neck = offset(a, (0, 25, 0))
     terminal = a
-    for i, (start, end) in enumerate(((root, middle), (middle, neck), (neck, terminal))):
-        bar(f"LR_{label}_support_envelope_{i}", start, end, mat)
+    upper_neck = offset(middle, (-14, 30, 0))
+    lower_neck = offset(middle, (14, 30, 0))
+    upper = bar(f"LR_{label}_support_envelope_0", root, upper_neck, mat)
+    turn = (neck[0], lower_neck[1], neck[2] + 25)
+    lower = bar(f"LR_{label}_support_envelope_1", lower_neck, turn, mat)
+    boolean(lower, bar("LR_TOOL_lower_return", turn, neck, mat), "UNION")
+    bar(f"LR_{label}_support_envelope_2", neck, terminal, mat)
+    connect_serrated_joint(upper, lower, middle, (upper_neck, lower_neck), label, mat, bar)
+    hardware = joint_hardware(middle, label, metal)
+    for obj in hardware:
+        obj.name = "LR_" + obj.name.removeprefix("LS_HW_")
     create_rotary_support_rig(label, root, middle, a)
+    for obj in hardware:
+        owner = "shoulder" if obj.name.endswith(("bolt", "washer_left")) else "elbow"
+        attach(obj, bpy.data.objects[f"LR_PIVOT_{label}_{owner}"])
     bpy.context.view_layer.update()
 
 
@@ -268,6 +285,7 @@ def main() -> None:
         ("pH_temp", 1, (0.05, 0.6, 0.64, 1)),
     ):
         build_head(label, side, material("LR_" + label, color), metal)
+    (OUTPUT / "elbow-release.json").write_text(json.dumps(verify_rotary_elbows(), indent=2))
     (OUTPUT / "articulation.json").write_text(json.dumps(verify_rotary_articulation(), indent=2))
     (OUTPUT / "motion.json").write_text(json.dumps(verify(), indent=2))
     (OUTPUT / "coupled-motion.json").write_text(json.dumps(verify_coupled_motion(), indent=2))
@@ -298,6 +316,11 @@ def main() -> None:
     camera.data.ortho_scale = 0.15
     look_at(camera, (92, -128, 170))
     scene.render.filepath = str(OUTPUT / "pivot-detail.png")
+    bpy.ops.render.render(write_still=True)
+    camera.location = (-0.32, -0.16, 0.32)
+    camera.data.ortho_scale = 0.18
+    look_at(camera, (-123, 7, 215))
+    scene.render.filepath = str(OUTPUT / "elbow-detail.png")
     bpy.ops.render.render(write_still=True)
     camera.location, camera.rotation_euler = saved_location, saved_rotation
     camera.data.ortho_scale = saved_scale
