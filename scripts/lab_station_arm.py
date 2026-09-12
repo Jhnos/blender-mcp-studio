@@ -37,9 +37,17 @@ def elbow_hardware(point: Point, label: str, mat: bpy.types.Material) -> list[bp
     boolean(bolt, add_cylinder("LS_TOOL_elbow_head", 8, 6.2, (x - 29, y, z), "X"), "UNION")
     nut = add_cylinder(f"LS_HW_{label}_elbow_nut", 4.6, 4, (x + 28, y, z), "X", vertices=6)
     boolean(nut, add_cylinder("LS_TOOL_elbow_thread", 2.6, 6, (x + 28, y, z), "X"), "DIFFERENCE")
-    for obj in (bolt, nut):
+    washers = []
+    for offset, name in ((-25, "left"), (25, "right")):
+        center = (x + offset, y, z)
+        washer = add_cylinder(f"LS_HW_{label}_elbow_washer_{name}", 5, 1, center, "X")
+        boolean(
+            washer, add_cylinder("LS_TOOL_elbow_washer_hole", 2.65, 3, center, "X"), "DIFFERENCE"
+        )
+        washers.append(washer)
+    for obj in (bolt, nut, *washers):
         assign(obj, mat)
-    return [bolt, nut]
+    return [bolt, nut, *washers]
 
 
 def verify_elbow_release() -> dict[str, object]:
@@ -68,13 +76,23 @@ def verify_elbow_release() -> dict[str, object]:
                     raise ValueError(
                         f"Elbow tooth release failed: {label}, {angle}, {release}, {pairs}"
                     )
-                for suffix in ("bolt", "nut"):
+                for suffix in ("bolt", "nut", "washer_left", "washer_right"):
                     hardware = bpy.data.objects[f"LS_HW_{label}_elbow_{suffix}"]
                     for part in (upper, lower):
                         if tree(hardware).overlap(tree(part)):
                             raise ValueError(
                                 f"Elbow release hardware blocked: {label}, {angle}, {release}, {suffix}, {part.name}"
                             )
+                bolt = bpy.data.objects[f"LS_HW_{label}_elbow_bolt"]
+                nut = bpy.data.objects[f"LS_HW_{label}_elbow_nut"]
+                protrusion = 1000 * (
+                    max((bolt.matrix_world @ v.co).x for v in bolt.data.vertices)
+                    - max((nut.matrix_world @ v.co).x for v in nut.data.vertices)
+                )
+                if protrusion < 1.99:
+                    raise ValueError(
+                        f"Elbow bolt axial coverage insufficient: {label}, {protrusion}"
+                    )
                 rows.append(
                     {
                         "head": label,
@@ -82,6 +100,7 @@ def verify_elbow_release() -> dict[str, object]:
                         "release_mm": release,
                         "intersection_pairs": pairs,
                         "expected_intersection": expected,
+                        "bolt_protrusion_mm": protrusion,
                     }
                 )
         finally:
@@ -102,3 +121,63 @@ def finish_arm(obj: bpy.types.Object) -> None:
     mesh.to_mesh(obj.data)
     mesh.free()
     cleanup_mesh(obj)
+
+
+def verify_elbow_assembly() -> dict[str, object]:
+    """Nominal rigid insertion sequence; the frame must be supported during assembly."""
+    from scripts.lab_station_motion_check import tree
+
+    parts = [
+        o
+        for o in bpy.context.scene.objects
+        if o.type == "MESH"
+        and o.name.startswith("LS_")
+        and not o.hide_render
+        and not o.name.startswith(("LS_CHECK_", "LS_DIAG_"))
+    ]
+    if len(parts) < 50:
+        raise ValueError("Elbow assembly population incomplete")
+    rows = []
+    for label in ("capillary", "pH_temp"):
+        names = [
+            f"LS_HW_{label}_elbow_{suffix}"
+            for suffix in ("bolt", "nut", "washer_left", "washer_right")
+        ]
+        if any(name not in bpy.data.objects for name in names):
+            raise ValueError(f"Elbow assembly hardware incomplete: {label}")
+        bolt, nut, left, right = [bpy.data.objects[name] for name in names]
+        for moving, sign, absent in (
+            ([bolt, left], -1, [nut, right]),
+            ([right], 1, [nut]),
+            ([nut], 1, []),
+        ):
+            original = {o.name: o.location.copy() for o in moving}
+            fixed = {o.name: tree(o) for o in parts if o not in moving and o not in absent}
+            try:
+                for distance in range(70, -1, -2):
+                    for obj in moving:
+                        obj.location.x = original[obj.name].x + sign * distance / 1000
+                    bpy.context.view_layer.update()
+                    hits = [
+                        (o.name, name)
+                        for o in moving
+                        for name, solid in fixed.items()
+                        if tree(o).overlap(solid)
+                    ]
+                    if hits:
+                        raise ValueError(f"Elbow insertion obstructed: {label}, {distance}, {hits}")
+                    rows.append(
+                        {
+                            "head": label,
+                            "moving": [o.name for o in moving],
+                            "remaining_mm": distance,
+                        }
+                    )
+            finally:
+                for obj in moving:
+                    obj.location = original[obj.name]
+                bpy.context.view_layer.update()
+    return {
+        "samples": rows,
+        "scope": "2 mm sampled rigid insertion only; no thread, preload or load qualification.",
+    }

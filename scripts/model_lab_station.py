@@ -29,6 +29,7 @@ from scripts.lab_station_arm import (  # noqa: E402
     connect_elbow,
     elbow_hardware,
     finish_arm,
+    verify_elbow_assembly,
     verify_elbow_release,
 )
 from scripts.lab_station_clamp import clamp_hardware, lined_jaw, rod_keeper  # noqa: E402
@@ -51,7 +52,7 @@ from scripts.lab_station_rig import create_arm_rig, verify_independence  # noqa:
 from scripts.lab_station_wrist import build_wrist, verify_wrist_assembly  # noqa: E402
 from src.core.domain.lab_station import LabStationSpec, Point  # noqa: E402
 
-OUTPUT = PROJECT_ROOT / "tmp" / "lab-station-v8"
+OUTPUT = PROJECT_ROOT / "tmp" / "lab-station-v9"
 
 
 def box(name: str, size: Point, at: Point, mat: bpy.types.Material) -> bpy.types.Object:
@@ -254,9 +255,9 @@ def build() -> None:
         finish_arm(groups[0][0])
         apply_transform(groups[0][0])
         parts.append(export_prototype(groups[0][0], label + "_arm_upper"))
-        elbow_bolt, elbow_nut = elbow_hardware(elbow, label, steel)
-        groups[0].append(elbow_bolt)
-        groups[1].append(elbow_nut)
+        elbow_bolt, elbow_nut, elbow_left, elbow_right = elbow_hardware(elbow, label, steel)
+        groups[0].extend([elbow_bolt, elbow_left])
+        groups[1].extend([elbow_nut, elbow_right])
         for index, point in enumerate((root,)):
             if index < 2:
                 fixed = placed_plate(
@@ -315,6 +316,9 @@ def build() -> None:
     (OUTPUT / "wrist-assembly.json").write_text(
         json.dumps(verify_wrist_assembly(), indent=2) + "\n"
     )
+    (OUTPUT / "elbow-assembly.json").write_text(
+        json.dumps(verify_elbow_assembly(), indent=2) + "\n"
+    )
     (OUTPUT / "elbow-release.json").write_text(json.dumps(verify_elbow_release(), indent=2) + "\n")
     (OUTPUT / "probe-lift.json").write_text(json.dumps(verify_lifts(), indent=2) + "\n")
     (OUTPUT / "probe-parking.json").write_text(json.dumps(verify_parking(), indent=2) + "\n")
@@ -335,7 +339,7 @@ def build() -> None:
             area.spaces.active.region_3d.view_distance = 0.65
             area.spaces.active.region_3d.view_location = (0, -0.075, 0.095)
             area.spaces.active.clip_start = 0.0001
-    bpy.ops.wm.save_as_mainfile(filepath=str(OUTPUT / "lab_station_v8.blend"))
+    bpy.ops.wm.save_as_mainfile(filepath=str(OUTPUT / "lab_station_v9.blend"))
     manifest = {
         "stage": "straight-extraction-and-fit-prototype",
         "project_version": (PROJECT_ROOT / "VERSION").read_text().strip(),

@@ -91,6 +91,9 @@
 - V01.0R.019 完整 `scripts/ci.sh --real` exit 0，所有 hard gates green，包含四份工作站契約；日誌 `tmp/lab-station-v8/ci-real.log`。肩根仍為參考幾何，肘部墊片／裝入／保持、全臂動作與承力均未完成，不能解除 H6。
 - 5S：新增 arm 模組僅處理偏置接座與既有齒盤接合；臂件独立 readiness 分批，無放寬取樣或退化判準；V8 清除旧命名的兩件下臂 STL，輸出 27 件與契約一致。下步補肘部保持／裝入再轉肩根，不重跑已封存的設計工作。
 
+- V9：肘部兩側墊片缺件先紅（tmp/lab-station-v8/red-elbow-assembly.log），補入後 216 個名義裝入位置通過。新增軸向餘量檢查：刻意把螺母向外移 4 mm，0 mm 穿出量被拒絕，證據 tmp/lab-station-v9/red-axial-coverage.json。49 focused tests、兩檔 mypy 通過；正例重建通過：合齒穿出約 4 mm、脫齒穿出約 2 mm。
+- V01.0R.01A：完整 CI 的 T3 全部通過；命令 exit 1，唯一失敗為 model_lab_station.py 排版，已以 ruff 修正。T1/T2 重跑 exit 0、全部 hard gates green，紀錄 tmp/lab-station-v9/ci-final.log；原始完整日誌 tmp/lab-station-v9/ci-real.log。肩根連接仍是下一個結構缺口；肘部防鬆／保持力沒有因軸向覆蓋而取得資格。
+
 ### Open failures
 
 - 材料、精確瓶口／瓶高、零件型號、負載、工作溫度與液體尚未確定。
@@ -100,3 +103,5 @@
 
 - V3 直上抽出修正保留為可重現 checkpoint；持續完成下列機構資格，不能宣告全目標完成。
 - 優先完成探頭軟夾與滑座的實際固定、背架到腕部的螺栓介面、導桿防脫、根部與底座承力、平台連接、LCD PCB 保持、線材與全姿態／載荷驗證。
+
+- V9 5S：沿用 arm 模組，未新增執行通道；27 件輸出、契約與說明一致，生成件保留 tmp；已檢視 probe-raised.png。下一步完成肩根到機箱底部的實際承力連接。
