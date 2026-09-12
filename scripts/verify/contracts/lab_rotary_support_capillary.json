@@ -1,0 +1,66 @@
+{
+  "name": "rotary-support-capillary-mesh-only",
+  "generator_script": "scripts/model_lab_rotary.py",
+  "reload_modules": [
+    "scripts.blender_artifact_export",
+    "scripts.presentation_profile",
+    "src.core.domain.hollow_side_hinge",
+    "src.core.domain.inset_hinge",
+    "scripts.hollow_hinge_render",
+    "scripts.blender_mesh_primitives",
+    "src.core.domain.lab_station",
+    "scripts.lab_station_rig",
+    "src.core.domain.lab_station_joints",
+    "scripts.lab_station_joints",
+    "scripts.lab_station_motion_check",
+    "scripts.lab_station_arm",
+    "scripts.lab_station_clamp"
+  ],
+  "artifacts": [
+    "tmp/lab-station-rotary/rotary-concept.blend",
+    "tmp/lab-station-rotary/support-mesh.json",
+    "tmp/lab-station-rotary/fit-prototypes/LR_CHECK_capillary_0_mm.stl",
+    "tmp/lab-station-rotary/fit-prototypes/LR_CHECK_capillary_1_mm.stl",
+    "tmp/lab-station-rotary/fit-prototypes/LR_CHECK_pH_temp_0_mm.stl",
+    "tmp/lab-station-rotary/fit-prototypes/LR_CHECK_pH_temp_1_mm.stl"
+  ],
+  "oracle": {
+    "object_prefix": "LR_CHECK_",
+    "expected_count": 4,
+    "expected_shared_mesh_count": 4,
+    "expected_shells_per_object": 1,
+    "expected_rotations_deg": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "scene_list_property": "LR_PARTS",
+    "expected_scene_list": [
+      "LR_CHECK_capillary_0",
+      "LR_CHECK_capillary_1",
+      "LR_CHECK_pH_temp_0",
+      "LR_CHECK_pH_temp_1"
+    ],
+    "center_probe_object": "LS_FIT_lid",
+    "center_channel_expected_open": false,
+    "collision_groups": [
+      {
+        "prefix": "LR_CHECK_",
+        "expected_count": 4
+      }
+    ]
+  },
+  "readiness": {
+    "selection_prefix": "LR_CHECK_capillary_",
+    "expected_selection_count": 2,
+    "forbidden_issue_codes": [
+      "no_mesh",
+      "non_manifold_edges",
+      "inconsistent_normals",
+      "degenerate_geometry",
+      "zero_volume",
+      "intersections"
+    ]
+  }
+}

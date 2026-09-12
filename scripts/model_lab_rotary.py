@@ -10,6 +10,7 @@ from pathlib import Path
 import bpy
 from mathutils import Vector
 
+from scripts.blender_artifact_export import export_world_mesh_copy_mm
 from scripts.blender_mesh_primitives import add_cylinder, assign, boolean, material
 from scripts.hollow_hinge_render import look_at
 from scripts.lab_station_arm import (
@@ -351,6 +352,18 @@ def main() -> None:
     bpy.ops.render.render(write_still=True)
     camera.location, camera.rotation_euler = saved_location, saved_rotation
     camera.data.ortho_scale = saved_scale
+    checks: list[str] = []
+    for label in ("capillary", "pH_temp"):
+        for index in (0, 1):
+            name = f"LR_CHECK_{label}_{index}"
+            export_world_mesh_copy_mm(
+                bpy.data.objects[f"LR_{label}_support_envelope_{index}"],
+                OUTPUT / "fit-prototypes" / (name + "_mm.stl"),
+                name,
+                260 * len(checks),
+            )
+            checks.append(name)
+    scene["LR_PARTS"] = checks
     bpy.ops.wm.save_as_mainfile(filepath=str(OUTPUT / "rotary-concept.blend"))
 
 

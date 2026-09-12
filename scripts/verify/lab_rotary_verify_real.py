@@ -3,6 +3,8 @@
 from pathlib import Path
 
 from scripts.verify.generated_artifact_verify_real import BlenderSocketOracle
+from src.infrastructure.narrowing import as_finite_number, as_sequence
+from src.verification.artifact_files import binary_stl_metrics
 from src.verification.generator_imports import reload_modules_for
 
 
@@ -119,7 +121,34 @@ finally:
 model['verify_coupled_motion']()
 print('Rotary concept motion and broken-link control passed; no load or print qualification')
 """
-    print(BlenderSocketOracle("127.0.0.1", 9876).execute(code))
+    oracle = BlenderSocketOracle("127.0.0.1", 9876)
+    print(oracle.execute(code))
+    dimensions = oracle.execute_json("""import bpy, json
+rows = {}
+for obj in bpy.data.objects:
+    if obj.name.startswith('LR_CHECK_'):
+        points = [obj.matrix_world @ vertex.co for vertex in obj.data.vertices]
+        rows[obj.name] = [(max(p[a] for p in points)-min(p[a] for p in points))*1000 for a in range(3)]
+print(json.dumps(rows))
+""")
+    if len(dimensions) != 4:
+        raise ValueError("Rotary STL comparison requires exactly four meshes")
+    for name, expected in dimensions.items():
+        values = as_sequence(expected)
+        if values is None or len(values) != 3:
+            raise ValueError("Invalid source dimensions")
+        wanted_dimensions = [as_finite_number(value) for value in values]
+        if any(value is None for value in wanted_dimensions):
+            raise ValueError("Non-finite source dimensions")
+        metrics = binary_stl_metrics(
+            (root / "tmp/lab-station-rotary/fit-prototypes" / (name + "_mm.stl")).read_bytes()
+        )
+        if any(
+            wanted is None or abs(actual - wanted) > 0.02
+            for actual, wanted in zip(metrics.dimensions_mm, wanted_dimensions, strict=True)
+        ):
+            raise ValueError(f"Rotary STL dimensions differ: {name}")
+    print("Four binary STL dimensions match Blender world vertices within 0.02 mm")
 
 
 if __name__ == "__main__":

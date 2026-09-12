@@ -146,3 +146,7 @@
 - V01.0R.01F：工具基線 red-elbow-tools.log 重現實心螺栓頭擋住扳手，rotary 螺栓補 4 mm 名義內六角孔；兩側六角扳手與套筒四項就位、封孔負對照通過，focused log elbow-tools-final.log exit 0。沿用現有 arm／motion 模組，最大 356 行，新增 R21；不更動 V10 螺栓或公開工具。待完整 CI。自交／匯出契約、手柄掃掠與承力仍需完成。
 
 - V01.0R.01F 完整 scripts/ci.sh --real exit 1，唯一失敗為 model_lab_rotary.py 格式，所有真機項目通過。ruff format 後 scripts/ci.sh exit 0，T1／T2 全綠；證據 ci-01F.log／ci-01F-static-final.log，不將初次命令稱為成功。已檢視六角孔局部圖，elbow-tools.json 四項零表面碰撞、red-elbow-drive.json 封孔拒絕。下一步優先補四件支撐自交／匯出契約，再處理工具掃掠與肩／腕／底座承力。
+
+- V01.0R.01G：先紅拒絕缺少 LR_CHECK／STL 的場景（red-support-contract.log），新增四件獨立副本與毫米 STL、左右 readiness 契約。第一次副本碰撞量測讀到隱藏前的舊矩陣，調整為位移→update→hide 後重新生成，左右契約首次均 exit 0，無禁止問題或截斷。support-export-final.log 四 STL 對世界頂點尺寸差 ≤0.02 mm；沿用 binary_stl_metrics 與既有契約框架，無新增 Python 模組。5S：模型 371 行，輸出留 tmp，R22 同步。準備完整 CI，整機未完成。
+
+- V01.0R.01G 首次完整 CI exit 1：checks 缺註記、STL 比對未使用收窄工具、契約沿用場景來源未被架構守衛辨識。改 list[str]、as_sequence／as_finite_number，第一份支撐契約明確生成、第二份沿用；12 架構 tests 通過。最終 scripts/ci.sh --real exit 0、所有 hard gates green，ci-01G-final.log，session 83040 已結束。首次 log 保留 ci-01G.log。四件 STL 仍為試配，未發布整機；下一步肩部／腕部實體介面與底座承力，工具手柄掃掠、載荷／線材仍未完成。

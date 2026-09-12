@@ -76,3 +76,30 @@ def export_stl_mm(objects: list[bpy.types.Object], path: Path) -> None:
             f"{sum(len(obj.data.polygons) for obj in objects)} faces — the export was "
             "silently skipped. Check every visibility flag on those objects."
         )
+
+
+def export_world_mesh_copy_mm(
+    source: bpy.types.Object, path: Path, name: str, inspection_x_mm: float
+) -> bpy.types.Object:
+    """Export an independent world-shaped copy at a local origin, retaining a hidden oracle mesh."""
+    from mathutils import Matrix, Vector
+
+    bpy.context.view_layer.update()
+    copy = source.copy()
+    copy.data = source.data.copy()
+    copy.name = name
+    copy.parent = None
+    copy.animation_data_clear()
+    copy.data.transform(source.matrix_world)
+    copy.matrix_world = Matrix.Identity(4)
+    minimum = Vector(tuple(min(v.co[axis] for v in copy.data.vertices) for axis in range(3)))
+    copy.data.transform(Matrix.Translation(-minimum))
+    bpy.context.collection.objects.link(copy)
+    bpy.context.view_layer.update()
+    export_stl_mm([copy], path)
+    copy.location = (inspection_x_mm / 1000, 0.45, 0)
+    bpy.context.view_layer.update()
+    copy.hide_render = True
+    copy.hide_viewport = True
+    bpy.context.view_layer.update()
+    return copy
