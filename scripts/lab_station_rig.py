@@ -192,6 +192,10 @@ def create_rotary_support_rig(label: str, root: Point, elbow: Point, wrist: Poin
             description="Independent joint; pose study range, not a collision-safe limit",
         )
         driver(obj, control, "rotation_euler", axis, name + "*0.017453292519943295", (name,))
+    control["shoulder_release_mm"] = 0.0
+    control.id_properties_ui("shoulder_release_mm").update(min=0.0, max=2.0)
+    driver(shoulder, control, "location", 0, "shoulder_release_mm*0.001", ("shoulder_release_mm",))
+    attach(bpy.data.objects[f"LR_{label}_mount_envelope"], yaw)
     control["elbow_release_mm"] = 0.0
     control.id_properties_ui("elbow_release_mm").update(min=0.0, max=2.0)
     driver(
@@ -203,8 +207,7 @@ def create_rotary_support_rig(label: str, root: Point, elbow: Point, wrist: Poin
         ("elbow_release_mm",),
     )
     attach(bpy.data.objects[f"LR_{label}_support_envelope_0"], shoulder)
-    for index in (1, 2):
-        attach(bpy.data.objects[f"LR_{label}_support_envelope_{index}"], forearm)
+    attach(bpy.data.objects[f"LR_{label}_support_envelope_1"], forearm)
     for obj in list(bpy.context.scene.objects):
         if obj.name.startswith("LR_" + label + "_") and (
             obj.name.endswith("_base") or obj.name.endswith("_fixed")
@@ -250,6 +253,7 @@ def verify_rotary_articulation() -> list[dict[str, object]]:
             "wrist_deg",
             "lift_mm",
             "elbow_release_mm",
+            "shoulder_release_mm",
         ):
             if prop not in control:
                 raise ValueError(f"Articulation control missing: {label}.{prop}")
@@ -257,7 +261,7 @@ def verify_rotary_articulation() -> list[dict[str, object]]:
             before = head.matrix_world.copy()
             fixed = {o.name: o.matrix_world.copy() for o in other_meshes}
             try:
-                set_pose(control, **{prop: saved + (2 if prop == "elbow_release_mm" else 15)})
+                set_pose(control, **{prop: saved + (2 if prop.endswith("release_mm") else 15)})
                 own_delta = max(
                     abs(head.matrix_world[r][c] - before[r][c]) for r in range(4) for c in range(4)
                 )

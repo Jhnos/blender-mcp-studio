@@ -188,3 +188,36 @@ def render_wrist_tools(scene: bpy.types.Scene, camera: bpy.types.Object, output:
             bpy.data.objects.remove(tool, do_unlink=True)
         camera.location, camera.rotation_euler, camera.data.ortho_scale = camera_state
         bpy.context.view_layer.update()
+
+
+def render_rotary_views(output: Path) -> None:
+    scene = bpy.context.scene
+    camera = scene.camera
+    assert camera is not None
+    camera.location = (0.43, -0.65, 0.43)
+    look_at(camera, (0, -65, 150))
+    for name, left, right in (
+        ("working", 0, 0),
+        ("left-raised", 100, 0),
+        ("both-raised", 100, 100),
+    ):
+        set_pose(bpy.data.objects["LR_CTRL_capillary"], lift_mm=left)
+        set_pose(bpy.data.objects["LR_CTRL_pH_temp"], lift_mm=right)
+        scene.render.filepath = str(output / (name + ".png"))
+        bpy.ops.render.render(write_still=True)
+    set_pose(bpy.data.objects["LR_CTRL_capillary"], lift_mm=0)
+    set_pose(bpy.data.objects["LR_CTRL_pH_temp"], lift_mm=0)
+    saved_location, saved_rotation = camera.location.copy(), camera.rotation_euler.copy()
+    saved_scale = camera.data.ortho_scale
+    camera.location = (0.29, -0.28, 0.23)
+    camera.data.ortho_scale = 0.15
+    look_at(camera, (92, -128, 170))
+    scene.render.filepath = str(output / "pivot-detail.png")
+    bpy.ops.render.render(write_still=True)
+    camera.location = (-0.32, -0.16, 0.32)
+    camera.data.ortho_scale = 0.18
+    look_at(camera, (-123, 7, 215))
+    scene.render.filepath = str(output / "elbow-detail.png")
+    bpy.ops.render.render(write_still=True)
+    camera.location, camera.rotation_euler = saved_location, saved_rotation
+    camera.data.ortho_scale = saved_scale

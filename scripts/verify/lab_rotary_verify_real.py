@@ -62,6 +62,23 @@ finally:
     if changed_mesh.users == 0:
         bpy.data.meshes.remove(changed_mesh)
 model['verify_rotary_elbow_tools']()
+fork = bpy.data.objects['LR_capillary_support_envelope_1']
+saved_fork_location = fork.location.copy()
+try:
+    fork.location.y += 0.1
+    bpy.context.view_layer.update()
+    try:
+        model['verify_rotary_wrist_interfaces']()
+    except ValueError as error:
+        if 'Rotary wrist' not in str(error):
+            raise
+        (model['OUTPUT'] / 'red-wrist-disconnection.json').write_text(json.dumps({{'rejected': True, 'reason': str(error)}}))
+    else:
+        raise RuntimeError('Disconnected wrist was accepted')
+finally:
+    fork.location = saved_fork_location
+    bpy.context.view_layer.update()
+model['verify_rotary_wrist_interfaces']()
 joint = bpy.data.objects['LR_PIVOT_capillary_yaw']
 failed_driver = joint.animation_data.drivers[0].driver
 saved_expression = failed_driver.expression

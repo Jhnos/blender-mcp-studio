@@ -12,8 +12,8 @@ from mathutils import Vector
 
 from scripts.blender_artifact_export import export_world_mesh_copy_mm
 from scripts.blender_mesh_primitives import add_cylinder, assign, boolean, material
-from scripts.hollow_hinge_render import look_at
 from scripts.lab_station_arm import (
+    build_shoulder,
     connect_serrated_joint,
     finish_arm,
     joint_hardware,
@@ -30,6 +30,7 @@ from scripts.lab_station_motion_check import (
     verify_rotary_screen,
     verify_rotary_support_meshes,
 )
+from scripts.lab_station_render import render_rotary_views
 from scripts.lab_station_rig import (
     attach,
     create_rotary_support_rig,
@@ -38,6 +39,7 @@ from scripts.lab_station_rig import (
     set_pose,
     verify_rotary_articulation,
 )
+from scripts.lab_station_wrist import build_wrist, verify_rotary_wrist_interfaces
 from src.core.domain.lab_station import LabStationSpec, Point, RotaryLiftSpec
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -135,19 +137,29 @@ def build_head(label: str, side: int, mat: bpy.types.Material, metal: bpy.types.
         attach(obj, moving)
     # Adjustable support is an envelope here; no hidden claim of assembled pivots.
     root = spec.arm_points(side)[0]
-    mount = add_cylinder(f"LR_{label}_mount_envelope", 13, 28, (root[0], root[1], 94))
-    assign(mount, mat)
     middle = (root[0] + side * 25, (root[1] + a[1]) / 2, a[2] - 20)
-    neck = offset(a, (0, 25, 0))
-    terminal = a
+    wrist = offset(a, (0, 82, 0))
+    neck = offset(wrist, (0, 0, 26))
     upper_neck = offset(middle, (-14, 30, 0))
     lower_neck = offset(middle, (14, 30, 0))
-    upper = beam(f"LR_{label}_support_envelope_0", root, upper_neck, mat)
+    shoulder_neck = offset(root, (13, 0, 30))
+    upper = beam(f"LR_{label}_support_envelope_0", shoulder_neck, upper_neck, mat)
     turn = (neck[0], lower_neck[1], neck[2] + 25)
-    lower = beam(f"LR_{label}_support_envelope_1", lower_neck, turn, mat)
+    ascent = (lower_neck[0], lower_neck[1], turn[2])
+    lower = beam(f"LR_{label}_support_envelope_1", lower_neck, ascent, mat)
+    boolean(lower, beam("LR_TOOL_lower_cross", ascent, turn, mat), "UNION")
     boolean(lower, beam("LR_TOOL_lower_return", turn, neck, mat), "UNION")
-    beam(f"LR_{label}_support_envelope_2", neck, terminal, mat)
+    boolean(base, block("LR_TOOL_wrist_bridge", (12, 82, 12), offset(a, (0, 41, 0)), mat), "UNION")
+    wrist_hardware = build_wrist(base, lower, wrist, label, mat, metal)
+    for obj in wrist_hardware:
+        obj.name = "LR_" + obj.name.removeprefix("LS_HW_")
     connect_serrated_joint(upper, lower, middle, (upper_neck, lower_neck), label, mat, beam)
+    mount, shoulder_hardware = build_shoulder(
+        upper, root, shoulder_neck, label, mat, metal, beam, neck_plane_mm=12
+    )
+    mount.name = f"LR_{label}_mount_envelope"
+    for obj in shoulder_hardware:
+        obj.name = "LR_" + obj.name.removeprefix("LS_HW_")
     for member in (upper, lower):
         finish_arm(member)
     hardware = joint_hardware(middle, label, metal)
@@ -160,10 +172,17 @@ def build_head(label: str, side: int, mat: bpy.types.Material, metal: bpy.types.
     )
     for obj in hardware:
         obj.name = "LR_" + obj.name.removeprefix("LS_HW_")
-    create_rotary_support_rig(label, root, middle, a)
+    create_rotary_support_rig(label, root, middle, wrist)
+    for obj in wrist_hardware:
+        attach(obj, bpy.data.objects[f"LR_PIVOT_{label}_elbow"])
+    for obj in shoulder_hardware:
+        owner = "yaw" if obj.name.endswith(("bolt", "washer_left")) else "shoulder"
+        attach(obj, bpy.data.objects[f"LR_PIVOT_{label}_{owner}"])
     for obj in hardware:
         owner = "shoulder" if obj.name.endswith(("bolt", "washer_left")) else "elbow"
         attach(obj, bpy.data.objects[f"LR_PIVOT_{label}_{owner}"])
+    for suffix in ("mount_envelope", "fixed", "head", "bar_0", "bar_1"):
+        finish_arm(bpy.data.objects[f"LR_{label}_{suffix}"])
     bpy.context.view_layer.update()
 
 
@@ -308,11 +327,17 @@ def main() -> None:
         ("pH_temp", 1, (0.05, 0.6, 0.64, 1)),
     ):
         build_head(label, side, material("LR_" + label, color), metal)
+    (OUTPUT / "wrist-interface.json").write_text(
+        json.dumps(verify_rotary_wrist_interfaces(), indent=2)
+    )
     (OUTPUT / "support-mesh.json").write_text(json.dumps(verify_rotary_support_meshes(), indent=2))
     (OUTPUT / "elbow-assembly.json").write_text(
         json.dumps(verify_rotary_elbow_assembly(), indent=2)
     )
     (OUTPUT / "elbow-tools.json").write_text(json.dumps(verify_rotary_elbow_tools(), indent=2))
+    (OUTPUT / "shoulder-release.json").write_text(
+        json.dumps(verify_rotary_elbows("shoulder"), indent=2)
+    )
     (OUTPUT / "elbow-release.json").write_text(json.dumps(verify_rotary_elbows(), indent=2))
     (OUTPUT / "articulation.json").write_text(json.dumps(verify_rotary_articulation(), indent=2))
     (OUTPUT / "motion.json").write_text(json.dumps(verify(), indent=2))
@@ -322,36 +347,8 @@ def main() -> None:
     (OUTPUT / "assembly-motion.json").write_text(json.dumps(assembly, indent=2))
     if assembly["unresolved_surface_collisions"] or assembly["unresolved_static_collisions"]:
         raise ValueError("Rotary concept has unresolved assembly collisions")
+    render_rotary_views(OUTPUT)
     scene = bpy.context.scene
-    camera = scene.camera
-    assert camera is not None
-    camera.location = (0.43, -0.65, 0.43)
-    look_at(camera, (0, -65, 150))
-    for name, left, right in (
-        ("working", 0, 0),
-        ("left-raised", 100, 0),
-        ("both-raised", 100, 100),
-    ):
-        set_pose(bpy.data.objects["LR_CTRL_capillary"], lift_mm=left)
-        set_pose(bpy.data.objects["LR_CTRL_pH_temp"], lift_mm=right)
-        scene.render.filepath = str(OUTPUT / (name + ".png"))
-        bpy.ops.render.render(write_still=True)
-    set_pose(bpy.data.objects["LR_CTRL_capillary"], lift_mm=0)
-    set_pose(bpy.data.objects["LR_CTRL_pH_temp"], lift_mm=0)
-    saved_location, saved_rotation = camera.location.copy(), camera.rotation_euler.copy()
-    saved_scale = camera.data.ortho_scale
-    camera.location = (0.29, -0.28, 0.23)
-    camera.data.ortho_scale = 0.15
-    look_at(camera, (92, -128, 170))
-    scene.render.filepath = str(OUTPUT / "pivot-detail.png")
-    bpy.ops.render.render(write_still=True)
-    camera.location = (-0.32, -0.16, 0.32)
-    camera.data.ortho_scale = 0.18
-    look_at(camera, (-123, 7, 215))
-    scene.render.filepath = str(OUTPUT / "elbow-detail.png")
-    bpy.ops.render.render(write_still=True)
-    camera.location, camera.rotation_euler = saved_location, saved_rotation
-    camera.data.ortho_scale = saved_scale
     checks: list[str] = []
     for label in ("capillary", "pH_temp"):
         for index in (0, 1):

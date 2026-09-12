@@ -20,10 +20,11 @@ def connect_serrated_joint(
     mat: bpy.types.Material,
     beam: Callable[[str, Point, Point, bpy.types.Material], bpy.types.Object],
     joint: Literal["elbow", "shoulder"] = "elbow",
+    shoulder_neck_plane_mm: float = 13,
 ) -> None:
     x, y, z = point
     for link, neck, sign in ((upper, necks[0], -1), (lower, necks[1], 1)):
-        center = (x + sign * (13 if joint == "shoulder" else 14), y, z)
+        center = (x + sign * (shoulder_neck_plane_mm if joint == "shoulder" else 14), y, z)
         boolean(link, beam("TOOL_elbow_neck", center, neck, mat), "UNION")
         hub_center = (x + sign * (7 if joint == "shoulder" else 14), y, z)
         boolean(
@@ -245,13 +246,16 @@ def build_shoulder(
     mat: bpy.types.Material,
     metal: bpy.types.Material,
     beam: Callable[[str, Point, Point, bpy.types.Material], bpy.types.Object],
+    neck_plane_mm: float = 13,
 ) -> tuple[bpy.types.Object, list[bpy.types.Object]]:
     """Serrated rotor and upper arm; chassis bearing/retention remains a separate interface."""
     x, y, z = point
     rotor = add_cylinder(f"LS_FIT_{label}_shoulder_rotor", 26, 5, (x, y, 82.5))
     assign(rotor, mat)
     fixed_neck = (x - 13, y, 84)
-    connect_serrated_joint(rotor, upper, point, (fixed_neck, neck), label, mat, beam, "shoulder")
+    connect_serrated_joint(
+        rotor, upper, point, (fixed_neck, neck), label, mat, beam, "shoulder", neck_plane_mm
+    )
     finish_arm(rotor)
     return rotor, joint_hardware(point, label, metal, "shoulder")
 

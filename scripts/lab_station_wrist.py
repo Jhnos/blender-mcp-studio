@@ -165,3 +165,48 @@ def wrist_tool_envelopes(label: str) -> tuple[bpy.types.Object, bpy.types.Object
         socket, add_cylinder("LS_TOOL_socket_cavity", 4.85, 42, (x + 34.2, y, z), "X"), "DIFFERENCE"
     )
     return allen, socket
+
+
+def verify_rotary_wrist_interfaces() -> list[dict[str, object]]:
+    """Both printed members must surround the same open axle line at sampled angles."""
+    from mathutils import Vector
+
+    from scripts.lab_station_motion_check import tree
+    from scripts.lab_station_rig import set_pose
+
+    rows: list[dict[str, object]] = []
+    for label in ("capillary", "pH_temp"):
+        control = bpy.data.objects["LR_CTRL_" + label]
+        tongue = bpy.data.objects[f"LR_{label}_fixed"]
+        fork = bpy.data.objects[f"LR_{label}_support_envelope_1"]
+        if not tongue.get("wrist_tongue") or not fork.get("wrist_fork"):
+            raise ValueError("Rotary wrist members missing: " + label)
+        saved = float(control["wrist_deg"])
+        try:
+            for angle in (-15, 0, 15):
+                set_pose(control, wrist_deg=angle)
+                if tree(tongue).overlap(tree(fork)):
+                    raise ValueError(f"Rotary wrist members collide: {label}, {angle}")
+                center = bpy.data.objects[f"LR_PIVOT_{label}_wrist"].matrix_world.translation
+                for member in (tongue, fork):
+                    inverse = member.matrix_world.inverted()
+                    direction = (inverse.to_3x3() @ Vector((1, 0, 0))).normalized()
+                    for dy, dz in ((0, 0), (0.005, 0), (-0.005, 0), (0, 0.005), (0, -0.005)):
+                        start = inverse @ (center + Vector((-0.1, dy, dz)))
+                        hit = member.ray_cast(start, direction)[0]
+                        if hit != bool(dy or dz):
+                            raise ValueError(
+                                f"Rotary wrist axle interface missing: {label}, {member.name}, {angle}, {dy}, {dz}"
+                            )
+                for suffix in ("axle", "nut", "washer_-1", "washer_1"):
+                    hardware = bpy.data.objects[f"LR_{label}_wrist_{suffix}"]
+                    if any(tree(hardware).overlap(tree(member)) for member in (tongue, fork)):
+                        raise ValueError(
+                            f"Rotary wrist hardware collision: {label}, {angle}, {suffix}"
+                        )
+                rows.append(
+                    {"head": label, "angle_deg": angle, "coaxial_material_and_clearance": True}
+                )
+        finally:
+            set_pose(control, wrist_deg=saved)
+    return rows

@@ -150,3 +150,8 @@
 - V01.0R.01G：先紅拒絕缺少 LR_CHECK／STL 的場景（red-support-contract.log），新增四件獨立副本與毫米 STL、左右 readiness 契約。第一次副本碰撞量測讀到隱藏前的舊矩陣，調整為位移→update→hide 後重新生成，左右契約首次均 exit 0，無禁止問題或截斷。support-export-final.log 四 STL 對世界頂點尺寸差 ≤0.02 mm；沿用 binary_stl_metrics 與既有契約框架，無新增 Python 模組。5S：模型 371 行，輸出留 tmp，R22 同步。準備完整 CI，整機未完成。
 
 - V01.0R.01G 首次完整 CI exit 1：checks 缺註記、STL 比對未使用收窄工具、契約沿用場景來源未被架構守衛辨識。改 list[str]、as_sequence／as_finite_number，第一份支撐契約明確生成、第二份沿用；12 架構 tests 通過。最終 scripts/ci.sh --real exit 0、所有 hard gates green，ci-01G-final.log，session 83040 已結束。首次 log 保留 ci-01G.log。四件 STL 仍為試配，未發布整機；下一步肩部／腕部實體介面與底座承力，工具手柄掃掠、載荷／線材仍未完成。
+
+- 使用者指出「一堆實體與連接組件都斷開」。已中止原先逐件擴充，查明新肩部兩側各有 2 殼（disconnected-audit.json），薄梁 6 mm 套用原接頸偏置形成間隙；肩接頸中心由 ±13 改 ±12 mm。移除獨立 support_envelope_2，前臂與接回段／叉耳整合，固定框加入舌片／82 mm 後置腕部橋接與穿軸。腕部曾撞肘部／斜接段，改後置並先上升再橫接。14 件結構網格、肩部五狀態、腕部 −15／0／15° 共同孔／實體／五金檢查及既有回歸 focused exit 0；日誌 reconnect-verification.log。
+- V01.0R.01H 待完整 CI，新增腕部斷接負對照；渲染搬到既有 lab_station_render，沒有新模組。底座仍只接觸上蓋、沒有機箱固定／底板承力，不能說全部斷接已修完。下一步先完成底座機箱連接，並維持整條實際介面檢查；不以單件水密代替整機連接。
+
+- V01.0R.01H 首次完整 CI 唯一失敗為共用肩部偏置變更使舊 V10 肩座擋折屏；改 neck_plane_mm 參數，預設保留 13 mm，rotary 顯式 12 mm。最終 scripts/ci.sh --real exit 0，所有 hard gates green，ci-01H-final.log，session 4868 已結束。新 working.png 已檢視；14 結構件、14 控制隔離、10 肩部狀態與 6 腕部同軸介面案例核對，red-wrist-disconnection.json 移開叉耳會被拒絕。5S：渲染移到既有 render 模組、契約 reload 清單更新，無新模組或放寬判準。下一步最高優先：底座至機箱的實際固定／底板承力，然後全臂介面／載荷／線材；不可宣稱所有斷接已完成。

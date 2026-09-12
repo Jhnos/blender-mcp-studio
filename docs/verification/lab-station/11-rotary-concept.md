@@ -12,13 +12,13 @@
 - `rotary-concept.blend`：選取 `LR_CTRL_capillary` 或 `LR_CTRL_pH_temp`，調整自訂屬性 `lift_mm`（0..100）。另有 `base_yaw_deg`、`shoulder_deg`、`elbow_deg`、`wrist_deg`，各自控制底座、肩、肘與末端；角度欄位的 ±45° 是研究範圍，並非無碰撞保證。肩肘改角後需手動校正末端，四連桿只保持相對支座方向。
 - `motion.json`：每頭 101 個位置，探頭／容器、桿端閉合、直立與另一頭不動的檢查。
 - `assembly-motion.json`：每頭 21 個位置對其他固定網格的表面碰撞，以及固定支撐對既有外殼／HMI 的靜態碰撞。只豁免底面位於 80 mm 的支座／上蓋名義接觸；不代表支座已固定。
-- `support-mesh.json`／`red-support-mesh.json`：四件肘部支撐各為單一連通體、零非流形邊與退化面；故意開面必須拒絕。另由左右兩份 `lab_rotary_support_*.json` readiness 契約檢查自交、法線與退化，禁止分析截斷；仍非承力／整機製造資格。
+- `support-mesh.json`／`red-support-mesh.json`：兩臂 14 個結構件各為單一連通體、零非流形邊與退化面；故意開面必須拒絕。另由左右兩份 `lab_rotary_support_*.json` readiness 契約檢查自交、法線與退化，禁止分析截斷；仍非承力／整機製造資格。
 - `elbow-assembly.json`：先將 HMI 收折（`tilt_step=0`，先脫齒），再依序由外側裝入螺栓與墊片、內側墊片、螺母。兩側共 216 個 2 mm 步距取樣；組裝時需支撐臂件，未模擬螺紋旋入或預緊。
 - `elbow-tools.json`／`red-elbow-drive.json`：收折 HMI 後的名義 4 mm 六角扳手直段與薄壁套筒就位；封住六角孔必須拒絕。只查直段表面碰撞，未含工具裝入掃掠、手柄擺幅、實際產品與施力。
 - `elbow-detail.png`：支撐肘部齒盤與穿軸局部圖。
 - `elbow-release.json`：每側五狀態，包含未脫齒轉半齒的必須干涉案例；`elbow_release_mm` 為 0..2 mm。僅查肘部成員與穿軸五金，不代表全臂任意姿態安全。
 - `pivot-detail.png`：名義螺栓、墊片與軸套的局部視圖。
-- `articulation.json`：每頭五個控制的實際移動／隔離，加上脫齒位移共 12 項。
+- `articulation.json`：每頭五個控制的實際移動／隔離，加上脫齒位移共 14 項。
 - `coupled-motion.json`：同頭移動件表面配對與雙頭 121 高度組合。
 - `screen-motion.json`：雙頭各三高度、螢幕 0..75° 每 5°，共 144 組表面檢查。
 - `red-articulation.json`／`red-cross-head.json`：停用旋轉驅動／加入跨頭侵入網格必須被拒絕。
@@ -44,6 +44,8 @@ $HOME/miniconda3/envs/blender-mcp/bin/python -m scripts.verify.lab_rotary_verify
 
 參考與沿用決策見 [09-references](09-references.md)。完整需求追溯见 [07-matrix](07-matrix.md)。
 
-肘部兩段支撐已整合齒盤；目前保留 `support_envelope` 名稱以免被當成已通過製造契約的零件。接回段繞過齒盤與升降連桿。肩部／腕部的實體可裝配介面，以及肘部工具手柄／裝入掃掠與預緊保持力仍未取得資格。
+肘部兩段支撐已整合齒盤；目前保留 `support_envelope` 名稱以免被當成已通過製造契約的零件。接回段繞過齒盤與升降連桿。肩部／腕部已建立實體接頭；底座到機箱的固定、腕部裝入路徑，以及肘部工具手柄／裝入掃掠與預緊保持力仍未取得資格。
 
 四件 STL 由独立副本在局部原點匯出，保留組裝模型姿態。驗證入口以二進位座標重算尺寸，與 Blender 世界頂點比較，差值限 0.02 mm。CI 在生成後依序執行左右兩份支撐契約，並檢查四件各自單連通、零副本間碰撞與檔案存在；支撐固定面、列印方向與載荷仍需評估。
+
+使用者指出斷接後，移除獨立 support_envelope_2，前臂回接段與叉耳改為同一件；腕部設在四連桿後方 82 mm，透過一體橋接連到固定框。`wrist-interface.json` 在 −15／0／15° 檢查兩成員共同通孔、周邊實體與五金間隙；`red-wrist-disconnection.json` 移開叉耳必須拒絕。`shoulder-release.json` 使用同一五狀態齒槽判準。這些證據不涵蓋底座鎖入機箱或整體承力，不能據此宣稱整機已接妥。

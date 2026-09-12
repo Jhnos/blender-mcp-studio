@@ -213,20 +213,24 @@ def verify_rotary_screen() -> dict[str, object]:
     }
 
 
-def verify_rotary_elbows() -> list[dict[str, object]]:
+def verify_rotary_elbows(joint: str = "elbow") -> list[dict[str, object]]:
     """Require connected tooth members and discriminate locked/released half-pitch poses."""
     from scripts.lab_station_rig import set_pose
 
+    if joint not in ("elbow", "shoulder"):
+        raise ValueError("Unsupported rotary tooth joint: " + joint)
     rows: list[dict[str, object]] = []
     for label in ("capillary", "pH_temp"):
         control = bpy.data.objects["LR_CTRL_" + label]
         upper = bpy.data.objects[f"LR_{label}_support_envelope_0"]
         lower = bpy.data.objects[f"LR_{label}_support_envelope_1"]
-        if not all(o.get("elbow_integrated") for o in (upper, lower)):
-            raise ValueError("Rotary elbow is not an integrated tooth interface: " + label)
-        if "elbow_release_mm" not in control:
-            raise ValueError("Rotary elbow release control missing: " + label)
-        saved = {key: float(control[key]) for key in ("elbow_deg", "elbow_release_mm")}
+        if joint == "shoulder":
+            upper, lower = bpy.data.objects[f"LR_{label}_mount_envelope"], upper
+        if not all(o.get(joint + "_integrated") for o in (upper, lower)):
+            raise ValueError(f"Rotary {joint} is not an integrated tooth interface: " + label)
+        if joint + "_release_mm" not in control:
+            raise ValueError(f"Rotary {joint} release control missing: " + label)
+        saved = {key: float(control[key]) for key in (joint + "_deg", joint + "_release_mm")}
         try:
             for angle, release, expected in (
                 (0, 0, False),
@@ -235,17 +239,17 @@ def verify_rotary_elbows() -> list[dict[str, object]]:
                 (15, 2, False),
                 (15, 0, False),
             ):
-                set_pose(control, elbow_deg=angle, elbow_release_mm=release)
+                set_pose(control, **{joint + "_deg": angle, joint + "_release_mm": release})
                 overlap = bool(tree(upper).overlap(tree(lower)))
                 if overlap != expected:
                     raise ValueError(
-                        f"Rotary elbow tooth mismatch: {label}, {angle}, {release}, {overlap}"
+                        f"Rotary {joint} tooth mismatch: {label}, {angle}, {release}, {overlap}"
                     )
                 for suffix in ("bolt", "nut", "washer_left", "washer_right"):
-                    part = bpy.data.objects[f"LR_{label}_elbow_{suffix}"]
+                    part = bpy.data.objects[f"LR_{label}_{joint}_{suffix}"]
                     if any(tree(part).overlap(tree(link)) for link in (upper, lower)):
                         raise ValueError(
-                            f"Rotary elbow hardware collision: {label}, {angle}, {release}, {suffix}"
+                            f"Rotary {joint} hardware collision: {label}, {angle}, {release}, {suffix}"
                         )
                 rows.append(
                     {
@@ -261,13 +265,21 @@ def verify_rotary_elbows() -> list[dict[str, object]]:
 
 
 def verify_rotary_support_meshes() -> list[dict[str, object]]:
-    """Check the four elbow members are single connected, closed meshes; not full readiness."""
+    """Check every structural arm member is connected and closed; not full readiness."""
     import bmesh
 
     rows: list[dict[str, object]] = []
     for label in ("capillary", "pH_temp"):
-        for index in (0, 1):
-            obj = bpy.data.objects[f"LR_{label}_support_envelope_{index}"]
+        for suffix in (
+            "support_envelope_0",
+            "support_envelope_1",
+            "mount_envelope",
+            "fixed",
+            "head",
+            "bar_0",
+            "bar_1",
+        ):
+            obj = bpy.data.objects[f"LR_{label}_{suffix}"]
             mesh = bmesh.new()
             mesh.from_mesh(obj.data)
             try:
