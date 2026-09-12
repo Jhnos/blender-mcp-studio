@@ -1,0 +1,101 @@
+{
+  "name": "lab-station-fit-prototype-only",
+  "generator_script": "scripts/model_lab_station.py",
+  "reload_modules": [
+    "src.core.domain.lab_station",
+    "scripts.lab_station_rig",
+    "src.core.domain.lab_station_joints",
+    "scripts.lab_station_joints",
+    "scripts.lab_station_lift",
+    "scripts.lab_station_motion_check",
+    "scripts.lab_station_render",
+    "scripts.lab_station_lift_check"
+  ],
+  "artifacts": [
+    "tmp/lab-station-v3/lab_station_v3.blend",
+    "tmp/lab-station-v3/assembly.png",
+    "tmp/lab-station-v3/side.png",
+    "tmp/lab-station-v3/top.png",
+    "tmp/lab-station-v3/service.png",
+    "tmp/lab-station-v3/manifest.json",
+    "tmp/lab-station-v3/independent-motion.json",
+    "tmp/lab-station-v3/independent-motion.png",
+    "tmp/lab-station-v3/fit-prototypes/chassis_mm.stl",
+    "tmp/lab-station-v3/fit-prototypes/lid_mm.stl",
+    "tmp/lab-station-v3/fit-prototypes/sample_platform_mm.stl",
+    "tmp/lab-station-v3/fit-prototypes/spill_dish_mm.stl",
+    "tmp/lab-station-v3/fit-prototypes/lcd_front_mm.stl",
+    "tmp/lab-station-v3/fit-prototypes/lcd_back_mm.stl",
+    "tmp/lab-station-v3/screen-folded.png",
+    "tmp/lab-station-v3/fit-prototypes/screen_bracket_left_mm.stl",
+    "tmp/lab-station-v3/fit-prototypes/screen_bracket_right_mm.stl",
+    "tmp/lab-station-v3/fit-prototypes/serrated_coupon_print_two_mm.stl",
+    "tmp/lab-station-v3/joint-motion.json",
+    "tmp/lab-station-v3/joint-coupon.png",
+    "tmp/lab-station-v3/fit-prototypes/capillary_lift_frame_mm.stl",
+    "tmp/lab-station-v3/fit-prototypes/capillary_lift_carrier_mm.stl",
+    "tmp/lab-station-v3/fit-prototypes/pH_temp_lift_frame_mm.stl",
+    "tmp/lab-station-v3/fit-prototypes/pH_temp_lift_carrier_mm.stl",
+    "tmp/lab-station-v3/probe-lift.json",
+    "tmp/lab-station-v3/probe-parking.json",
+    "tmp/lab-station-v3/probe-raised.png",
+    "tmp/lab-station-v3/probe-parked.png"
+  ],
+  "oracle": {
+    "object_prefix": "LS_CHECK_",
+    "expected_count": 13,
+    "expected_shared_mesh_count": 13,
+    "expected_shells_per_object": 1,
+    "expected_rotations_deg": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "scene_list_property": "LS_PARTS",
+    "expected_scene_list": [
+      "LS_CHECK_fit_chassis",
+      "LS_CHECK_fit_lcd_back",
+      "LS_CHECK_fit_lcd_front",
+      "LS_CHECK_fit_lid",
+      "LS_CHECK_fit_sample_platform",
+      "LS_CHECK_fit_screen_bracket_left",
+      "LS_CHECK_fit_screen_bracket_right",
+      "LS_CHECK_fit_serrated_coupon_print_two",
+      "LS_CHECK_fit_spill_dish",
+      "LS_CHECK_lift_capillary_lift_carrier",
+      "LS_CHECK_lift_capillary_lift_frame",
+      "LS_CHECK_lift_pH_temp_lift_carrier",
+      "LS_CHECK_lift_pH_temp_lift_frame"
+    ],
+    "center_probe_object": "LS_FIT_lid",
+    "center_channel_expected_open": false,
+    "collision_groups": [
+      {
+        "prefix": "LS_CHECK_",
+        "expected_count": 13
+      }
+    ]
+  },
+  "readiness": {
+    "selection_prefix": "LS_CHECK_fit_",
+    "expected_selection_count": 9,
+    "forbidden_issue_codes": [
+      "no_mesh",
+      "non_manifold_edges",
+      "inconsistent_normals",
+      "degenerate_geometry",
+      "zero_volume",
+      "intersections"
+    ]
+  }
+}
