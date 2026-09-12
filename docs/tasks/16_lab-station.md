@@ -65,6 +65,17 @@
 - V01.0R.016：完整 `scripts/ci.sh --real` exit 0、全部 hard gates green，紀錄 `tmp/lab-station-v5/ci-real.log`；補充追溯文件後 DCC 16 passed。保持力、二次防墜、旋鈕操作包絡與鎖緊狀態防誤升降仍未取得證據，不能宣告滑座承載合格。
 - 5S：沿用既有五金與升降檢查模組，沒有新增通道；V5 輸出獨立於 V4；新增 S7／R12 與失效追溯，AGENTS／技能不變。下一步完成腕部到背架的實際螺栓連接；已詢問探頭含線重量、最高溫度與液體種類，未答覆不阻止幾何裝配工作。
 
+- V6 前置實測發現 V5 腕部並非已裝配介面：左右背架／腕圓柱有 16／14 對表面交叉，背架／下臂 57／59，腕圓柱／下臂 19／15。證據 `tmp/lab-station-v6/red-wrist-interface.json`。新增真模型拒絕穿插的守衛，目前預期 RED，尚未修復；不可把舊全綠當作腕部合格。
+- 負對照已結束 exit 1，錯誤為 `Wrist reference is not an assembled interface`；紀錄 `tmp/lab-station-v6/red-wrist-contract.log`。下一步必須重建腕部叉耳／轉動件並調整下臂末端，不能只補螺栓或刪除檢查。工作樹未提交，尚未封存新版本。
+
+- V6 修正：腕軸後退到探頭後方 60 mm，中間轉動件與背架合一、叉耳與下臂合一。橋接改到腕軸上方，修掉原後方橋接在螢幕 65° 時碰右下臂。布林相切面造成下臂 231 條非流形邊，改用有重疊且不共面的接合後消除；25 件各單一封閉實體。
+- 新 `scripts/lab_station_wrist.py` 沿用既有 primitive／Boolean；已有 GitHub 前置查找紀錄。補兩支下臂試配 STL，仍未完成肘端安裝與腕部鎖定保持。`probe-lift.json` 加入腕部兩側各 11 個 −15°..15° 局部姿態，包含軸與螺母干涉；全行程升降、拆夾、螢幕收折通過。48 focused tests 通過，已檢視 assembly.png；完整 gate 尚未跑。
+- 升降／夾具契約均已通過、無截斷，輸出 `tmp/lab-station-v6/verification-lifts.log`／`verification-clamps.log`。下一步核對結果、補腕軸裝入與螺母保持，再補完整 CI／版本 checkpoint。現有穿軸是名義 M5×35，無墊片、無防鬆／力矩資格，不得稱完整機構完成。
+
+- V6 腕部補兩側墊片；缺件負對照 `red-wrist-washers.log`。原位裝右墊片被另一臂擋住，改為雙頭提起、另一臂外轉 45° 的裝配姿態；兩側共 126 個 2 mm 步距插入位置通過，紀錄 `wrist-assembly.json`。48 focused tests／ruff 通過。V01.0R.017：初次 `scripts/ci.sh --real` exit 1，唯一失敗是已修正的 wrist_samples 型別註記；T3 共 35 項通過。修正後 `scripts/ci.sh` exit 0，T1／T2 全綠。兩份日誌与 verification-summary.json 位於 tmp/lab-station-v6，不宣稱初次命令全綠。
+- V6 5S：來源／輸出分開；腕部幾何模組沿用 primitive／Boolean；25 件試配描述與 manifest 對齊；無公開 execute_code、無新增執行通道。此 checkpoint 保留 ACTIVE，下一步腕部保持與工具空間，以及肘端實際連接。
+- 下輪先完成完整 gate／checkpoint；腕部扳手空間、防鬆、預緊保持力與肘端连接仍需完成，不能把本輪當全機製造合格。
+
 ### Open failures
 
 - 材料、精確瓶口／瓶高、零件型號、負載、工作溫度與液體尚未確定。

@@ -52,7 +52,7 @@ class LabStationSpec:
             raise ValueError("Arm side must be -1 or 1")
         root = (side * 98.0, 45.0, 108.0)
         probe = self.probe_origin(side)
-        wrist = (probe[0], probe[1] + 40, probe[2])
+        wrist = (probe[0], probe[1] + 60, probe[2])
         chord = dist(root, wrist)
         if chord >= 2 * self.link_mm:
             raise ValueError("Arm cannot reach the vessel with bent joints")

@@ -42,9 +42,10 @@ from scripts.lab_station_lift_check import (  # noqa: E402
 )
 from scripts.lab_station_render import render_views  # noqa: E402
 from scripts.lab_station_rig import create_arm_rig, verify_independence  # noqa: E402
+from scripts.lab_station_wrist import build_wrist, verify_wrist_assembly  # noqa: E402
 from src.core.domain.lab_station import LabStationSpec, Point  # noqa: E402
 
-OUTPUT = PROJECT_ROOT / "tmp" / "lab-station-v5"
+OUTPUT = PROJECT_ROOT / "tmp" / "lab-station-v6"
 
 
 def box(name: str, size: Point, at: Point, mat: bpy.types.Material) -> bpy.types.Object:
@@ -236,7 +237,8 @@ def build() -> None:
         bases: list[bpy.types.Object] = []
         cylinder(f"REF_{label}_root", 13, 28, (root[0], root[1], 94), dark)
         for index, (a, b) in enumerate(((root, elbow), (elbow, wrist))):
-            link = beam(f"REF_{label}_link_{index}", a, b, color)
+            end = (b[0], b[1], b[2] + 26) if index == 1 else b
+            link = beam(f"REF_{label}_link_{index}", a, end, color)
             arms.append(link)
             groups[index].append(link)
         for index, point in enumerate((root, elbow, wrist)):
@@ -255,14 +257,17 @@ def build() -> None:
                 groups[index].append(
                     cylinder(f"REF_{label}_axle_{index}", 2.5, 36, point, steel, "X")
                 )
-            else:
+            if index < 2:
+                knob_at = (point[0] + side * 18, point[1], point[2])
                 groups[index].append(
-                    cylinder(f"REF_{label}_joint_{index}", 15, 24, point, dark, "X")
+                    cylinder(f"REF_{label}_knob_{index}", 12, 10, knob_at, color, "X")
                 )
-            knob_at = (point[0] + side * 18, point[1], point[2])
-            groups[index].append(cylinder(f"REF_{label}_knob_{index}", 12, 10, knob_at, color, "X"))
         probe = spec.probe_origin(side)
         frame_lift, carrier_lift, rods = build_lift(label, side, probe, color, steel)
+        wrist_hardware = build_wrist(frame_lift, groups[1][0], wrist, label, color, steel)
+        groups[2].extend(wrist_hardware)
+        apply_transform(groups[1][0])
+        parts.append(export_prototype(groups[1][0], label + "_lift_wrist_link"))
         cap, liners = lined_jaw(carrier_lift, label, side, probe, color, soft)
         keeper = rod_keeper(frame_lift, label, side, probe, color)
         for obj in [cap, keeper, *liners]:
@@ -290,6 +295,9 @@ def build() -> None:
         json.dumps(verify_clamp_assembly(), indent=2) + "\n"
     )
     (OUTPUT / "jaw-service.json").write_text(json.dumps(verify_jaw_service(), indent=2) + "\n")
+    (OUTPUT / "wrist-assembly.json").write_text(
+        json.dumps(verify_wrist_assembly(), indent=2) + "\n"
+    )
     (OUTPUT / "probe-lift.json").write_text(json.dumps(verify_lifts(), indent=2) + "\n")
     (OUTPUT / "probe-parking.json").write_text(json.dumps(verify_parking(), indent=2) + "\n")
     (OUTPUT / "joint-motion.json").write_text(
@@ -309,7 +317,7 @@ def build() -> None:
             area.spaces.active.region_3d.view_distance = 0.65
             area.spaces.active.region_3d.view_location = (0, -0.075, 0.095)
             area.spaces.active.clip_start = 0.0001
-    bpy.ops.wm.save_as_mainfile(filepath=str(OUTPUT / "lab_station_v5.blend"))
+    bpy.ops.wm.save_as_mainfile(filepath=str(OUTPUT / "lab_station_v6.blend"))
     manifest = {
         "stage": "straight-extraction-and-fit-prototype",
         "project_version": (PROJECT_ROOT / "VERSION").read_text().strip(),

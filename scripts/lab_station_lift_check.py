@@ -45,6 +45,42 @@ def inside(point: Vector, solid: BVHTree) -> bool:
 
 
 def verify_lifts(travel: float = 100) -> dict[str, object]:
+    wrist_samples: list[dict[str, object]] = []
+    # A moving wrist needs separate, non-interpenetrating members. Reference
+    # cylinders buried in the frame cannot establish an assembled load path.
+    for label in ("capillary", "pH_temp"):
+        frame = bpy.data.objects[f"LS_FIT_{label}_lift_frame"]
+        link = bpy.data.objects[f"LS_REF_{label}_link_1"]
+        if not frame.get("wrist_tongue") or not link.get("wrist_fork"):
+            raise ValueError(f"Wrist interface population missing: {label}")
+        pairs = len(tree(frame).overlap(tree(link)))
+        if pairs:
+            raise ValueError(f"Wrist frame/fork interpenetration: {label}, {pairs}")
+        control = bpy.data.objects[f"LS_CTRL_{label}"]
+        axle = bpy.data.objects[f"LS_HW_{label}_wrist_axle"]
+        nut = bpy.data.objects[f"LS_HW_{label}_wrist_nut"]
+        washers = [bpy.data.objects.get(f"LS_HW_{label}_wrist_washer_{side}") for side in (-1, 1)]
+        if any(washer is None for washer in washers):
+            raise ValueError(f"Wrist bearing washers missing: {label}")
+        try:
+            for angle in range(-15, 16, 3):
+                set_pose(control, head_tilt_deg=angle)
+                collisions = [
+                    (a.name, b.name)
+                    for a, b in (
+                        (frame, link),
+                        (axle, frame),
+                        (axle, link),
+                        (nut, link),
+                        (axle, nut),
+                    )
+                    if tree(a).overlap(tree(b))
+                ]
+                if collisions:
+                    raise ValueError(f"Wrist articulation blocked: {label}, {angle}, {collisions}")
+                wrist_samples.append({"head": label, "angle_deg": angle, "intersections": []})
+        finally:
+            set_pose(control, head_tilt_deg=0)
     locks = []
     for label in ("capillary", "pH_temp"):
         for component in ("screw", "nut"):
@@ -192,6 +228,7 @@ def verify_lifts(travel: float = 100) -> dict[str, object]:
         "clearance_plane_mm": 120,
         "heads": reports,
         "slide_locks": locks,
+        "wrist_interface_samples": wrist_samples,
         "scope": "Straight extraction at the documented arm pose; rigid geometry only, not load or cable qualification.",
     }
 
