@@ -9,9 +9,11 @@
 - [GOnDO EH-10](https://www.gondo.com.tw/products_detail/46.htm)：ABS 主體、高度調整與旋轉，作簡潔配置參考；與 ELMETRON 同名而非同產品。
 - 沿用本地 link、Boolean、渲染與 oracle，不複製商品幾何。生成入口為 `scripts/model_lab_platform.py`。早前 GitHub 查找的旋鈕案例沿用 [12-simple-concept](12-simple-concept.md) 的來源紀錄，不引入新 CAD 引擎。
 
+原廠照片另見 [GOnDO 裝探頭照片](https://www.gondo.com.tw/upload/201806251037398boya1.JPG)。採近距平行桿與小型端盤的比例；照片遮蔽的內部連動、鎖緊與走線結構沒有被宣稱還原。
+
 ## 幾何與五金範圍
 
-上臂 150 mm，兩支前臂各 150 mm；平行四連桿兩側軸距 40 mm，三角板探頭角點偏置 45 mm。關節錯層 8.4 mm、臂厚 8 mm。新增第二根前臂放到外側避讓 HMI，夾座接頸與夾座一體，兩頭在工作姿態維持原共杯位置。
+上臂 150 mm，兩支前臂各 150 mm；平行四連桿兩側軸距 24 mm，三角板探頭角點偏置 28 mm。關節錯層 8.4 mm、臂厚 8 mm、梁寬 12 mm、臂端盤 Ø22 mm（底座維持原尺寸）。新增第二根前臂放到外側避讓 HMI，夾座接頸與夾座一體，兩頭在工作姿態維持原共杯位置。
 
 調整機構：12 支名義螺絲、12 顆螺母、4 個列印被動軸包絡；無獨立軸套／墊片。不是整機 BOM，不含後續探頭夾緊與板件固定。列印被動軸尚無防脫設計，不能用此包絡當製造軸。
 
@@ -24,4 +26,4 @@
 - `scripts/verify/lab_simple_verify_real.py` 依序重建 simple 與本概念，再移動 follower 材料，必須拒絕且還原後通過。這個入口由完整 real CI 執行。
 - 未驗連續掃掠、全部五金互碰、線材、實體列印、軸防脫、齒槽離合、負載與固定力。自碰檢查只涵蓋列出的六個結構件，不能宣稱全機零干涉。
 
-輸出：`tmp/lab-station-electrode/electrode-concept.blend`、`working.png`、`raised.png`、`extended.png`、`screen_folded.png`、`verification.json`、`red-disconnection.json`。無製造 STL 發布。
+輸出：`tmp/lab-station-electrode-compact/electrode-concept.blend`、`working.png`、`raised.png`、`extended.png`、`screen_folded.png`、`verification.json`、`red-disconnection.json`。無製造 STL 發布。

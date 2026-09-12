@@ -183,7 +183,7 @@ class ElectrodeArmSpec:
     def joints(self, forward_mm: float = 0, lift_mm: float = 0) -> tuple[tuple[float, float], ...]:
         target = (self.reach_mm + forward_mm, 72 + lift_mm)
         chord = sqrt(sum(v * v for v in target))
-        effective = sqrt(150**2 + 45**2)
+        effective = sqrt(150**2 + 28**2)
         if not isfinite(chord) or not abs(effective - 150) < chord < effective + 150:
             raise ValueError("Electrode arm target outside reach")
         along = (effective**2 - 150**2 + chord**2) / (2 * chord)
@@ -192,10 +192,10 @@ class ElectrodeArmSpec:
             (along * target[0] - height * target[1]) / chord,
             (along * target[1] + height * target[0]) / chord,
         )
-        # q = 150*u + 45*n; n is the clockwise perpendicular to upper-arm u.
-        u = ((150 * q[0] - 45 * q[1]) / effective**2, (45 * q[0] + 150 * q[1]) / effective**2)
+        # q = 150*u + 28*n; n is the clockwise perpendicular to upper-arm u.
+        u = ((150 * q[0] - 28 * q[1]) / effective**2, (28 * q[0] + 150 * q[1]) / effective**2)
         a = (150 * u[0], 150 * u[1])
-        b = (110 * u[0], 110 * u[1])
-        c = (target[0] - 45 * u[1], target[1] + 45 * u[0])
-        d = (c[0] - 40 * u[0], c[1] - 40 * u[1])
+        b = (126 * u[0], 126 * u[1])
+        c = (target[0] - 28 * u[1], target[1] + 28 * u[0])
+        d = (c[0] - 24 * u[0], c[1] - 24 * u[1])
         return (0.0, 0.0), a, b, c, d, target

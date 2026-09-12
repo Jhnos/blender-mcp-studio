@@ -138,9 +138,9 @@ def test_electrode_forearm_closes_and_preserves_two_position_inputs() -> None:
             assert dist(root, a) == pytest.approx(150)
             assert dist(a, c) == pytest.approx(150)
             assert dist(b, d) == pytest.approx(150)
-            assert dist(a, b) == pytest.approx(40)
-            assert dist(c, d) == pytest.approx(40)
-            assert dist(c, tip) == pytest.approx(45)
+            assert dist(a, b) == pytest.approx(24)
+            assert dist(c, d) == pytest.approx(24)
+            assert dist(c, tip) == pytest.approx(28)
             assert tip == pytest.approx((spec.reach_mm + forward, 72 + lift))
             assert tuple(d[i] - c[i] for i in (0, 1)) == pytest.approx(
                 tuple(b[i] - a[i] for i in (0, 1))

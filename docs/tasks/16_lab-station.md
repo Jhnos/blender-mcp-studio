@@ -171,3 +171,7 @@
 - 五金範圍：12 螺絲／12 螺母，4 列印被動軸包絡，零軸套／獨立墊片；被動軸尚無防脫，不是製造件。下一步被動軸保持、旋鈕齒槽與夾頭固定；全五金互碰／連續掃掠／線材／負載仍未驗。5S：新說明 13-electrode-arm 接入導航及 R26，生成件留 tmp，沿用 oracle 入口，不新增公開通道。完整 CI 待跑。
 
 - V01.0R.01J 完整 `scripts/ci.sh --real` exit 0，全部 hard gates green，日誌 tmp/lab-station-electrode/ci-real.log，session 69710 結束。四張視圖皆已檢視；前臂及螢幕仍為有明確驗證邊界的概念模型。5S：模組 250 行、沿用驗證入口，未發布 STL；下一步在此電極臂上完成被動軸防脫、齒槽／旋鈕與夾緊，禁止回到被拒絕的五連桿候選。
+
+- 使用者回饋「好一點但還是跟參考產品有差」。已透過瀏覽器實際檢視 GOnDO 兩張原廠圖；先前未充分核對照片比例，這輪將 Ø36 端盤→Ø22、梁寬16→12、桿距40→24、平台偏置45→28。上臂內藏連動不能僅憑照片宣稱同款；沒有套用 Agilent 的整臂自動水平功能。輸出分離至 tmp/lab-station-electrode-compact，01J 保存原檔供比較。尺寸測試先紅後綠，16 domain tests；focused real /tmp/lab-electrode-compact.log exit 0，46 位置／16 折屏／斷接負對照通過，working 已檢視。完整 CI 待跑。
+
+- V01.0R.01K `scripts/ci.sh --real` exit 0，全部 hard gates green；tmp/lab-station-electrode-compact/ci-real.log，session 49468 結束。四張新視圖均已檢視。5S：沿用兩個生成器與既有驗證入口，修改 link 增加保留預設的端盤半徑參數，舊 simple 不受影響；比例說明覆寫 13-electrode-arm，舊實體輸出保留對照。仍需被動軸防脫、旋鈕／齒槽與夾具，未聲稱完全還原商用電極架。

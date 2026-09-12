@@ -30,12 +30,16 @@ def ring(name: str, x: float, z: float, mat: bpy.types.Material) -> bpy.types.Ob
 
 
 def link(
-    name: str, offset: float, mat: bpy.types.Material, length_mm: float = 150
+    name: str, offset: float, mat: bpy.types.Material, length_mm: float = 150, radius_mm: float = 18
 ) -> bpy.types.Object:
-    obj = add_cylinder(name, 18, 8, (offset, 0, 0), "X")
+    obj = add_cylinder(name, radius_mm, 8, (offset, 0, 0), "X")
     assign(obj, mat)
-    boolean(obj, block("S_TOOL", (8, 16, length_mm), (offset, 0, length_mm / 2), mat), "UNION")
-    boolean(obj, add_cylinder("S_TOOL", 18, 8, (offset, 0, length_mm), "X"), "UNION")
+    boolean(
+        obj,
+        block("S_TOOL", (8, min(16, radius_mm + 1), length_mm), (offset, 0, length_mm / 2), mat),
+        "UNION",
+    )
+    boolean(obj, add_cylinder("S_TOOL", radius_mm, 8, (offset, 0, length_mm), "X"), "UNION")
     for z in (0, length_mm):
         boolean(obj, add_cylinder("S_TOOL", 2.7, 16, (offset, 0, z), "X"), "DIFFERENCE")
     finish_arm(obj)

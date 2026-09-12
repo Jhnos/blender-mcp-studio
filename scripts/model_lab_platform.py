@@ -17,11 +17,11 @@ from scripts.lab_station_arm import finish_arm
 from scripts.lab_station_joints import block
 from scripts.lab_station_motion_check import tree
 from scripts.lab_station_rig import set_pose
-from scripts.model_lab_simple import hardware, link, ring, verify_clearance
+from scripts.model_lab_simple import hardware, link, verify_clearance
 from src.core.domain.lab_station import ElectrodeArmSpec
 
 ROOT = Path(__file__).resolve().parents[1]
-OUTPUT = ROOT / "tmp/lab-station-electrode"
+OUTPUT = ROOT / "tmp/lab-station-electrode-compact"
 
 
 def bake(obj: bpy.types.Object, side: int) -> None:
@@ -35,28 +35,28 @@ def bake(obj: bpy.types.Object, side: int) -> None:
 def build(label: str) -> None:
     side = -1 if label == "capillary" else 1
     prefix = "S_" + label + "_"
-    upper = bpy.data.objects[prefix + "upper"]
-    mat = upper.data.materials[0]
-    # Work in the existing upper-arm local mesh, then restore its world frame.
-    saved = upper.matrix_world.copy()
-    upper.matrix_world = Matrix.Identity(4)
-    x = 4.2 if side < 0 else -4.2
-    boolean(upper, add_cylinder("E_TOOL", 18, 8, (x, 0, 110), "X"), "UNION")
-    boolean(upper, add_cylinder("E_TOOL", 2.7, 40, (x, 0, 110), "X"), "DIFFERENCE")
-    finish_arm(upper)
-    upper.matrix_world = saved
-    obj = link(prefix + "follower", 12.6, mat)
+    mat = bpy.data.objects[prefix + "upper"].data.materials[0]
+    for suffix, x in (("upper", 4.2), ("lower", -4.2)):
+        bpy.data.objects.remove(bpy.data.objects[prefix + suffix], do_unlink=True)
+        obj = link(prefix + suffix, x, mat, radius_mm=11)
+        if suffix == "upper":
+            boolean(obj, add_cylinder("E_TOOL", 11, 8, (x, 0, 126), "X"), "UNION")
+            boolean(obj, add_cylinder("E_TOOL", 2.7, 40, (x, 0, 126), "X"), "DIFFERENCE")
+        bake(obj, side)
+    obj = link(prefix + "follower", 12.6, mat, radius_mm=11)
     bake(obj, side)
-    vertices = ((0, 0), (0, -40), (45, 0))
+    vertices = ((0, 0), (0, -24), (28, 0))
     obj = loft_rings(prefix + "platform", [[(x, y, z) for y, z in vertices] for x in (0.2, 8.2)])
     assign(obj, mat)
     for y, z in vertices:
-        boolean(obj, add_cylinder("E_TOOL", 18, 8, (4.2, y, z), "X"), "UNION")
+        boolean(obj, add_cylinder("E_TOOL", 11, 8, (4.2, y, z), "X"), "UNION")
     for y, z in vertices:
         boolean(obj, add_cylinder("E_TOOL", 2.7, 30, (4.2, y, z), "X"), "DIFFERENCE")
     bake(obj, side)
     bpy.data.objects.remove(bpy.data.objects[prefix + "head"], do_unlink=True)
-    obj = ring(prefix + "head", -4.2, 0, mat)
+    obj = add_cylinder(prefix + "head", 11, 8, (-4.2, 0, 0), "X")
+    assign(obj, mat)
+    boolean(obj, add_cylinder("E_TOOL", 2.7, 20, (-4.2, 0, 0), "X"), "DIFFERENCE")
     boolean(obj, block("E_TOOL", (24, 16, 12), (-14, 0, -16), mat), "UNION")
     boolean(obj, block("E_TOOL", (26, 22, 22), (-20, 0, -20), mat), "UNION")
     for dx, radius in ((0, 3),) if label == "capillary" else ((-7, 6), (7, 3)):
@@ -142,10 +142,10 @@ def verify_local(label: str) -> None:
 
     for first, second in (
         (point(upper, 4.2, 0, 150), point(lower, -4.2, 0, 0)),
-        (point(upper, 4.2, 0, 110), point(follower, 12.6, 0, 0)),
+        (point(upper, 4.2, 0, 126), point(follower, 12.6, 0, 0)),
         (point(lower, -4.2, 0, 150), point(platform, 4.2, 0, 0)),
-        (point(follower, 12.6, 0, 150), point(platform, 4.2, 0, -40)),
-        (point(platform, 4.2, 45, 0), point(head, -4.2, 0, 0)),
+        (point(follower, 12.6, 0, 150), point(platform, 4.2, 0, -24)),
+        (point(platform, 4.2, 28, 0), point(head, -4.2, 0, 0)),
     ):
         # Axes may differ in X by layer spacing but must be coaxial in the arm plane.
         axis = upper.matrix_world.to_3x3() @ Vector((1, 0, 0))
