@@ -216,3 +216,17 @@ def test_wrist_index_tracks_platform_angle_instead_of_assuming_world_vertical() 
     )
     with pytest.raises(ValueError):
         spec.wrist_indexed_angle(0, 100, 0.5)
+
+
+def test_cable_guide_separates_wire_clearance_and_snap_retention() -> None:
+    from src.core.domain.lab_station import CableGuideSpec
+
+    spec = CableGuideSpec()
+    assert spec.bore_mm == pytest.approx(6.4)
+    assert spec.arm_cavity_mm == pytest.approx((8.4, 12.4))
+    assert spec.arm_mouth_mm < 12 < spec.arm_cavity_mm[1]
+    assert spec.wire_mouth_mm < spec.wire_od_mm < spec.bore_mm
+    assert spec.channel_x_mm - spec.bore_mm / 2 >= spec.arm_cavity_mm[0] / 2
+    for diameter in (-1, 0, float("nan")):
+        with pytest.raises(ValueError):
+            CableGuideSpec(wire_od_mm=diameter)

@@ -1,6 +1,6 @@
 # 分段電極臂與三角平台概念
 
-導航：[幾何與五金](#幾何與五金範圍) · [肩部換位](#肩部換一齒位的完整取樣操作) · [腕部齒槽](#腕部齒槽與退開) · [三關節貼合](#腕部整組收隙與三關節同時貼合) · [驗證邊界](#驗證邊界)
+導航：[幾何與五金](#幾何與五金範圍) · [肩部換位](#肩部換一齒位的完整取樣操作) · [腕部齒槽](#腕部齒槽與退開) · [三關節貼合](#腕部整組收隙與三關節同時貼合) · [導線夾](#可換沿臂導線夾) · [驗證邊界](#驗證邊界)
 
 從 [12-simple-concept](12-simple-concept.md) 延伸：保留上臂鉸鍊，前臂改為平行雙桿與三角末端平台。位置調整由肩部與前臂共同提供，探頭角度仍手動校正。這不是上臂固定後仍有兩個位置自由度的五連桿，也不是自動直線導引。
 
@@ -13,7 +13,7 @@
 
 原廠照片另見 [GOnDO 裝探頭照片](https://www.gondo.com.tw/upload/201806251037398boya1.JPG)。採近距平行桿與小型端盤的比例；照片遮蔽的內部連動、鎖緊與走線結構沒有被宣稱還原。
 
-照片可直接確認的外形還包括短末端接頭、圓形探頭座，以及沿臂身整理的線材。現行夾頭採圓角可拆夾蓋、分片軟襯與一體接頸；沿臂走線尚未完成。外觀參考不構成保持力或內部零件的證據。
+照片可直接確認的外形還包括短末端接頭、圓形探頭座，以及沿臂身整理的線材。現行夾頭採圓角可拆夾蓋、分片軟襯與一體接頸；已增加可換導線夾，跨關節線材路徑尚未完成。外觀參考不構成保持力或內部零件的證據。
 
 ## 幾何與五金範圍
 
@@ -101,7 +101,7 @@
 - `arm-seated.blend` 是肩、肘、腕同時就座狀態，real gate 重新讀檔並量每關節四對面；`electrode-concept.blend` 保留原間隙供運動驗證。未就座卻宣稱就座的負對照必須拒絕。
 - 未驗連續掃掠、全部五金互碰、線材、實體列印、卡扣彈性保持、其他肩部轉位、整體預緊、負載與固定力。自碰檢查涵蓋上述結構件及全部夾具零件，不能宣稱全機零干涉。
 
-輸出：`tmp/lab-station-electrode-wrist-seated/electrode-concept.blend`、`working.png`、`raised.png`、`extended.png`、`screen_folded.png`、`verification.json`、`red-disconnection.json`、`retainer-detail.png`、`red-retainer.json`、`clamp-detail.png`、`clamp-exploded.png`、`red-service-in-cup.json`、`red-clamp-stop.json`、`elbow-released.png`、`red-elbow-engagement.json`、`indexed-raised.png`、`red-between-indices.json`、`arm-seated.png`、`arm-seated.blend`、`seated-file-check.json`、`red-unseated-chain.json`、`service.png`、`service.blend`、`red-forearm-stack.json`、`red-clamp-bolt-collision.json`、`released-untilted-service.json`。`service.blend` 另由 fresh addon 命令重新讀取，確認兩腕約 19.313°、閉鏈／避碰及完整拆裝，紀錄 `service-file-check.json`；另含 `wrist-detail.png`、`red-wrist-stack.json`、`red-wrist-floor.json`、`red-carrier-retainer.json`、`red-pin-service-blocked.json`；service 讀回另含 156 個全場插銷抽出樣本。新增 `red-unseated-shoulder.json`；無製造 STL 發布。
+輸出：`tmp/lab-station-electrode-guides/electrode-concept.blend`、`working.png`、`raised.png`、`extended.png`、`screen_folded.png`、`verification.json`、`red-disconnection.json`、`retainer-detail.png`、`red-retainer.json`、`clamp-detail.png`、`clamp-exploded.png`、`red-service-in-cup.json`、`red-clamp-stop.json`、`elbow-released.png`、`red-elbow-engagement.json`、`indexed-raised.png`、`red-between-indices.json`、`arm-seated.png`、`arm-seated.blend`、`seated-file-check.json`、`red-unseated-chain.json`、`service.png`、`service.blend`、`red-forearm-stack.json`、`red-clamp-bolt-collision.json`、`released-untilted-service.json`。`service.blend` 另由 fresh addon 命令重新讀取，確認兩腕約 19.313°、閉鏈／避碰及完整拆裝，紀錄 `service-file-check.json`；另含 `wrist-detail.png`、`red-wrist-stack.json`、`red-wrist-floor.json`、`red-carrier-retainer.json`、`red-pin-service-blocked.json`；service 讀回另含 156 個全場插銷抽出樣本。新增 `red-unseated-shoulder.json`；無製造 STL 發布。
 
 ## 腕部整組收隙與三關節同時貼合
 
@@ -110,3 +110,13 @@
 兩頭各四個肘齒位、一個肩加一齒位與抬高維修位，共十二配置；各十五收隙狀態，共 180。量四接面、螺栓外露量並查全場障礙；未收隙宣稱貼合和另一探頭擋住收緊都必須拒絕。工作 arm-seated.blend 現為肩／肘／腕同時貼合；service-seated.blend 僅維修腕部貼合，肩肘保留自由姿態的退開量。兩份檔案皆 fresh 讀回接面。
 
 腕部再調整由平台求固定軸心，螺母朝向仍跟平台，不套用螺栓朝向。已三關節就座的存檔依序退開腕部、回名義間隙、重新就座，讀回三關節並查障礙；不能以累積偏移代替絕對定位。肩部 176 狀態轉位亦保持腕部貼合，探頭隨整組轉动，終點另驗三關節。圖 wrist-seated-detail 顯示完整夾頭與旋鈕，沒有隱藏實體。
+
+## 可換沿臂導線夾
+
+上臂與前臂各一件獨立扣式導線夾，兩頭共四件，不增加金屬五金。毛細管臂單通道，pH／溫度臂雙通道；暫按每線 Ø6 mm，通道 Ø6.4、開口 4.8、壁厚 1.6、軸向厚 8 mm。扣住 8×12 mm 桿身，內腔 8.4×12.4、入口 10 mm；安裝於各桿局部軸向 75 mm。通道及扣口需要彈性張開，材料、公差及實際線徑尚未確定，這些尺寸僅作幾何假設。
+
+導線夾是獨立封閉實體，以 parent 跟隨所屬桿，不加入肩部剛體成員清單重複移動。全姿態、退齒、收隙及肩轉位檢查納入導線夾；夾具與插銷拆卸的障礙集合亦涵蓋它們。驗證通道通暢與孔周材料共 90 射線，徑向移動兩方向各 2 mm 必須遇桿身止擋，共 8 樣本；這不代表扣入力、保持力或軸向定位。
+
+要求四件均存在且跟隨正確桿，缺件、移入桿身及裝錯 parent 必須拒絕，還原後通過。arm-seated 保存檔重新檢查數量、通道、單一封閉實體、徑向止擋與全場干涉。guide-detail 顯示雙通道近照。尚未建立跨關節線材路徑、彎曲半徑或鬆弛長度，不以此宣稱走線完成。
+
+建模、各頭完整動作驗證及出圖由同一入口串行執行，各自完成才進下一階段；保留原 main 的完整流程、所有取樣與守衛。兩頭分別保存 motion-capillary／motion-pH_temp 報告，再合併姿態、收隙列表與取樣數；共杯、折屏及雙頭操作仍由每階段整機檢查，未刪除。建模開始移除舊階段報告，缺第一頭報告不能合併。拆階段只分離等待期限，不變更幾何驗收條件。

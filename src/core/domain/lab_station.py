@@ -241,3 +241,37 @@ class ElectrodeArmSpec:
             degrees(atan2(start[0], start[1]) - atan2(target[0], target[1]))
             + index * 360 / self.wrist_teeth
         )
+
+
+@dataclass(frozen=True, slots=True)
+class CableGuideSpec:
+    """Provisional removable guide; elastic insertion and actual cable OD remain unqualified."""
+
+    wire_od_mm: float = 6
+    clearance_mm: float = 0.2
+    wall_mm: float = 1.6
+    arm_mouth_mm: ClassVar[float] = 10
+    depth_mm: ClassVar[float] = 8
+    bar_station_mm: ClassVar[float] = 75
+
+    def __post_init__(self) -> None:
+        if any(
+            not isfinite(v) or v <= 0 for v in (self.wire_od_mm, self.clearance_mm, self.wall_mm)
+        ):
+            raise ValueError("Guide dimensions must be finite and positive")
+
+    @property
+    def bore_mm(self) -> float:
+        return self.wire_od_mm + 2 * self.clearance_mm
+
+    @property
+    def arm_cavity_mm(self) -> tuple[float, float]:
+        return 8 + 2 * self.clearance_mm, 12 + 2 * self.clearance_mm
+
+    @property
+    def wire_mouth_mm(self) -> float:
+        return self.wire_od_mm * 0.8
+
+    @property
+    def channel_x_mm(self) -> float:
+        return self.arm_cavity_mm[0] / 2 + self.wall_mm + self.bore_mm / 2

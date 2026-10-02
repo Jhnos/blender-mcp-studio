@@ -7,6 +7,7 @@ import bpy
 from mathutils import Matrix, Vector
 
 from scripts.lab_electrode_check import verify_closed_part
+from scripts.lab_electrode_routes import verify_guides
 from scripts.lab_station_motion_check import tree
 from src.core.domain.lab_station_joints import (
     ElbowClosureSpec,
@@ -99,7 +100,7 @@ def verify_pin_service() -> int:
                 for obj in bpy.data.objects
                 if obj.type == "MESH"
                 and not obj.hide_render
-                and obj.name.startswith(("S_", "LS_FIT_", "LS_REF_vessel"))
+                and obj.name.startswith(("S_", "LS_FIT_", "LS_REF_vessel", "LS_ROUTE_"))
                 and obj not in (pin, clip)
             }
             saved = pin.matrix_world.copy()
@@ -163,9 +164,10 @@ def verify_interference(label: str, joint: str = "elbow") -> None:
         for obj in bpy.data.objects
         if obj.type == "MESH"
         and not obj.hide_render
-        and obj.name.startswith(("S_", "LS_FIT_", "LS_REF_vessel"))
+        and obj.name.startswith(("S_", "LS_FIT_", "LS_REF_vessel", "LS_ROUTE_"))
     ]
     meshes = {obj.name: tree(obj) for obj in objects}
+    verify_guides(meshes=meshes)
     contacts = {
         frozenset((left.name, right.name)): (left, right)
         for contact_joint in ("elbow", "shoulder", "tip")
@@ -300,6 +302,7 @@ def verify_joint_release(label: str, joint: str = "elbow") -> int:
                     ((-side if joint == "elbow" else side) * step / 10000, 0, 0)
                 )
             bpy.context.view_layer.update()
+            verify_guides()
             for obj in moving:
                 moved = tree(obj)
                 hits = [name for name, obstacle in obstacles.items() if moved.overlap(obstacle)]

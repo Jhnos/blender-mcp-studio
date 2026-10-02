@@ -28,6 +28,33 @@
 
 ### Verified facts
 
+- V01.0R.021：完整 `scripts/ci.sh --real` 86223 terminal exit 0，所有 hard gates green（`tmp/lab-station-electrode-guides/ci-guides-phased.log`）。領域測試先缺類別紅，再 21/21 通過；完整動作 study 56519 exit 0，31 focused tests 通過。
+- 現行輸出 `tmp/lab-station-electrode-guides/`。四個可換沿臂導線夾，不增加金屬五金；毛細管單通道、pH／溫度雙通道。暫定線外徑 6 mm、孔 6.4 mm、側口 4.8 mm、壁厚 1.6 mm，夾在既有 8 × 12 mm 臂上。實際線徑未確認。
+- 四件均單一封閉網格；90 個孔壁射線及 8 個徑向止擋樣本通過。缺件、錯誤父物件與撞臂三反例均拒絕。導線夾直接隨所屬臂運動，既有動作、退齒、收隙、拆卸及肩部 176 狀態轉位均包含導線夾障礙檢查。
+- 首次完整 1474 在合併動作命令 300 秒逾時，背景完成後只讀排空。改為两頭串行獨立驗證再合併報告，保留全場情境；phase-equivalence.json 確認與拆分前相同的 46 姿態、4140 插銷樣本、60 轉位樣本，以及姿態清單／齒位清單一致。86223 完整重跑通過。
+- guide-file-check.json 由保存檔重新讀回；導線夾近照及 arm-seated 全機圖已檢視。Blender 已還原 arm-seated，restored-file-check.json 再查四導線夾與兩頭肩／肘／腕六組承壓鏈。
+- 5S：新 routes 模組建立前已查 GitHub Cable Clips／slide-n-snap，來源在 09-references.md；未複製外部碼或新增套件。guide 規格屬純領域，幾何與檢查隔離；main 372、closure 364、motion 362、render 379、driver 371 行，低於 380 警戒。R44／規格／導航同步，生成物僅留 tmp。
+
+### Open failures
+
+- 跨關節線材迴圈、彎曲半徑、夾片彈性與保持力、軸向防滑仍未資格化；剛體止擋不能證明卡扣可裝拆。Ø6 mm 是包絡假設。
+- 其餘肩角與連續掃掠、螺紋／彈性預緊、工具／手指空間、軟襯、底座／LCD 保持、載荷與實體列印未資格化，無現行整機製造 STL。實際容器／探頭／板件尺寸、負載、材料、溫度／液體及浸入精度資料仍缺。
+
+### Next step
+
+- 86223 terminal exit 0，無正在執行的驗證；下一步依實際導線夾錨點建立跨關節鬆弛迴圈與路徑檢查，再續底座／LCD。線徑未知不等於吻合實物，仍用明示假設包絡。
+- guide_frame 定義臂局部座標；上／下臂通道分居不同側，跨肘需處理軸向偏移，不能直接穿關節。導線夾父物件是所屬 arm，避免肩部整組變換重複套用。尚未建線材曲線。
+- 真機串行且執行中不改來源；build、每頭 verify、render、反例各獨立 300 秒。build 清除舊 phase 報告，第二階段缺第一階段即失敗。開檔後 fresh 命令讀回，逾時先排空。
+- 新模組先查 GitHub；render 379 行，新增呈現前需移既有責任或合適拆分。工作檔 arm-seated 六關節貼合；service-seated 只兩腕貼合，肩肘退開。既有相對 take-up 不可累加。
+
+## 歷史驗證紀錄
+
+以下為逐輪證據與當時的下一步；接手只依上方現行段落與任務索引，不能將歷史下一步重新當成主線。
+
+### V01.0R.020 接手事實（歷史）
+
+### Verified facts
+
 - V01.0R.020：最終完整 `scripts/ci.sh --real` 89292 terminal exit 0，所有 hard gates green（`tmp/lab-station-electrode-wrist-seated/ci-wrist-seated-entry.log`）。腕收隙領域測試先缺類別紅，再 7/7 通過；十二姿態 study 51743 exit 0，focused 48918 exit 0（tmp/wrist-seated-focused.log），最後完整閘門包含新增的肩轉位保持腕部貼合。
 - 現行輸出 `tmp/lab-station-electrode-wrist-seated/`。沿用原幾何與五金；腕部四接面總收隙 0.7 mm，螺母 −0.2、螺栓 +0.5、旋鈕 +0.3、整組夾頭／探頭 +0.2 mm，平台固定。十二配置共 180 狀態，查實際接面、螺栓外露量與全場障礙。未就座及另一頭擋路的反例均拒絕。
 - arm-seated.blend 是两頭肩／肘／腕六組承壓鏈同時貼合；service-seated.blend 是抬高 100 mm、腕角 19.313° 的兩腕貼合，肩肘仍退開。fresh readback 最大殘差：工作 0.000130、維修 0.000094 mm。完整腕部近照 wrist-seated-detail 與先前維修圖已檢視；沒有隱藏零件。
@@ -47,10 +74,6 @@
 - 新模組先查 GitHub；前輪走線參考在 09-references.md，但要依這次新增模組實際職責查找。render 已 379 行，新增呈現前先移既有責任或合適拆分，不能壓短語意躲預算。
 - closure_spec／bearing_pairs／joint_frame 現支援 tip；tip 使用平台不動框架与 6.2／7／7.8 mm 齒面半徑。take_up_offsets 連動夾頭、夾具和探頭。apply_take_up 是相對位移；verify_take_up 各樣本還原，不能累加。set_electrode_wrist_pose 可由已收隙狀態回到名義配置。
 - 全機工作檔是 arm-seated；service 保留名義間隙，service-seated 只腕貼合，wrist-released 是腕退開 2 mm。杯／盤 +3.5 mm、平台浮動 2 mm、維修抬高 100 mm／19.313° 保留。真機串行且執行中不改来源；生成、反例、肩轉位各獨立 300 秒，開檔後 fresh 命令讀回，逾時先排空。
-
-## 歷史驗證紀錄
-
-以下為逐輪證據與當時的下一步；接手只依上方現行段落與任務索引，不能將歷史下一步重新當成主線。
 
 ### V01.0R.01Z 接手事實（歷史）
 

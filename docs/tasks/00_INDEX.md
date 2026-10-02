@@ -4,7 +4,7 @@ Read this file first after a new conversation, compaction, or terminal restart.
 
 ## 接手
 
-- **目前在做（2026-10-03）:** 16 腕部收隙與三關節同時貼合，V01.0R.020。12 配置／180 腕部狀態與六組接面存檔讀回通過；肩部 176 狀態轉位保持腕部貼合。完整 `scripts/ci.sh --real` 89292 exit 0、所有 hard gates green（`tmp/lab-station-electrode-wrist-seated/ci-wrist-seated-entry.log`）。**下一步：**沿臂走線／關節鬆弛空間，再續底座／LCD／載荷；線徑未回覆，整體未定稿。接手讀任務16 hand-off。
+- **目前在做（2026-10-03）:** 16 四個可換沿臂導線夾，V01.0R.021。完整 `scripts/ci.sh --real` 86223 exit 0、所有 hard gates green（`tmp/lab-station-electrode-guides/ci-guides-phased.log`）；保存檔四導線夾及六承壓鏈重讀通過。首次 1474 逾時已排空，改為兩頭串行驗證且報告與拆分前一致。**下一步：**跨關節線材迴圈／彎曲空間，再續底座／LCD／載荷；Ø6 mm 暫定，整體未定稿。接手讀任務16 hand-off。
 - **等驗收:** 15 場景清單不再只有十個;對話路徑第一次有真機閘門(`--real` 32 條全綠)。下一個是 14 第五個實例。
 - 13 已驗收歸檔:對話現在能呼叫本專案自己的產生器。
 - **在等使用者的:** 印。工作單已交付——07 的 V3 試片七項,以及 `hand-gripper` 九節。

@@ -10,6 +10,8 @@ def verify_saved_electrode(script: Path) -> None:
     code = f"""import bpy, runpy, json
 model = runpy.run_path({str(script)!r})
 gaps = {{label: {{joint: model['verify_seated'](label, joint) for joint in ('shoulder', 'elbow', 'tip')}} for label in ('capillary', 'pH_temp')}}
+model['verify_guides'](required=True)
+(model['OUTPUT'] / 'guide-file-check.json').write_text(json.dumps(model['verify_guide_geometry']()))
 model['verify_forearm_stack']()
 model['verify_wrist_geometry']()
 wrist = {{label: model['verify_wrist_faces'](label, 0) for label in ('capillary', 'pH_temp')}}

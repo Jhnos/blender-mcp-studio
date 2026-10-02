@@ -48,13 +48,25 @@ from mathutils import Matrix
 sys.path.insert(0, {str(root)!r})
 for name in {modules!r}:
     importlib.reload(importlib.import_module(name))
-model = runpy.run_path({str(script)!r}, run_name='__main__')
-print('Electrode generation, motion and renders completed')
+model = runpy.run_path({str(script)!r})
+model['build_scene']()
+print('Electrode geometry completed')
 """
     print(BlenderSocketOracle("127.0.0.1", 9876, timeout=300).execute(code))
+    for phase, args in (
+        ("verify_scene", ("capillary",)),
+        ("verify_scene", ("pH_temp",)),
+        ("render_scene", ()),
+    ):
+        code = f"""import runpy
+model = runpy.run_path({str(script)!r})
+model[{phase!r}](*{args!r})
+"""
+        print(BlenderSocketOracle("127.0.0.1", 9876, timeout=300).execute(code))
     code = f"""import bpy, runpy, json
 from mathutils import Matrix
 model = runpy.run_path({str(script)!r})
+(model['OUTPUT'] / 'guide-controls.json').write_text(json.dumps(model['verify_guide_controls']()))
 def expect_failure(check, expected, artifact):
     try:
         check()

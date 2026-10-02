@@ -55,12 +55,15 @@ from scripts.lab_electrode_closure import (
     verify_seated as verify_seated,
 )
 from scripts.lab_electrode_closure import verify_take_up as verify_take_up
-from scripts.lab_electrode_motion import verify, verify_shoulder_transfer
+from scripts.lab_electrode_motion import motion_report, verify_shoulder_transfer
 from scripts.lab_electrode_motion import verify_service_tilt as verify_service_tilt
 from scripts.lab_electrode_motion import verify_wrist_faces as verify_wrist_faces
 from scripts.lab_electrode_motion import (
     verify_wrist_geometry as verify_wrist_geometry,
 )
+from scripts.lab_electrode_routes import build_guides, render_guide_detail, verify_guide_geometry
+from scripts.lab_electrode_routes import verify_guide_controls as verify_guide_controls
+from scripts.lab_electrode_routes import verify_guides as verify_guides
 from scripts.lab_station_arm import finish_arm
 from scripts.lab_station_clamp import compact_probe_head
 from scripts.lab_station_joints import electrode_joint_teeth, hand_knob_hardware, retained_pivot
@@ -74,7 +77,7 @@ from scripts.model_lab_simple import link, verify_clearance
 from src.core.domain.lab_station import ElectrodeArmSpec
 
 ROOT = Path(__file__).resolve().parents[1]
-OUTPUT = ROOT / "tmp/lab-station-electrode-wrist-seated"
+OUTPUT = ROOT / "tmp/lab-station-electrode-guides"
 
 
 def bake(obj: bpy.types.Object, side: int) -> None:
@@ -281,8 +284,10 @@ def render_wrist_release() -> None:
     configure_electrode_view()
 
 
-def main() -> None:
+def build_scene() -> None:
     OUTPUT.mkdir(parents=True, exist_ok=True)
+    for name in ("motion-capillary.json", "motion-pH_temp.json", "verification.json"):
+        (OUTPUT / name).unlink(missing_ok=True)
     baseline = OUTPUT / "baseline.blend"
     shutil.copyfile(ROOT / "tmp/lab-station-simple/simple-concept.blend", baseline)
     for obj in list(bpy.data.objects):
@@ -301,8 +306,19 @@ def main() -> None:
     for joint in ("elbow", "shoulder", "tip"):
         for label in ("capillary", "pH_temp"):
             electrode_joint_teeth(label, finish_arm, joint)
-    report = verify(pose)
+    build_guides()
+
+
+def verify_scene(label: str | None = None) -> None:
+    report = motion_report(pose, OUTPUT, label)
+    if report is None:
+        return
+    report["guide_geometry"] = verify_guide_geometry()
+    report["guide_count"] = verify_guides(required=True)
     (OUTPUT / "verification.json").write_text(json.dumps(report, indent=2))
+
+
+def render_scene() -> None:
     scene = configure_electrode_view()
     for name, forward, lift in (
         ("working", 0, 0),
@@ -320,6 +336,7 @@ def main() -> None:
             release_mm=0,
         )
         verify_clearance()
+        verify_guides(required=True)
         scene.render.filepath = str(OUTPUT / (name + ".png"))
         bpy.ops.render.render(write_still=True)
     for label in ("capillary", "pH_temp"):
@@ -332,6 +349,7 @@ def main() -> None:
     render_electrode_seated(OUTPUT, "service-seated", ("tip",))
     render_wrist_release()
     render_electrode_seated(OUTPUT)
+    render_guide_detail(OUTPUT)
     frame = bpy.data.objects["S_capillary_tip_bolt"].matrix_world
     scene.camera.location = frame @ Vector((-0.040, -0.035, 0.035))
     scene.camera.data.ortho_scale = 0.080
@@ -342,6 +360,12 @@ def main() -> None:
     for label in ("capillary", "pH_temp"):
         pose(label)
     bpy.ops.wm.save_as_mainfile(filepath=str(OUTPUT / "electrode-concept.blend"))
+
+
+def main() -> None:
+    build_scene()
+    verify_scene()
+    render_scene()
 
 
 if __name__ == "__main__":

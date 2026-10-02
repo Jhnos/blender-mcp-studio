@@ -8,6 +8,7 @@ import bpy
 from mathutils import Matrix, Vector
 
 from scripts.hand_gates import shell_count
+from scripts.lab_electrode_routes import verify_guides
 from scripts.lab_station_motion_check import tree
 from scripts.model_lab_simple import verify_clearance
 from src.core.domain.lab_station import ElectrodeArmSpec
@@ -320,7 +321,7 @@ def verify_clamps() -> dict[str, int]:
                 for obj in bpy.data.objects
                 if obj.type == "MESH"
                 and not obj.hide_render
-                and obj.name.startswith(("S_", "LS_FIT_", "LS_REF_vessel"))
+                and obj.name.startswith(("S_", "LS_FIT_", "LS_REF_vessel", "LS_ROUTE_"))
                 and obj not in moving
                 and obj not in removed
             }
@@ -357,4 +358,5 @@ def verify_pose(label: str) -> int:
     for obj in bpy.data.objects:
         if obj.name.startswith(f"S_{label}_probe_") and tree(obj).overlap(vessel):
             raise ValueError("Electrode probe intersects vessel")
+    verify_guides()
     return verify_pins(label)

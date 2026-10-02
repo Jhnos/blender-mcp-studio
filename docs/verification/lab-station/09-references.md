@@ -45,3 +45,7 @@ GitHub 查找 `electrode holder 3d print clamp pH probe` 與分片夾座，檢�
 ## 肩部完整轉位驗證拆分前查找（2026-10-03）
 
 建立 `lab_electrode_motion` 與 `lab_electrode_readback_real` 前查阅 [Robotics Toolbox trajectory examples](https://github.com/petercorke/robotics-toolbox-python/blob/main/examples/README.md) 與 [PyBullet Planning](https://github.com/caelan/pybullet-planning/blob/master/README.md)、其 `examples/test_turtlebot_motion.py`。沿用關節空間取樣、隨行部件與障礙檢查的分工；不將端點直線插值當肩部圓弧。此專案已有 Blender 世界網格、儲存檔 oracle 與 FK，不引入第二個物理引擎，未複製外部程式。新模組分別承接原 main 的整段動作情境與原 real verifier 的 fresh-command 讀回，保持既有守衛與串行傳輸。
+
+## 可換扣式導線夾模組前置查找（2026-10-03）
+
+建立 lab_electrode_routes 前重新檢視 [Ed Nisley Cable Clips](https://gist.github.com/ednisley/52b8a6303fa130fe38858488b978874b) 與 [slide-n-snap](https://github.com/benjamin-edward-morgan/openscad-slide-n-snap/blob/master/slide-n-snap.scad)。參考線徑／製程間隙分離與可拆扣接形式；本案要扣住現有 8×12 mm 桿身，不直接套用外部尺寸。沿用本地 block／cylinder／Boolean、BVH 及真機 oracle，不引入 OpenSCAD 或複製程式。扣入力、材料疲勞及線材實際尺寸仍需試片；不能以剛體開口小於桿身當保持力證明。

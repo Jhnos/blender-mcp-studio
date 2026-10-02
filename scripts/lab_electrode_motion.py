@@ -1,7 +1,9 @@
 """Whole electrode-arm motion scenarios composed from independent geometric guards."""
 
+import json
 import math
 from collections.abc import Callable
+from pathlib import Path
 
 import bpy
 from mathutils import Matrix, Vector
@@ -32,9 +34,12 @@ from scripts.lab_electrode_closure import (
 from scripts.lab_station_rig import set_electrode_service_tilt, set_electrode_wrist_pose, set_pose
 from scripts.model_lab_simple import verify_clearance
 from src.core.domain.lab_station import ElectrodeArmSpec
+from src.infrastructure.narrowing import as_sequence, as_str_keyed
 
 
-def verify(pose: Callable[..., None]) -> dict[str, object]:
+def verify(
+    pose: Callable[..., None], labels: tuple[str, ...] = ("capillary", "pH_temp")
+) -> dict[str, object]:
     wrist_samples = sum(verify_joint_teeth(label, "tip") for label in ("capillary", "pH_temp"))
     tooth_samples = sum(verify_joint_teeth(label) for label in ("capillary", "pH_temp"))
     release_samples = sum(verify_joint_release(label) for label in ("capillary", "pH_temp"))
@@ -60,7 +65,7 @@ def verify(pose: Callable[..., None]) -> dict[str, object]:
     indexed = []
     closure = []
     transition_samples = 0
-    for label in ("capillary", "pH_temp"):
+    for label in labels:
         other = "pH_temp" if label == "capillary" else "capillary"
         saved = bpy.data.objects[f"S_{other}_head"].matrix_world.copy()
         for forward in (-20, 0, 20):
@@ -325,3 +330,33 @@ def verify_wrist_geometry() -> dict[str, dict[str, float]]:
             "ray_samples": 48,
         }
     return result
+
+
+def motion_report(
+    pose: Callable[..., None], output: Path, label: str | None = None
+) -> dict[str, object] | None:
+    """Serialize heavy single-head sweeps; shared whole-scene guards still run each phase."""
+    if label not in (None, "capillary", "pH_temp"):
+        raise ValueError("Unknown motion phase")
+    report = verify(pose, (label,) if label else ("capillary", "pH_temp"))
+    if label is None:
+        return report
+    (output / f"motion-{label}.json").write_text(json.dumps(report))
+    if label == "capillary":
+        return None
+    first = as_str_keyed(
+        json.loads((output / "motion-capillary.json").read_text()), context="motion report"
+    )
+    if first is None:
+        raise ValueError("Missing first motion phase")
+    for key in ("indexed_positions", "elbow_closure", "samples"):
+        left, right = as_sequence(first[key]), as_sequence(report[key])
+        if left is None or right is None:
+            raise ValueError("Missing motion samples: " + key)
+        report[key] = list(left) + list(right)
+    for key in ("indexed_transition_samples", "sample_count", "pin_samples"):
+        first_count, second_count = first[key], report[key]
+        if not isinstance(first_count, int) or not isinstance(second_count, int):
+            raise ValueError("Missing motion count: " + key)
+        report[key] = first_count + second_count
+    return report
