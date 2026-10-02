@@ -11,7 +11,6 @@ import bpy
 from mathutils import Matrix
 
 from scripts.blender_mesh_primitives import add_cylinder, assign, boolean, loft_rings
-from scripts.hollow_hinge_render import look_at
 from scripts.lab_electrode_check import (
     verify_clamps,
     verify_forearm_stack,
@@ -34,20 +33,22 @@ from scripts.lab_electrode_closure import (
     apply_take_up,
     verify_joint_release,
     verify_joint_teeth,
+    verify_pin_service,
     verify_seated,
     verify_take_up,
+    verify_wrist_geometry,
 )
 from scripts.lab_station_arm import finish_arm
 from scripts.lab_station_clamp import compact_probe_head
 from scripts.lab_station_joints import electrode_joint_teeth, hand_knob_hardware, retained_pivot
-from scripts.lab_station_render import render_electrode_details
+from scripts.lab_station_render import configure_electrode_view, render_electrode_details
 from scripts.lab_station_rig import set_pose
-from scripts.model_lab_simple import hardware, link, verify_clearance
+from scripts.model_lab_simple import link, verify_clearance
 from src.core.domain.lab_station import ElectrodeArmSpec
 from src.core.domain.lab_station_joints import ElbowClosureSpec
 
 ROOT = Path(__file__).resolve().parents[1]
-OUTPUT = ROOT / "tmp/lab-station-electrode-coplanar"
+OUTPUT = ROOT / "tmp/lab-station-electrode-slim-wrist"
 
 
 def bake(obj: bpy.types.Object, side: int) -> None:
@@ -103,11 +104,10 @@ def build(label: str) -> None:
     for obj in bpy.data.objects:
         if obj.name.startswith(prefix + "probe_"):
             obj.data.transform(Matrix.Translation(((-24.2 if side < 0 else 24.2) / 1000, 0, 0)))
-    hardware(prefix + "carrier_", bpy.data.materials["S_metal"])
-    for suffix in ("bolt", "nut"):
-        bake(bpy.data.objects[prefix + "carrier_" + suffix], side)
-    for joint in ("proximal", "distal"):
-        for obj in retained_pivot(prefix + joint + "_", mat):
+    for joint in ("proximal", "distal", "carrier"):
+        for obj in retained_pivot(
+            prefix + joint + "_", mat, axial_float_mm=2 if joint == "carrier" else 0
+        ):
             obj.matrix_world = (
                 Matrix.Translation((0.0084, 0, 0))
                 @ Matrix.Diagonal((-1, 1, 1, 1))
@@ -122,6 +122,7 @@ def build(label: str) -> None:
             mat,
             bpy.data.materials["S_metal"],
             8.5 if joint == "tip" else 12.5,
+            depth_mm=7.5 if joint == "tip" else 10,
         ):
             bake(obj, side)
 
@@ -161,12 +162,13 @@ def pose(
         ("distal_pin", at(d)),
         ("proximal_clip", at(b)),
         ("distal_clip", at(d)),
+        ("carrier_pin", at(c)),
+        ("carrier_clip", at(c)),
     ):
         bpy.data.objects[prefix + suffix].matrix_world = matrix
     for joint, point in (
         ("shoulder", root),
         ("elbow", a),
-        ("carrier", c),
         ("tip", tip),
         ("yaw", root),
     ):
@@ -258,6 +260,7 @@ def verify() -> dict[str, object]:
         verify_clearance()
     set_pose(screen, tilt_step=4, release_mm=0)
     service_tilt_samples = verify_service_tilt()
+    pin_service_samples = verify_pin_service()
     clamp_checks = verify_clamps()
     for forward in range(0, 21, 2):
         for label in ("capillary", "pH_temp"):
@@ -268,7 +271,7 @@ def verify() -> dict[str, object]:
     actual_metal = sum(
         bool(o.get("nominal_hardware") or o.get("screen_hardware")) for o in bpy.data.objects
     )
-    if actual_metal != 32:
+    if actual_metal != 28:
         raise ValueError("Electrode hardware budget changed")
     return {
         "indexed_positions": indexed,
@@ -285,24 +288,26 @@ def verify() -> dict[str, object]:
         "clamp_checks": clamp_checks,
         "service_wrist_tilt_deg": 15,
         "service_wrist_tilt_samples": service_tilt_samples,
+        "full_scene_pin_service_samples": pin_service_samples,
         "clamp_service_lift_mm": 100,
         "both_heads_forward_samples": 11,
         "samples": rows,
         "sample_count": len(rows),
         "screen_samples_with_raised_heads": 16,
-        "metal_screws": 16,
-        "metal_nuts": 16,
+        "metal_screws": 14,
+        "metal_nuts": 14,
         "removable_probe_caps": 2,
         "soft_liner_halves": 6,
         "head_depth_below_wrist_mm": verify_head_envelopes(),
         "platform_material_samples": verify_platform_geometry(),
         "forearm_body_stack_mm": verify_forearm_stack(),
+        "wrist_geometry": verify_wrist_geometry(),
         "printed_hand_knobs": 6,
         "knob_bolt_length_mm": 20,
         "knob_bolt_exposure_budget_mm": [0, 1.5],
         "bearing_take_up_budgets_mm": [0.3, 0.2, 0.5, 0.3],
-        "printed_pivots": 4,
-        "printed_retaining_clips": 4,
+        "printed_pivots": 6,
+        "printed_retaining_clips": 6,
         "pin_samples": pin_samples,
         "scope": "Sampled manual coordinated motion, not automatic vertical guidance. Rigid axial stops and pin insertion sampled. Elastic clip fit, locks, load and printing remain unqualified.",
     }
@@ -330,16 +335,7 @@ def main() -> None:
             electrode_joint_teeth(label, finish_arm, joint)
     report = verify()
     (OUTPUT / "verification.json").write_text(json.dumps(report, indent=2))
-    scene = bpy.context.scene
-    scene.render.engine = "BLENDER_WORKBENCH"
-    scene.render.resolution_x, scene.render.resolution_y = 1400, 1100
-    scene.render.resolution_percentage = 100
-    scene.display.shading.color_type = "MATERIAL"
-    scene.display.shading.show_cavity = True
-    scene.camera = bpy.data.objects["LS_VIEW_camera"]
-    scene.camera.location = (0.43, -0.65, 0.45)
-    scene.camera.data.ortho_scale = 0.65
-    look_at(scene.camera, (0, -60, 150))
+    scene = configure_electrode_view()
     for name, forward, lift in (
         ("working", 0, 0),
         ("raised", 0, 100),

@@ -17,9 +17,13 @@
 
 上臂 150 mm，兩支前臂各 150 mm；平行四連桿兩側軸距 24 mm，三角板探頭角點偏置 22 mm。關節錯層 8.4 mm、臂厚 8 mm、梁寬 12 mm、臂端盤 Ø22 mm、三角平台端盤 Ø18 mm（底座維持原尺寸）。兩支前臂改排在同一側／同一軸向層；名義工作配置的實際桿件厚度包絡由 24.8 降至 8.6 mm（不含上臂、旋鈕及五金；退齒與收隙姿態另有軸向位移）。被動軸與卡扣繞支承層反向安裝，保留原桿長、24 mm 支點距與共杯位置；夾座接頸仍與夾座一體。
 
-目前模型：16 支名義螺絲、16 顆螺母、4 個列印溝槽軸與 4 個 C 形卡扣；另有六個列印旋鈕（肩／肘 Ø25、探頭端 Ø17 mm），無獨立軸套／墊片。包含四組探頭夾蓋 M3×20 螺絲／螺母，仍不是含板件固定的整機 BOM。軸身 Ø4.8 mm，溝槽 Ø3.4 × 1.8 mm；卡扣外徑 9、內徑 3.8、厚 1.4、開口 3 mm。卡扣沿用既有 hinge_retention 的環形開口形式，以實體環差集建模。開口小於槽徑，需彈性張開；材料、公差、扣入力與保持力未經試片驗證，不能當製造資格。
+目前模型：14 支名義螺絲、14 顆螺母、6 個列印溝槽軸與 6 個 C 形卡扣；另有六個列印旋鈕（肩／肘 Ø25 × 10、探頭端 Ø17 × 7.5 mm），無獨立軸套／墊片。包含四組探頭夾蓋 M3×20 螺絲／螺母，仍不是含板件固定的整機 BOM。軸身 Ø4.8 mm，溝槽 Ø3.4 × 1.8 mm；卡扣外徑 9、內徑 3.8、厚 1.4、開口 3 mm。卡扣沿用既有 hinge_retention 的環形開口形式，以實體環差集建模。開口小於槽徑，需彈性張開；材料、公差、扣入力與保持力未經試片驗證，不能當製造資格。
 
 旋鈕有開放式六角螺栓頭孔與一體承壓頸；上臂兩端及三角板探頭端挖六角螺母座。螺母依所屬臂件方向轉動，避免模型在調臂後失去六角對位。螺栓頭與螺母為名義六角包絡，螺紋未建模；六支旋鈕螺栓改為名義 M5×20，螺栓頭座向內 1.2 mm，旋鈕底部名義厚 2.5 mm；未收隙的螺母外露長度由 4.5 降到 0.7 mm，肘部就座後約 1.4 mm，實際網格允許 0–1.5 mm。逐面接觸預算見下方；整體預緊、實際裝入、手指空間及鎖緊力尚未完成；肩／肘已具齒槽，探頭端仍未整合齒槽。
+
+三角平台被動軸改用相同溝槽插銷與 C 形卡扣，取代兩組螺絲／螺母。平台軸身長 24 mm（一般軸 22 mm），多出的 2 mm 保留肘部退齒時的軸向浮動；名義工作／退齒姿態頭部間隙分別 2.6／0.6 mm，不能把這個接點夾死。
+
+腕旋鈕沿軸向由 10 收至 7.5 mm，只將外側端面向內收 2.5 mm，承壓面與六角孔底基準不變。腕部旋鈕／螺栓／螺母的軸向包絡上限 24.8 mm（舊 27.3 mm），不代表整個探頭座的寬度。兩頭共 96 條射線，獨立讀取 7.5 mm 外深與 2.5 mm 承壓底厚，並查旋鈕單一封閉實體；外凸及削薄負對照必須拒絕。薄旋鈕的手感與承載仍需實體驗證。
 
 腕軸到夾座中心落差為毛細管 20 mm、pH／溫度 38 mm（前版 22／44 mm）；夾蓋底緣到腕軸分別 29／47 mm，以實際網格獨立量測。夾體與夾蓋外角半徑 4 mm，腕盤下緣為可拆夾蓋預留 0.2 mm 讓位；保留手動腕軸，不將平台與夾頭剛性合併。
 
@@ -61,7 +65,8 @@
 - 夾蓋底緣包絡以實際頂點量測；向下移 10 mm 的負對照必須被深度守衛拒絕，還原後通過。
 - 雙頭抬高後，HMI 16 個收折角度；這不代表所有臂姿態下皆可折屏。
 - `scripts/verify/lab_simple_verify_real.py` 依序重建 simple 與本概念，再移動 follower 材料，必須拒絕且還原後通過。這個入口由完整 real CI 執行。
-- 被動軸追加中立間隙、軸與卡扣共同位移 ±1.5 mm 的臂件止擋、軸相對卡扣位移 ±0.6 mm 的槽肩止擋，以及移除卡扣後 0–25 mm 軸向裝入取樣。移走卡扣的負對照必須拒絕。這些是剛體幾何證據，不證明卡扣彈性或徑向保持力。
+- 被動軸追加中立間隙、軸與卡扣共同位移的臂件止擋（一般軸 ±1.5 mm、平台浮動軸 ±3.5 mm）、軸相對卡扣位移 ±0.6 mm 的槽肩止擋，以及移除卡扣後 0–25 mm 軸向裝入取樣。移走卡扣的負對照必須拒絕。這些是剛體幾何證據，不證明卡扣彈性或徑向保持力。
+- 兩頭抬高 100 mm 並前傾 15° 後，六支插銷各 26 個抽出位置共 156 樣本，檢查全部可見臂件、外殼、HMI、探頭及容器；僅排除被拆的卡扣與插銷自身。故意將另一探頭放入路徑必須拒絕，還原後通過；平台卡扣移走亦須失去止擋。全場拆卸證據只限此維修姿態，沒有證明卡扣彈性裝入。
 - 整機碰撞資料只在當次姿態內快取，每物件建立一次；移右臂到左臂的負對照與還原正例驗證跨姿態重新取樣。
 - 六旋鈕查同頭非金屬件碰撞，並查六角頭／螺母中立不交叉、相對轉 30° 必須接觸止轉面；移開螺栓的負對照必須拒絕。此為幾何咬合，不代表已施加鎖緊力。
 - 夾具十件列印網格各為一個封閉實體；298 個止口／拆裝取樣含實際探頭、夾蓋、襯套、螺絲及螺母，障礙包含另一臂、外殼及杯壁。杯內侧取探頭、移走夾蓋兩個負對照必須拒絕；抬高並前傾 15° 後正常組裝必須通過。
@@ -72,4 +77,4 @@
 - `elbow-seated.blend` 是實際就座狀態，real gate 重新讀檔並量四對面；`electrode-concept.blend` 保留原間隙供運動驗證。未就座卻宣稱就座的負對照必須拒絕。
 - 未驗連續掃掠、全部五金互碰、線材、實體列印、卡扣彈性保持、肩部整組就座／腕部齒槽離合、整體預緊、負載與固定力。自碰檢查涵蓋上述結構件及全部夾具零件，不能宣稱全機零干涉。
 
-輸出：`tmp/lab-station-electrode-coplanar/electrode-concept.blend`、`working.png`、`raised.png`、`extended.png`、`screen_folded.png`、`verification.json`、`red-disconnection.json`、`retainer-detail.png`、`red-retainer.json`、`clamp-detail.png`、`clamp-exploded.png`、`red-service-in-cup.json`、`red-clamp-stop.json`、`elbow-released.png`、`red-elbow-engagement.json`、`indexed-raised.png`、`red-between-indices.json`、`elbow-seated.png`、`elbow-seated.blend`、`seated-file-check.json`、`red-unseated-chain.json`、`service.png`、`service.blend`、`red-forearm-stack.json`、`red-clamp-bolt-collision.json`、`red-service-untilted.json`。`service.blend` 另由 fresh addon 命令重新讀取，確認兩腕 15°、閉鏈／避碰及完整拆裝，紀錄 `service-file-check.json`。無製造 STL 發布。
+輸出：`tmp/lab-station-electrode-slim-wrist/electrode-concept.blend`、`working.png`、`raised.png`、`extended.png`、`screen_folded.png`、`verification.json`、`red-disconnection.json`、`retainer-detail.png`、`red-retainer.json`、`clamp-detail.png`、`clamp-exploded.png`、`red-service-in-cup.json`、`red-clamp-stop.json`、`elbow-released.png`、`red-elbow-engagement.json`、`indexed-raised.png`、`red-between-indices.json`、`elbow-seated.png`、`elbow-seated.blend`、`seated-file-check.json`、`red-unseated-chain.json`、`service.png`、`service.blend`、`red-forearm-stack.json`、`red-clamp-bolt-collision.json`、`red-service-untilted.json`。`service.blend` 另由 fresh addon 命令重新讀取，確認兩腕 15°、閉鏈／避碰及完整拆裝，紀錄 `service-file-check.json`；另含 `wrist-detail.png`、`red-wrist-stack.json`、`red-wrist-floor.json`、`red-carrier-retainer.json`、`red-pin-service-blocked.json`；service 讀回另含 156 個全場插銷抽出樣本。無製造 STL 發布。

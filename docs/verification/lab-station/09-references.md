@@ -35,3 +35,9 @@ GitHub 查找 `electrode holder 3d print clamp pH probe` 與分片夾座，檢�
 ## 承壓鏈閉合檢查的前置查找（2026-10-03）
 
 建立 `lab_electrode_closure` 前查找 GitHub 的 Blender assembly contact／clearance／preload。檢視 [JointForge](https://github.com/NatalieC001/JointForge)：其用途是分割列印件並加入插接鍵，未提供本案螺栓—旋鈕—齒面—螺母閉合驗證，未複製程式或採用其公差推薦。沿用本專案 BVH、世界座標射線與共面接觸微量分離方法；新增模組只編排特定承壓鏈的狀態和量測，不另造 CAD／力學引擎。
+
+## 沿臂理線前置查找（2026-10-03）
+
+- [NT7S ParametricCableComb](https://github.com/NT7S/ParametricCableComb)：可參數化的線梳，README 提醒梳齒列印方向影響抗折；適合作尺寸化通道的形式參考，頁面未顯示授權，未複製程式或網格。
+- [Ed Nisley Cable Clips](https://gist.github.com/ednisley/52b8a6303fa130fe38858488b978874b)：線外徑、孔補償與列印線寬分開設定；僅參考參數分離，不採用其 USB 外徑當本機線徑。未複製程式。
+- 沿用本專案圓柱／環差集與夾具工具；目前不引入 OpenSCAD 相依。氣管、pH 線與溫度線外徑已詢問，未取得實測前單路 Ø6 mm 僅作暫定包絡，不能據此發布固定孔或夾持資格。腕端收薄未新增模組；後續若新增理線模組，可由以上查找開始核對，但仍需實際安裝與完整動作驗證。

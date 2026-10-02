@@ -172,9 +172,14 @@ def screen_control(hmi: bpy.types.Object) -> bpy.types.Object:
     return control
 
 
-def hand_knob(name: str, mat: bpy.types.Material, radius_mm: float = 12.5) -> bpy.types.Object:
+def hand_knob(
+    name: str, mat: bpy.types.Material, radius_mm: float = 12.5, *, depth_mm: float = 10
+) -> bpy.types.Object:
     """Scalloped knob with an open hex-head pocket and an integral bearing neck."""
-    obj = add_cylinder(name, radius_mm, 10, (-13.3, 0, 0), "X")
+    if not math.isfinite(depth_mm) or depth_mm < 7.5:
+        raise ValueError("Knob depth must retain the head pocket and bearing floor")
+    center = -8.3 - depth_mm / 2
+    obj = add_cylinder(name, radius_mm, depth_mm, (center, 0, 0), "X")
     for index in range(6):
         angle = index * math.pi / 3
         boolean(
@@ -182,8 +187,8 @@ def hand_knob(name: str, mat: bpy.types.Material, radius_mm: float = 12.5) -> bp
             add_cylinder(
                 "E_TOOL",
                 3,
-                12,
-                (-13.3, (radius_mm + 1.5) * math.cos(angle), (radius_mm + 1.5) * math.sin(angle)),
+                depth_mm + 2,
+                (center, (radius_mm + 1.5) * math.cos(angle), (radius_mm + 1.5) * math.sin(angle)),
                 "X",
             ),
             "DIFFERENCE",
@@ -195,7 +200,12 @@ def hand_knob(name: str, mat: bpy.types.Material, radius_mm: float = 12.5) -> bp
 
 
 def hand_knob_hardware(
-    prefix: str, mat: bpy.types.Material, metal: bpy.types.Material, radius_mm: float
+    prefix: str,
+    mat: bpy.types.Material,
+    metal: bpy.types.Material,
+    radius_mm: float,
+    *,
+    depth_mm: float = 10,
 ) -> tuple[bpy.types.Object, bpy.types.Object, bpy.types.Object]:
     bolt = add_cylinder(prefix + "bolt", 2.5, 20, (-1, 0, 0), "X")
     boolean(bolt, add_cylinder("E_TOOL", 4.6, 4, (-13, 0, 0), "X", vertices=6), "UNION")
@@ -204,14 +214,18 @@ def hand_knob_hardware(
     for obj in (bolt, nut):
         assign(obj, metal)
         obj["nominal_hardware"] = True
-    return bolt, nut, hand_knob(prefix + "knob", mat, radius_mm)
+    return bolt, nut, hand_knob(prefix + "knob", mat, radius_mm, depth_mm=depth_mm)
 
 
 def retained_pivot(
-    prefix: str, mat: bpy.types.Material
+    prefix: str, mat: bpy.types.Material, *, axial_float_mm: float = 0
 ) -> tuple[bpy.types.Object, bpy.types.Object]:
-    pin = add_cylinder(prefix + "pin", 2.4, 22, (8.2, 0, 0), "X")
-    boolean(pin, add_cylinder("E_TOOL", 4.5, 2, (18.2, 0, 0), "X"), "UNION")
+    if not math.isfinite(axial_float_mm) or not 0 <= axial_float_mm <= 2:
+        raise ValueError("Passive pivot float must lie within 0–2 mm")
+    pin = add_cylinder(
+        prefix + "pin", 2.4, 22 + axial_float_mm, (8.2 + axial_float_mm / 2, 0, 0), "X"
+    )
+    boolean(pin, add_cylinder("E_TOOL", 4.5, 2, (18.2 + axial_float_mm, 0, 0), "X"), "UNION")
     ring = add_cylinder("E_TOOL", 3.4, 1.8, (-1.1, 0, 0), "X")
     boolean(ring, add_cylinder("E_TOOL", 1.7, 4, (-1.1, 0, 0), "X"), "DIFFERENCE")
     boolean(pin, ring, "DIFFERENCE")

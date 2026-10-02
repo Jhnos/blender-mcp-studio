@@ -28,6 +28,33 @@
 
 ### Verified facts
 
+- V01.0R.01W：最後完整 `scripts/ci.sh --real` 93636 terminal exit 0，所有 hard gates green（`tmp/lab-station-electrode-slim-wrist/ci-slim-wrist-final-retry.log`）；含重建、負對照、保存檔讀回、lint／format／mypy 及全部回歸。先前 focused 12588（薄旋鈕）、77864（平台插銷）皆 exit 0，最後完整閘門才涵蓋全部變更。
+- 現行輸出 `tmp/lab-station-electrode-slim-wrist/`。腕旋鈕厚度 10→7.5 mm，承壓面不動、底厚維持 2.5 mm；兩頭 96 射線及封閉實體检查通過。固定視角 `wrist-before.png`／`wrist-detail.png` 已檢視；`wrist-comparison.json` 實測五金軸向包絡 27.3000→24.8000 mm，不代表整個夾頭寬度。
+- 兩個三角平台的螺絲／螺母改為列印溝槽軸與 C 卡扣；名義五金減為 14 螺絲／14 螺母，列印軸／卡扣各 6。平台軸身 24 mm，其他 22 mm，保留肘部退齒的 2 mm 軸向浮動。46 單頭位置共 4140 被動軸樣本、11 雙頭前伸及既有齒位／就座／HMI 收折通過。
+- 兩頭抬高 100 mm、腕部各前傾 15° 時，六軸共 156 個全場抽出樣本通過；另一探頭擋路、平台卡扣缺失、旋鈕外凸及底厚削薄均被拒絕。service 保存檔重新讀取：兩腕角 14.99998°、298 夾具拆裝／止擋與 156 插銷樣本通過，之後還原 `elbow-seated.blend`。
+- 初次完整 36809 因大型電極臂階段 180 秒等待逾時而 exit 1，未繼續後續場景。原工作仍完成並留下負對照；確認排空後，只將該階段期限改 300 秒，最後 93636 全綠。排空時首次唯讀命令遇到開檔清除 timer，終止該等待程序後以新命令確認目前檔案；沒有重送建模或重啟 Blender。原失敗日誌保留。
+- 5S：沿用六個腳本、未新增模組／公開介面；main 373、check 376、closure 319、render 357、real verifier 366 行，低於 380 警戒。出圖配置移至既有 render，負對照共用 helper；R38–R39 與規格同步，舊輸出保留。
+
+### Open failures
+
+- 與參考產品仍有走線整合、關節／底座外形差距；這次只收整腕部與平台軸頭，非全機外觀定稿。
+- 肩部整組就座與完整轉位、腕部齒槽／就座、螺紋及彈性預緊、工具空間、軟襯／卡扣保持力、底座／LCD 保持、載荷與實體列印尚未資格化；未發布現行整機製造 STL。
+- 氣管、pH 與溫度線外徑已詢問，尚未回覆；可換夾片為下一步方向，Ø6 mm 只是假設，尚未建立走線幾何。容器／探頭／板件尺寸、負载、材料、溫度及液體資訊仍缺；浸入精度未回覆。
+
+### Next step
+
+- 93636 terminal exit 0，無執行中的驗證；Blender 還原現行 `elbow-seated.blend`。優先沿此版設計可換走線夾片，再續肩／腕鎖定與底座／螢幕工程資格。走線 GitHub 前置查找已記 `09-references.md`；未複製程式或增加外部 CAD 依賴。
+- `pose(label)` reset 所有零件後再套退齒；平台浮動軸不可換回夾死螺栓。`set_electrode_service_tilt` 設絕對 0–15°，先抬高 100 mm 再前傾；`verify_pin_service` 僅在此維修姿態宣稱全場拆卸，卡扣假設已移除。
+- `electrode-concept.blend` 保留名義間隙供運動；`elbow-seated.blend` 僅肘部就座。維修檔由 `render_electrode_details` 產生，fresh addon 命令讀回。保留杯／盤 +3.5 mm，真機流程串行且執行中不改來源；逾時先排空，不能直接重跑。
+
+## 歷史驗證紀錄
+
+以下為逐輪證據與當時的下一步；接手只依上方現行段落與任務索引，不能將歷史下一步重新當成主線。
+
+### V01.0R.01V 接手事實（歷史）
+
+### Verified facts
+
 - V01.0R.01V：focused 16984 exit 0（`tmp/electrode-coplanar-service.log`）；最後完整 `scripts/ci.sh --real` 95639 exit 0，所有 hard gates green（`tmp/lab-station-electrode-coplanar/ci-coplanar-final.log`）。23 focused domain tests 通過；完整 lint／format／mypy／回歸通過。
 - 現行輸出 `tmp/lab-station-electrode-coplanar/`；兩根前臂在同一軸向層，被動軸／卡扣繞支承層反向安裝。工作配置桿件包絡實測 24.8→8.6 mm，記錄 `stack-comparison.json`；不含上臂、旋鈕與五金，鬆開姿態另有 2 mm 退開量。未削薄桿件或增加五金。
 - 毛細管夾座螺絲孔由 ±10 改 ±8 mm。兩頭抬高 100 mm 後，各自腕軸前傾 15° 才可完整拆裝；32 個 0–15° 獨立腕角、298 個拆裝／止擋取樣通過。各姿態自碰加入夾具金屬件；原 46 單頭位置、11 共同前伸、齒位／退齒／肘部就座及螢幕收折守衛保留。
@@ -48,10 +75,6 @@
 - `set_electrode_service_tilt` 在既有 tip 軸設定絕對 0–15° 腕角；先 `pose(label, 0, 100)`，再前傾。`pose(label)` 會還原所有頭部零件。`verify_service_tilt` 留在 15°，`verify_clamps` 不自行移動手臂。
 - 原位探頭不應側取；抬高但未前傾也會撞被動軸頭。存檔必須由 `render_electrode_details` 的 service 分支產生，再由 fresh addon 命令讀回，不能拿舊出圖分支的同名檔代替。
 - 保留杯／承液盤 +3.5 mm；肩／肘鬆開與收隙仍是相對位移，禁止累加。真機流程串行，過程中禁止改來源；建立新模組前先查 GitHub。
-
-## 歷史驗證紀錄
-
-以下為逐輪證據與當時的下一步；接手只依上方現行段落與任務索引，不能將歷史下一步重新當成主線。
 
 ### V01.0R.01U 接手事實（歷史）
 

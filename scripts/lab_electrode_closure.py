@@ -64,6 +64,66 @@ def measure_gaps(label: str) -> list[tuple[float, float]]:
     return result
 
 
+def verify_wrist_geometry() -> dict[str, dict[str, float]]:
+    """Measure retained floor and reduced depth independently on the saved solid."""
+    result = {}
+    for label in ("capillary", "pH_temp"):
+        side = 1 if label == "capillary" else -1
+        knob = bpy.data.objects[f"S_{label}_tip_knob"]
+        verify_closed_part(knob)
+        frame = bpy.data.objects[f"S_{label}_tip_bolt"].matrix_world @ Matrix.Diagonal(
+            (side, 1, 1, 1)
+        )
+        measures = []
+        for radius, expected, feature in ((3.5, 2.5, "floor"), (6, 7.5, "depth")):
+            values = [
+                face_coordinate(knob, frame, radius, math.radians(angle), 1)
+                - face_coordinate(knob, frame, radius, math.radians(angle), -1)
+                for angle in range(0, 360, 30)
+            ]
+            if any(abs(value - expected) > 0.01 for value in values):
+                raise ValueError("Wrist knob " + feature + " outside budget: " + label)
+            measures.append((min(values), max(values)))
+        result[label] = {
+            "floor_min_mm": measures[0][0],
+            "depth_max_mm": measures[1][1],
+            "ray_samples": 48,
+        }
+    return result
+
+
+def verify_pin_service() -> int:
+    """Withdraw each pin after removing its clip in the raised, tilted service pose."""
+    samples = 0
+    for label in ("capillary", "pH_temp"):
+        side = 1 if label == "capillary" else -1
+        for joint in ("proximal", "distal", "carrier"):
+            pin = bpy.data.objects[f"S_{label}_{joint}_pin"]
+            clip = bpy.data.objects[f"S_{label}_{joint}_clip"]
+            obstacles = {
+                obj.name: tree(obj)
+                for obj in bpy.data.objects
+                if obj.type == "MESH"
+                and not obj.hide_render
+                and obj.name.startswith(("S_", "LS_FIT_", "LS_REF_vessel"))
+                and obj not in (pin, clip)
+            }
+            saved = pin.matrix_world.copy()
+            try:
+                for shift in range(26):
+                    pin.matrix_world = saved @ Matrix.Translation((-side * shift / 1000, 0, 0))
+                    bpy.context.view_layer.update()
+                    moved = tree(pin)
+                    hits = [name for name, obstacle in obstacles.items() if moved.overlap(obstacle)]
+                    if hits:
+                        raise ValueError(f"Pin service blocked: {pin.name}, {shift} mm, {hits}")
+                    samples += 1
+            finally:
+                pin.matrix_world = saved
+                bpy.context.view_layer.update()
+    return samples
+
+
 def verify_seated(label: str) -> list[tuple[float, float]]:
     gaps = measure_gaps(label)
     if any(abs(value) > 0.01 for bounds in gaps for value in bounds):

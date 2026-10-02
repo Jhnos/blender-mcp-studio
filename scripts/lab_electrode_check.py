@@ -102,8 +102,10 @@ def verify_pins(label: str) -> int:
     ]
     obstacles = [tree(member) for member in members]
     samples = 0
-    for joint in ("proximal", "distal"):
-        pin = bpy.data.objects[prefix + joint + "_pin"]
+    for joint in ("proximal", "distal", "carrier"):
+        pin = bpy.data.objects.get(prefix + joint + "_pin")
+        if pin is None:
+            raise ValueError("Passive pivot missing pin: " + joint)
         clip = bpy.data.objects.get(prefix + joint + "_clip")
         if clip is None:
             raise ValueError("Passive pivot missing retainer: " + joint)
@@ -114,7 +116,8 @@ def verify_pins(label: str) -> int:
                 tree(part).overlap(obstacle) for part in (pin, clip) for obstacle in obstacles
             ):
                 raise ValueError("Passive pivot neutral interference")
-            for shift in (-1.5, 1.5):
+            stop_travel = 3.5 if joint == "carrier" else 1.5
+            for shift in (-stop_travel, stop_travel):
                 delta = Matrix.Translation((side * shift / 1000, 0, 0))
                 pin.matrix_world = original @ delta
                 clip.matrix_world = clip_original @ delta
@@ -183,6 +186,14 @@ def verify_knobs(label: str) -> None:
         side = 1 if label == "capillary" else -1
         bolt_end = max(side * vertex.co.x for vertex in bolt.data.vertices)
         nut_end = max(side * vertex.co.x for vertex in nut.data.vertices)
+        if joint == "tip":
+            coordinates = [
+                side * vertex.co.x * 1000
+                for part in (knob, bolt, nut)
+                for vertex in part.data.vertices
+            ]
+            if max(coordinates) - min(coordinates) > 24.81:
+                raise ValueError("Wrist fastener stack exceeds 24.8 mm")
         protrusion_mm = (bolt_end - nut_end) * 1000
         if not 0 <= protrusion_mm <= 1.5:
             raise ValueError(f"Knob bolt exposed end outside budget: {protrusion_mm:.3f} mm")

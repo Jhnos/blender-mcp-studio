@@ -274,11 +274,32 @@ def render_base_section(output: Path) -> None:
         bpy.context.view_layer.update()
 
 
+def configure_electrode_view() -> bpy.types.Scene:
+    scene = bpy.context.scene
+    scene.render.engine = "BLENDER_WORKBENCH"
+    scene.render.resolution_x, scene.render.resolution_y = 1400, 1100
+    scene.render.resolution_percentage = 100
+    scene.display.shading.color_type = "MATERIAL"
+    scene.display.shading.show_cavity = True
+    scene.camera = bpy.data.objects["LS_VIEW_camera"]
+    scene.camera.location = (0.43, -0.65, 0.45)
+    scene.camera.data.ortho_scale = 0.65
+    look_at(scene.camera, (0, -60, 150))
+    return scene
+
+
 def render_electrode_details(output: Path, pose: Callable[[str, float, float], None]) -> None:
     """Render retained pivots, release and service views of the current electrode model."""
     scene = bpy.context.scene
     camera_matrix = scene.camera.matrix_world.copy()
     camera_scale = scene.camera.data.ortho_scale
+    wrist = bpy.data.objects["S_capillary_tip_bolt"].matrix_world
+    target = wrist @ Vector((-0.012, 0, -0.014))
+    scene.camera.location = wrist @ Vector((-0.065, -0.06, 0.026))
+    scene.camera.data.ortho_scale = 0.095
+    look_at(scene.camera, tuple(value * 1000 for value in target))
+    scene.render.filepath = str(output / "wrist-detail.png")
+    bpy.ops.render.render(write_still=True)
     pivot = bpy.data.objects["S_capillary_distal_pin"].matrix_world
     target = pivot.translation
     scene.camera.location = pivot @ Vector((-0.07, -0.035, 0.03))

@@ -2,9 +2,9 @@
 
 Read this file first after a new conversation, compaction, or terminal restart.
 
-## 接手(2026-09-09,V01.0R.013)
+## 接手
 
-- **目前在做（2026-10-03）:** 16 雙探頭同側前臂，V01.0R.01V。桿件厚度包絡 24.8→8.6 mm，32 腕角／298 拆裝取樣與三負對照通過；抬高後前傾 15° 拆裝，模型讀回通過。focused 16984 exit 0；完整 `scripts/ci.sh --real` 95639 exit 0、所有 hard gates green（`tmp/lab-station-electrode-coplanar/ci-coplanar-final.log`）。**下一步：**沿用此排列收整腕端接座與走線，再續肩／腕鎖定、LCD 與載荷；整體未定稿。接手讀任務16 hand-off。
+- **目前在做（2026-10-03）:** 16 雙探頭薄腕端與列印平台軸，V01.0R.01W。腕旋鈕 10→7.5 mm；五金減為 14 螺絲／14 螺母，六支插銷保留活動與拆卸。完整 `scripts/ci.sh --real` 93636 exit 0、所有 hard gates green（`tmp/lab-station-electrode-slim-wrist/ci-slim-wrist-final-retry.log`）。**下一步：**沿此版整合走線，續肩／腕鎖定、LCD 與載荷；線徑待回覆，整體未定稿。接手讀任務16 hand-off。
 - **等驗收:** 15 場景清單不再只有十個;對話路徑第一次有真機閘門(`--real` 32 條全綠)。下一個是 14 第五個實例。
 - 13 已驗收歸檔:對話現在能呼叫本專案自己的產生器。
 - **在等使用者的:** 印。工作單已交付——07 的 V3 試片七項,以及 `hand-gripper` 九節。
@@ -14,7 +14,7 @@ Read this file first after a new conversation, compaction, or terminal restart.
 
 | State | Task | Priority |
 |---|---|---|
-| ACTIVE | [`16_lab-station.md`](16_lab-station.md) | 雙探頭量測工作站：250 mL 共杯、約 20 cm 伸距、P2S；V3 直上清杯、齒槽與折平螢幕；全機裝配待完成 |
+| ACTIVE | [`16_lab-station.md`](16_lab-station.md) | 雙探頭量測工作站：250 mL 共杯、約 20 cm 伸距、P2S；獨立電極臂、齒槽與折平螢幕；全機工程資格待完成 |
 | AWAITING-ACCEPTANCE | [`15_scene-list-and-chat-gate.md`](15_scene-list-and-chat-gate.md) | **場景清單不再只有十個**——上游 addon 截斷到 10;改由 adapter 有上界地讀,碰到上界會說。H6 綠了,對話路徑第一次有真機閘門;`--real` 32 條全綠 |
 | TODO | [`14_hand-long.md`](14_hand-long.md) | **第五個實例:每指三關節**——`joint_count` 第一次建在 2 以外;主要風險是指掌比 |
 | WAITING-ON-USER | [`07_hand-v3-coupon.md`](07_hand-v3-coupon.md) | **印一件指節、量七項公差**——幾何側全部完成且真機驗證通過,往下每一件事都要從這一件實體反推。**使用者執行** |

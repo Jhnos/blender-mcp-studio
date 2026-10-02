@@ -48,6 +48,15 @@ sys.path.insert(0, {str(root)!r})
 for name in {modules!r}:
     importlib.reload(importlib.import_module(name))
 model = runpy.run_path({str(script)!r}, run_name='__main__')
+def expect_failure(check, expected, artifact):
+    try:
+        check()
+    except ValueError as error:
+        if expected not in str(error):
+            raise
+        (model['OUTPUT'] / f'red-{{artifact}}.json').write_text(json.dumps({{'rejected': True, 'reason': str(error)}}))
+    else:
+        raise RuntimeError('Negative control accepted: ' + artifact)
 try:
     model['verify_seated']('capillary')
 except ValueError as error:
@@ -95,14 +104,7 @@ saved = part.matrix_world.copy()
 try:
     part.matrix_world = saved @ Matrix.Translation((0.002, 0, 0))
     bpy.context.view_layer.update()
-    try:
-        model['verify_joint_teeth']('capillary', 'shoulder')
-    except ValueError as error:
-        if 'engagement mismatch' not in str(error):
-            raise
-        (model['OUTPUT'] / 'red-shoulder-engagement.json').write_text(json.dumps({{'rejected': True, 'reason': str(error)}}))
-    else:
-        raise RuntimeError('Released shoulder accepted as engaged')
+    expect_failure(lambda: model['verify_joint_teeth']('capillary', 'shoulder'), 'engagement mismatch', 'shoulder-engagement')
 finally:
     part.matrix_world = saved
     bpy.context.view_layer.update()
@@ -124,23 +126,21 @@ finally:
     cup.matrix_world = saved
     bpy.context.view_layer.update()
 model['verify_joint_release']('pH_temp', 'shoulder')
-part = bpy.data.objects['S_pH_temp_clamp_cap']
-saved = part.data.copy()
-try:
-    part.data.transform(Matrix.Translation((0, 0, -0.01)))
+for artifact, name, transform, check, expected in (
+    ('head-depth', 'S_pH_temp_clamp_cap', Matrix.Translation((0, 0, -0.01)), lambda: model['verify_head_envelopes'](), 'hangs too far below wrist'),
+    ('wrist-stack', 'S_capillary_tip_knob', Matrix.Translation((-0.004, 0, 0)), lambda: model['verify_knobs']('capillary'), 'Wrist fastener stack'),
+    ('wrist-floor', 'S_pH_temp_tip_knob', Matrix.Diagonal((0.8, 1, 1, 1)), lambda: model['verify_wrist_geometry'](), 'Wrist knob floor'),
+):
+    part = bpy.data.objects[name]
+    saved = part.data.copy()
     try:
-        model['verify_head_envelopes']()
-    except ValueError as error:
-        if 'hangs too far below wrist' not in str(error):
-            raise
-        (model['OUTPUT'] / 'red-head-depth.json').write_text(json.dumps({{'rejected': True, 'reason': str(error)}}))
-    else:
-        raise RuntimeError('Overlong wrist-to-clamp connection accepted')
-finally:
-    changed = part.data
-    part.data = saved
-    bpy.data.meshes.remove(changed)
-model['verify_head_envelopes']()
+        part.data.transform(transform)
+        expect_failure(check, expected, artifact)
+    finally:
+        changed = part.data
+        part.data = saved
+        bpy.data.meshes.remove(changed)
+    check()
 part = bpy.data.objects['S_capillary_platform']
 original = part.data
 for name, transform, expected in (
@@ -182,14 +182,7 @@ saved = part.matrix_world.copy()
 try:
     part.matrix_world = saved @ Matrix.Translation((-0.002, 0, 0))
     bpy.context.view_layer.update()
-    try:
-        model['verify_joint_teeth']('capillary')
-    except ValueError as error:
-        if 'engagement mismatch' not in str(error):
-            raise
-        (model['OUTPUT'] / 'red-elbow-engagement.json').write_text(json.dumps({{'rejected': True, 'reason': str(error)}}))
-    else:
-        raise RuntimeError('Disengaged elbow was accepted as locked')
+    expect_failure(lambda: model['verify_joint_teeth']('capillary'), 'engagement mismatch', 'elbow-engagement')
 finally:
     part.matrix_world = saved
     bpy.context.view_layer.update()
@@ -209,23 +202,17 @@ finally:
     part.data = saved
     bpy.data.meshes.remove(changed)
 model['verify_local']('capillary')
-part = bpy.data.objects['S_capillary_proximal_clip']
-saved = part.matrix_world.copy()
-try:
-    part.matrix_world = Matrix.Translation((0, 0, 0.1)) @ saved
-    bpy.context.view_layer.update()
+for joint, artifact in (('proximal', 'retainer'), ('carrier', 'carrier-retainer')):
+    part = bpy.data.objects[f'S_capillary_{{joint}}_clip']
+    saved = part.matrix_world.copy()
     try:
-        model['verify_pins']('capillary')
-    except ValueError as error:
-        if 'axial stop' not in str(error):
-            raise
-        (model['OUTPUT'] / 'red-retainer.json').write_text(json.dumps({{'rejected': True, 'reason': str(error)}}))
-    else:
-        raise RuntimeError('Displaced retaining clip was accepted')
-finally:
-    part.matrix_world = saved
-    bpy.context.view_layer.update()
-model['verify_pins']('capillary')
+        part.matrix_world = Matrix.Translation((0, 0, 0.1)) @ saved
+        bpy.context.view_layer.update()
+        expect_failure(lambda: model['verify_pins']('capillary'), 'axial stop', artifact)
+    finally:
+        part.matrix_world = saved
+        bpy.context.view_layer.update()
+    model['verify_pins']('capillary')
 part = bpy.data.objects['S_capillary_elbow_bolt']
 saved = part.matrix_world.copy()
 try:
@@ -299,6 +286,16 @@ finally:
     part.data = saved
     bpy.data.meshes.remove(changed)
 model['verify_clamps']()
+part = bpy.data.objects['S_pH_temp_head']
+saved = part.matrix_world.copy()
+try:
+    part.matrix_world = bpy.data.objects['S_capillary_carrier_pin'].matrix_world @ Matrix.Translation((-0.025, 0, 0))
+    bpy.context.view_layer.update()
+    expect_failure(model['verify_pin_service'], 'S_pH_temp_head', 'pin-service-blocked')
+finally:
+    part.matrix_world = saved
+    bpy.context.view_layer.update()
+model['verify_pin_service']()
 for label in ('capillary', 'pH_temp'):
     model['pose'](label)
 clearance = model['verify_clearance']
@@ -334,12 +331,14 @@ clearance()
 print('Electrode arm, retainer, knob drive and per-pose clearance cache controls passed')
 bpy.ops.wm.open_mainfile(filepath=str(model['OUTPUT'] / 'elbow-seated.blend'))
 """
-    print(BlenderSocketOracle("127.0.0.1", 9876, timeout=180).execute(code))
+    # Full electrode motion, renders and fault injections exceed the smaller study budget.
+    print(BlenderSocketOracle("127.0.0.1", 9876, timeout=300).execute(code))
     # A fresh addon command lets Blender refresh context after opening the saved artifact.
     code = f"""import bpy, runpy, json
 model = runpy.run_path({str(script)!r})
 gaps = {{label: model['verify_seated'](label) for label in ('capillary', 'pH_temp')}}
 model['verify_forearm_stack']()
+model['verify_wrist_geometry']()
 (model['OUTPUT'] / 'seated-file-check.json').write_text(json.dumps(gaps))
 print('Saved seated elbow artifact passed surface readback')
 bpy.ops.wm.open_mainfile(filepath=str(model['OUTPUT'] / 'service.blend'))
@@ -355,7 +354,7 @@ for label in ('capillary', 'pH_temp'):
     angles[label] = math.degrees((pivot.inverted() @ head).to_quaternion().angle)
     if abs(angles[label] - 15) > 0.01:
         raise ValueError('Saved service angle mismatch')
-report = {{'wrist_angles_deg': angles, 'clamps': model['verify_clamps']()}}
+report = {{'wrist_angles_deg': angles, 'clamps': model['verify_clamps'](), 'pin_service_samples': model['verify_pin_service']()}}
 (model['OUTPUT'] / 'service-file-check.json').write_text(json.dumps(report))
 print('Saved service artifact passed angle and removal readback')
 bpy.ops.wm.open_mainfile(filepath=str(model['OUTPUT'] / 'elbow-seated.blend'))
