@@ -8,6 +8,7 @@ from mathutils import Matrix, Vector
 
 from scripts.lab_electrode_check import (
     verify_clamps,
+    verify_closed_part,
     verify_forearm_stack,
     verify_head_envelopes,
     verify_pins,
@@ -26,7 +27,7 @@ from scripts.lab_electrode_closure import (
     verify_joint_teeth,
     verify_pin_service,
     verify_seated,
-    verify_wrist_geometry,
+    verify_take_up,
 )
 from scripts.lab_station_rig import set_electrode_service_tilt, set_electrode_wrist_pose, set_pose
 from scripts.model_lab_simple import verify_clearance
@@ -100,6 +101,9 @@ def verify(pose: Callable[..., None]) -> dict[str, object]:
     service_tilt_samples = verify_service_tilt()
     pin_service_samples = verify_pin_service()
     wrist_release = verify_wrist_release()
+    wrist_service_closure = {
+        label: verify_take_up(label, "tip") for label in ("capillary", "pH_temp")
+    }
     clamp_checks = verify_clamps()
     for forward in range(0, 21, 2):
         for label in ("capillary", "pH_temp"):
@@ -115,6 +119,7 @@ def verify(pose: Callable[..., None]) -> dict[str, object]:
     return {
         "wrist_local_tooth_samples": wrist_samples,
         "wrist_release": wrist_release,
+        "wrist_service_closure": wrist_service_closure,
         "indexed_positions": indexed,
         "elbow_closure": closure,
         "indexed_transition_samples": transition_samples,
@@ -157,7 +162,7 @@ def verify(pose: Callable[..., None]) -> dict[str, object]:
 def verify_shoulder_transfer(
     pose: Callable[..., None], capture: Callable[[str], None] | None = None
 ) -> dict[str, object]:
-    """Sample release, rigid rotation and reseating with the elbow held closed."""
+    """Sample shoulder transfer with both the elbow and wrist held closed."""
     spec = ElectrodeArmSpec()
     rows = []
     for label in ("capillary", "pH_temp"):
@@ -180,6 +185,7 @@ def verify_shoulder_transfer(
             for index, (stage, angle, release, closure) in enumerate(stages):
                 pose(label, *spec.indexed_target(1), elbow_release=0, shoulder_release=0)
                 apply_take_up(label, closure_spec("elbow").stroke_mm)
+                apply_take_up(label, closure_spec("tip").stroke_mm, "tip")
                 apply_shoulder_release(label, release)
                 base = bpy.data.objects[f"S_{label}_base"].matrix_world.copy()
                 rotation = base @ Matrix.Rotation(math.radians(angle), 4, "X") @ base.inverted()
@@ -188,6 +194,7 @@ def verify_shoulder_transfer(
                 bpy.context.view_layer.update()
                 apply_take_up(label, closure, "shoulder")
                 verify_seated(label)
+                verify_seated(label, "tip")
                 verify_interference(label, "shoulder")
                 verify_pins(label)
                 if any(
@@ -232,7 +239,7 @@ def verify_shoulder_transfer(
     return {
         "states": rows,
         "sample_count": len(rows),
-        "scope": "Rigid sampled path at elbow +15 degrees; no continuous swept-volume, thread or load claim.",
+        "scope": "Rigid sampled path at elbow +15 degrees, wrist held seated; no continuous swept-volume, thread or load claim.",
     }
 
 
@@ -290,3 +297,31 @@ def verify_wrist_release() -> dict[str, object]:
         finally:
             set_electrode_service_tilt(label)
     return {"samples": rows, "sample_count": len(rows)}
+
+
+def verify_wrist_geometry() -> dict[str, dict[str, float]]:
+    """Measure retained floor and reduced depth independently on the saved solid."""
+    result = {}
+    for label in ("capillary", "pH_temp"):
+        side = 1 if label == "capillary" else -1
+        knob = bpy.data.objects[f"S_{label}_tip_knob"]
+        verify_closed_part(knob)
+        frame = bpy.data.objects[f"S_{label}_tip_bolt"].matrix_world @ Matrix.Diagonal(
+            (side, 1, 1, 1)
+        )
+        measures = []
+        for radius, expected, feature in ((3.5, 2.5, "floor"), (6, 7.5, "depth")):
+            values = [
+                face_coordinate(knob, frame, radius, math.radians(angle), 1)
+                - face_coordinate(knob, frame, radius, math.radians(angle), -1)
+                for angle in range(0, 360, 30)
+            ]
+            if any(abs(value - expected) > 0.01 for value in values):
+                raise ValueError("Wrist knob " + feature + " outside budget: " + label)
+            measures.append((min(values), max(values)))
+        result[label] = {
+            "floor_min_mm": measures[0][0],
+            "depth_max_mm": measures[1][1],
+            "ray_samples": 48,
+        }
+    return result

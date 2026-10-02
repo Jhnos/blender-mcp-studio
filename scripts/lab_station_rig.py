@@ -6,7 +6,7 @@ import math
 from collections.abc import Sequence
 
 import bpy
-from mathutils import Matrix
+from mathutils import Matrix, Vector
 
 from src.core.domain.lab_station import ElectrodeArmSpec, LabStationSpec, Point
 
@@ -18,9 +18,11 @@ def set_electrode_wrist_pose(label: str, angle_deg: float, release_mm: float) ->
     prefix = "S_" + label + "_"
     side = 1 if label == "capillary" else -1
     bolt = bpy.data.objects[prefix + "tip_bolt"]
-    frame = bolt.matrix_world @ Matrix.Translation(
-        (side * float(bolt.get("wrist_release_mm", 0)) / 1000, 0, 0)
-    )
+    frame = bolt.matrix_world.copy()
+    platform = bpy.data.objects[prefix + "platform"].matrix_world
+    offset = Vector((0, ElectrodeArmSpec.platform_offset_mm / 1000, 0))
+    frame.translation = platform @ offset
+    bpy.data.objects[prefix + "tip_nut"].matrix_world = platform @ Matrix.Translation(offset)
     shifted = frame @ Matrix.Translation((-side * release_mm / 1000, 0, 0))
     tilted = shifted @ Matrix.Rotation(math.radians(angle_deg), 4, "X")
     for part in bpy.data.objects:

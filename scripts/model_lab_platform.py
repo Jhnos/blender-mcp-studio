@@ -39,6 +39,9 @@ from scripts.lab_electrode_check import (
 from scripts.lab_electrode_closure import (
     apply_shoulder_release,
 )
+from scripts.lab_electrode_closure import apply_take_up as apply_take_up
+from scripts.lab_electrode_closure import closure_spec as closure_spec
+from scripts.lab_electrode_closure import verify_interference as verify_interference
 from scripts.lab_electrode_closure import (
     verify_joint_release as verify_joint_release,
 )
@@ -51,12 +54,13 @@ from scripts.lab_electrode_closure import (
 from scripts.lab_electrode_closure import (
     verify_seated as verify_seated,
 )
-from scripts.lab_electrode_closure import (
-    verify_wrist_geometry as verify_wrist_geometry,
-)
+from scripts.lab_electrode_closure import verify_take_up as verify_take_up
 from scripts.lab_electrode_motion import verify, verify_shoulder_transfer
 from scripts.lab_electrode_motion import verify_service_tilt as verify_service_tilt
 from scripts.lab_electrode_motion import verify_wrist_faces as verify_wrist_faces
+from scripts.lab_electrode_motion import (
+    verify_wrist_geometry as verify_wrist_geometry,
+)
 from scripts.lab_station_arm import finish_arm
 from scripts.lab_station_clamp import compact_probe_head
 from scripts.lab_station_joints import electrode_joint_teeth, hand_knob_hardware, retained_pivot
@@ -65,12 +69,12 @@ from scripts.lab_station_render import (
     render_electrode_details,
     render_electrode_seated,
 )
-from scripts.lab_station_rig import set_electrode_wrist_pose, set_pose
+from scripts.lab_station_rig import set_electrode_service_tilt, set_electrode_wrist_pose, set_pose
 from scripts.model_lab_simple import link, verify_clearance
 from src.core.domain.lab_station import ElectrodeArmSpec
 
 ROOT = Path(__file__).resolve().parents[1]
-OUTPUT = ROOT / "tmp/lab-station-electrode-wrist-teeth"
+OUTPUT = ROOT / "tmp/lab-station-electrode-wrist-seated"
 
 
 def bake(obj: bpy.types.Object, side: int) -> None:
@@ -322,8 +326,19 @@ def main() -> None:
         pose(label)
     set_pose(bpy.data.objects["LS_SCREEN_CONTROL"], tilt_step=4, release_mm=0)
     render_electrode_details(OUTPUT, pose)
+    for label in ("capillary", "pH_temp"):
+        pose(label, 0, 100)
+        set_electrode_service_tilt(label)
+    render_electrode_seated(OUTPUT, "service-seated", ("tip",))
     render_wrist_release()
     render_electrode_seated(OUTPUT)
+    frame = bpy.data.objects["S_capillary_tip_bolt"].matrix_world
+    scene.camera.location = frame @ Vector((-0.040, -0.035, 0.035))
+    scene.camera.data.ortho_scale = 0.080
+    look_at(scene.camera, tuple(v * 1000 for v in frame.translation))
+    scene.render.filepath = str(OUTPUT / "wrist-seated-detail.png")
+    bpy.ops.render.render(write_still=True)
+    configure_electrode_view()
     for label in ("capillary", "pH_temp"):
         pose(label)
     bpy.ops.wm.save_as_mainfile(filepath=str(OUTPUT / "electrode-concept.blend"))

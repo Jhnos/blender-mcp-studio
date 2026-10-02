@@ -363,15 +363,17 @@ def render_electrode_details(output: Path, pose: Callable[[str, float, float], N
     scene.camera.data.ortho_scale = camera_scale
 
 
-def render_electrode_seated(output: Path) -> None:
-    """Save both bearing chains closed together, retaining the independent baseline file."""
+def render_electrode_seated(
+    output: Path, stem: str = "arm-seated", joints: tuple[str, ...] = ("shoulder", "elbow", "tip")
+) -> None:
+    """Save selected bearing chains closed together, retaining the nominal baseline."""
     scene = bpy.context.scene
     for label in ("capillary", "pH_temp"):
-        for joint in ("shoulder", "elbow"):
+        for joint in joints:
             apply_take_up(label, closure_spec(joint).stroke_mm, joint)
-        for joint in ("shoulder", "elbow"):
+        for joint in joints:
             verify_seated(label, joint)
         verify_interference(label, "shoulder")
-    scene.render.filepath = str(output / "arm-seated.png")
+    scene.render.filepath = str(output / (stem + ".png"))
     bpy.ops.render.render(write_still=True)
-    bpy.ops.wm.save_as_mainfile(filepath=str(output / "arm-seated.blend"))
+    bpy.ops.wm.save_as_mainfile(filepath=str(output / (stem + ".blend")))

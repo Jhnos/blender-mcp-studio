@@ -9,13 +9,23 @@ def verify_saved_electrode(script: Path) -> None:
     # A fresh addon command lets Blender refresh context after opening the saved artifact.
     code = f"""import bpy, runpy, json
 model = runpy.run_path({str(script)!r})
-gaps = {{label: {{joint: model['verify_seated'](label, joint) for joint in ('shoulder', 'elbow')}} for label in ('capillary', 'pH_temp')}}
+gaps = {{label: {{joint: model['verify_seated'](label, joint) for joint in ('shoulder', 'elbow', 'tip')}} for label in ('capillary', 'pH_temp')}}
 model['verify_forearm_stack']()
 model['verify_wrist_geometry']()
-wrist = {{label: model['verify_wrist_faces'](label, 0.2) for label in ('capillary', 'pH_temp')}}
+wrist = {{label: model['verify_wrist_faces'](label, 0) for label in ('capillary', 'pH_temp')}}
 (model['OUTPUT'] / 'wrist-file-check.json').write_text(json.dumps(wrist))
 (model['OUTPUT'] / 'seated-file-check.json').write_text(json.dumps(gaps))
-print('Saved seated shoulder and elbow artifact passed surface readback')
+for label in ('capillary', 'pH_temp'):
+    model['set_electrode_wrist_pose'](label, 0, 2)
+    model['verify_wrist_faces'](label, 2.2)
+    model['verify_interference'](label, 'tip')
+    model['set_electrode_wrist_pose'](label, 0, 0)
+    model['verify_wrist_faces'](label, 0.2)
+    model['apply_take_up'](label, model['closure_spec']('tip').stroke_mm, 'tip')
+    for joint in ('shoulder', 'elbow', 'tip'):
+        model['verify_seated'](label, joint)
+    model['verify_interference'](label, 'tip')
+print('Saved three-joint seating and wrist reopening passed')
 bpy.ops.wm.open_mainfile(filepath=str(model['OUTPUT'] / 'service.blend'))
 """
     print(BlenderSocketOracle("127.0.0.1", 9876, timeout=30).execute(code))
@@ -32,6 +42,15 @@ for label in ('capillary', 'pH_temp'):
 report = {{'wrist_tooth_gaps': {{label: model['verify_wrist_faces'](label, 0.2) for label in ('capillary', 'pH_temp')}}, 'wrist_angles_deg': angles, 'clamps': model['verify_clamps'](), 'pin_service_samples': model['verify_pin_service']()}}
 (model['OUTPUT'] / 'service-file-check.json').write_text(json.dumps(report))
 print('Saved service artifact passed angle and removal readback')
+bpy.ops.wm.open_mainfile(filepath=str(model['OUTPUT'] / 'service-seated.blend'))
+"""
+    print(BlenderSocketOracle("127.0.0.1", 9876, timeout=60).execute(code))
+    code = f"""import bpy, runpy, json
+model = runpy.run_path({str(script)!r})
+r = {{label: model['verify_seated'](label, 'tip') for label in ('capillary', 'pH_temp')}}
+for label in ('capillary', 'pH_temp'):
+    model['verify_interference'](label, 'tip')
+(model['OUTPUT'] / 'service-seated-file-check.json').write_text(json.dumps(r))
 bpy.ops.wm.open_mainfile(filepath=str(model['OUTPUT'] / 'wrist-released.blend'))
 """
     print(BlenderSocketOracle("127.0.0.1", 9876, timeout=60).execute(code))
@@ -65,10 +84,10 @@ bpy.ops.wm.open_mainfile(filepath=str(model['OUTPUT'] / 'transfer-end-pH_temp.bl
     print(BlenderSocketOracle("127.0.0.1", 9876, timeout=300).execute(code))
     code = f"""import bpy, runpy, json
 model = runpy.run_path({str(script)!r})
-gaps = {{joint: model['verify_seated']('pH_temp', joint) for joint in ('shoulder', 'elbow')}}
+gaps = {{joint: model['verify_seated']('pH_temp', joint) for joint in ('shoulder', 'elbow', 'tip')}}
 model['verify_pins']('pH_temp')
 (model['OUTPUT'] / 'transfer-file-check.json').write_text(json.dumps(gaps))
-print('Saved shoulder transfer endpoint passed both bearing chains and pins')
+print('Saved shoulder transfer endpoint passed three bearing chains and pins')
 bpy.ops.wm.open_mainfile(filepath=str(model['OUTPUT'] / 'arm-seated.blend'))
 """
     print(BlenderSocketOracle("127.0.0.1", 9876, timeout=30).execute(code))

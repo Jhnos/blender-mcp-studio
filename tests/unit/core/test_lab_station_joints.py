@@ -85,3 +85,27 @@ def test_shoulder_closure_keeps_base_fixed_and_moves_connected_arm_inward() -> N
         spec.offsets(float("nan"))
     with pytest.raises(ValueError):
         spec.offsets(0.71)
+
+
+def test_wrist_take_up_closes_head_carrier_chain_without_moving_carrier() -> None:
+    from src.core.domain.lab_station_joints import WristClosureSpec
+
+    spec = WristClosureSpec()
+    for index in range(71):
+        travel = spec.stroke_mm * index / 70
+        offsets = spec.offsets(travel)
+        gaps = (
+            0.2 + offsets["tip_knob"] - offsets["tip_bolt"],
+            0.1 + offsets["head"] - offsets["tip_knob"],
+            0.2 - offsets["head"],
+            0.2 + offsets["tip_nut"],
+        )
+        assert min(gaps) >= -1e-12
+        assert sum(gaps) == pytest.approx(0.7 - travel)
+        assert "platform" not in offsets
+    assert spec.offsets(spec.stroke_mm) == pytest.approx(
+        {"tip_nut": -0.2, "tip_bolt": 0.5, "tip_knob": 0.3, "head": 0.2}
+    )
+    for invalid in (-0.1, 0.71, float("nan")):
+        with pytest.raises(ValueError):
+            spec.offsets(invalid)

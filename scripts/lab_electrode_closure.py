@@ -1,4 +1,4 @@
-"""Sequential shoulder and elbow bearing take-up, measured on actual surfaces in one shared pose."""
+"""Sequential joint bearing take-up, measured on actual surfaces in one shared pose."""
 
 import math
 from itertools import combinations
@@ -8,13 +8,18 @@ from mathutils import Matrix, Vector
 
 from scripts.lab_electrode_check import verify_closed_part
 from scripts.lab_station_motion_check import tree
-from src.core.domain.lab_station_joints import ElbowClosureSpec, ShoulderClosureSpec
+from src.core.domain.lab_station_joints import (
+    ElbowClosureSpec,
+    ShoulderClosureSpec,
+    WristClosureSpec,
+)
 
 
 def closure_spec(joint: str) -> ElbowClosureSpec:
-    if joint not in ("elbow", "shoulder"):
+    specs = {"elbow": ElbowClosureSpec, "shoulder": ShoulderClosureSpec, "tip": WristClosureSpec}
+    if joint not in specs:
         raise ValueError("Unsupported bearing chain")
-    return ShoulderClosureSpec() if joint == "shoulder" else ElbowClosureSpec()
+    return specs[joint]()
 
 
 def bearing_pairs(
@@ -22,14 +27,18 @@ def bearing_pairs(
 ) -> list[tuple[bpy.types.Object, bpy.types.Object, float]]:
     closure_spec(joint)
     prefix = "S_" + label + "_"
-    support = "lower" if joint == "elbow" else "base"
+    support, carrier = {
+        "elbow": ("lower", "upper"),
+        "shoulder": ("base", "upper"),
+        "tip": ("head", "platform"),
+    }[joint]
     return [
         (bpy.data.objects[prefix + left], bpy.data.objects[prefix + right], radius)
         for left, right, radius in (
             (joint + "_bolt", joint + "_knob", 3.5),
             (joint + "_knob", support, 6.5),
-            (support, "upper", 8.0),
-            ("upper", joint + "_nut", 3.5),
+            (support, carrier, 8.0),
+            (carrier, joint + "_nut", 3.5),
         )
     ]
 
@@ -37,10 +46,10 @@ def bearing_pairs(
 def joint_frame(label: str, joint: str = "elbow") -> Matrix:
     closure_spec(joint)
     side = 1 if label == "capillary" else -1
-    support = "upper" if joint == "elbow" else "base"
+    support = {"elbow": "upper", "shoulder": "base", "tip": "platform"}[joint]
     return (
         bpy.data.objects[f"S_{label}_{support}"].matrix_world
-        @ Matrix.Translation((0, 0, 0.15 if joint == "elbow" else 0))
+        @ Matrix.Translation((0, 0.022 if joint == "tip" else 0, 0.15 if joint == "elbow" else 0))
         @ Matrix.Diagonal((side, 1, 1, 1))
     )
 
@@ -65,7 +74,8 @@ def measure_gaps(label: str, joint: str = "elbow") -> list[tuple[float, float]]:
     for left, right, radius in bearing_pairs(label, joint):
         gaps = []
         count = 192 if radius == 8 else 12
-        for sample_radius in (6.5, 8.0, 10.0) if radius == 8 else (radius,):
+        tooth_radii = (6.2, 7.0, 7.8) if joint == "tip" else (6.5, 8.0, 10.0)
+        for sample_radius in tooth_radii if radius == 8 else (radius,):
             for index in range(count):
                 angle = math.radians(0.37 + index * 360 / count)
                 gaps.append(
@@ -73,34 +83,6 @@ def measure_gaps(label: str, joint: str = "elbow") -> list[tuple[float, float]]:
                     - face_coordinate(left, frame, sample_radius, angle, 1)
                 )
         result.append((min(gaps), max(gaps)))
-    return result
-
-
-def verify_wrist_geometry() -> dict[str, dict[str, float]]:
-    """Measure retained floor and reduced depth independently on the saved solid."""
-    result = {}
-    for label in ("capillary", "pH_temp"):
-        side = 1 if label == "capillary" else -1
-        knob = bpy.data.objects[f"S_{label}_tip_knob"]
-        verify_closed_part(knob)
-        frame = bpy.data.objects[f"S_{label}_tip_bolt"].matrix_world @ Matrix.Diagonal(
-            (side, 1, 1, 1)
-        )
-        measures = []
-        for radius, expected, feature in ((3.5, 2.5, "floor"), (6, 7.5, "depth")):
-            values = [
-                face_coordinate(knob, frame, radius, math.radians(angle), 1)
-                - face_coordinate(knob, frame, radius, math.radians(angle), -1)
-                for angle in range(0, 360, 30)
-            ]
-            if any(abs(value - expected) > 0.01 for value in values):
-                raise ValueError("Wrist knob " + feature + " outside budget: " + label)
-            measures.append((min(values), max(values)))
-        result[label] = {
-            "floor_min_mm": measures[0][0],
-            "depth_max_mm": measures[1][1],
-            "ray_samples": 48,
-        }
     return result
 
 
@@ -151,6 +133,17 @@ def take_up_offsets(label: str, travel_mm: float, joint: str) -> dict[str, float
             **{obj.name[len(prefix) :]: offsets["upper"] for obj in shoulder_members(label)},
             **offsets,
         }
+    if joint == "tip":
+        prefix = f"S_{label}_"
+        return {
+            **{
+                obj.name[len(prefix) :]: offsets["head"]
+                for obj in bpy.data.objects
+                if obj.name.startswith(prefix)
+                and (obj.get("compact_head_part") or obj.name.startswith(prefix + "probe_"))
+            },
+            **offsets,
+        }
     return offsets
 
 
@@ -175,7 +168,7 @@ def verify_interference(label: str, joint: str = "elbow") -> None:
     meshes = {obj.name: tree(obj) for obj in objects}
     contacts = {
         frozenset((left.name, right.name)): (left, right)
-        for contact_joint in ("elbow", "shoulder")
+        for contact_joint in ("elbow", "shoulder", "tip")
         for left, right, _ in bearing_pairs(label, contact_joint)
     }
     axis = joint_frame(label, joint).to_3x3() @ Vector((1, 0, 0))
@@ -211,14 +204,15 @@ def verify_take_up(label: str, joint: str = "elbow") -> dict[str, object]:
                 obj.matrix_world = originals[obj.name]
             apply_take_up(label, travel, joint)
             offsets = spec.offsets(travel)
+            support = "head" if joint == "tip" else "lower"
             expected = (
                 (
-                    spec.head_gap_mm + offsets["elbow_knob"] - offsets["elbow_bolt"],
-                    spec.knob_gap_mm + offsets["lower"] - offsets["elbow_knob"],
-                    spec.tooth_gap_mm - offsets["lower"],
-                    spec.nut_gap_mm + offsets["elbow_nut"],
+                    spec.head_gap_mm + offsets[joint + "_knob"] - offsets[joint + "_bolt"],
+                    spec.knob_gap_mm + offsets[support] - offsets[joint + "_knob"],
+                    spec.tooth_gap_mm - offsets[support],
+                    spec.nut_gap_mm + offsets[joint + "_nut"],
                 )
-                if joint == "elbow"
+                if joint in ("elbow", "tip")
                 else ()
             )
             if joint == "shoulder":
@@ -363,4 +357,5 @@ def verify_bearing_chains(label: str) -> dict[str, object]:
     return {
         "closure": verify_take_up(label),
         "shoulder_closure": verify_take_up(label, "shoulder"),
+        "wrist_closure": verify_take_up(label, "tip"),
     }

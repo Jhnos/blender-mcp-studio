@@ -1,6 +1,6 @@
 # VOC 追溯
 
-Population: R1–R16 為歷史 V10 的 LS_，R17–R24 為 rotary，R25 為 simple，R26–R42 為電極臂系列，現行為 electrode-wrist-teeth。每個範圍皆涵蓋其兩頭、三探頭、單杯與 HMI；排除檢測佈局副本與診斷物件，任何必要族群為零即 FAIL。歷史證據只屬於該模型，不能當成現行電極臂的製造資格；現行規格見 [01-scope](01-scope.md)。
+Population: R1–R16 為歷史 V10 的 LS_，R17–R24 為 rotary，R25 為 simple，R26–R43 為電極臂系列，現行為 electrode-wrist-seated。每個範圍皆涵蓋其兩頭、三探頭、單杯與 HMI；排除檢測佈局副本與診斷物件，任何必要族群為零即 FAIL。歷史證據只屬於該模型，不能當成現行電極臂的製造資格；現行規格見 [01-scope](01-scope.md)。
 
 | ID | Requirement | Tier | User-visible | Kind | Verified-by |
 |---|---|---|---|---|---|
@@ -45,4 +45,5 @@ Population: R1–R16 為歷史 V10 的 LS_，R17–R24 為 rotary，R25 為 simp
 | R39 | 平台被動軸改為可浮動 2 mm 的列印插銷／卡扣，保留退齒、止擋與維修抽出路徑；卡扣缺失與另一頭擋路被拒絕 | voc | yes | behavior | artifact:electrode-slim-wrist/verification.json,electrode-slim-wrist/red-carrier-retainer.json,electrode-slim-wrist/red-pin-service-blocked.json,electrode-slim-wrist/service-file-check.json |
 | R40 | 肩部四對承壓面收隙且支座固定，整組前臂保持連接；肩肘同時就座保存檔讀回，未就座宣稱必須拒絕 | engineering | yes | behavior | artifact:electrode-shoulder-seated/verification.json,electrode-shoulder-seated/red-unseated-shoulder.json,electrode-shoulder-seated/seated-file-check.json,electrode-shoulder-seated/arm-seated.blend |
 | R41 | 肘保持就座時肩部退齒、剛體轉一齒位與再就座，探頭隨轉、支座及另一頭固定；障礙拒絕且終點存檔讀回 | engineering | yes | behavior | artifact:electrode-shoulder-transfer/shoulder-transfer.json,electrode-shoulder-transfer/red-shoulder-transfer-blocked.json,electrode-shoulder-transfer/transfer-file-check.json,electrode-shoulder-transfer/transfer-end-pH_temp.blend |
-| R42 | 腕部 24 齒定位、2 mm 退開與隨平台計算維修角；整齒通過／半齒及錯角拒絕，實際間隙和保存檔讀回 | engineering | yes | behavior | artifact:electrode-wrist-teeth/verification.json,electrode-wrist-teeth/red-wrist-half-index.json,electrode-wrist-teeth/red-wrist-off-index.json,electrode-wrist-teeth/wrist-release-file-check.json,electrode-wrist-teeth/wrist-released.blend |
+| R42 | 腕部 24 齒定位、2 mm 退開與隨平台計算維修角；整齒通過／半齒及錯角拒絕，實際間隙和保存檔讀回 | engineering | yes | behavior | artifact:electrode-wrist-seated/verification.json,electrode-wrist-seated/red-wrist-half-index.json,electrode-wrist-seated/red-wrist-off-index.json,electrode-wrist-seated/wrist-release-file-check.json,electrode-wrist-seated/wrist-released.blend |
+| R43 | 腕部四接面同時就座，調整後可重鎖，肩轉位保持腕部貼合 | engineering | yes | behavior | artifact:electrode-wrist-seated/verification.json,electrode-wrist-seated/red-unseated-wrist.json,electrode-wrist-seated/red-wrist-seating-blocked.json,electrode-wrist-seated/seated-file-check.json,electrode-wrist-seated/service-seated-file-check.json,electrode-wrist-seated/transfer-file-check.json,electrode-wrist-seated/wrist-seated-detail.png |

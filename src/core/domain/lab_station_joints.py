@@ -117,3 +117,19 @@ class ShoulderClosureSpec(ElbowClosureSpec):
             "shoulder_knob": moving_support["elbow_knob"] - tooth_travel,
             "upper": -tooth_travel,
         }
+
+
+@dataclass(frozen=True, slots=True)
+class WristClosureSpec(ElbowClosureSpec):
+    """Negative-side head closes against the fixed positive-side carrier."""
+
+    def offsets(self, travel_mm: float) -> dict[str, float]:
+        return {
+            {
+                "elbow_nut": "tip_nut",
+                "elbow_bolt": "tip_bolt",
+                "elbow_knob": "tip_knob",
+                "lower": "head",
+            }[name]: offset
+            for name, offset in ElbowClosureSpec.offsets(self, travel_mm).items()
+        }

@@ -64,7 +64,7 @@ def expect_failure(check, expected, artifact):
         (model['OUTPUT'] / f'red-{{artifact}}.json').write_text(json.dumps({{'rejected': True, 'reason': str(error)}}))
     else:
         raise RuntimeError('Negative control accepted: ' + artifact)
-for joint, artifact in (('elbow', 'unseated-chain'), ('shoulder', 'unseated-shoulder')):
+for joint, artifact in (('elbow', 'unseated-chain'), ('shoulder', 'unseated-shoulder'), ('tip', 'unseated-wrist')):
     expect_failure(lambda: model['verify_seated']('capillary', joint), 'not simultaneously seated', artifact)
 part = bpy.data.objects['S_capillary_head']
 saved = part.matrix_world.copy()
@@ -76,6 +76,16 @@ finally:
     part.matrix_world = saved
     bpy.context.view_layer.update()
 model['verify_wrist_faces']('capillary', 0.2)
+part = bpy.data.objects['S_pH_temp_head']
+saved = part.matrix_world.copy()
+try:
+    part.matrix_world = bpy.data.objects['S_capillary_head'].matrix_world.copy()
+    bpy.context.view_layer.update()
+    expect_failure(lambda: model['verify_take_up']('capillary', 'tip'), 'Take-up obstructed', 'wrist-seating-blocked')
+finally:
+    part.matrix_world = saved
+    bpy.context.view_layer.update()
+model['verify_take_up']('capillary', 'tip')
 part = bpy.data.objects['S_capillary_follower']
 saved = part.data.copy()
 try:

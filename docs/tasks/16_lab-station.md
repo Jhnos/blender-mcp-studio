@@ -28,6 +28,34 @@
 
 ### Verified facts
 
+- V01.0R.020：最終完整 `scripts/ci.sh --real` 89292 terminal exit 0，所有 hard gates green（`tmp/lab-station-electrode-wrist-seated/ci-wrist-seated-entry.log`）。腕收隙領域測試先缺類別紅，再 7/7 通過；十二姿態 study 51743 exit 0，focused 48918 exit 0（tmp/wrist-seated-focused.log），最後完整閘門包含新增的肩轉位保持腕部貼合。
+- 現行輸出 `tmp/lab-station-electrode-wrist-seated/`。沿用原幾何與五金；腕部四接面總收隙 0.7 mm，螺母 −0.2、螺栓 +0.5、旋鈕 +0.3、整組夾頭／探頭 +0.2 mm，平台固定。十二配置共 180 狀態，查實際接面、螺栓外露量與全場障礙。未就座及另一頭擋路的反例均拒絕。
+- arm-seated.blend 是两頭肩／肘／腕六組承壓鏈同時貼合；service-seated.blend 是抬高 100 mm、腕角 19.313° 的兩腕貼合，肩肘仍退開。fresh readback 最大殘差：工作 0.000130、維修 0.000094 mm。完整腕部近照 wrist-seated-detail 與先前維修圖已檢視；沒有隱藏零件。
+- 絕對腕部控制由平台求軸心，螺母沿平台朝向；新控制先因共用螺栓角度使六角座相撞，修正後十二姿態與回讀循環通過。對已三關節貼合存檔執行腕部退開 2 mm、回名義間隙、重新就座，再查三關節與障礙，不累加偏移。
+- 肩部 176 狀態轉位新增腕部保持貼合，每個狀態量腕部接面；另一頭固定、探頭隨臂轉。終點 fresh readback 三關節，最大殘差 0.000108 mm，擋路反例仍拒絕。Blender 已還原現行 arm-seated，restored-file-check.json 重讀六組承壓鏈。
+- 首次完整 96066 T2 發現四處嵌入專案 import，於確認失敗後停止該 CI／子程序（143），只讀 20062 exit 0 確认 Blender 排空。改以 model 入口取得函式，不放寬守衛；17 focused tests 通過，89292 完整重跑全綠。失敗日誌與最終日誌均保留。
+- 5S：無新模組／公開介面，wrist 幾何檢查由 closure 移到既有 motion，收隙沿用純領域規格與幾何量測。main 348、closure 361、motion 327、render 379、readback 93、driver 359 行，均低於 380 警戒。規格移除舊腕部未整合敘述並補導航，R43 與新教訓同步；生成檔只在 tmp。
+
+### Open failures
+
+- 全機走線、其餘肩角及連續掃掠、螺紋／彈性預緊、工具／手指空間、軟襯／卡扣保持力、底座／LCD 保持、載荷與實體列印未資格化，無現行整機製造 STL。剛體面貼合不能替代鎖緊力。
+- 與參考產品仍有走線整合及關節／底座外形差距。氣管、pH 與溫度線外徑仍未回覆；Ø6 mm 僅是假設，可換夾片尚未建立。實際容器／探頭／板件尺寸、負載、材料、溫度／液體及浸入精度資料仍缺。
+
+### Next step
+
+- 89292 terminal exit 0，無正在執行的驗證。下一步沿臂走線與關節鬆弛空間，優先讓外觀與可操作性更接近參考；線徑未定可做明示尺寸的可換夾片／包絡，不能假定吻合實物。另續底座／LCD 工程資格與物理試片。
+- 新模組先查 GitHub；前輪走線參考在 09-references.md，但要依這次新增模組實際職責查找。render 已 379 行，新增呈現前先移既有責任或合適拆分，不能壓短語意躲預算。
+- closure_spec／bearing_pairs／joint_frame 現支援 tip；tip 使用平台不動框架与 6.2／7／7.8 mm 齒面半徑。take_up_offsets 連動夾頭、夾具和探頭。apply_take_up 是相對位移；verify_take_up 各樣本還原，不能累加。set_electrode_wrist_pose 可由已收隙狀態回到名義配置。
+- 全機工作檔是 arm-seated；service 保留名義間隙，service-seated 只腕貼合，wrist-released 是腕退開 2 mm。杯／盤 +3.5 mm、平台浮動 2 mm、維修抬高 100 mm／19.313° 保留。真機串行且執行中不改来源；生成、反例、肩轉位各獨立 300 秒，開檔後 fresh 命令讀回，逾時先排空。
+
+## 歷史驗證紀錄
+
+以下為逐輪證據與當時的下一步；接手只依上方現行段落與任務索引，不能將歷史下一步重新當成主線。
+
+### V01.0R.01Z 接手事實（歷史）
+
+### Verified facts
+
 - V01.0R.01Z：完整 `scripts/ci.sh --real` 63949 terminal exit 0，所有 hard gates green（`tmp/lab-station-electrode-wrist-teeth/ci-wrist-teeth-split.log`）。領域齒位方法先紅再 20/20 通過；真機涵蓋生成、動作、反例及存檔讀回。
 - 現行輸出 `tmp/lab-station-electrode-wrist-teeth/`。腕部夾頭／平台內嵌半徑 8 mm、24 齒配對面，不增五金。局部齒面 20 案例；腕部 42 個退開及 42 個傾角狀態，保留全部原肩肘／拆卸／碰撞檢查。另一頭固定。
 - 抬高 100 mm 的平台角度由領域模型推導：下一腕齒位相對鉛直 19.3134208°。轉角時夾頭、探頭、腕螺栓及旋鈕退開 2 mm，螺母留平台側；一般自由姿態亦退開腕部。對齒仍留 0.2 mm 名義間隙，沒有宣稱腕部就座。
@@ -48,9 +76,6 @@
 - arm-seated.blend 僅肩肘就座；wrist-released.blend 為兩腕退開，wrist-teeth-detail 只是隱藏夾頭的診斷視角。杯／盤 +3.5 mm、平台浮動 2 mm 保留；維修抬高 100 mm，腕角更新為 19.313°，不可再用舊 15°。
 - 真機流程串行且執行中不改來源；生成、反例、完整肩轉位各獨立 300 秒期限。開檔後另下 fresh 命令，超時先確認排空。新模組先查 GitHub，沿用 blender-mcp-studio／版本／checkpoint 流程。
 
-## 歷史驗證紀錄
-
-以下為逐輪證據與當時的下一步；接手只依上方現行段落與任務索引，不能將歷史下一步重新當成主線。
 
 ### V01.0R.01Y 接手事實（歷史）
 
