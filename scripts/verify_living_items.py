@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 from pathlib import Path
 
@@ -64,11 +65,25 @@ for kind, feature in expected.items():
         assert len(occupied) >= (35 if view == "ground" else 100), (name, len(occupied))
         assert all(0 < x < size[0] - 1 and 0 < y < size[1] - 1 for x, y in occupied)
         records.append(
-            {"file": name, "size": size, "opaque_pixels": len(occupied), "rerender_equal": True}
+            {
+                "file": name,
+                "size": size,
+                "opaque_pixels": len(occupied),
+                "rerender_equal": True,
+                "sha256": hashlib.sha256((OUT / name).read_bytes()).hexdigest(),
+            }
         )
         bpy.data.images.remove(original)
         bpy.data.images.remove(rerender)
 (OUT / "verification.json").write_text(
-    json.dumps({"passed": True, "images": records}, indent=2) + "\n"
+    json.dumps(
+        {
+            "passed": True,
+            "source_sha256": hashlib.sha256((OUT / "living-items.blend").read_bytes()).hexdigest(),
+            "images": records,
+        },
+        indent=2,
+    )
+    + "\n"
 )
 print("LIVING_ITEMS_VERIFIED", len(records))

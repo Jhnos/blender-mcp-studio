@@ -1,5 +1,6 @@
 {
   "passed": true,
+  "source_sha256": "7bb38024520c85c8d97e6a316a18e14e6c6bec9c3473cb0a89770642041598af",
   "images": [
     {
       "file": "key-ground.png",
@@ -8,7 +9,8 @@
         192
       ],
       "opaque_pixels": 393,
-      "rerender_equal": true
+      "rerender_equal": true,
+      "sha256": "7ab340d0e589d18e3716c5684f89498cb23510f473483fcfb7179fe8a29f7132"
     },
     {
       "file": "key-inventory.png",
@@ -17,7 +19,8 @@
         64
       ],
       "opaque_pixels": 397,
-      "rerender_equal": true
+      "rerender_equal": true,
+      "sha256": "15c23de83abddb16e8e030c1c01f9e9919e3b7be2d25e161f196fb8efa0f37aa"
     },
     {
       "file": "letter-ground.png",
@@ -26,7 +29,8 @@
         192
       ],
       "opaque_pixels": 1087,
-      "rerender_equal": true
+      "rerender_equal": true,
+      "sha256": "5fd8aaafc31bc0212f9f872cce4119e0de022d000a0da73bf34c4c016a9cfbc2"
     },
     {
       "file": "letter-inventory.png",
@@ -35,7 +39,8 @@
         64
       ],
       "opaque_pixels": 1089,
-      "rerender_equal": true
+      "rerender_equal": true,
+      "sha256": "6cfde088fa91aeaef4a2b14cd87695d70f6253a245ed42f0ab3789f90b65053d"
     },
     {
       "file": "potion-ground.png",
@@ -44,7 +49,8 @@
         192
       ],
       "opaque_pixels": 527,
-      "rerender_equal": true
+      "rerender_equal": true,
+      "sha256": "a5437b67fc859d9cc2aba370117031415dc47ba15babf71fc6a7e04f81887116"
     },
     {
       "file": "potion-inventory.png",
@@ -53,7 +59,8 @@
         64
       ],
       "opaque_pixels": 528,
-      "rerender_equal": true
+      "rerender_equal": true,
+      "sha256": "1b632266f508e2044dd50e8a8fb7ea8a7f563a45af15b4a91951f431ef7e3796"
     },
     {
       "file": "purse-ground.png",
@@ -62,7 +69,8 @@
         192
       ],
       "opaque_pixels": 529,
-      "rerender_equal": true
+      "rerender_equal": true,
+      "sha256": "2ee12b0c9304337ec4b77c6d7205c9b431f444dc1e8ba76e9616e92ce5fae210"
     },
     {
       "file": "purse-inventory.png",
@@ -71,7 +79,8 @@
         64
       ],
       "opaque_pixels": 537,
-      "rerender_equal": true
+      "rerender_equal": true,
+      "sha256": "8408d98a513d4427137b051bdef4995484f9a6567081122df963f70a73ef8ca5"
     },
     {
       "file": "tool-ground.png",
@@ -80,7 +89,8 @@
         192
       ],
       "opaque_pixels": 690,
-      "rerender_equal": true
+      "rerender_equal": true,
+      "sha256": "d13d5274f80a3402ec5afccd7c73507772338caaaaaee51e5d26a180c2e5801f"
     },
     {
       "file": "tool-inventory.png",
@@ -89,7 +99,8 @@
         64
       ],
       "opaque_pixels": 690,
-      "rerender_equal": true
+      "rerender_equal": true,
+      "sha256": "27564d5bd1f522079ca12be58666dc23b89abd2c34483b99631a91956dffef76"
     },
     {
       "file": "parcel-ground.png",
@@ -98,7 +109,8 @@
         192
       ],
       "opaque_pixels": 1455,
-      "rerender_equal": true
+      "rerender_equal": true,
+      "sha256": "2480d5e2f9fae2a109b060ca00e223b8544319bcde8dbec5cbde32bf58dc45af"
     },
     {
       "file": "parcel-inventory.png",
@@ -107,7 +119,8 @@
         64
       ],
       "opaque_pixels": 1462,
-      "rerender_equal": true
+      "rerender_equal": true,
+      "sha256": "82398df6797070da09d4186c6775ace7db2a471c8f7486ab97be938da0bd78ea"
     }
   ]
 }

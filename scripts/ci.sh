@@ -85,6 +85,7 @@ if (( REAL )); then
   _run hard "living item saved-file geometry and pixels" "${BLENDER_BIN:-/Applications/Blender.app/Contents/MacOS/Blender}" --background --factory-startup --python-exit-code 1 --python scripts/verify_living_items.py
   _run hard "living actor saved-file rigs and anchors" "${BLENDER_BIN:-/Applications/Blender.app/Contents/MacOS/Blender}" --background --factory-startup --python-exit-code 1 --python scripts/verify_living_actors.py
   _run hard "world kit saved-file geometry and anchors" "${BLENDER_BIN:-/Applications/Blender.app/Contents/MacOS/Blender}" --background --factory-startup --python-exit-code 1 --python scripts/verify_world_kit.py
+  _run hard "living feedback atlases and source archive" "${UV_BIN:-$HOME/.local/bin/uv}" run --no-project --with pillow==12.3.0 python scripts/package_living_feedback.py tmp/living-feedback-release
   if nc -z localhost 9876 2>/dev/null; then
     # Deployment artifacts live on this machine only, so this belongs here and
     # not in the hermetic tier: a fresh checkout has no LaunchAgents to inspect.

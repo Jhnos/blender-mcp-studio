@@ -37,6 +37,10 @@ full courier gameplay and subsequent B/C expansion stay in PVR STATUS.
 - Full `scripts/ci.sh --real` passed after the recovery and ownership fixes: T1/T2, effect/item/actor/world-kit saved-file checks, loaded services, REST, MCP, readiness and batch operations. Durable log copy: `tmp/living-feedback-evidence/living-feedback-full-ci.log`. This seals source assets and verification, not playable B integration.
 - 5S scan still lists baseline hand-document link candidates owned by the main checkout; no new task-specific finding was used to claim a clean whole-repository scan.
 
+- Feedback publisher now binds evidence to source blend/image SHA256, rejects stale/incomplete/duplicate/failing records (seven RED→GREEN tests), and creates six effect plus two item atlases, twelve HTML-friendly item images, two previews and a bounded source ZIP. All 60 atlas cells were compared to their original bytes; 22 PNGs total 822,370 bytes, below the 4MiB budget. Pinned publishing runtime: Pillow 12.3.0.
+- Complete `scripts/ci.sh --real` passed for the publisher, including refreshed saved-source hashes and the actual publisher gate (`/tmp/feedback-publisher-real-ci.log`). Release staging: `tmp/living-feedback-release/feedback.json` and `living-feedback-source.zip`.
+- PVR integration checkout created at `/Users/bearmacmini/Project_Veilroom_Feedback`, branch `codex/living-feedback`, starting from `ea760a1`; its main checkout has independent verification edits, so do not overwrite/stage those. Merge and remove this integration worktree after the playable B release is verified.
+
 ### Open failures
 
 - No remaining failure in this source checkpoint's complete gate. The initial run's five service failures and concurrency are retained in `tmp/living-items-evidence/`; restarting API/Web restored logs and scene responses, without restarting Blender or changing the user scene. No owned fixtures remained on read-only inspection.
@@ -46,4 +50,4 @@ full courier gameplay and subsequent B/C expansion stay in PVR STATUS.
 
 ### Next step
 
-- Package the verified 48 effect frames and twelve item images into game atlases with manifests/source downloads, then integrate the playable feedback showcase in PVR. Inspect its concurrently updated STATUS/evidence before editing. B runtime/reduced-motion/one-shot deduplication, C and original-room quantitative gaps remain required; source previews do not complete B.
+- Integrate the published feedback package in the PVR feedback worktree: optional map catalog, semantic consequence projection, once-only sprite playback, inventory pictures and actual playable uses. Reuse resolved_consequence plus instance_id/choice_id/replayed from the existing choice response. Keep old content/save identities intact. B runtime/reduced-motion/deduplication, C and original-room gaps remain required.

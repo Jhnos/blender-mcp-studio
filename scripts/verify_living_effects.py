@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 from pathlib import Path
 
@@ -52,11 +53,28 @@ for kind in ("pickup", "unlock", "complete", "footsteps", "teleport", "blocked")
         occupied = [(i % 128, i // 128) for i, a in enumerate(alpha) if a > 0.01]
         assert len(occupied) >= 20
         assert all(0 < x < 127 and 0 < y < 127 for x, y in occupied)
-        records.append({"file": name, "occupied_pixels": len(occupied), "rerender_equal": True})
+        records.append(
+            {
+                "file": name,
+                "occupied_pixels": len(occupied),
+                "rerender_equal": True,
+                "sha256": hashlib.sha256((OUT / name).read_bytes()).hexdigest(),
+            }
+        )
         bpy.data.images.remove(original)
         bpy.data.images.remove(rerender)
     assert len(poses) == 8, (kind, "non-distinct animation poses")
 (OUT / "verification.json").write_text(
-    json.dumps({"passed": True, "frames": records}, indent=2) + "\n"
+    json.dumps(
+        {
+            "passed": True,
+            "source_sha256": hashlib.sha256(
+                (OUT / "living-effects.blend").read_bytes()
+            ).hexdigest(),
+            "frames": records,
+        },
+        indent=2,
+    )
+    + "\n"
 )
 print("LIVING_EFFECTS_VERIFIED", len(records))

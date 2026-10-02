@@ -1,245 +1,294 @@
 {
   "passed": true,
+  "source_sha256": "87db13d5cdfac08972701abda5375586de4e9927c1881711c0875fc9585035d5",
   "frames": [
     {
       "file": "pickup/00.png",
       "occupied_pixels": 638,
-      "rerender_equal": true
+      "rerender_equal": true,
+      "sha256": "bc23121472c81a8e0784f7ea40d9d1a18af9900a8c13104d123f0ccede4494d4"
     },
     {
       "file": "pickup/01.png",
       "occupied_pixels": 584,
-      "rerender_equal": true
+      "rerender_equal": true,
+      "sha256": "21b7636b02a2945ec1de07dbd0388efd1e18827175ef1c326808ee5f7f35d208"
     },
     {
       "file": "pickup/02.png",
       "occupied_pixels": 483,
-      "rerender_equal": true
+      "rerender_equal": true,
+      "sha256": "f80fbcdff239c48c58ba6d4f7b288fa452e168ee932fa72a96b3d41d4c3337c2"
     },
     {
       "file": "pickup/03.png",
       "occupied_pixels": 394,
-      "rerender_equal": true
+      "rerender_equal": true,
+      "sha256": "50bb6ddb4f7b548dd9da003b123cb412dd1f94993353dde9e3e3b6567f1b3395"
     },
     {
       "file": "pickup/04.png",
       "occupied_pixels": 321,
-      "rerender_equal": true
+      "rerender_equal": true,
+      "sha256": "0846cc6af24abe0b63a9e162aee994f77b4bcd2f00fcd21dce676c92fa8d2b52"
     },
     {
       "file": "pickup/05.png",
       "occupied_pixels": 249,
-      "rerender_equal": true
+      "rerender_equal": true,
+      "sha256": "4c188ecc005b846aa1f0a93d47a9446ef2da6bee4ba9110a97d15891ef9b31a8"
     },
     {
       "file": "pickup/06.png",
       "occupied_pixels": 191,
-      "rerender_equal": true
+      "rerender_equal": true,
+      "sha256": "45754298f514d7d0d09d667e64e492f60f3534b913646dce114155b175946660"
     },
     {
       "file": "pickup/07.png",
       "occupied_pixels": 132,
-      "rerender_equal": true
+      "rerender_equal": true,
+      "sha256": "bf8a7c3c1ea2c0b1232c3d87bf8695ea2b0dfa7531159002d7c5488cb4d23bda"
     },
     {
       "file": "unlock/00.png",
       "occupied_pixels": 379,
-      "rerender_equal": true
+      "rerender_equal": true,
+      "sha256": "04efc3278c8437dde02b33a81f067354852511186acdb3f7718eea69937364b7"
     },
     {
       "file": "unlock/01.png",
       "occupied_pixels": 453,
-      "rerender_equal": true
+      "rerender_equal": true,
+      "sha256": "ea1f73ebb726210a2d9d37ccf51e6d393220b0a595b7a4bde622930d6ab6114a"
     },
     {
       "file": "unlock/02.png",
       "occupied_pixels": 541,
-      "rerender_equal": true
+      "rerender_equal": true,
+      "sha256": "bb717f672db910e1251949b34ae8263385c2b1150c8e387bdda5cd67832b92d9"
     },
     {
       "file": "unlock/03.png",
       "occupied_pixels": 647,
-      "rerender_equal": true
+      "rerender_equal": true,
+      "sha256": "97c612baa0340127e8042b2c3decbe345580618327024dca1e44b36e7430c207"
     },
     {
       "file": "unlock/04.png",
       "occupied_pixels": 779,
-      "rerender_equal": true
+      "rerender_equal": true,
+      "sha256": "065b8f8d30aa48d535284ad8d13c4599c38bcf3c39a8f7b58e2ac92c7595ad90"
     },
     {
       "file": "unlock/05.png",
       "occupied_pixels": 915,
-      "rerender_equal": true
+      "rerender_equal": true,
+      "sha256": "f97d355421071b9e729bac7f048459c27f292ba9f3a0d5a36c793616a1c05df3"
     },
     {
       "file": "unlock/06.png",
       "occupied_pixels": 1069,
-      "rerender_equal": true
+      "rerender_equal": true,
+      "sha256": "20808b24f7b3a4204d208bc668de60d102f1b4650584477bca341a470e8d4c54"
     },
     {
       "file": "unlock/07.png",
       "occupied_pixels": 1218,
-      "rerender_equal": true
+      "rerender_equal": true,
+      "sha256": "2fa9a368609f1b5d3e2019fac79043d54f6ef89a9ea0c0f4af27d848f81a7992"
     },
     {
       "file": "complete/00.png",
       "occupied_pixels": 376,
-      "rerender_equal": true
+      "rerender_equal": true,
+      "sha256": "9cb85a122c3e500e2e4ca419a18b1baf916bdf665fba20f4356e2f9d38d96be6"
     },
     {
       "file": "complete/01.png",
       "occupied_pixels": 383,
-      "rerender_equal": true
+      "rerender_equal": true,
+      "sha256": "cb89a08c61815d0fa5f68aaa5e85becd0a32df329a9b6dbf2dcde295c91fdf34"
     },
     {
       "file": "complete/02.png",
       "occupied_pixels": 383,
-      "rerender_equal": true
+      "rerender_equal": true,
+      "sha256": "104e85eb16eccadabeaddc2d8a83121de431e237d160ed292f52df63e2e1ad73"
     },
     {
       "file": "complete/03.png",
       "occupied_pixels": 387,
-      "rerender_equal": true
+      "rerender_equal": true,
+      "sha256": "75e57825d02952bdb788da079f55e31fd4e473401aa90b74b81e7de2b636555f"
     },
     {
       "file": "complete/04.png",
       "occupied_pixels": 386,
-      "rerender_equal": true
+      "rerender_equal": true,
+      "sha256": "5bf2c75c3eca1cf550b3c28e64ce80b31ad06f1fb9fabc8e342159a67ea0412d"
     },
     {
       "file": "complete/05.png",
       "occupied_pixels": 387,
-      "rerender_equal": true
+      "rerender_equal": true,
+      "sha256": "6cfaeffb5d241467b463705fd1f18eddff1888302e99eba64208084de59ba871"
     },
     {
       "file": "complete/06.png",
       "occupied_pixels": 395,
-      "rerender_equal": true
+      "rerender_equal": true,
+      "sha256": "85838ab2c6898991ad49b02e1166840ac8abe32dd349466b234aa15ce1e7d15f"
     },
     {
       "file": "complete/07.png",
       "occupied_pixels": 401,
-      "rerender_equal": true
+      "rerender_equal": true,
+      "sha256": "53a9832f5b4ec5fa7ac764ccf0d00104da7a406a27f34ce1e3788a1efd2171c5"
     },
     {
       "file": "footsteps/00.png",
       "occupied_pixels": 387,
-      "rerender_equal": true
+      "rerender_equal": true,
+      "sha256": "c88a6c6c58d2c036abbde3e061a28aa43126f79e917de5fbdaa5623e460dfd9f"
     },
     {
       "file": "footsteps/01.png",
       "occupied_pixels": 457,
-      "rerender_equal": true
+      "rerender_equal": true,
+      "sha256": "708e6aaf27a712c0d38f7f8660b1933d782a70a674f9509bd272c81f255b5bbf"
     },
     {
       "file": "footsteps/02.png",
       "occupied_pixels": 507,
-      "rerender_equal": true
+      "rerender_equal": true,
+      "sha256": "a2dc253a16697aefc06f219fde4460756824af5c1d1c6a717ba6558d3f6f3b4b"
     },
     {
       "file": "footsteps/03.png",
       "occupied_pixels": 589,
-      "rerender_equal": true
+      "rerender_equal": true,
+      "sha256": "66e4739024314d29cf783946c849b18a15464cc620a528c791029d391937b374"
     },
     {
       "file": "footsteps/04.png",
       "occupied_pixels": 654,
-      "rerender_equal": true
+      "rerender_equal": true,
+      "sha256": "57029d423985d16d2a366f7bb3ceda5ad321b95724dbef111207c2b25183ed07"
     },
     {
       "file": "footsteps/05.png",
       "occupied_pixels": 724,
-      "rerender_equal": true
+      "rerender_equal": true,
+      "sha256": "c8acc5abf7cccbdb8b885e0a2e7f1a1a0fe1cff0ea5afeebf81d621a0d35ab7c"
     },
     {
       "file": "footsteps/06.png",
       "occupied_pixels": 813,
-      "rerender_equal": true
+      "rerender_equal": true,
+      "sha256": "035951654e928b1217b96ddda022e28fabeb6341eb35bac7d147e32fbdfafbec"
     },
     {
       "file": "footsteps/07.png",
       "occupied_pixels": 889,
-      "rerender_equal": true
+      "rerender_equal": true,
+      "sha256": "dca9dd35538eaf9e8c5fcdcb61083e688fe1e61803bf08544e35b16ff2ca6815"
     },
     {
       "file": "teleport/00.png",
       "occupied_pixels": 818,
-      "rerender_equal": true
+      "rerender_equal": true,
+      "sha256": "138989ca00cdb7891087619d8bf0491154f48fe2c41b17b59ffa8327649cdea8"
     },
     {
       "file": "teleport/01.png",
       "occupied_pixels": 943,
-      "rerender_equal": true
+      "rerender_equal": true,
+      "sha256": "de7b3a386fcdcd9521aef914aaf0d8a1fb68b31007d7446d2f7cfe9b7f5bdc5e"
     },
     {
       "file": "teleport/02.png",
       "occupied_pixels": 1062,
-      "rerender_equal": true
+      "rerender_equal": true,
+      "sha256": "a2c1c6a535199d1281d68fefead86bceb765ef2b0ed1079cacede801250b4e34"
     },
     {
       "file": "teleport/03.png",
       "occupied_pixels": 1173,
-      "rerender_equal": true
+      "rerender_equal": true,
+      "sha256": "100bc01a523fb13d002cbced99b16d99e6bf61c3c0f1b42be22f0b74cd5f9cde"
     },
     {
       "file": "teleport/04.png",
       "occupied_pixels": 1291,
-      "rerender_equal": true
+      "rerender_equal": true,
+      "sha256": "2917afb12b3cd8887bd9dbb3c7156129a7a3358597d5e11b8bc6da75cb9077ee"
     },
     {
       "file": "teleport/05.png",
       "occupied_pixels": 1419,
-      "rerender_equal": true
+      "rerender_equal": true,
+      "sha256": "43803eeb6a5602cc697b4e347ad353682c6e0396d969fc6433019562aa7d60e8"
     },
     {
       "file": "teleport/06.png",
       "occupied_pixels": 1464,
-      "rerender_equal": true
+      "rerender_equal": true,
+      "sha256": "74e3f94797085798195c704461c52f3963125d61f43c9ce3ccbc80e78d772bef"
     },
     {
       "file": "teleport/07.png",
       "occupied_pixels": 1547,
-      "rerender_equal": true
+      "rerender_equal": true,
+      "sha256": "4b558b9499454d63eb4f38fc384bd38f958e25def8081c7df07c064175d853a1"
     },
     {
       "file": "blocked/00.png",
       "occupied_pixels": 415,
-      "rerender_equal": true
+      "rerender_equal": true,
+      "sha256": "93d859ae9ed82fe9fef32ca58f4bf89505b6756f98363b837d03514d2ab38a7d"
     },
     {
       "file": "blocked/01.png",
       "occupied_pixels": 491,
-      "rerender_equal": true
+      "rerender_equal": true,
+      "sha256": "f2456e657e96c1273e0aece547403ae3a24ed1c3b18f14e8f47e1bf4ada0cb92"
     },
     {
       "file": "blocked/02.png",
       "occupied_pixels": 559,
-      "rerender_equal": true
+      "rerender_equal": true,
+      "sha256": "7e43f00c9b8c7adf370487abec4c26b275cac82f8170fb7dfc348cb71b898cfd"
     },
     {
       "file": "blocked/03.png",
       "occupied_pixels": 599,
-      "rerender_equal": true
+      "rerender_equal": true,
+      "sha256": "fa31a2fe62584788f9705d4acbca93406131f81b22bcd4c05a0b302db3abfe8a"
     },
     {
       "file": "blocked/04.png",
       "occupied_pixels": 613,
-      "rerender_equal": true
+      "rerender_equal": true,
+      "sha256": "564329d7ead18e7908e76b5bae78a3d5f61073da09ceaa874866b497a1111f3e"
     },
     {
       "file": "blocked/05.png",
       "occupied_pixels": 598,
-      "rerender_equal": true
+      "rerender_equal": true,
+      "sha256": "7ff229c980bd4f41e3cc089a8ad53ee6edd981af36dce93acf348444a3e37d33"
     },
     {
       "file": "blocked/06.png",
       "occupied_pixels": 561,
-      "rerender_equal": true
+      "rerender_equal": true,
+      "sha256": "c8cbbbdbcf1d48e3302492117dbadfa98e511165308f3dcda11501b04f78b912"
     },
     {
       "file": "blocked/07.png",
       "occupied_pixels": 487,
-      "rerender_equal": true
+      "rerender_equal": true,
+      "sha256": "43814b0e59b22023602ae3cd6c817efe1cda9ab490d7b818789812b35067a9ad"
     }
   ]
 }
