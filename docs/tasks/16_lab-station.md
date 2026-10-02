@@ -28,11 +28,16 @@
 
 ### Verified facts
 
-- 現行輸出在 `tmp/lab-station-electrode-seated/`。`electrode-concept.blend` 是原間隙的運動基線，`elbow-seated.blend` 是四對承壓面同時就座的檔案。已檢視 `elbow-seated.png` 並重讀就座檔量測通過。
+- 2026-10-03 短腕版 focused 43488 exit 0：`tmp/electrode-short-head-integrated.log`。毛細管／pH 溫度夾座中心落差由 22／44 改 20／38 mm，外角半徑 4 mm，腕盤夾蓋讓位。實際夾蓋底緣到腕軸 29／47 mm，過長接頭負對照拒絕；46 單頭位置、11 共同前伸、298 拆裝、2760 止擋與就座存檔重讀通過。working／extended／clamp-detail 已檢視。38 domain／DCC tests 與四檔 lint／format／mypy 通過。初期 18 mm 毛細管撞旋鈕，36 mm pH 在共同前伸撞另一夾蓋，均未採用；各輪失敗日誌保留。上一輪因執行中修改來源造成讀回 import 不同步，固定来源後本輪重驗通過；之後完整驗證期間不得改碼。
+- 前輪未完成的肩部退齒 helpers／泛化改名已從生產來源移除；原工作差異保存在 `tmp/shoulder-and-short-head-wip.patch`，避免未接入驗證的試作混入此輪。肩部需求仍未完成，杯座 +3.5 mm 尚未套用。
+
+- 現行候選輸出在 `tmp/lab-station-electrode-short-head/`（01S）；上輪封存輸出 `tmp/lab-station-electrode-seated/` 保留。`electrode-concept.blend` 是原間隙的運動基線，`elbow-seated.blend` 是四對承壓面同時就座的檔案。已檢視 `elbow-seated.png` 並重讀就座檔量測通過。
 - 肘部名義收隙行程 0.7 mm：螺母先入座、螺栓頭接觸旋鈕、旋鈕接觸下臂，再合齒。八個整齒位配置各 15 個狀態，共 120 個；每步射線查齒面三半徑各 192 角點和三平面各 12 角點，並查障礙與螺栓外露。這是剛體就座，未證明預緊力。
 - 修復齒面近似不匹配：原實測間隙約 0.13–0.27 mm，配對面與每齒區改用一致三角分割後，各齒位均能就座。齒面側 Ø5.6 mm 局部孔讓位，主孔最小仍 Ø5.4 mm，避免五條破邊。前兩次整合失敗與表面量測日誌保留於 `tmp/electrode-closure-*`、`tmp/electrode-seated-integrated-*.log`。
 - focused 真機 26022 exit 0，日誌 `tmp/electrode-seated-integrated-third.log`；既有齒位／移動／夾具／止擋檢查保留。領域收隙先紅後綠，五個 joints tests 通過。
 - V01.0R.01R 完整 CI 77945 exit 0，日誌 `tmp/lab-station-electrode-seated/ci-seated.log`。所有 hard gates green；未就座負對照與保存檔重讀也通過。
+
+- 01S 5S：沿用四個既有模組，主生成器 364 行、checker 357 行、clamp 277 行；沒有新模組或公開介面。舊模型與失敗日誌保留，未驗的肩部试作移出來源；R34 追溯實際包絡與共同前伸，四張視圖已檢視。完整 CI 18874 exit 0，整機仍未具製造／載荷資格。
 
 ### Open failures
 
@@ -42,10 +47,10 @@
 
 ### Next step
 
-- CI 77945 已 terminal（exit 0），本輪 V01.0R.01R；接手先查 git log 與工作樹確認封存。
-- 下一步肩／腕齒槽與就座，再其餘裝配／LCD／走線與載荷資格。材料與預緊力不得由剛體幾何代替。
-- 就座檔不適合直接執行舊中立間隙檢查；先用 `pose(label)` 還原原間隙，或載入 `electrode-concept.blend`。`apply_take_up` 是相對位移，禁止累加呼叫；驗證器會逐步還原原矩陣。
-- 深度微調精度仍未回覆；15° 為粗定位，不宣稱精細調高完成。整體目標 active。
+- V01.0R.01S 完整 `scripts/ci.sh --real` 18874 已 terminal exit 0，所有 hard gates green，日誌 `tmp/lab-station-electrode-short-head/ci-short-head.log`。無執行中的驗證；續末端平台與軸端整合。
+- 末端縮短與圓角只完成部分外形收斂；三角平台／軸端整合、走線、肩／腕齒槽與就座、其餘裝配／LCD／載荷仍未完成。深度精度未回覆，15° 仍只是粗定位。
+- 肩部先前試作在 pH 溫度探頭杯內側退 1.2 mm 碰杯，+3.5 mm 杯座候選尚未套用；先保留需求，不恢復未接入驗證的 helpers。
+- 就座檔不適合直接執行舊中立間隙檢查；先用 `pose(label)` 或原間隙 `electrode-concept.blend`。`apply_take_up` 是相對位移，禁止累加。
 
 ## 歷史驗證紀錄
 

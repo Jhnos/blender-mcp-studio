@@ -39,7 +39,7 @@ def lined_jaw(
     if rounded:
         for part in (fixed, cap):
             bevel = part.modifiers.new("Rounded jaw edges", "BEVEL")
-            bevel.width, bevel.segments = 0.002, 3
+            bevel.width, bevel.segments = 0.004, 6
             bpy.context.view_layer.objects.active = part
             bpy.ops.object.modifier_apply(modifier=bevel.name)
     boolean(carrier, fixed, "UNION")
@@ -222,7 +222,7 @@ def compact_probe_head(label: str, mat: bpy.types.Material) -> list[bpy.types.Ob
     """Reuse split liners in a narrower, rounded jaw attached behind the wrist disc."""
     dual = label == "pH_temp"
     offset = -21 if dual else -20
-    z = -44 if dual else -22
+    z = -38 if dual else -20
     prefix = "S_" + label + "_"
     spec = ProbeClampSpec(
         jaw_width_mm=20,
@@ -234,6 +234,11 @@ def compact_probe_head(label: str, mat: bpy.types.Material) -> list[bpy.types.Ob
     assign(head, mat)
     boolean(head, add_cylinder("E_TOOL", 2.7, 20, (0, ring_y, 0), "Y"), "DIFFERENCE")
     boolean(head, block("E_TOOL", (8, 8, -z - 8), (4.4, ring_y, (z - 4) / 2), mat), "UNION")
+    boolean(
+        head,
+        block("E_TOOL_cap_clearance", (20, spec.jaw_depth_mm + 0.4, 18.4), (-10.2, 0, z), mat),
+        "DIFFERENCE",
+    )
     cap, liners = lined_jaw(
         head,
         label,

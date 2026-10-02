@@ -56,6 +56,23 @@ except ValueError as error:
     (model['OUTPUT'] / 'red-unseated-chain.json').write_text(json.dumps({{'rejected': True, 'reason': str(error)}}))
 else:
     raise RuntimeError('Unseated bearing chain accepted as seated')
+part = bpy.data.objects['S_pH_temp_clamp_cap']
+saved = part.data.copy()
+try:
+    part.data.transform(Matrix.Translation((0, 0, -0.01)))
+    try:
+        model['verify_head_envelopes']()
+    except ValueError as error:
+        if 'hangs too far below wrist' not in str(error):
+            raise
+        (model['OUTPUT'] / 'red-head-depth.json').write_text(json.dumps({{'rejected': True, 'reason': str(error)}}))
+    else:
+        raise RuntimeError('Overlong wrist-to-clamp connection accepted')
+finally:
+    changed = part.data
+    part.data = saved
+    bpy.data.meshes.remove(changed)
+model['verify_head_envelopes']()
 first = model['ElectrodeArmSpec']().indexed_target(1)
 second = model['ElectrodeArmSpec']().indexed_target(2)
 try:

@@ -16,6 +16,7 @@ from scripts.lab_electrode_check import (
     verify_clamps,
     verify_elbow_release,
     verify_elbow_teeth,
+    verify_head_envelopes,
     verify_knobs,
     verify_local,
     verify_pins,
@@ -31,7 +32,7 @@ from src.core.domain.lab_station import ElectrodeArmSpec
 from src.core.domain.lab_station_joints import ElbowClosureSpec
 
 ROOT = Path(__file__).resolve().parents[1]
-OUTPUT = ROOT / "tmp/lab-station-electrode-seated"
+OUTPUT = ROOT / "tmp/lab-station-electrode-short-head"
 
 
 def bake(obj: bpy.types.Object, side: int) -> None:
@@ -215,6 +216,10 @@ def verify() -> dict[str, object]:
         verify_clearance()
     set_pose(screen, tilt_step=4, release_mm=0)
     clamp_checks = verify_clamps()
+    for forward in range(0, 21, 2):
+        for label in ("capillary", "pH_temp"):
+            pose(label, forward, 100)
+        verify_clearance()
     for label in ("capillary", "pH_temp"):
         pose(label)
     actual_metal = sum(
@@ -231,6 +236,7 @@ def verify() -> dict[str, object]:
         "free_motion_poses_elbow_released_mm": 2,
         "clamp_checks": clamp_checks,
         "clamp_service_lift_mm": 100,
+        "both_heads_forward_samples": 11,
         "samples": rows,
         "sample_count": len(rows),
         "screen_samples_with_raised_heads": 16,
@@ -238,6 +244,7 @@ def verify() -> dict[str, object]:
         "metal_nuts": 16,
         "removable_probe_caps": 2,
         "soft_liner_halves": 6,
+        "head_depth_below_wrist_mm": verify_head_envelopes(),
         "printed_hand_knobs": 6,
         "knob_bolt_length_mm": 20,
         "knob_bolt_exposure_budget_mm": [0, 1.5],
@@ -316,7 +323,7 @@ def main() -> None:
     scene.render.filepath = str(OUTPUT / "elbow-released.png")
     bpy.ops.render.render(write_still=True)
     head = bpy.data.objects["S_pH_temp_head"]
-    target = head.matrix_world @ Vector((0.021, 0, -0.044))
+    target = head.matrix_world @ Vector((0.021, 0, -0.038))
     scene.camera.location = target + head.matrix_world.to_3x3() @ Vector((0.055, 0.060, 0.028))
     scene.camera.data.ortho_scale = 0.12
     look_at(scene.camera, tuple(value * 1000 for value in target))

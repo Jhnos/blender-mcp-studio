@@ -37,3 +37,4 @@ Population: R1–R16 為歷史 V10 的 LS_，R17–R24 為 rotary，R25 為 simp
 | R31 | 肘部齒槽內嵌兩片封閉臂件，半齒咬合阻擋、退開 2 mm 可調；鬆開不可誤判咬合 | engineering | yes | behavior | artifact:electrode-teeth/verification.json,electrode-teeth/red-elbow-engagement.json,electrode-teeth/elbow-released.png |
 | R32 | 完整平行前臂於四個整齒位保持連接，鬆開後可在齒位間移動；兩齒之間強制咬合被拒絕 | engineering | yes | behavior | artifact:electrode-indexed/verification.json,electrode-indexed/red-between-indices.json,electrode-indexed/indexed-raised.png |
 | R33 | 肘部四對承壓面於同一狀態就座，收隙過程無阻擋且螺栓外露受限；未就座與不匹配齒面被拒絕，另驗存檔狀態 | engineering | yes | behavior | artifact:electrode-seated/verification.json,electrode-seated/red-unseated-chain.json,electrode-seated/seated-file-check.json |
+| R34 | 末端接頭收短、保留手動角度與可拆夾蓋；雙頭共同前伸不互撞 | voc | yes | behavior | artifact:electrode-short-head/verification.json,electrode-short-head/red-head-depth.json |

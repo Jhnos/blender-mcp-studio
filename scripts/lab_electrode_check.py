@@ -188,6 +188,18 @@ def verify_knobs(label: str) -> None:
                 bpy.context.view_layer.update()
 
 
+def verify_head_envelopes() -> dict[str, float]:
+    """Measure actual cap depth below the wrist axis independently of the builder."""
+    depths = {}
+    for label, limit_mm in (("capillary", 29), ("pH_temp", 47)):
+        cap = bpy.data.objects[f"S_{label}_clamp_cap"]
+        depth_mm = -min(vertex.co.z for vertex in cap.data.vertices) * 1000
+        if depth_mm > limit_mm + 0.01:
+            raise ValueError(f"Probe head hangs too far below wrist: {label}, {depth_mm:.3f} mm")
+        depths[label] = depth_mm
+    return depths
+
+
 def verify_clamps() -> dict[str, int]:
     """Check real meshes and straight removal paths; no elastic force qualification."""
     samples, printed = 0, 0

@@ -21,7 +21,9 @@
 
 旋鈕有開放式六角螺栓頭孔與一體承壓頸；上臂兩端及三角板探頭端挖六角螺母座。螺母依所屬臂件方向轉動，避免模型在調臂後失去六角對位。螺栓頭與螺母為名義六角包絡，螺紋未建模；六支旋鈕螺栓改為名義 M5×20，螺栓頭座向內 1.2 mm，旋鈕底部名義厚 2.5 mm；未收隙的螺母外露長度由 4.5 降到 0.7 mm，肘部就座後約 1.4 mm，實際網格允許 0–1.5 mm。逐面接觸預算見下方；整體預緊、實際裝入、手指空間及鎖緊力尚未完成；肘部已具齒槽，肩／探頭端仍未整合齒槽。
 
-兩件可拆夾蓋搭配六片軟襯；夾體寬 20 mm，毛細管座深 30 mm，pH／溫度座深 46 mm，兩座高度差 22 mm，避開雙臂同時前伸的互碰。軟襯凸緣有局部讓位與上下止口；螺絲不直接頂玻璃。拆探頭前先將兩頭抬高 100 mm、卸下螺絲與夾蓋，再側取探頭及剩餘半襯。軟襯材質與壓縮保持力尚未資格化。
+腕軸到夾座中心落差為毛細管 20 mm、pH／溫度 38 mm（前版 22／44 mm）；夾蓋底緣到腕軸分別 29／47 mm，以實際網格獨立量測。夾體與夾蓋外角半徑 4 mm，腕盤下緣為可拆夾蓋預留 0.2 mm 讓位；保留手動腕軸，不將平台與夾頭剛性合併。
+
+兩件可拆夾蓋搭配六片軟襯；夾體寬 20 mm，毛細管座深 30 mm，pH／溫度座深 46 mm，兩座高度差 18 mm，避開雙臂同時前伸的互碰。軟襯凸緣有局部讓位與上下止口；螺絲不直接頂玻璃。拆探頭前先將兩頭抬高 100 mm、卸下螺絲與夾蓋，再側取探頭及剩餘半襯。軟襯材質與壓縮保持力尚未資格化。
 
 ## 肘部齒槽與鬆開姿態
 
@@ -40,6 +42,8 @@
 - `ElectrodeArmSpec` 與領域測試：九個位置目標的固定桿長、平行閉合、三角板角點、超距拒絕。
 - 實際網格：每頭 21 個升降取樣（0–100 mm，每 5 mm），清杯後前後各 20 mm，合計 46 個單頭位置；另一頭保持不動。
 - 每個位置查五組共同軸線與孔周圍材料、六個結構件及新增非金屬夾具全配對表面交叉、雙頭／HMI／外殼交叉及探頭／杯壁交叉。
+- 雙頭同時抬高 100 mm、共同前伸 0–20 mm，每 2 mm 一個取樣，共 11 個姿態查兩頭／外殼／HMI 交叉。舊短頭候選曾在共同前伸終點夾蓋互撞，不能以各自單頭通過取代此項。
+- 夾蓋底緣包絡以實際頂點量測；向下移 10 mm 的負對照必須被深度守衛拒絕，還原後通過。
 - 雙頭抬高後，HMI 16 個收折角度；這不代表所有臂姿態下皆可折屏。
 - `scripts/verify/lab_simple_verify_real.py` 依序重建 simple 與本概念，再移動 follower 材料，必須拒絕且還原後通過。這個入口由完整 real CI 執行。
 - 被動軸追加中立間隙、軸與卡扣共同位移 ±1.5 mm 的臂件止擋、軸相對卡扣位移 ±0.6 mm 的槽肩止擋，以及移除卡扣後 0–25 mm 軸向裝入取樣。移走卡扣的負對照必須拒絕。這些是剛體幾何證據，不證明卡扣彈性或徑向保持力。
@@ -53,4 +57,4 @@
 - `elbow-seated.blend` 是實際就座狀態，real gate 重新讀檔並量四對面；`electrode-concept.blend` 保留原間隙供運動驗證。未就座卻宣稱就座的負對照必須拒絕。
 - 未驗連續掃掠、全部五金互碰、線材、實體列印、卡扣彈性保持、肩／腕齒槽離合、整體預緊、負載與固定力。自碰檢查涵蓋上述結構件及新增非金屬夾具，不能宣稱全機零干涉。
 
-輸出：`tmp/lab-station-electrode-seated/electrode-concept.blend`、`working.png`、`raised.png`、`extended.png`、`screen_folded.png`、`verification.json`、`red-disconnection.json`、`retainer-detail.png`、`red-retainer.json`、`clamp-detail.png`、`clamp-exploded.png`、`red-service-in-cup.json`、`red-clamp-stop.json`、`elbow-released.png`、`red-elbow-engagement.json`、`indexed-raised.png`、`red-between-indices.json`、`elbow-seated.png`、`elbow-seated.blend`、`seated-file-check.json`、`red-unseated-chain.json`。無製造 STL 發布。
+輸出：`tmp/lab-station-electrode-short-head/electrode-concept.blend`、`working.png`、`raised.png`、`extended.png`、`screen_folded.png`、`verification.json`、`red-disconnection.json`、`retainer-detail.png`、`red-retainer.json`、`clamp-detail.png`、`clamp-exploded.png`、`red-service-in-cup.json`、`red-clamp-stop.json`、`elbow-released.png`、`red-elbow-engagement.json`、`indexed-raised.png`、`red-between-indices.json`、`elbow-seated.png`、`elbow-seated.blend`、`seated-file-check.json`、`red-unseated-chain.json`。無製造 STL 發布。
