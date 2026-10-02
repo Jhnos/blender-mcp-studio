@@ -9,6 +9,7 @@ from mathutils import Matrix, Vector
 
 from scripts.hand_gates import shell_count
 from scripts.lab_station_motion_check import tree
+from src.core.domain.lab_station import ElectrodeArmSpec
 
 
 def verify_closed_part(part: bpy.types.Object) -> None:
@@ -54,7 +55,7 @@ def verify_local(label: str) -> None:
         (point(upper, 4.2, 0, 126), point(follower, 12.6, 0, 0)),
         (point(lower, -4.2, 0, 150), point(platform, 4.2, 0, 0)),
         (point(follower, 12.6, 0, 150), point(platform, 4.2, 0, -24)),
-        (point(platform, 4.2, 28, 0), point(head, -4.2, 0, 0)),
+        (point(platform, 4.2, ElectrodeArmSpec.platform_offset_mm, 0), point(head, -4.2, 0, 0)),
     ):
         # Axes may differ in X by layer spacing but must be coaxial in the arm plane.
         axis = upper.matrix_world.to_3x3() @ Vector((1, 0, 0))
@@ -198,6 +199,24 @@ def verify_head_envelopes() -> dict[str, float]:
             raise ValueError(f"Probe head hangs too far below wrist: {label}, {depth_mm:.3f} mm")
         depths[label] = depth_mm
     return depths
+
+
+def verify_platform_geometry() -> int:
+    """Independent silhouette and material-ring samples on both real platform meshes."""
+    for label in ("capillary", "pH_temp"):
+        obj = bpy.data.objects[f"S_{label}_platform"]
+        verify_closed_part(obj)
+        ys = [vertex.co.y * 1000 for vertex in obj.data.vertices]
+        if max(ys) - min(ys) > 40.01:
+            raise ValueError("Electrode platform extends beyond compact envelope")
+        for y, z in ((0, 0), (0, -24), (22, 0)):
+            for index in range(24):
+                angle = index * math.pi / 12
+                start = Vector((-0.05, y / 1000, z / 1000))
+                start += Vector((0, 0.008 * math.cos(angle), 0.008 * math.sin(angle)))
+                if not obj.ray_cast(start, Vector((1, 0, 0)))[0]:
+                    raise ValueError("Electrode platform lacks bore surround")
+    return 144
 
 
 def verify_clamps() -> dict[str, int]:

@@ -4,7 +4,7 @@ Read this file first after a new conversation, compaction, or terminal restart.
 
 ## 接手(2026-09-09,V01.0R.013)
 
-- **目前在做（2026-10-03）:** 16 雙探頭工作站短腕／圓角版，V01.0R.01S。focused 43488 exit 0，日誌 `tmp/electrode-short-head-integrated.log`；新增 11 共同前伸姿態、29／47 mm 夾蓋包絡與負對照，原升降／拆裝／就座讀回保留。輸出 `tmp/lab-station-electrode-short-head/`。完整 `scripts/ci.sh --real` 18874 exit 0（`ci-short-head.log`），所有 hard gates green。**下一步：**續三角平台／軸端整合與肩腕齒槽、LCD、走線、載荷；整體未定稿。接手先讀任務16 hand-off。
+- **目前在做（2026-10-03）:** 16 雙探頭工作站緊湊三角平台，V01.0R.01T。focused 81981 exit 0（`tmp/electrode-platform-mirror-fixed.log`），平台 50→40 mm，孔周 144 點與兩負對照通過；修復清理破壞封閉拓樸。輸出 `tmp/lab-station-electrode-compact-platform/`。完整 `scripts/ci.sh --real` 4805 exit 0，所有 hard gates green（`ci-compact-platform.log`）。**下一步：**軸端整合、肩腕齒槽、LCD、走線與載荷；整體未定稿。接手讀任務16 hand-off。
 - **等驗收:** 15 場景清單不再只有十個;對話路徑第一次有真機閘門(`--real` 32 條全綠)。下一個是 14 第五個實例。
 - 13 已驗收歸檔:對話現在能呼叫本專案自己的產生器。
 - **在等使用者的:** 印。工作單已交付——07 的 V3 試片七項,以及 `hand-gripper` 九節。

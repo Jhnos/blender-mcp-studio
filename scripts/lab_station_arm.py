@@ -169,11 +169,24 @@ def finish_arm(obj: bpy.types.Object) -> None:
     mesh = bmesh.new()
     mesh.from_mesh(obj.data)
     bmesh.ops.triangulate(mesh, faces=list(mesh.faces))
+    original = mesh.copy()
     bmesh.ops.remove_doubles(mesh, verts=list(mesh.verts), dist=0.00001)
     bmesh.ops.dissolve_degenerate(mesh, edges=list(mesh.edges), dist=0.000005)
     mesh.to_mesh(obj.data)
     mesh.free()
     cleanup_mesh(obj)
+    cleaned = bmesh.new()
+    cleaned.from_mesh(obj.data)
+    if all(edge.is_manifold for edge in original.edges) and any(
+        not edge.is_manifold for edge in cleaned.edges
+    ):
+        # A distance weld may merge nearby, distinct corrugation/pocket surfaces.
+        # Keep the valid triangulation instead of trading detail for open seams.
+        bmesh.ops.recalc_face_normals(original, faces=list(original.faces))
+        original.to_mesh(obj.data)
+        obj.data.update()
+    cleaned.free()
+    original.free()
 
 
 def verify_elbow_assembly(

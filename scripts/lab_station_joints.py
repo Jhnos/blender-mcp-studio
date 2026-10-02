@@ -240,7 +240,7 @@ def electrode_elbow_teeth(label: str, finish: Callable[[bpy.types.Object], None]
             target.data.transform(Matrix.Diagonal((-1, 1, 1, 1)))
             target.data.materials.clear()
             target.data.materials.append(mat)
-            cleanup_mesh(target)
+            finish(target)
             target["elbow_teeth"] = ElectrodeArmSpec.elbow_teeth
             if previous.users == 0:
                 bpy.data.meshes.remove(previous)

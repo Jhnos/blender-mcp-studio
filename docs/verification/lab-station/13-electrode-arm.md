@@ -15,7 +15,7 @@
 
 ## 幾何與五金範圍
 
-上臂 150 mm，兩支前臂各 150 mm；平行四連桿兩側軸距 24 mm，三角板探頭角點偏置 28 mm。關節錯層 8.4 mm、臂厚 8 mm、梁寬 12 mm、臂端盤 Ø22 mm（底座維持原尺寸）。新增第二根前臂放到外側避讓 HMI，夾座接頸與夾座一體，兩頭在工作姿態維持原共杯位置。
+上臂 150 mm，兩支前臂各 150 mm；平行四連桿兩側軸距 24 mm，三角板探頭角點偏置 22 mm。關節錯層 8.4 mm、臂厚 8 mm、梁寬 12 mm、臂端盤 Ø22 mm、三角平台端盤 Ø18 mm（底座維持原尺寸）。新增第二根前臂放到外側避讓 HMI，夾座接頸與夾座一體，兩頭在工作姿態維持原共杯位置。
 
 目前模型：16 支名義螺絲、16 顆螺母、4 個列印溝槽軸與 4 個 C 形卡扣；另有六個列印旋鈕（肩／肘 Ø25、探頭端 Ø17 mm），無獨立軸套／墊片。包含四組探頭夾蓋 M3×20 螺絲／螺母，仍不是含板件固定的整機 BOM。軸身 Ø4.8 mm，溝槽 Ø3.4 × 1.8 mm；卡扣外徑 9、內徑 3.8、厚 1.4、開口 3 mm。卡扣沿用既有 hinge_retention 的環形開口形式，以實體環差集建模。開口小於槽徑，需彈性張開；材料、公差、扣入力與保持力未經試片驗證，不能當製造資格。
 
@@ -27,7 +27,7 @@
 
 ## 肘部齒槽與鬆開姿態
 
-肘部兩片 Ø22 mm 端盤內嵌 24 齒、齒高 1.2 mm 的放射齒槽，沒有外掛齒盤。兩面名義間隙 0.2 mm，齒距 15°；這是粗定位，不代表浸入深度微調。下連桿、肘螺栓與旋鈕一同向外退 2 mm，遠端轉軸保持原位。一般連續移動展示姿態明示為肘部鬆開；另有完整閉鏈第 0–3 齒位，肩角保持工作值，相對抬高約 0／37.3／76.4／114.7 mm，前伸改變約 0／11.9／13.7／5.4 mm。齒位表示齒面對齊，尚不代表整體已施加預緊力。
+肘部兩片 Ø22 mm 端盤內嵌 24 齒、齒高 1.2 mm 的放射齒槽，沒有外掛齒盤。兩面名義間隙 0.2 mm，齒距 15°；這是粗定位，不代表浸入深度微調。下連桿、肘螺栓與旋鈕一同向外退 2 mm，遠端轉軸保持原位。一般連續移動展示姿態明示為肘部鬆開；另有完整閉鏈第 0–3 齒位，肩角保持工作值，相對抬高約 0／37.4／76.5／114.7 mm，前伸改變約 0／11.7／13.2／4.6 mm。齒位表示齒面對齊，尚不代表整體已施加預緊力。
 
 齒盤先保留六角螺母空間再與臂合併；每次布林操作後整理網格，避免把前次小面帶入後續切孔。左右臂共用標準側幾何，右側取得獨立鏡射網格，位置與運動仍獨立。
 
@@ -38,6 +38,9 @@
 兩片齒面使用相同且週期一致的三角分割；原各自分割會產生約 0.13–0.27 mm 的實際間隙。齒面側軸孔局部 Ø5.6 mm 讓位，主穿軸孔最小仍為 Ø5.4 mm，避免相切小面造成破邊。
 
 ## 驗證邊界
+
+- 三角平台沿腕部突出方向的實際寬度由 50 收至 40 mm，支點間距仍為 24 mm；兩件查單一封閉實體，並在三孔外 8 mm 半徑各 24 個角度查材料，合計 144 射線。放大輪廓與縮小破壞孔周圍材料的兩種負對照均需拒絕。有限取樣不代表強度或全部最小壁厚資格。
+- 網格清理若使原本封閉的三角化網格變成非流形，保留原三角化結果；鏡射件亦走同一處理。平台每次布林後先整理再切下一孔，避免近重合小面擴散。
 
 - `ElectrodeArmSpec` 與領域測試：九個位置目標的固定桿長、平行閉合、三角板角點、超距拒絕。
 - 實際網格：每頭 21 個升降取樣（0–100 mm，每 5 mm），清杯後前後各 20 mm，合計 46 個單頭位置；另一頭保持不動。
@@ -57,4 +60,4 @@
 - `elbow-seated.blend` 是實際就座狀態，real gate 重新讀檔並量四對面；`electrode-concept.blend` 保留原間隙供運動驗證。未就座卻宣稱就座的負對照必須拒絕。
 - 未驗連續掃掠、全部五金互碰、線材、實體列印、卡扣彈性保持、肩／腕齒槽離合、整體預緊、負載與固定力。自碰檢查涵蓋上述結構件及新增非金屬夾具，不能宣稱全機零干涉。
 
-輸出：`tmp/lab-station-electrode-short-head/electrode-concept.blend`、`working.png`、`raised.png`、`extended.png`、`screen_folded.png`、`verification.json`、`red-disconnection.json`、`retainer-detail.png`、`red-retainer.json`、`clamp-detail.png`、`clamp-exploded.png`、`red-service-in-cup.json`、`red-clamp-stop.json`、`elbow-released.png`、`red-elbow-engagement.json`、`indexed-raised.png`、`red-between-indices.json`、`elbow-seated.png`、`elbow-seated.blend`、`seated-file-check.json`、`red-unseated-chain.json`。無製造 STL 發布。
+輸出：`tmp/lab-station-electrode-compact-platform/electrode-concept.blend`、`working.png`、`raised.png`、`extended.png`、`screen_folded.png`、`verification.json`、`red-disconnection.json`、`retainer-detail.png`、`red-retainer.json`、`clamp-detail.png`、`clamp-exploded.png`、`red-service-in-cup.json`、`red-clamp-stop.json`、`elbow-released.png`、`red-elbow-engagement.json`、`indexed-raised.png`、`red-between-indices.json`、`elbow-seated.png`、`elbow-seated.blend`、`seated-file-check.json`、`red-unseated-chain.json`。無製造 STL 發布。

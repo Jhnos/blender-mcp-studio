@@ -20,6 +20,7 @@ from scripts.lab_electrode_check import (
     verify_knobs,
     verify_local,
     verify_pins,
+    verify_platform_geometry,
 )
 from scripts.lab_electrode_closure import apply_take_up, verify_seated, verify_take_up
 from scripts.lab_station_arm import finish_arm
@@ -32,7 +33,7 @@ from src.core.domain.lab_station import ElectrodeArmSpec
 from src.core.domain.lab_station_joints import ElbowClosureSpec
 
 ROOT = Path(__file__).resolve().parents[1]
-OUTPUT = ROOT / "tmp/lab-station-electrode-short-head"
+OUTPUT = ROOT / "tmp/lab-station-electrode-compact-platform"
 
 
 def bake(obj: bpy.types.Object, side: int) -> None:
@@ -64,14 +65,23 @@ def build(label: str) -> None:
         bake(obj, side)
     obj = link(prefix + "follower", 12.6, mat, radius_mm=11)
     bake(obj, side)
-    vertices = ((0, 0), (0, -24), (28, 0))
+    spec = ElectrodeArmSpec()
+    vertices = ((0, 0), (0, -24), (spec.platform_offset_mm, 0))
     obj = loft_rings(prefix + "platform", [[(x, y, z) for y, z in vertices] for x in (0.2, 8.2)])
     assign(obj, mat)
     for y, z in vertices:
-        boolean(obj, add_cylinder("E_TOOL", 11, 8, (4.2, y, z), "X"), "UNION")
+        boolean(
+            obj, add_cylinder("E_TOOL", spec.platform_boss_radius_mm, 8, (4.2, y, z), "X"), "UNION"
+        )
+        finish_arm(obj)
     for y, z in vertices:
         boolean(obj, add_cylinder("E_TOOL", 2.7, 30, (4.2, y, z), "X"), "DIFFERENCE")
-    boolean(obj, add_cylinder("E_TOOL", 4.8, 5, (6.6, 28, 0), "X", vertices=6), "DIFFERENCE")
+        finish_arm(obj)
+    boolean(
+        obj,
+        add_cylinder("E_TOOL", 4.8, 5, (6.6, spec.platform_offset_mm, 0), "X", vertices=6),
+        "DIFFERENCE",
+    )
     bake(obj, side)
     bpy.data.objects.remove(bpy.data.objects[prefix + "head"], do_unlink=True)
     for obj in compact_probe_head(label, mat):
@@ -245,6 +255,7 @@ def verify() -> dict[str, object]:
         "removable_probe_caps": 2,
         "soft_liner_halves": 6,
         "head_depth_below_wrist_mm": verify_head_envelopes(),
+        "platform_material_samples": verify_platform_geometry(),
         "printed_hand_knobs": 6,
         "knob_bolt_length_mm": 20,
         "knob_bolt_exposure_budget_mm": [0, 1.5],

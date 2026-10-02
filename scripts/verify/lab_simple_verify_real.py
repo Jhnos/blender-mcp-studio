@@ -73,6 +73,28 @@ finally:
     part.data = saved
     bpy.data.meshes.remove(changed)
 model['verify_head_envelopes']()
+part = bpy.data.objects['S_capillary_platform']
+original = part.data
+for name, transform, expected in (
+    ('envelope', Matrix.Diagonal((1, 1.5, 1, 1)), 'compact envelope'),
+    ('material', Matrix.Scale(0.5, 4), 'bore surround'),
+):
+    changed = original.copy()
+    part.data = changed
+    try:
+        changed.transform(transform)
+        try:
+            model['verify_platform_geometry']()
+        except ValueError as error:
+            if expected not in str(error):
+                raise
+            (model['OUTPUT'] / f'red-platform-{{name}}.json').write_text(json.dumps({{'rejected': True, 'reason': str(error)}}))
+        else:
+            raise RuntimeError('Invalid compact platform accepted')
+    finally:
+        part.data = original
+        bpy.data.meshes.remove(changed)
+model['verify_platform_geometry']()
 first = model['ElectrodeArmSpec']().indexed_target(1)
 second = model['ElectrodeArmSpec']().indexed_target(2)
 try:
