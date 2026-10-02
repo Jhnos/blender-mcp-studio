@@ -28,6 +28,34 @@
 
 ### Verified facts
 
+- V01.0R.01X：focused 88548 terminal exit 0（`tmp/shoulder-seated-focused.log`）；完整 `scripts/ci.sh --real` 51833 exit 0，所有 hard gates green（`tmp/lab-station-electrode-shoulder-seated/ci-shoulder-seated.log`）。肩部領域測試先缺類別失敗，再 6/6 通過；完整 lint／format／mypy、模型與交付回歸通過。
+- 現行輸出 `tmp/lab-station-electrode-shoulder-seated/`；`arm-seated.blend` 是兩頭肩、肘同時就座，取代現行交付中的 elbow-only 檔名。`electrode-concept.blend` 仍保留名義間隙，`service.blend` 仍抬高／前傾。旧版輸出保留，不修改其證據。
+- 肩固定支座，總收隙 0.7 mm。相對原間隙最終位移：螺母 −0.4、螺栓 +0.3、旋鈕 +0.1、整組前臂 −0.2 mm；螺母已包含前臂位移，不得重複疊加。沿用既有 primitive／closure／render，零件與 14 螺絲／14 螺母數量不變。
+- 兩頭原四齒位及肩 +15°／肘 +15° 額外姿態，共十配置／150 肩部收隙狀態。每狀態四對接面、全場障礙及螺栓外露量通過；未就座宣稱被拒絕，證據 `red-unseated-shoulder.json`。`verify_interference` 只對肩／肘已知承壓接面允許 0.01 mm 微分離後無交叉，其他障礙沒有豁免。
+- 真機入口重新讀取 `arm-seated.blend`，四組承壓鏈全部在 0.01 mm 容差內，最大絕對殘差 0.000130 mm；`seated-file-check.json` 保留每面上下界。service 讀回仍通過 298 夾具及 156 插銷取樣。整機圖與肩部近照已檢視；Blender 已還原現行 arm-seated 檔並 fresh readback 確認。
+- 5S：改動沿用六個既有程式檔（domain、unit test、closure、main、render、real verifier），沒有新增模組或公開 DTO。main 372、closure 362、render 377、real verifier 360 行，皆低於 380 警戒；肩部收隙與肘部共用驗證而保留不同運動規則。R40 與規格同步。
+
+### Open failures
+
+- 肩齒位間完整退齒／轉位路徑、腕部齒槽／就座、螺紋及彈性預緊、工具空間、软襯／卡扣保持力、底座／LCD 保持、載荷及實體列印未資格化；無現行整機製造 STL。
+- 與參考產品仍有走線整合與關節／底座外形差距；肩部就座補的是工程組裝狀態，並非外觀定稿。
+- 氣管、pH 與溫度線外徑問題仍未回覆，可換夾片尚未建立；Ø6 mm 只是假設。容器／探頭／板件尺寸、負載、材料、溫度／液體與浸入精度資料仍缺。
+
+### Next step
+
+- 88548、51833 均 terminal exit 0，沒有執行中的驗證；下一步驗肩部兩齒位間完整閉鏈轉位，再續腕部齒槽／就座與走線。線徑未知不阻止前兩項工程驗證。
+- `apply_take_up(label, travel, joint)` 仍是相對位移，不可累加；joint 只允許 shoulder／elbow。`take_up_offsets` 的肩部映射先套整個前臂，再以絕對最終偏移覆蓋螺母等鍵。固定 base 不動；肩部閉合與釋放方向相反。
+- `verify_bearing_chains` 分別還原後驗肩／肘，`render_electrode_seated` 才依肩→肘兩者同時套入並查碰撞。讀回驗兩頭、兩關節；不能拿原間隙檔宣稱就座。保留杯／盤 +3.5 mm、平台 2 mm 浮動及抬高 100／前傾 15° 維修流程。
+- 盤點技能／工具後沿用 blender-mcp-studio／version-management／checkpoint，無直接暴露 Blender MCP 工具，使用既有內部 verifier。新模組若需要，先查 GitHub。真機流程串行，執行期間不改來源；大型電極臂階段期限 300 秒，逾時先排空。
+
+## 歷史驗證紀錄
+
+以下為逐輪證據與當時的下一步；接手只依上方現行段落與任務索引，不能將歷史下一步重新當成主線。
+
+### V01.0R.01W 接手事實（歷史）
+
+### Verified facts
+
 - V01.0R.01W：最後完整 `scripts/ci.sh --real` 93636 terminal exit 0，所有 hard gates green（`tmp/lab-station-electrode-slim-wrist/ci-slim-wrist-final-retry.log`）；含重建、負對照、保存檔讀回、lint／format／mypy 及全部回歸。先前 focused 12588（薄旋鈕）、77864（平台插銷）皆 exit 0，最後完整閘門才涵蓋全部變更。
 - 現行輸出 `tmp/lab-station-electrode-slim-wrist/`。腕旋鈕厚度 10→7.5 mm，承壓面不動、底厚維持 2.5 mm；兩頭 96 射線及封閉實體检查通過。固定視角 `wrist-before.png`／`wrist-detail.png` 已檢視；`wrist-comparison.json` 實測五金軸向包絡 27.3000→24.8000 mm，不代表整個夾頭寬度。
 - 兩個三角平台的螺絲／螺母改為列印溝槽軸與 C 卡扣；名義五金減為 14 螺絲／14 螺母，列印軸／卡扣各 6。平台軸身 24 mm，其他 22 mm，保留肘部退齒的 2 mm 軸向浮動。46 單頭位置共 4140 被動軸樣本、11 雙頭前伸及既有齒位／就座／HMI 收折通過。
@@ -46,10 +74,6 @@
 - 93636 terminal exit 0，無執行中的驗證；Blender 還原現行 `elbow-seated.blend`。優先沿此版設計可換走線夾片，再續肩／腕鎖定與底座／螢幕工程資格。走線 GitHub 前置查找已記 `09-references.md`；未複製程式或增加外部 CAD 依賴。
 - `pose(label)` reset 所有零件後再套退齒；平台浮動軸不可換回夾死螺栓。`set_electrode_service_tilt` 設絕對 0–15°，先抬高 100 mm 再前傾；`verify_pin_service` 僅在此維修姿態宣稱全場拆卸，卡扣假設已移除。
 - `electrode-concept.blend` 保留名義間隙供運動；`elbow-seated.blend` 僅肘部就座。維修檔由 `render_electrode_details` 產生，fresh addon 命令讀回。保留杯／盤 +3.5 mm，真機流程串行且執行中不改來源；逾時先排空，不能直接重跑。
-
-## 歷史驗證紀錄
-
-以下為逐輪證據與當時的下一步；接手只依上方現行段落與任務索引，不能將歷史下一步重新當成主線。
 
 ### V01.0R.01V 接手事實（歷史）
 

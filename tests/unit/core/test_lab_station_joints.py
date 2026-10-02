@@ -61,3 +61,27 @@ def test_elbow_closure_rejects_nonphysical_gaps() -> None:
         ElbowClosureSpec(tooth_gap_mm=-0.1)
     with pytest.raises(ValueError):
         ElbowClosureSpec(head_gap_mm=float("nan"))
+
+
+def test_shoulder_closure_keeps_base_fixed_and_moves_connected_arm_inward() -> None:
+    from src.core.domain.lab_station_joints import ShoulderClosureSpec
+
+    spec = ShoulderClosureSpec()
+    for index in range(71):
+        travel = spec.stroke_mm * index / 70
+        offsets = spec.offsets(travel)
+        gaps = (
+            0.2 + offsets["shoulder_knob"] - offsets["shoulder_bolt"],
+            0.1 - offsets["shoulder_knob"],
+            0.2 + offsets["upper"],
+            0.2 + offsets["shoulder_nut"] - offsets["upper"],
+        )
+        assert min(gaps) >= -1e-12
+        assert sum(gaps) == pytest.approx(0.7 - travel)
+    assert spec.offsets(spec.stroke_mm) == pytest.approx(
+        {"shoulder_nut": -0.4, "shoulder_bolt": 0.3, "shoulder_knob": 0.1, "upper": -0.2}
+    )
+    with pytest.raises(ValueError):
+        spec.offsets(float("nan"))
+    with pytest.raises(ValueError):
+        spec.offsets(0.71)

@@ -4,7 +4,7 @@ Read this file first after a new conversation, compaction, or terminal restart.
 
 ## 接手
 
-- **目前在做（2026-10-03）:** 16 雙探頭薄腕端與列印平台軸，V01.0R.01W。腕旋鈕 10→7.5 mm；五金減為 14 螺絲／14 螺母，六支插銷保留活動與拆卸。完整 `scripts/ci.sh --real` 93636 exit 0、所有 hard gates green（`tmp/lab-station-electrode-slim-wrist/ci-slim-wrist-final-retry.log`）。**下一步：**沿此版整合走線，續肩／腕鎖定、LCD 與載荷；線徑待回覆，整體未定稿。接手讀任務16 hand-off。
+- **目前在做（2026-10-03）:** 16 肩／肘同時就座，V01.0R.01X。十配置／150 肩部收隙狀態，四組接面保存檔讀回通過；五金數不變。focused 88548、完整 `scripts/ci.sh --real` 51833 均 exit 0、所有 hard gates green（`tmp/lab-station-electrode-shoulder-seated/ci-shoulder-seated.log`）。**下一步：**肩部完整轉位、腕鎖定，再整合走線／LCD／載荷；線徑待回覆，整體未定稿。接手讀任務16 hand-off。
 - **等驗收:** 15 場景清單不再只有十個;對話路徑第一次有真機閘門(`--real` 32 條全綠)。下一個是 14 第五個實例。
 - 13 已驗收歸檔:對話現在能呼叫本專案自己的產生器。
 - **在等使用者的:** 印。工作單已交付——07 的 V3 試片七項,以及 `hand-gripper` 九節。

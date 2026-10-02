@@ -1,6 +1,6 @@
 # VOC 追溯
 
-Population: R1–R16 為歷史 V10 的 LS_，R17–R24 為 rotary，R25 為 simple，R26–R39 為電極臂系列，現行為 electrode-slim-wrist。每個範圍皆涵蓋其兩頭、三探頭、單杯與 HMI；排除檢測佈局副本與診斷物件，任何必要族群為零即 FAIL。歷史證據只屬於該模型，不能當成現行電極臂的製造資格；現行規格見 [01-scope](01-scope.md)。
+Population: R1–R16 為歷史 V10 的 LS_，R17–R24 為 rotary，R25 為 simple，R26–R40 為電極臂系列，現行為 electrode-shoulder-seated。每個範圍皆涵蓋其兩頭、三探頭、單杯與 HMI；排除檢測佈局副本與診斷物件，任何必要族群為零即 FAIL。歷史證據只屬於該模型，不能當成現行電極臂的製造資格；現行規格見 [01-scope](01-scope.md)。
 
 | ID | Requirement | Tier | User-visible | Kind | Verified-by |
 |---|---|---|---|---|---|
@@ -43,3 +43,4 @@ Population: R1–R16 為歷史 V10 的 LS_，R17–R24 為 rotary，R25 為 simp
 | R37 | 雙前臂同側排列並縮減桿件厚度；反向被動軸保持止擋，前傾後能拆裝，分層／夾具五金碰撞／未前傾拆裝皆被拒絕 | voc | yes | behavior | artifact:electrode-coplanar/verification.json,electrode-coplanar/red-forearm-stack.json,electrode-coplanar/red-clamp-bolt-collision.json,electrode-coplanar/red-service-untilted.json,electrode-coplanar/service.png |
 | R38 | 腕旋鈕由 10 收至 7.5 mm，五金軸向包絡不超過 24.8 mm，保留 2.5 mm 承壓底；外凸與削薄被拒絕，活動／拆裝不退化 | voc | yes | behavior | artifact:electrode-slim-wrist/verification.json,electrode-slim-wrist/red-wrist-stack.json,electrode-slim-wrist/red-wrist-floor.json,electrode-slim-wrist/wrist-detail.png |
 | R39 | 平台被動軸改為可浮動 2 mm 的列印插銷／卡扣，保留退齒、止擋與維修抽出路徑；卡扣缺失與另一頭擋路被拒絕 | voc | yes | behavior | artifact:electrode-slim-wrist/verification.json,electrode-slim-wrist/red-carrier-retainer.json,electrode-slim-wrist/red-pin-service-blocked.json,electrode-slim-wrist/service-file-check.json |
+| R40 | 肩部四對承壓面收隙且支座固定，整組前臂保持連接；肩肘同時就座保存檔讀回，未就座宣稱必須拒絕 | engineering | yes | behavior | artifact:electrode-shoulder-seated/verification.json,electrode-shoulder-seated/red-unseated-shoulder.json,electrode-shoulder-seated/seated-file-check.json,electrode-shoulder-seated/arm-seated.blend |

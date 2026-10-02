@@ -7,6 +7,12 @@ import bpy
 from mathutils import Matrix, Vector
 
 from scripts.hollow_hinge_render import configure_mechanical_camera, look_at, m
+from scripts.lab_electrode_closure import (
+    apply_take_up,
+    closure_spec,
+    verify_interference,
+    verify_seated,
+)
 from scripts.lab_station_rig import set_electrode_service_tilt, set_pose
 
 
@@ -355,3 +361,17 @@ def render_electrode_details(output: Path, pose: Callable[[str, float, float], N
         pose(label, 0, 0)
     scene.camera.matrix_world = camera_matrix
     scene.camera.data.ortho_scale = camera_scale
+
+
+def render_electrode_seated(output: Path) -> None:
+    """Save both bearing chains closed together, retaining the independent baseline file."""
+    scene = bpy.context.scene
+    for label in ("capillary", "pH_temp"):
+        for joint in ("shoulder", "elbow"):
+            apply_take_up(label, closure_spec(joint).stroke_mm, joint)
+        for joint in ("shoulder", "elbow"):
+            verify_seated(label, joint)
+        verify_interference(label, "shoulder")
+    scene.render.filepath = str(output / "arm-seated.png")
+    bpy.ops.render.render(write_still=True)
+    bpy.ops.wm.save_as_mainfile(filepath=str(output / "arm-seated.blend"))

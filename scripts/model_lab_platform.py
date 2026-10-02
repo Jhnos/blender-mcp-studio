@@ -30,25 +30,29 @@ from scripts.lab_electrode_check import (
 )
 from scripts.lab_electrode_closure import (
     apply_shoulder_release,
-    apply_take_up,
+    verify_bearing_chains,
     verify_joint_release,
     verify_joint_teeth,
     verify_pin_service,
-    verify_seated,
-    verify_take_up,
     verify_wrist_geometry,
+)
+from scripts.lab_electrode_closure import (
+    verify_seated as verify_seated,
 )
 from scripts.lab_station_arm import finish_arm
 from scripts.lab_station_clamp import compact_probe_head
 from scripts.lab_station_joints import electrode_joint_teeth, hand_knob_hardware, retained_pivot
-from scripts.lab_station_render import configure_electrode_view, render_electrode_details
+from scripts.lab_station_render import (
+    configure_electrode_view,
+    render_electrode_details,
+    render_electrode_seated,
+)
 from scripts.lab_station_rig import set_pose
 from scripts.model_lab_simple import link, verify_clearance
 from src.core.domain.lab_station import ElectrodeArmSpec
-from src.core.domain.lab_station_joints import ElbowClosureSpec
 
 ROOT = Path(__file__).resolve().parents[1]
-OUTPUT = ROOT / "tmp/lab-station-electrode-slim-wrist"
+OUTPUT = ROOT / "tmp/lab-station-electrode-shoulder-seated"
 
 
 def bake(obj: bpy.types.Object, side: int) -> None:
@@ -213,7 +217,7 @@ def verify() -> dict[str, object]:
         shoulder_samples += verify_joint_teeth(label, "shoulder")
         shoulder_release_samples += verify_joint_release(label, "shoulder")
         shoulder_positions.append(
-            {"label": label, "target": target, "elbow_closure": verify_take_up(label)}
+            {"label": label, "target": target, **verify_bearing_chains(label)}
         )
         pose(label)
     rows = []
@@ -248,7 +252,7 @@ def verify() -> dict[str, object]:
             verify_joint_release(label)
             if bpy.data.objects[f"S_{other}_head"].matrix_world != saved:
                 raise ValueError("Indexed pose moved the other head")
-            closure.append({"label": label, "index": index, "closure": verify_take_up(label)})
+            closure.append({"label": label, "index": index, **verify_bearing_chains(label)})
             indexed.append((label, index, *target))
             previous = target
         pose(label)
@@ -358,12 +362,7 @@ def main() -> None:
         pose(label)
     set_pose(bpy.data.objects["LS_SCREEN_CONTROL"], tilt_step=4, release_mm=0)
     render_electrode_details(OUTPUT, pose)
-    for label in ("capillary", "pH_temp"):
-        apply_take_up(label, ElbowClosureSpec().stroke_mm)
-        verify_seated(label)
-    scene.render.filepath = str(OUTPUT / "elbow-seated.png")
-    bpy.ops.render.render(write_still=True)
-    bpy.ops.wm.save_as_mainfile(filepath=str(OUTPUT / "elbow-seated.blend"))
+    render_electrode_seated(OUTPUT)
     for label in ("capillary", "pH_temp"):
         pose(label)
     bpy.ops.wm.save_as_mainfile(filepath=str(OUTPUT / "electrode-concept.blend"))

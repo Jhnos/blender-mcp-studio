@@ -57,14 +57,8 @@ def expect_failure(check, expected, artifact):
         (model['OUTPUT'] / f'red-{{artifact}}.json').write_text(json.dumps({{'rejected': True, 'reason': str(error)}}))
     else:
         raise RuntimeError('Negative control accepted: ' + artifact)
-try:
-    model['verify_seated']('capillary')
-except ValueError as error:
-    if 'not simultaneously seated' not in str(error):
-        raise
-    (model['OUTPUT'] / 'red-unseated-chain.json').write_text(json.dumps({{'rejected': True, 'reason': str(error)}}))
-else:
-    raise RuntimeError('Unseated bearing chain accepted as seated')
+for joint, artifact in (('elbow', 'unseated-chain'), ('shoulder', 'unseated-shoulder')):
+    expect_failure(lambda: model['verify_seated']('capillary', joint), 'not simultaneously seated', artifact)
 part = bpy.data.objects['S_capillary_follower']
 saved = part.data.copy()
 try:
@@ -329,18 +323,18 @@ finally:
     bpy.context.view_layer.update()
 clearance()
 print('Electrode arm, retainer, knob drive and per-pose clearance cache controls passed')
-bpy.ops.wm.open_mainfile(filepath=str(model['OUTPUT'] / 'elbow-seated.blend'))
+bpy.ops.wm.open_mainfile(filepath=str(model['OUTPUT'] / 'arm-seated.blend'))
 """
     # Full electrode motion, renders and fault injections exceed the smaller study budget.
     print(BlenderSocketOracle("127.0.0.1", 9876, timeout=300).execute(code))
     # A fresh addon command lets Blender refresh context after opening the saved artifact.
     code = f"""import bpy, runpy, json
 model = runpy.run_path({str(script)!r})
-gaps = {{label: model['verify_seated'](label) for label in ('capillary', 'pH_temp')}}
+gaps = {{label: {{joint: model['verify_seated'](label, joint) for joint in ('shoulder', 'elbow')}} for label in ('capillary', 'pH_temp')}}
 model['verify_forearm_stack']()
 model['verify_wrist_geometry']()
 (model['OUTPUT'] / 'seated-file-check.json').write_text(json.dumps(gaps))
-print('Saved seated elbow artifact passed surface readback')
+print('Saved seated shoulder and elbow artifact passed surface readback')
 bpy.ops.wm.open_mainfile(filepath=str(model['OUTPUT'] / 'service.blend'))
 """
     print(BlenderSocketOracle("127.0.0.1", 9876, timeout=30).execute(code))
@@ -357,7 +351,7 @@ for label in ('capillary', 'pH_temp'):
 report = {{'wrist_angles_deg': angles, 'clamps': model['verify_clamps'](), 'pin_service_samples': model['verify_pin_service']()}}
 (model['OUTPUT'] / 'service-file-check.json').write_text(json.dumps(report))
 print('Saved service artifact passed angle and removal readback')
-bpy.ops.wm.open_mainfile(filepath=str(model['OUTPUT'] / 'elbow-seated.blend'))
+bpy.ops.wm.open_mainfile(filepath=str(model['OUTPUT'] / 'arm-seated.blend'))
 """
     print(BlenderSocketOracle("127.0.0.1", 9876, timeout=60).execute(code))
 

@@ -102,3 +102,18 @@ class ElbowClosureSpec:
             "elbow_knob": max(0, travel_mm - self.nut_gap_mm - self.head_gap_mm),
             "lower": max(0, travel_mm - self.nut_gap_mm - self.head_gap_mm - self.knob_gap_mm),
         }
+
+
+@dataclass(frozen=True, slots=True)
+class ShoulderClosureSpec(ElbowClosureSpec):
+    """Same bearing gaps, but the negative-side support is fixed to the chassis."""
+
+    def offsets(self, travel_mm: float) -> dict[str, float]:
+        moving_support = ElbowClosureSpec.offsets(self, travel_mm)
+        tooth_travel = moving_support["lower"]
+        return {
+            "shoulder_nut": moving_support["elbow_nut"] - tooth_travel,
+            "shoulder_bolt": moving_support["elbow_bolt"] - tooth_travel,
+            "shoulder_knob": moving_support["elbow_knob"] - tooth_travel,
+            "upper": -tooth_travel,
+        }
