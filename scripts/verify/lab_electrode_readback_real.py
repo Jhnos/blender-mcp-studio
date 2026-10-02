@@ -12,6 +12,8 @@ model = runpy.run_path({str(script)!r})
 gaps = {{label: {{joint: model['verify_seated'](label, joint) for joint in ('shoulder', 'elbow')}} for label in ('capillary', 'pH_temp')}}
 model['verify_forearm_stack']()
 model['verify_wrist_geometry']()
+wrist = {{label: model['verify_wrist_faces'](label, 0.2) for label in ('capillary', 'pH_temp')}}
+(model['OUTPUT'] / 'wrist-file-check.json').write_text(json.dumps(wrist))
 (model['OUTPUT'] / 'seated-file-check.json').write_text(json.dumps(gaps))
 print('Saved seated shoulder and elbow artifact passed surface readback')
 bpy.ops.wm.open_mainfile(filepath=str(model['OUTPUT'] / 'service.blend'))
@@ -25,18 +27,22 @@ for label in ('capillary', 'pH_temp'):
     head = bpy.data.objects[f'S_{{label}}_head'].matrix_world
     pivot = bpy.data.objects[f'S_{{label}}_tip_bolt'].matrix_world
     angles[label] = math.degrees((pivot.inverted() @ head).to_quaternion().angle)
-    if abs(angles[label] - 15) > 0.01:
+    if abs(angles[label] - model['ElectrodeArmSpec']().wrist_indexed_angle(0, 100, 1)) > 0.01:
         raise ValueError('Saved service angle mismatch')
-report = {{'wrist_angles_deg': angles, 'clamps': model['verify_clamps'](), 'pin_service_samples': model['verify_pin_service']()}}
+report = {{'wrist_tooth_gaps': {{label: model['verify_wrist_faces'](label, 0.2) for label in ('capillary', 'pH_temp')}}, 'wrist_angles_deg': angles, 'clamps': model['verify_clamps'](), 'pin_service_samples': model['verify_pin_service']()}}
 (model['OUTPUT'] / 'service-file-check.json').write_text(json.dumps(report))
 print('Saved service artifact passed angle and removal readback')
-bpy.ops.wm.open_mainfile(filepath=str(model['OUTPUT'] / 'arm-seated.blend'))
+bpy.ops.wm.open_mainfile(filepath=str(model['OUTPUT'] / 'wrist-released.blend'))
 """
     print(BlenderSocketOracle("127.0.0.1", 9876, timeout=60).execute(code))
 
     code = f"""import bpy, runpy, json
 from mathutils import Matrix
 model = runpy.run_path({str(script)!r})
+wrist = {{label: model['verify_wrist_faces'](label, 2.2) for label in ('capillary', 'pH_temp')}}
+for label in ('capillary', 'pH_temp'):
+    model['verify_pose'](label)
+(model['OUTPUT'] / 'wrist-release-file-check.json').write_text(json.dumps(wrist))
 model['render_shoulder_transfer']()
 part = bpy.data.objects['S_pH_temp_head']
 saved = part.matrix_world.copy()

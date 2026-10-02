@@ -1,7 +1,7 @@
 """Packaging and kinematic assumptions; these are not load-rated mechanical parts."""
 
 from dataclasses import dataclass
-from math import atan2, cos, dist, isfinite, radians, sin, sqrt
+from math import atan2, cos, degrees, dist, isfinite, radians, sin, sqrt
 from typing import ClassVar
 
 Point = tuple[float, float, float]
@@ -183,6 +183,7 @@ class ElectrodeArmSpec:
 
     elbow_teeth: ClassVar[int] = 24
     shoulder_teeth: ClassVar[int] = 24
+    wrist_teeth: ClassVar[int] = 24
     platform_offset_mm: ClassVar[float] = 22
     platform_boss_radius_mm: ClassVar[float] = 9
     reach_mm: float = sqrt(80**2 + 190**2 + 4.2**2 - 20**2)
@@ -231,3 +232,12 @@ class ElectrodeArmSpec:
         return x * cos(shoulder) - z * sin(shoulder) - self.reach_mm, x * sin(shoulder) + z * cos(
             shoulder
         ) - 72
+
+    def wrist_indexed_angle(self, forward_mm: float, lift_mm: float, index: int) -> float:
+        if type(index) is not int:
+            raise ValueError("Wrist tooth index must be an integer")
+        start, target = self.joints()[1], self.joints(forward_mm, lift_mm)[1]
+        return (
+            degrees(atan2(start[0], start[1]) - atan2(target[0], target[1]))
+            + index * 360 / self.wrist_teeth
+        )

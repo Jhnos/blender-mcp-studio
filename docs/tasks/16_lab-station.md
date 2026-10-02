@@ -28,6 +28,34 @@
 
 ### Verified facts
 
+- V01.0R.01Z：完整 `scripts/ci.sh --real` 63949 terminal exit 0，所有 hard gates green（`tmp/lab-station-electrode-wrist-teeth/ci-wrist-teeth-split.log`）。領域齒位方法先紅再 20/20 通過；真機涵蓋生成、動作、反例及存檔讀回。
+- 現行輸出 `tmp/lab-station-electrode-wrist-teeth/`。腕部夾頭／平台內嵌半徑 8 mm、24 齒配對面，不增五金。局部齒面 20 案例；腕部 42 個退開及 42 個傾角狀態，保留全部原肩肘／拆卸／碰撞檢查。另一頭固定。
+- 抬高 100 mm 的平台角度由領域模型推導：下一腕齒位相對鉛直 19.3134208°。轉角時夾頭、探頭、腕螺栓及旋鈕退開 2 mm，螺母留平台側；一般自由姿態亦退開腕部。對齒仍留 0.2 mm 名義間隙，沒有宣稱腕部就座。
+- 工作／維修／退開存檔 fresh readback 通過，腕齒面間隙分別約 0.2／0.2／2.2 mm，偏差 <0.00011 mm；維修兩腕角 19.3134237°、298 夾具與 156 插銷樣本通過。肩部 176 狀態轉位、擋路拒絕及終點讀回仍通過。已檢視 service 與 wrist-teeth-detail 圖；後者暫時隱藏夾頭以展示齒面，wrist-released.blend 保留完整組件。
+- 鏡射布林先因工具法向翻轉失敗，負 determinant 後翻回法向修正；兩側封閉性／正負齒位守衛通過。新增半齒／抬高後錯齒拒絕。腕部退開後原直立拆卸阻擋不再成立，保留為 released-untilted-service 正例，改以實測錯齒干涉為負例，未放寬碰撞。
+- 初次完整 44078 exit 1：生成／出圖／反例合併等待 300 秒逾時。背景完成並開檔後，fresh oracle 確認排空；舊只讀等待 81703 的回呼受開檔清除，明確停止觀察程序（143）。沿用原入口將生成與反例分為串行獨立命令，各 300 秒，不增全域期限；63949 完整重跑全綠。舊失敗日誌保留。
+- 5S：無新增模組／公開 DTO，維修動作從 check 移入既有 motion。main 333、check 360、closure 366、motion 292、joints 337、rig 322、driver 349、readback 74 行，低於 380 警戒；R42／規格／兩條抽象教訓同步，輸出仍留 tmp。Blender 已還原 arm-seated，另以 restored-file-check.json 查兩頭肩肘就座及腕間隙。
+
+### Open failures
+
+- 腕部整組收隙／就座、其他肩角與連續掃掠、螺紋及彈性預緊、工具／手指空間、軟襯／卡扣保持力、底座／LCD 保持、載荷及實體列印尚未資格化，無現行整機製造 STL。
+- 與參考產品仍有走線整合及關節／底座外形差距，沒有宣稱外觀定稿。氣管、pH 與溫度線外徑未回覆；Ø6 mm 只是假設，可換夾片尚未建立。實際容器／探頭／板件尺寸、負載、材料、溫度／液體及浸入精度資料仍缺。
+
+### Next step
+
+- 63949 terminal exit 0，無執行中的驗證；下一步腕部承壓鏈收隙與就座。腕部負側 head、正側 platform，邏輯近肘部，但連動夾具與探頭；量齒面半徑 6.2／7／7.8 mm，不可直接沿用肩肘外圈。
+- set_electrode_wrist_pose 為絕對控制，使用 tip_bolt 的 wrist_release_mm 反算原框架；尚未處理未來收隙位移，套收隙後須先 reset，不能直接再次調角。set_electrode_service_tilt 明示角度時退開 2 mm，省略才回到推導齒位的名義 0.2 mm 間隙。
+- arm-seated.blend 僅肩肘就座；wrist-released.blend 為兩腕退開，wrist-teeth-detail 只是隱藏夾頭的診斷視角。杯／盤 +3.5 mm、平台浮動 2 mm 保留；維修抬高 100 mm，腕角更新為 19.313°，不可再用舊 15°。
+- 真機流程串行且執行中不改來源；生成、反例、完整肩轉位各獨立 300 秒期限。開檔後另下 fresh 命令，超時先確認排空。新模組先查 GitHub，沿用 blender-mcp-studio／版本／checkpoint 流程。
+
+## 歷史驗證紀錄
+
+以下為逐輪證據與當時的下一步；接手只依上方現行段落與任務索引，不能將歷史下一步重新當成主線。
+
+### V01.0R.01Y 接手事實（歷史）
+
+### Verified facts
+
 - V01.0R.01Y：完整 `scripts/ci.sh --real` 80821 terminal exit 0，所有 hard gates green（`tmp/lab-station-electrode-shoulder-transfer/ci-shoulder-transfer.log`）。FK 圓弧測試先缺方法失敗再 19/19 通過；獨立完整路徑 study 96665 exit 0（`tmp/shoulder-transfer-first.log`）與障礙反例通過，最終完整閘門涵蓋重建、圖片及存檔讀回。
 - 現行輸出 `tmp/lab-station-electrode-shoulder-transfer/`。幾何與五金數未變：14 螺絲／14 螺母，六列印軸／卡扣。一般工作仍 `arm-seated.blend`；新增兩頭各 start／mid／end 圖，`transfer-end-capillary.blend` 與 `transfer-end-pH_temp.blend` 是單頭換位終點，另一頭保持工作位置。
 - 從肘 +15°／肩原位且兩關節就座開始：肩退回收隙 15 狀態、軸向退齒 21、剛體轉 0–15° 共 16、回軸向 21、收緊 15。兩頭各 88、共 176 狀態，肘保持貼合、固定支座與另一頭矩陣不動。逐點查全場障礙、接面與插銷保持；獨立 FK 比对 tip 位置 0.001 mm，另驗探頭姿態隨臂轉動。有限取樣，不代表連續掃掠或任意肩角。
@@ -48,9 +76,6 @@
 - `render_shoulder_transfer` 由 real readback 階段單獨呼叫，先 reset 兩頭，再按驗證回呼儲存 start／mid／end。一般 main 只生成原姿態組。`verify_saved_electrode` 依序讀肩肘就座、維修、完整轉位、終點，再還原工作檔；各 open_mainfile 後以 fresh 命令使用場景。
 - 保留杯／盘 +3.5 mm、平台 2 mm 浮動、抬高 100／前傾 15° 維修。真機流程串行且執行中不改來源，逾時先排空；生成與轉位各使用獨立 300 秒期限。新模組前先查 GitHub；仍沿用 blender-mcp-studio／版本／checkpoint 流程。
 
-## 歷史驗證紀錄
-
-以下為逐輪證據與當時的下一步；接手只依上方現行段落與任務索引，不能將歷史下一步重新當成主線。
 
 ### V01.0R.01X 接手事實（歷史）
 

@@ -8,22 +8,41 @@ from collections.abc import Sequence
 import bpy
 from mathutils import Matrix
 
-from src.core.domain.lab_station import LabStationSpec, Point
+from src.core.domain.lab_station import ElectrodeArmSpec, LabStationSpec, Point
 
 
-def set_electrode_service_tilt(label: str, angle_deg: float = 15) -> None:
-    """Absolute wrist setting for the raised-head service path, using the existing pivot."""
-    if not math.isfinite(angle_deg) or not 0 <= angle_deg <= 15:
-        raise ValueError("Service wrist tilt must lie within 0–15 degrees")
+def set_electrode_wrist_pose(label: str, angle_deg: float, release_mm: float) -> None:
+    """Absolute wrist angle and axial release, retaining the platform-side nut."""
+    if not all(math.isfinite(v) for v in (angle_deg, release_mm)) or not 0 <= release_mm <= 2:
+        raise ValueError("Wrist pose requires finite angles and 0–2 mm release")
     prefix = "S_" + label + "_"
-    frame = bpy.data.objects[prefix + "tip_bolt"].matrix_world
-    tilted = frame @ Matrix.Rotation(math.radians(angle_deg), 4, "X")
+    side = 1 if label == "capillary" else -1
+    bolt = bpy.data.objects[prefix + "tip_bolt"]
+    frame = bolt.matrix_world @ Matrix.Translation(
+        (side * float(bolt.get("wrist_release_mm", 0)) / 1000, 0, 0)
+    )
+    shifted = frame @ Matrix.Translation((-side * release_mm / 1000, 0, 0))
+    tilted = shifted @ Matrix.Rotation(math.radians(angle_deg), 4, "X")
     for part in bpy.data.objects:
         if part.name.startswith(prefix) and (
             part.get("compact_head_part") or part.name.startswith(prefix + "probe_")
         ):
             part.matrix_world = tilted
+    bolt.matrix_world = shifted
+    bpy.data.objects[prefix + "tip_knob"].matrix_world = shifted
+    bolt["wrist_release_mm"] = release_mm
+    bpy.data.objects[prefix + "head"]["tip_release_mm"] = release_mm
     bpy.context.view_layer.update()
+
+
+def set_electrode_service_tilt(label: str, angle_deg: float | None = None) -> None:
+    """Tilt with teeth released; omission selects the raised platform's next whole index."""
+    target = ElectrodeArmSpec().wrist_indexed_angle(0, 100, 1)
+    if angle_deg is not None and (not math.isfinite(angle_deg) or not 0 <= angle_deg <= target):
+        raise ValueError("Service wrist angle outside the raised index range")
+    set_electrode_wrist_pose(
+        label, target if angle_deg is None else angle_deg, 0 if angle_deg is None else 2
+    )
 
 
 def attach(obj: bpy.types.Object, parent: bpy.types.Object) -> None:

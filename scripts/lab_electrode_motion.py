@@ -13,12 +13,12 @@ from scripts.lab_electrode_check import (
     verify_pins,
     verify_platform_geometry,
     verify_pose,
-    verify_service_tilt,
 )
 from scripts.lab_electrode_closure import (
     apply_shoulder_release,
     apply_take_up,
     closure_spec,
+    face_coordinate,
     shoulder_members,
     verify_bearing_chains,
     verify_interference,
@@ -28,12 +28,13 @@ from scripts.lab_electrode_closure import (
     verify_seated,
     verify_wrist_geometry,
 )
-from scripts.lab_station_rig import set_pose
+from scripts.lab_station_rig import set_electrode_service_tilt, set_electrode_wrist_pose, set_pose
 from scripts.model_lab_simple import verify_clearance
 from src.core.domain.lab_station import ElectrodeArmSpec
 
 
 def verify(pose: Callable[..., None]) -> dict[str, object]:
+    wrist_samples = sum(verify_joint_teeth(label, "tip") for label in ("capillary", "pH_temp"))
     tooth_samples = sum(verify_joint_teeth(label) for label in ("capillary", "pH_temp"))
     release_samples = sum(verify_joint_release(label) for label in ("capillary", "pH_temp"))
     shoulder_samples = sum(
@@ -98,6 +99,7 @@ def verify(pose: Callable[..., None]) -> dict[str, object]:
     set_pose(screen, tilt_step=4, release_mm=0)
     service_tilt_samples = verify_service_tilt()
     pin_service_samples = verify_pin_service()
+    wrist_release = verify_wrist_release()
     clamp_checks = verify_clamps()
     for forward in range(0, 21, 2):
         for label in ("capillary", "pH_temp"):
@@ -111,6 +113,8 @@ def verify(pose: Callable[..., None]) -> dict[str, object]:
     if actual_metal != 28:
         raise ValueError("Electrode hardware budget changed")
     return {
+        "wrist_local_tooth_samples": wrist_samples,
+        "wrist_release": wrist_release,
         "indexed_positions": indexed,
         "elbow_closure": closure,
         "indexed_transition_samples": transition_samples,
@@ -123,7 +127,7 @@ def verify(pose: Callable[..., None]) -> dict[str, object]:
         "elbow_axial_release_samples": release_samples,
         "free_motion_poses_elbow_released_mm": 2,
         "clamp_checks": clamp_checks,
-        "service_wrist_tilt_deg": 15,
+        "service_wrist_tilt_deg": ElectrodeArmSpec().wrist_indexed_angle(0, 100, 1),
         "service_wrist_tilt_samples": service_tilt_samples,
         "full_scene_pin_service_samples": pin_service_samples,
         "clamp_service_lift_mm": 100,
@@ -230,3 +234,59 @@ def verify_shoulder_transfer(
         "sample_count": len(rows),
         "scope": "Rigid sampled path at elbow +15 degrees; no continuous swept-volume, thread or load claim.",
     }
+
+
+def verify_service_tilt() -> int:
+    """Sample each raised wrist independently; leave both heads in the service setting."""
+    samples = 0
+    for label in ("capillary", "pH_temp"):
+        other = "pH_temp" if label == "capillary" else "capillary"
+        saved = bpy.data.objects[f"S_{other}_head"].matrix_world.copy()
+        for step in range(21):
+            set_electrode_service_tilt(
+                label, ElectrodeArmSpec().wrist_indexed_angle(0, 100, 1) * step / 20
+            )
+            verify_pose(label)
+            if bpy.data.objects[f"S_{other}_head"].matrix_world != saved:
+                raise ValueError("Service wrist tilt moved the other head")
+            samples += 1
+        set_electrode_service_tilt(label)
+        verify_pose(label)
+    return samples
+
+
+def verify_wrist_faces(label: str, expected_gap_mm: float) -> tuple[float, float]:
+    side = 1 if label == "capillary" else -1
+    frame = bpy.data.objects[f"S_{label}_tip_bolt"].matrix_world @ Matrix.Diagonal((side, 1, 1, 1))
+    head, platform = (bpy.data.objects[f"S_{label}_{part}"] for part in ("head", "platform"))
+    gaps = [
+        face_coordinate(platform, frame, radius, math.radians(0.37 + i * 360 / 192), -1)
+        - face_coordinate(head, frame, radius, math.radians(0.37 + i * 360 / 192), 1)
+        for radius in (6.2, 7, 7.8)
+        for i in range(192)
+    ]
+    if any(abs(gap - expected_gap_mm) > 0.01 for gap in gaps):
+        raise ValueError("Wrist tooth surface gap mismatch: " + label)
+    return min(gaps), max(gaps)
+
+
+def verify_wrist_release() -> dict[str, object]:
+    """Both heads must already be raised at the service index; restore that index."""
+    rows = []
+    angle = ElectrodeArmSpec().wrist_indexed_angle(0, 100, 1)
+    for label in ("capillary", "pH_temp"):
+        try:
+            for step in range(21):
+                release = step / 10
+                set_electrode_wrist_pose(label, angle, release)
+                verify_pose(label)
+                rows.append(
+                    {
+                        "label": label,
+                        "release_mm": release,
+                        "gap_bounds_mm": verify_wrist_faces(label, 0.2 + release),
+                    }
+                )
+        finally:
+            set_electrode_service_tilt(label)
+    return {"samples": rows, "sample_count": len(rows)}

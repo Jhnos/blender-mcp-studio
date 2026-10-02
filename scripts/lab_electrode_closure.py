@@ -321,9 +321,13 @@ def verify_joint_release(label: str, joint: str = "elbow") -> int:
 def verify_joint_teeth(label: str, joint: str = "elbow") -> int:
     """Local mating-face test; isolated rotations do not claim closed-chain arm motion."""
     prefix = "S_" + label + "_"
-    if joint not in ("elbow", "shoulder"):
+    if joint not in ("elbow", "shoulder", "tip"):
         raise ValueError("Unsupported toothed joint")
-    pair = ("upper", "lower") if joint == "elbow" else ("base", "upper")
+    pair = {
+        "elbow": ("upper", "lower"),
+        "shoulder": ("base", "upper"),
+        "tip": ("platform", "head"),
+    }[joint]
     upper, lower = (bpy.data.objects[prefix + suffix] for suffix in pair)
     side = 1 if label == "capillary" else -1
     for part in (upper, lower):
@@ -337,7 +341,7 @@ def verify_joint_teeth(label: str, joint: str = "elbow") -> int:
                 lower.matrix_world = (
                     original
                     @ Matrix.Translation(
-                        ((-side if joint == "elbow" else side) * release / 1000, 0, 0)
+                        ((-side if joint in ("elbow", "tip") else side) * release / 1000, 0, 0)
                     )
                     @ Matrix.Rotation(math.radians(angle), 4, "X")
                 )

@@ -203,3 +203,16 @@ def test_continuous_shoulder_path_is_a_rigid_arc_not_a_straight_chord() -> None:
     for bad in (float("nan"), float("inf")):
         with pytest.raises(ValueError):
             spec.angular_target(15, bad)
+
+
+def test_wrist_index_tracks_platform_angle_instead_of_assuming_world_vertical() -> None:
+    from src.core.domain.lab_station import ElectrodeArmSpec
+
+    spec = ElectrodeArmSpec()
+    assert spec.wrist_indexed_angle(0, 0, 0) == pytest.approx(0)
+    assert spec.wrist_indexed_angle(0, 100, 1) == pytest.approx(19.313420802420246)
+    assert spec.wrist_indexed_angle(*spec.indexed_target(1, shoulder_step=1), -1) == pytest.approx(
+        0
+    )
+    with pytest.raises(ValueError):
+        spec.wrist_indexed_angle(0, 100, 0.5)

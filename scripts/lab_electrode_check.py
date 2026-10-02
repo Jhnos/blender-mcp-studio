@@ -9,7 +9,6 @@ from mathutils import Matrix, Vector
 
 from scripts.hand_gates import shell_count
 from scripts.lab_station_motion_check import tree
-from scripts.lab_station_rig import set_electrode_service_tilt
 from scripts.model_lab_simple import verify_clearance
 from src.core.domain.lab_station import ElectrodeArmSpec
 
@@ -359,18 +358,3 @@ def verify_pose(label: str) -> int:
         if obj.name.startswith(f"S_{label}_probe_") and tree(obj).overlap(vessel):
             raise ValueError("Electrode probe intersects vessel")
     return verify_pins(label)
-
-
-def verify_service_tilt() -> int:
-    """Sample each raised wrist independently; leave both heads in the service setting."""
-    samples = 0
-    for label in ("capillary", "pH_temp"):
-        other = "pH_temp" if label == "capillary" else "capillary"
-        saved = bpy.data.objects[f"S_{other}_head"].matrix_world.copy()
-        for angle in range(16):
-            set_electrode_service_tilt(label, angle)
-            verify_pose(label)
-            if bpy.data.objects[f"S_{other}_head"].matrix_world != saved:
-                raise ValueError("Service wrist tilt moved the other head")
-            samples += 1
-    return samples

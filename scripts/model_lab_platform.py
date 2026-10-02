@@ -8,9 +8,10 @@ import shutil
 from pathlib import Path
 
 import bpy
-from mathutils import Matrix
+from mathutils import Matrix, Vector
 
 from scripts.blender_mesh_primitives import add_cylinder, assign, boolean, loft_rings
+from scripts.hollow_hinge_render import look_at
 from scripts.lab_electrode_check import (
     verify_clamps as verify_clamps,
 )
@@ -35,9 +36,6 @@ from scripts.lab_electrode_check import (
 from scripts.lab_electrode_check import (
     verify_pose as verify_pose,
 )
-from scripts.lab_electrode_check import (
-    verify_service_tilt as verify_service_tilt,
-)
 from scripts.lab_electrode_closure import (
     apply_shoulder_release,
 )
@@ -57,6 +55,8 @@ from scripts.lab_electrode_closure import (
     verify_wrist_geometry as verify_wrist_geometry,
 )
 from scripts.lab_electrode_motion import verify, verify_shoulder_transfer
+from scripts.lab_electrode_motion import verify_service_tilt as verify_service_tilt
+from scripts.lab_electrode_motion import verify_wrist_faces as verify_wrist_faces
 from scripts.lab_station_arm import finish_arm
 from scripts.lab_station_clamp import compact_probe_head
 from scripts.lab_station_joints import electrode_joint_teeth, hand_knob_hardware, retained_pivot
@@ -65,12 +65,12 @@ from scripts.lab_station_render import (
     render_electrode_details,
     render_electrode_seated,
 )
-from scripts.lab_station_rig import set_pose
+from scripts.lab_station_rig import set_electrode_wrist_pose, set_pose
 from scripts.model_lab_simple import link, verify_clearance
 from src.core.domain.lab_station import ElectrodeArmSpec
 
 ROOT = Path(__file__).resolve().parents[1]
-OUTPUT = ROOT / "tmp/lab-station-electrode-shoulder-transfer"
+OUTPUT = ROOT / "tmp/lab-station-electrode-wrist-teeth"
 
 
 def bake(obj: bpy.types.Object, side: int) -> None:
@@ -215,6 +215,8 @@ def pose(
     bpy.data.objects[prefix + "lower"]["elbow_release_mm"] = release
     shoulder = (0 if release == 0 else 2) if shoulder_release is None else shoulder_release
     apply_shoulder_release(label, shoulder)
+    bpy.data.objects[prefix + "tip_bolt"]["wrist_release_mm"] = 0
+    set_electrode_wrist_pose(label, 0, 2 if release or shoulder else 0)
     bpy.context.view_layer.update()
 
 
@@ -231,6 +233,48 @@ def render_shoulder_transfer() -> None:
 
     report = verify_shoulder_transfer(pose, capture)
     (OUTPUT / "shoulder-transfer.json").write_text(json.dumps(report, indent=2))
+
+
+def render_wrist_release() -> None:
+    scene = configure_electrode_view()
+    angle = ElectrodeArmSpec().wrist_indexed_angle(0, 100, 1)
+    for label in ("capillary", "pH_temp"):
+        pose(label, 0, 100)
+        set_electrode_wrist_pose(label, angle, 2)
+    for label in ("capillary", "pH_temp"):
+        verify_pose(label)
+        verify_wrist_faces(label, 2.2)
+    frame = bpy.data.objects["S_capillary_tip_bolt"].matrix_world
+    scene.camera.location = frame @ Vector((-0.018, -0.065, 0.025))
+    scene.camera.data.ortho_scale = 0.080
+    look_at(scene.camera, tuple(v * 1000 for v in frame.translation))
+    scene.render.filepath = str(OUTPUT / "wrist-released.png")
+    bpy.ops.render.render(write_still=True)
+    bpy.ops.wm.save_as_mainfile(filepath=str(OUTPUT / "wrist-released.blend"))
+    hidden = {
+        o.name: o.hide_render
+        for o in bpy.data.objects
+        if o.name.startswith("S_capillary_")
+        and (
+            o.get("compact_head_part")
+            or "probe_" in o.name
+            or o.name.endswith(("tip_bolt", "tip_knob"))
+        )
+    }
+    try:
+        for name in hidden:
+            bpy.data.objects[name].hide_render = True
+        scene.camera.location = frame @ Vector((-0.045, -0.016, 0.012))
+        scene.camera.data.ortho_scale = 0.065
+        look_at(scene.camera, tuple(v * 1000 for v in frame.translation))
+        scene.render.filepath = str(OUTPUT / "wrist-teeth-detail.png")
+        bpy.ops.render.render(write_still=True)
+    finally:
+        for name, value in hidden.items():
+            bpy.data.objects[name].hide_render = value
+    for label in ("capillary", "pH_temp"):
+        pose(label)
+    configure_electrode_view()
 
 
 def main() -> None:
@@ -250,7 +294,7 @@ def main() -> None:
     for label in ("capillary", "pH_temp"):
         build(label)
         pose(label)
-    for joint in ("elbow", "shoulder"):
+    for joint in ("elbow", "shoulder", "tip"):
         for label in ("capillary", "pH_temp"):
             electrode_joint_teeth(label, finish_arm, joint)
     report = verify(pose)
@@ -278,6 +322,7 @@ def main() -> None:
         pose(label)
     set_pose(bpy.data.objects["LS_SCREEN_CONTROL"], tilt_step=4, release_mm=0)
     render_electrode_details(OUTPUT, pose)
+    render_wrist_release()
     render_electrode_seated(OUTPUT)
     for label in ("capillary", "pH_temp"):
         pose(label)

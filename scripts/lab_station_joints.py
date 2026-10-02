@@ -242,7 +242,10 @@ def retained_pivot(
 def joint_boolean(target: bpy.types.Object, tool: bpy.types.Object, operation: str) -> None:
     """Calculate small mating features in local millimetres, then restore metre geometry."""
     frame = target.matrix_world.copy()
-    tool.data.transform(frame.inverted() @ tool.matrix_world)
+    relative = frame.inverted() @ tool.matrix_world
+    tool.data.transform(relative)
+    if relative.determinant() < 0:
+        tool.data.flip_normals()
     tool.matrix_world = Matrix.Identity(4)
     target.matrix_world = Matrix.Identity(4)
     scale = Matrix.Scale(1000, 4)
@@ -260,16 +263,22 @@ def electrode_joint_teeth(
     label: str, finish: Callable[[bpy.types.Object], None], joint: str = "elbow"
 ) -> None:
     """Recess matched tooth faces into the paired support and arm in the working pose."""
-    if joint not in ("elbow", "shoulder"):
+    if joint not in ("elbow", "shoulder", "tip"):
         raise ValueError("Unsupported toothed joint")
-    negative = "lower" if joint == "elbow" else "base"
+    negative, positive = {
+        "elbow": ("lower", "upper"),
+        "shoulder": ("base", "upper"),
+        "tip": ("head", "platform"),
+    }[joint]
     tag = joint + "_teeth"
-    tooth_count = (
-        ElectrodeArmSpec.elbow_teeth if joint == "elbow" else ElectrodeArmSpec.shoulder_teeth
-    )
+    tooth_count = {
+        "elbow": ElectrodeArmSpec.elbow_teeth,
+        "shoulder": ElectrodeArmSpec.shoulder_teeth,
+        "tip": ElectrodeArmSpec.wrist_teeth,
+    }[joint]
     prefix = "S_" + label + "_"
-    if label == "pH_temp":
-        for suffix in ("upper", negative):
+    if label == "pH_temp" and joint != "tip":
+        for suffix in (positive, negative):
             source = bpy.data.objects["S_capillary_" + suffix]
             if source.get(tag) != tooth_count:
                 raise ValueError("Build the canonical toothed arm before its mirrored copy")
@@ -285,21 +294,22 @@ def electrode_joint_teeth(
             if previous.users == 0:
                 bpy.data.meshes.remove(previous)
         return
-    side = 1
+    side = 1 if label == "capillary" else -1
     frame = bpy.data.objects[prefix + joint + "_bolt"].matrix_world @ Matrix.Diagonal(
         (side, 1, 1, 1)
     )
-    spec = SerratedJointSpec(radius_mm=11, bore_radius_mm=2.8, teeth=tooth_count)
-    for suffix, cut_center in ((negative, 0.8), ("upper", -0.8)):
+    radius = 8 if joint == "tip" else 11
+    spec = SerratedJointSpec(radius_mm=radius, bore_radius_mm=2.8, teeth=tooth_count)
+    for suffix, cut_center in ((negative, 0.8), (positive, -0.8)):
         body = bpy.data.objects[prefix + suffix]
-        cutter = add_cylinder("E_TOOL", 11.05, 4, (cut_center, 0, 0), "X")
+        cutter = add_cylinder("E_TOOL", radius + 0.05, 4, (cut_center, 0, 0), "X")
         cutter.matrix_world = frame @ cutter.matrix_world
         joint_boolean(body, cutter, "DIFFERENCE")
         finish(body)
         teeth = serrated_plate(
             "E_TOOL", body.data.materials[0], spec=spec, consistent_diagonal=True
         )
-        if suffix == "upper":
+        if suffix == positive:
             # Keep the same triangulated front as the lower half, offset by the gap.
             # Flipping an independently triangulated corrugated quad changes its surface.
             for vertex in teeth.data.vertices:
@@ -310,11 +320,16 @@ def electrode_joint_teeth(
         teeth.matrix_world = (
             frame @ Matrix.Translation((-0.0048, 0, 0)) @ Matrix.Rotation(math.pi / 2, 4, "Y")
         )
-        if suffix == "upper":
+        if suffix == positive:
             pocket = add_cylinder(
                 "E_TOOL", 4.8, 5, (side * 6.6, 0, 150 if joint == "elbow" else 0), "X", vertices=6
             )
-            pocket.matrix_world = body.matrix_world @ pocket.matrix_world
+            if joint == "tip":
+                pocket.matrix_world = (
+                    bpy.data.objects[prefix + "tip_nut"].matrix_world @ pocket.matrix_world
+                )
+            else:
+                pocket.matrix_world = body.matrix_world @ pocket.matrix_world
             joint_boolean(teeth, pocket, "DIFFERENCE")
             finish(teeth)
         joint_boolean(body, teeth, "UNION")

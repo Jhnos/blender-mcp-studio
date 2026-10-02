@@ -49,6 +49,12 @@ sys.path.insert(0, {str(root)!r})
 for name in {modules!r}:
     importlib.reload(importlib.import_module(name))
 model = runpy.run_path({str(script)!r}, run_name='__main__')
+print('Electrode generation, motion and renders completed')
+"""
+    print(BlenderSocketOracle("127.0.0.1", 9876, timeout=300).execute(code))
+    code = f"""import bpy, runpy, json
+from mathutils import Matrix
+model = runpy.run_path({str(script)!r})
 def expect_failure(check, expected, artifact):
     try:
         check()
@@ -60,6 +66,16 @@ def expect_failure(check, expected, artifact):
         raise RuntimeError('Negative control accepted: ' + artifact)
 for joint, artifact in (('elbow', 'unseated-chain'), ('shoulder', 'unseated-shoulder')):
     expect_failure(lambda: model['verify_seated']('capillary', joint), 'not simultaneously seated', artifact)
+part = bpy.data.objects['S_capillary_head']
+saved = part.matrix_world.copy()
+try:
+    part.matrix_world = saved @ Matrix.Rotation(0.1308996938995747, 4, 'X')
+    bpy.context.view_layer.update()
+    expect_failure(lambda: model['verify_local']('capillary'), 'Electrode self collision', 'wrist-half-index')
+finally:
+    part.matrix_world = saved
+    bpy.context.view_layer.update()
+model['verify_wrist_faces']('capillary', 0.2)
 part = bpy.data.objects['S_capillary_follower']
 saved = part.data.copy()
 try:
@@ -255,14 +271,12 @@ else:
     raise RuntimeError('In-cup lateral probe removal was accepted')
 for label in ('capillary', 'pH_temp'):
     model['pose'](label, 0, 100)
+(model['OUTPUT'] / 'released-untilted-service.json').write_text(json.dumps(model['verify_clamps']()))
 try:
-    model['verify_clamps']()
-except ValueError as error:
-    if 'S_capillary_distal_pin' not in str(error):
-        raise
-    (model['OUTPUT'] / 'red-service-untilted.json').write_text(json.dumps({{'rejected': True, 'reason': str(error)}}))
-else:
-    raise RuntimeError('Untilted clamp removal missed the retained pivot')
+    model['set_electrode_wrist_pose']('capillary', 0, 0)
+    expect_failure(lambda: model['verify_local']('capillary'), 'Electrode self collision', 'wrist-off-index')
+finally:
+    model['pose']('capillary', 0, 100)
 model['verify_service_tilt']()
 part = bpy.data.objects['S_pH_temp_clamp_cap']
 saved = part.data.copy()
@@ -326,7 +340,7 @@ clearance()
 print('Electrode arm, retainer, knob drive and per-pose clearance cache controls passed')
 bpy.ops.wm.open_mainfile(filepath=str(model['OUTPUT'] / 'arm-seated.blend'))
 """
-    # Full electrode motion, renders and fault injections exceed the smaller study budget.
+    # Fault injections run only after generation returns, in the same unchanged scene.
     print(BlenderSocketOracle("127.0.0.1", 9876, timeout=300).execute(code))
     verify_saved_electrode(script)
 
