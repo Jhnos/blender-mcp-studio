@@ -25,7 +25,7 @@
 
 ## 肘部齒槽與鬆開姿態
 
-肘部兩片 Ø22 mm 端盤內嵌 24 齒、齒高 1.2 mm 的放射齒槽，沒有外掛齒盤。兩面名義間隙 0.2 mm，齒距 15°；這是粗定位，不代表浸入深度微調。下連桿、肘螺栓與旋鈕一同向外退 2 mm，遠端轉軸保持原位。其他非工作展示姿態皆明示為肘部鬆開，不能把展示角度當作已鎖定齒位。
+肘部兩片 Ø22 mm 端盤內嵌 24 齒、齒高 1.2 mm 的放射齒槽，沒有外掛齒盤。兩面名義間隙 0.2 mm，齒距 15°；這是粗定位，不代表浸入深度微調。下連桿、肘螺栓與旋鈕一同向外退 2 mm，遠端轉軸保持原位。一般連續移動展示姿態明示為肘部鬆開；另有完整閉鏈第 0–3 齒位，肩角保持工作值，相對抬高約 0／37.3／76.4／114.7 mm，前伸改變約 0／11.9／13.7／5.4 mm。齒位表示齒面對齊，尚不代表整體已施加預緊力。
 
 齒盤先保留六角螺母空間再與臂合併；每次布林操作後整理網格，避免把前次小面帶入後續切孔。左右臂共用標準側幾何，右側取得獨立鏡射網格，位置與運動仍獨立。
 
@@ -42,6 +42,7 @@
 - 夾具十件列印網格各為一個封閉實體；298 個止口／拆裝取樣含實際探頭、夾蓋、襯套、螺絲及螺母，障礙包含另一臂、外殼及杯壁。杯內侧取探頭、移走夾蓋兩個負對照必須拒絕；抬高後正常組裝必須通過。
 - 承壓面各自取樣：螺栓頭向旋鈕 0.3 mm、旋鈕向支承臂 0.2 mm、支承臂向對側臂 0.5 mm、螺母向座底 0.3 mm，要求中立不穿插、小位移後接觸。每次還原後才查下一對；這是個別面接觸可達性，沒有宣稱四對面能同時閉合或具預緊力。移開螺栓頭、加長螺栓的負對照必須拒絕。
 - 肘部：兩側各 21 個 0–2 mm 軸向退開取樣，納入同場可見臂件、五金、外殼與杯壁。每側上下臂皆檢查單一封閉實體。局部齒面各 10 例：0、±15° 齒位不穿插；±7.5° 半齒於咬合時必須阻擋，退開 2 mm 後不阻擋。局部旋轉只用來測齒面，不宣稱單獨旋轉下桿是完整閉鏈運動；完整 46 位置另以鬆開姿態驗證。移開下臂卻宣稱咬合的負對照必須拒絕。
+- 完整閉鏈：兩頭各四個整齒位共八個位置，查同軸、臂件避碰、旋鈕接觸、被動軸止擋及探頭／杯壁；每個齒位另查退齒與局部咬合。相鄰齒位之間以 2 mm 鬆開姿態取樣十個位置，共 60 個，保持另一頭不動。兩齒之間強制咬合必須被上／下臂交叉檢查拒絕。有限取樣不證明連續掃掠或負載。
 - 未驗連續掃掠、全部五金互碰、線材、實體列印、卡扣彈性保持、肩／腕齒槽離合、整體預緊、負載與固定力。自碰檢查涵蓋上述結構件及新增非金屬夾具，不能宣稱全機零干涉。
 
-輸出：`tmp/lab-station-electrode-teeth/electrode-concept.blend`、`working.png`、`raised.png`、`extended.png`、`screen_folded.png`、`verification.json`、`red-disconnection.json`、`retainer-detail.png`、`red-retainer.json`、`clamp-detail.png`、`clamp-exploded.png`、`red-service-in-cup.json`、`red-clamp-stop.json`、`elbow-released.png`、`red-elbow-engagement.json`。無製造 STL 發布。
+輸出：`tmp/lab-station-electrode-indexed/electrode-concept.blend`、`working.png`、`raised.png`、`extended.png`、`screen_folded.png`、`verification.json`、`red-disconnection.json`、`retainer-detail.png`、`red-retainer.json`、`clamp-detail.png`、`clamp-exploded.png`、`red-service-in-cup.json`、`red-clamp-stop.json`、`elbow-released.png`、`red-elbow-engagement.json`、`indexed-raised.png`、`red-between-indices.json`。無製造 STL 發布。

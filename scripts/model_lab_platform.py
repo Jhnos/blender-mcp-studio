@@ -29,7 +29,7 @@ from scripts.model_lab_simple import hardware, link, verify_clearance
 from src.core.domain.lab_station import ElectrodeArmSpec
 
 ROOT = Path(__file__).resolve().parents[1]
-OUTPUT = ROOT / "tmp/lab-station-electrode-teeth"
+OUTPUT = ROOT / "tmp/lab-station-electrode-indexed"
 
 
 def bake(obj: bpy.types.Object, side: int) -> None:
@@ -94,7 +94,9 @@ def build(label: str) -> None:
             bake(obj, side)
 
 
-def pose(label: str, forward: float = 0, lift: float = 0) -> None:
+def pose(
+    label: str, forward: float = 0, lift: float = 0, *, elbow_release: float | None = None
+) -> None:
     root, a, b, c, d, tip = ElectrodeArmSpec().joints(forward, lift)
     side = -1 if label == "capillary" else 1
     world = Matrix.Translation((side * 0.098, 0.045, 0.108)) @ Matrix.Rotation(
@@ -143,7 +145,9 @@ def pose(label: str, forward: float = 0, lift: float = 0) -> None:
             obj.name.startswith(prefix + "probe_") or obj.get("compact_head_part")
         ):
             obj.matrix_world = at(tip)
-    release = 0 if forward == 0 and lift == 0 else 2
+    release = (0 if forward == 0 and lift == 0 else 2) if elbow_release is None else elbow_release
+    if not math.isfinite(release) or not 0 <= release <= 2:
+        raise ValueError("Elbow release must lie within 0–2 mm")
     for suffix in ("lower", "elbow_bolt", "elbow_knob"):
         obj = bpy.data.objects[prefix + suffix]
         obj.matrix_world = obj.matrix_world @ Matrix.Translation((side * release / 1000, 0, 0))
@@ -151,28 +155,53 @@ def pose(label: str, forward: float = 0, lift: float = 0) -> None:
     bpy.context.view_layer.update()
 
 
+def verify_pose(label: str) -> int:
+    verify_local(label)
+    verify_knobs(label)
+    verify_clearance()
+    vessel = tree(bpy.data.objects["LS_REF_vessel_250ml_ENVELOPE"])
+    for obj in bpy.data.objects:
+        if obj.name.startswith(f"S_{label}_probe_") and tree(obj).overlap(vessel):
+            raise ValueError("Electrode probe intersects vessel")
+    return verify_pins(label)
+
+
 def verify() -> dict[str, object]:
     tooth_samples = sum(verify_elbow_teeth(label) for label in ("capillary", "pH_temp"))
     release_samples = sum(verify_elbow_release(label) for label in ("capillary", "pH_temp"))
     rows = []
     pin_samples = 0
-    vessel = bpy.data.objects["LS_REF_vessel_250ml_ENVELOPE"]
+    indexed = []
+    transition_samples = 0
     for label in ("capillary", "pH_temp"):
         other = "pH_temp" if label == "capillary" else "capillary"
         saved = bpy.data.objects[f"S_{other}_head"].matrix_world.copy()
         for forward in (-20, 0, 20):
             for lift in range(0 if forward == 0 else 100, 101, 5):
                 pose(label, forward, lift)
-                verify_local(label)
-                verify_knobs(label)
-                pin_samples += verify_pins(label)
-                verify_clearance()
-                for obj in bpy.data.objects:
-                    if obj.name.startswith(f"S_{label}_probe_") and tree(obj).overlap(tree(vessel)):
-                        raise ValueError("Electrode probe intersects vessel")
+                pin_samples += verify_pose(label)
                 if bpy.data.objects[f"S_{other}_head"].matrix_world != saved:
                     raise ValueError("Other head moved")
                 rows.append((label, forward, lift))
+        previous = (0.0, 0.0)
+        for index in range(4):
+            target = ElectrodeArmSpec().indexed_target(index)
+            if index:
+                for fraction in range(1, 11):
+                    point = tuple(
+                        a + (b - a) * fraction / 10 for a, b in zip(previous, target, strict=True)
+                    )
+                    pose(label, *point, elbow_release=2)
+                    verify_pose(label)
+                    transition_samples += 1
+            pose(label, *target, elbow_release=0)
+            verify_pose(label)
+            verify_elbow_teeth(label)
+            verify_elbow_release(label)
+            if bpy.data.objects[f"S_{other}_head"].matrix_world != saved:
+                raise ValueError("Indexed pose moved the other head")
+            indexed.append((label, index, *target))
+            previous = target
         pose(label)
     screen = bpy.data.objects["LS_SCREEN_CONTROL"]
     for label in ("capillary", "pH_temp"):
@@ -190,9 +219,11 @@ def verify() -> dict[str, object]:
     if actual_metal != 32:
         raise ValueError("Electrode hardware budget changed")
     return {
+        "indexed_positions": indexed,
+        "indexed_transition_samples": transition_samples,
         "elbow_local_tooth_samples": tooth_samples,
         "elbow_axial_release_samples": release_samples,
-        "non_working_poses_elbow_released_mm": 2,
+        "free_motion_poses_elbow_released_mm": 2,
         "clamp_checks": clamp_checks,
         "clamp_service_lift_mm": 100,
         "samples": rows,
@@ -247,9 +278,10 @@ def main() -> None:
         ("raised", 0, 100),
         ("extended", 20, 100),
         ("screen_folded", 0, 100),
+        ("indexed-raised", *ElectrodeArmSpec().indexed_target(3)),
     ):
         for label in ("capillary", "pH_temp"):
-            pose(label, forward, lift)
+            pose(label, forward, lift, elbow_release=0 if name == "indexed-raised" else None)
         set_pose(
             bpy.data.objects["LS_SCREEN_CONTROL"],
             tilt_step=0 if name == "screen_folded" else 4,

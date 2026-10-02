@@ -1,7 +1,8 @@
 """Packaging and kinematic assumptions; these are not load-rated mechanical parts."""
 
 from dataclasses import dataclass
-from math import dist, isfinite, sqrt
+from math import atan2, cos, dist, isfinite, radians, sin, sqrt
+from typing import ClassVar
 
 Point = tuple[float, float, float]
 
@@ -180,6 +181,7 @@ class SimpleArmSpec:
 class ElectrodeArmSpec:
     """Serial shoulder and four-bar forearm; head angle is adjusted separately."""
 
+    elbow_teeth: ClassVar[int] = 24
     reach_mm: float = sqrt(80**2 + 190**2 + 4.2**2 - 20**2)
 
     def joints(self, forward_mm: float = 0, lift_mm: float = 0) -> tuple[tuple[float, float], ...]:
@@ -201,3 +203,14 @@ class ElectrodeArmSpec:
         c = (target[0] - 28 * u[1], target[1] + 28 * u[0])
         d = (c[0] - 24 * u[0], c[1] - 24 * u[1])
         return (0.0, 0.0), a, b, c, d, target
+
+    def indexed_target(self, step: int) -> tuple[float, float]:
+        """Forward target at a whole elbow tooth, retaining the working shoulder angle."""
+        if type(step) is not int:
+            raise ValueError("Elbow tooth index must be an integer")
+        _, a, _, c, _, tip = self.joints()
+        angle = atan2(c[1] - a[1], c[0] - a[0]) + radians(step * 360 / self.elbow_teeth)
+        return (
+            a[0] + 150 * cos(angle) + tip[0] - c[0] - self.reach_mm,
+            a[1] + 150 * sin(angle) + tip[1] - c[1] - 72,
+        )

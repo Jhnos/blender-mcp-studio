@@ -28,22 +28,22 @@
 
 ### Verified facts
 
-- 現行模型為 `tmp/lab-station-electrode-teeth/electrode-concept.blend`，詳見 [電極臂](../verification/lab-station/13-electrode-arm.md)。兩頭獨立與可拆軟襯夾頭保留。
-- 肘部兩臂內嵌 Ø22 mm、24 齒、1.2 mm 高齒面，名義間隙 0.2 mm。下桿／肘螺栓／旋鈕退 2 mm；沒有增加外掛零件。非工作展示姿態為鬆開，不是每個角度都可鎖定。
-- focused 真機 92811 exit 0：四個齒槽臂件單殼、零非流形；42 軸向退齒取樣、20 局部齒面案例，咬合半齒阻擋、鬆開可越過；故意鬆開卻聲稱咬合會被拒絕。46 位置、2760 軸向／16 折屏／298 夾具取樣保留。日誌 `tmp/electrode-teeth-integrated-seventh.log`。
-- 修復原上臂切孔破面：每步布林後整理，螺母空間先從齒盤扣除再合併；右臂取得標準側獨立鏡射網格。原失敗、分段定位與修復證據在 `tmp/electrode-upper-*.log`、`tmp/electrode-tooth-mesh-stages.log`；前六次整合失敗日誌保留。
-- 已檢視 `elbow-released.png`。V01.0R.01P 完整 CI 98899 exit 0，日誌 `tmp/lab-station-electrode-teeth/ci-teeth.log`。所有 hard gates green；本輪證據與修改一同封存。
+- 現行模型為 `tmp/lab-station-electrode-indexed/electrode-concept.blend`，詳見 [電極臂](../verification/lab-station/13-electrode-arm.md)。兩頭獨立、平行前臂、可拆軟襯與內嵌肘齒槽保留。
+- ElectrodeArmSpec 計算固定肩角的整齒位目標，齒數與幾何共用來源。領域 RED 缺方法 → 17 tests GREEN。兩頭各第 0–3 齒位，相對抬高約 0／37.3／76.4／114.7 mm，前伸改變約 0／11.9／13.7／5.4 mm。
+- focused 真機 1265 exit 0，`tmp/electrode-indexed-integrated-first.log`：八個完整閉鏈整齒位、60 個鬆開轉位取樣，檢查同軸、臂件／五金、探頭／杯壁；每個齒位另查局部咬合與退齒。既有 46 位置／16 折屏／298 夾具檢查保留。
+- 兩齒之間強制咬合被上／下臂碰撞拒絕，focused 證據 `tmp/electrode-index-midpoint-red.log`，持續負對照納入 real 入口。所有整齒位表示對齊，尚不表示整體預緊力合格。
+- V01.0R.01Q 完整 CI 33951 exit 0，`tmp/lab-station-electrode-indexed/ci-indexed.log`；所有 hard gates green；已檢視重建的 `indexed-raised.png`，兩頭於第三齒位離杯。
 
 ### Open failures
 
-- 肩／腕齒槽離合、肘部各齒位完整閉鏈鎖定、旋鈕承壓鏈同時閉合與預緊、其餘五金装入、探頭軟襯夾緊力、底座承力與 LCD 保持尚未完成。
+- 肩／腕齒槽離合、肘部整體閉合與預緊、旋鈕承壓鏈同時閉合與預緊、其餘五金装入、探頭軟襯夾緊力、底座承力與 LCD 保持尚未完成。
 - 全五金／線材／連續姿態、載荷及實體列印資格未取得；剛體止擋不代表彈性保持力合格。沒有現行整機製造 STL 發布。
 - 精確容器尺寸、實際探頭與板件、負載、材料、溫度及液體資料仍缺；佔位尺寸不可當固定孔依據。
 
 ### Next step
 
-- CI 98899 已 terminal（exit 0），版本 V01.0R.01P；接手先查 git log 與工作樹確認封存，再處理下一項。
-- 後續處理肘部完整閉鏈齒位／閉合鎖定，以及肩／腕齒槽。15° 為粗定位，已詢問浸入深度需 1 mm／5 mm／手滑調整，尚未收到回答；不自行當作精細調高完成。
+- CI 33951 已 terminal（exit 0），本輪 V01.0R.01Q；接手先查 git log 與工作樹確認封存。
+- 下一步肘部承壓鏈同時閉合與預緊行程，再肩／腕齒槽。15° 為粗定位，已詢問深度需 1 mm／5 mm／手滑調整，未回覆；不自行宣稱精細調高完成。
 - 再完成其餘關節、底座／LCD、線材與負載／製造資格。整體目標保持 active。
 
 ## 歷史驗證紀錄

@@ -147,3 +147,22 @@ def test_electrode_forearm_closes_and_preserves_two_position_inputs() -> None:
             )
     with pytest.raises(ValueError, match="reach"):
         spec.joints(500, 0)
+
+
+def test_electrode_indexed_targets_keep_shoulder_and_land_on_real_tooth_angles() -> None:
+    from src.core.domain.lab_station import ElectrodeArmSpec
+
+    spec = ElectrodeArmSpec()
+    _, a0, _, c0, _, _ = spec.joints()
+    angle0 = math.atan2(c0[1] - a0[1], c0[0] - a0[0])
+    assert spec.indexed_target(0) == pytest.approx((0, 0))
+    for step in (1, 2, 3):
+        forward, lift = spec.indexed_target(step)
+        _, a, b, c, d, _ = spec.joints(forward, lift)
+        assert a == pytest.approx(a0)
+        angle = math.atan2(c[1] - a[1], c[0] - a[0])
+        assert math.degrees(angle - angle0) == pytest.approx(step * 15)
+        assert math.dist(b, d) == pytest.approx(150)
+    for invalid in (0.5, True):
+        with pytest.raises(ValueError):
+            spec.indexed_target(invalid)

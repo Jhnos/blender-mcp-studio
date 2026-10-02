@@ -11,7 +11,7 @@ from mathutils import Matrix
 
 from scripts.blender_mesh_primitives import add_cylinder, assign, boolean, cleanup_mesh, loft_rings
 from scripts.lab_station_rig import driver, pivot
-from src.core.domain.lab_station import Point
+from src.core.domain.lab_station import ElectrodeArmSpec, Point
 from src.core.domain.lab_station_joints import ScreenHingeSpec, SerratedJointSpec
 
 
@@ -226,7 +226,7 @@ def electrode_elbow_teeth(label: str, finish: Callable[[bpy.types.Object], None]
     if label == "pH_temp":
         for suffix in ("upper", "lower"):
             source = bpy.data.objects["S_capillary_" + suffix]
-            if source.get("elbow_teeth") != 24:
+            if source.get("elbow_teeth") != ElectrodeArmSpec.elbow_teeth:
                 raise ValueError("Build the canonical toothed arm before its mirrored copy")
             target = bpy.data.objects[prefix + suffix]
             mat = target.data.materials[0]
@@ -236,13 +236,13 @@ def electrode_elbow_teeth(label: str, finish: Callable[[bpy.types.Object], None]
             target.data.materials.clear()
             target.data.materials.append(mat)
             cleanup_mesh(target)
-            target["elbow_teeth"] = 24
+            target["elbow_teeth"] = ElectrodeArmSpec.elbow_teeth
             if previous.users == 0:
                 bpy.data.meshes.remove(previous)
         return
     side = 1
     frame = bpy.data.objects[prefix + "elbow_bolt"].matrix_world @ Matrix.Diagonal((side, 1, 1, 1))
-    spec = SerratedJointSpec(radius_mm=11)
+    spec = SerratedJointSpec(radius_mm=11, teeth=ElectrodeArmSpec.elbow_teeth)
     for suffix, facing, base, cut_center in (("lower", 1, -4.8, 0.8), ("upper", -1, 4.6, -0.8)):
         body = bpy.data.objects[prefix + suffix]
         cutter = add_cylinder("E_TOOL", 11.05, 4, (cut_center, 0, 0), "X")

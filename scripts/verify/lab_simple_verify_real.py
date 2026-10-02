@@ -48,6 +48,20 @@ sys.path.insert(0, {str(root)!r})
 for name in {modules!r}:
     importlib.reload(importlib.import_module(name))
 model = runpy.run_path({str(script)!r}, run_name='__main__')
+first = model['ElectrodeArmSpec']().indexed_target(1)
+second = model['ElectrodeArmSpec']().indexed_target(2)
+try:
+    model['pose']('capillary', *((a+b)/2 for a,b in zip(first, second)), elbow_release=0)
+    try:
+        model['verify_local']('capillary')
+    except ValueError as error:
+        if 'S_capillary_upper, S_capillary_lower' not in str(error):
+            raise
+        (model['OUTPUT'] / 'red-between-indices.json').write_text(json.dumps({{'rejected': True, 'reason': str(error)}}))
+    else:
+        raise RuntimeError('Between-tooth position accepted as engaged')
+finally:
+    model['pose']('capillary')
 part = bpy.data.objects['S_capillary_lower']
 saved = part.matrix_world.copy()
 try:
