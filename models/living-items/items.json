@@ -1,0 +1,155 @@
+{
+  "schema_version": 1,
+  "items": [
+    {
+      "id": "key",
+      "ground": {
+        "image": "key-ground",
+        "size": [
+          128,
+          192
+        ],
+        "anchor": [
+          0.5,
+          0.75
+        ]
+      },
+      "inventory": {
+        "image": "key-inventory",
+        "size": [
+          64,
+          64
+        ],
+        "anchor": [
+          0.5,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "letter",
+      "ground": {
+        "image": "letter-ground",
+        "size": [
+          128,
+          192
+        ],
+        "anchor": [
+          0.5,
+          0.75
+        ]
+      },
+      "inventory": {
+        "image": "letter-inventory",
+        "size": [
+          64,
+          64
+        ],
+        "anchor": [
+          0.5,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "potion",
+      "ground": {
+        "image": "potion-ground",
+        "size": [
+          128,
+          192
+        ],
+        "anchor": [
+          0.5,
+          0.75
+        ]
+      },
+      "inventory": {
+        "image": "potion-inventory",
+        "size": [
+          64,
+          64
+        ],
+        "anchor": [
+          0.5,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "purse",
+      "ground": {
+        "image": "purse-ground",
+        "size": [
+          128,
+          192
+        ],
+        "anchor": [
+          0.5,
+          0.75
+        ]
+      },
+      "inventory": {
+        "image": "purse-inventory",
+        "size": [
+          64,
+          64
+        ],
+        "anchor": [
+          0.5,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "tool",
+      "ground": {
+        "image": "tool-ground",
+        "size": [
+          128,
+          192
+        ],
+        "anchor": [
+          0.5,
+          0.75
+        ]
+      },
+      "inventory": {
+        "image": "tool-inventory",
+        "size": [
+          64,
+          64
+        ],
+        "anchor": [
+          0.5,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "parcel",
+      "ground": {
+        "image": "parcel-ground",
+        "size": [
+          128,
+          192
+        ],
+        "anchor": [
+          0.5,
+          0.75
+        ]
+      },
+      "inventory": {
+        "image": "parcel-inventory",
+        "size": [
+          64,
+          64
+        ],
+        "anchor": [
+          0.5,
+          0.5
+        ]
+      }
+    }
+  ]
+}

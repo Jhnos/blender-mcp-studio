@@ -11,13 +11,14 @@ chat-authoring path (blocked on model config) — that is declared separately.
 """
 
 import json
-import random
+import re
 import socket
 import ssl
 import sys
 import time
 import urllib.request
 from pathlib import Path
+from uuid import uuid4
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 if str(PROJECT_ROOT) not in sys.path:
@@ -83,26 +84,29 @@ def rest(method: str, path: str, body: dict[str, object] | None = None) -> tuple
             return r.status, raw
 
 
-def teardown() -> None:
-    o_out(
-        "import bpy\nd=[o for o in bpy.data.objects if o.name.startswith('verify_')]\n"
+def teardown(name: str) -> None:
+    if re.fullmatch(r"verify_rest_[0-9a-f]{8}", name) is None:
+        raise ValueError("unowned REST verifier nonce")
+    owned = repr((name, name + "_r"))
+    result = o_out(
+        f"import bpy\nd=[o for o in bpy.data.objects if o.name in {owned}]\n"
         "[bpy.data.objects.remove(o,do_unlink=True) for o in d]\nprint('removed',len(d))"
     )
+    if re.fullmatch(r"removed \d+", result) is None:
+        raise RuntimeError(f"REST fixture cleanup failed: {result}")
 
 
-def main() -> None:
+def _verify(n: str) -> None:
     R: list[tuple[str, bool, object]] = []
 
     def rec(h: str, ok: bool, d: object) -> None:
         R.append((h, ok, d))
         print(f"[{'PASS' if ok else 'FAIL'}] {h}: {d}")
 
-    teardown()
     base = o_names()
     base_n = len(base)
     print(f"baseline oracle: {base_n} {base}\n")
 
-    n = f"verify_{random.randint(10000, 99999)}"
     # SEED via oracle (not LLM): create a real cube named n
     o_out(
         f"import bpy\nbpy.ops.mesh.primitive_cube_add()\nbpy.context.active_object.name='{n}'\nprint('seeded')"
@@ -150,12 +154,22 @@ def main() -> None:
         f"count back to baseline {base_n}? now {len(o_names())}",
     )
 
-    teardown()
     print(f"\nfinal oracle: {o_names()}")
     print("\n=== EVIDENCE MATRIX ===")
     for h, ok, _detail in R:
         print(f"  {h:22} {'PASS' if ok else 'FAIL'}")
     print(f"\n{sum(1 for _, ok, _ in R if ok)}/{len(R)} passed")
+    failed = [hypothesis for hypothesis, ok, _ in R if not ok]
+    if failed:
+        raise AssertionError("REST verification failed: " + ", ".join(failed))
+
+
+def main() -> None:
+    name = "verify_rest_" + uuid4().hex[:8]
+    try:
+        _verify(name)
+    finally:
+        teardown(name)
 
 
 if __name__ == "__main__":

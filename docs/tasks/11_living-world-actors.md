@@ -32,11 +32,18 @@ full courier gameplay and subsequent B/C expansion stay in PVR STATUS.
 
 - B contract full T1/T2 passed (`/tmp/feedback-contract-final-ci.log`); no bpy, geometry or runtime capability changes in this checkpoint. 5S scan still reports baseline hand-document link candidates outside this task; do not treat it as a clean scan.
 
+- Six editable item models and twelve RGBA images now exist in `models/living-items/`; source scene shows the six-item preview on open. Saved-file verification rerenders all twelve and requires exact pixel equality, material/feature geometry, foot anchor and transparent margins. Independent visual review inspected all twelve plus preview; PASS, evidence `tmp/living-items-evidence/`.
+- Six editable effects now supply 48 RGBA frames, 8 distinct poses per effect, 12fps one-shot metadata and a source preview in `models/living-effects/`. Saved-file verification rerendered all 48 with exact pixel equality and checked animated bounds/alpha margins. Independent review inspected 48 frames plus preview; all six written targets passed.
+- Full `scripts/ci.sh --real` passed after the recovery and ownership fixes: T1/T2, effect/item/actor/world-kit saved-file checks, loaded services, REST, MCP, readiness and batch operations. Durable log copy: `tmp/living-feedback-evidence/living-feedback-full-ci.log`. This seals source assets and verification, not playable B integration.
+- 5S scan still lists baseline hand-document link candidates owned by the main checkout; no new task-specific finding was used to claim a clean whole-repository scan.
+
 ### Open failures
 
-- No asset or real-Blender gate failures. Full PVR public journey is tracked in its living-world verification report.
+- No remaining failure in this source checkpoint's complete gate. The initial run's five service failures and concurrency are retained in `tmp/living-items-evidence/`; restarting API/Web restored logs and scene responses, without restarting Blender or changing the user scene. No owned fixtures remained on read-only inspection.
+- REST verifier broad cleanup and false-success exit behavior were repaired: unique nonce, exact owned names, finally cleanup, cleanup failure propagation, negative observations fail the process. Five discriminating tests went RED→GREEN and the live REST gate passed.
+- Full PVR public validation and release are being modified by another active work stream in that checkout; inspect its current STATUS/evidence before writing there.
 - This source checkout retains unrelated historical hand-task snapshots; their progress remains owned by the main Blender checkout.
 
 ### Next step
 
-- Finish isolated courier public validation, then connect the B metadata contract to actual Blender models, 48 effect frames and twelve item images, saved-file rerender validation and a playable feedback showcase. B assets/rendering/integration are not yet delivered; C and original-room gaps remain in scope.
+- Package the verified 48 effect frames and twelve item images into game atlases with manifests/source downloads, then integrate the playable feedback showcase in PVR. Inspect its concurrently updated STATUS/evidence before editing. B runtime/reduced-motion/one-shot deduplication, C and original-room quantitative gaps remain required; source previews do not complete B.

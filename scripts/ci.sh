@@ -81,6 +81,8 @@ _run hard "web unit + dummy run (vitest)" bash -c 'cd web && npx vitest run'
 
 if (( REAL )); then
   _tier "T3 · real machine (MCP↔Blender)"
+  _run hard "living effect saved-file animation and pixels" "${BLENDER_BIN:-/Applications/Blender.app/Contents/MacOS/Blender}" --background --factory-startup --python-exit-code 1 --python scripts/verify_living_effects.py
+  _run hard "living item saved-file geometry and pixels" "${BLENDER_BIN:-/Applications/Blender.app/Contents/MacOS/Blender}" --background --factory-startup --python-exit-code 1 --python scripts/verify_living_items.py
   _run hard "living actor saved-file rigs and anchors" "${BLENDER_BIN:-/Applications/Blender.app/Contents/MacOS/Blender}" --background --factory-startup --python-exit-code 1 --python scripts/verify_living_actors.py
   _run hard "world kit saved-file geometry and anchors" "${BLENDER_BIN:-/Applications/Blender.app/Contents/MacOS/Blender}" --background --factory-startup --python-exit-code 1 --python scripts/verify_world_kit.py
   if nc -z localhost 9876 2>/dev/null; then

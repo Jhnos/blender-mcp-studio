@@ -1,0 +1,113 @@
+{
+  "passed": true,
+  "images": [
+    {
+      "file": "key-ground.png",
+      "size": [
+        128,
+        192
+      ],
+      "opaque_pixels": 393,
+      "rerender_equal": true
+    },
+    {
+      "file": "key-inventory.png",
+      "size": [
+        64,
+        64
+      ],
+      "opaque_pixels": 397,
+      "rerender_equal": true
+    },
+    {
+      "file": "letter-ground.png",
+      "size": [
+        128,
+        192
+      ],
+      "opaque_pixels": 1087,
+      "rerender_equal": true
+    },
+    {
+      "file": "letter-inventory.png",
+      "size": [
+        64,
+        64
+      ],
+      "opaque_pixels": 1089,
+      "rerender_equal": true
+    },
+    {
+      "file": "potion-ground.png",
+      "size": [
+        128,
+        192
+      ],
+      "opaque_pixels": 527,
+      "rerender_equal": true
+    },
+    {
+      "file": "potion-inventory.png",
+      "size": [
+        64,
+        64
+      ],
+      "opaque_pixels": 528,
+      "rerender_equal": true
+    },
+    {
+      "file": "purse-ground.png",
+      "size": [
+        128,
+        192
+      ],
+      "opaque_pixels": 529,
+      "rerender_equal": true
+    },
+    {
+      "file": "purse-inventory.png",
+      "size": [
+        64,
+        64
+      ],
+      "opaque_pixels": 537,
+      "rerender_equal": true
+    },
+    {
+      "file": "tool-ground.png",
+      "size": [
+        128,
+        192
+      ],
+      "opaque_pixels": 690,
+      "rerender_equal": true
+    },
+    {
+      "file": "tool-inventory.png",
+      "size": [
+        64,
+        64
+      ],
+      "opaque_pixels": 690,
+      "rerender_equal": true
+    },
+    {
+      "file": "parcel-ground.png",
+      "size": [
+        128,
+        192
+      ],
+      "opaque_pixels": 1455,
+      "rerender_equal": true
+    },
+    {
+      "file": "parcel-inventory.png",
+      "size": [
+        64,
+        64
+      ],
+      "opaque_pixels": 1462,
+      "rerender_equal": true
+    }
+  ]
+}

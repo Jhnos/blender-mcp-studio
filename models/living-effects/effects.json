@@ -1,0 +1,197 @@
+{
+  "schema_version": 1,
+  "effects": [
+    {
+      "id": "pickup",
+      "atlas": "pickup-atlas",
+      "frame_size": [
+        128,
+        128
+      ],
+      "atlas_size": [
+        1024,
+        128
+      ],
+      "frames": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "fps": 12,
+      "duration_ms": 666.6666666666666,
+      "loop": false,
+      "blend": "NORMAL",
+      "scale": 1.0,
+      "origin": [
+        0.5,
+        0.5
+      ],
+      "reduced_frame": 4
+    },
+    {
+      "id": "unlock",
+      "atlas": "unlock-atlas",
+      "frame_size": [
+        128,
+        128
+      ],
+      "atlas_size": [
+        1024,
+        128
+      ],
+      "frames": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "fps": 12,
+      "duration_ms": 666.6666666666666,
+      "loop": false,
+      "blend": "NORMAL",
+      "scale": 1.0,
+      "origin": [
+        0.5,
+        0.5
+      ],
+      "reduced_frame": 4
+    },
+    {
+      "id": "complete",
+      "atlas": "complete-atlas",
+      "frame_size": [
+        128,
+        128
+      ],
+      "atlas_size": [
+        1024,
+        128
+      ],
+      "frames": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "fps": 12,
+      "duration_ms": 666.6666666666666,
+      "loop": false,
+      "blend": "NORMAL",
+      "scale": 1.0,
+      "origin": [
+        0.5,
+        0.5
+      ],
+      "reduced_frame": 4
+    },
+    {
+      "id": "footsteps",
+      "atlas": "footsteps-atlas",
+      "frame_size": [
+        128,
+        128
+      ],
+      "atlas_size": [
+        1024,
+        128
+      ],
+      "frames": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "fps": 12,
+      "duration_ms": 666.6666666666666,
+      "loop": false,
+      "blend": "NORMAL",
+      "scale": 1.0,
+      "origin": [
+        0.5,
+        0.5
+      ],
+      "reduced_frame": 4
+    },
+    {
+      "id": "teleport",
+      "atlas": "teleport-atlas",
+      "frame_size": [
+        128,
+        128
+      ],
+      "atlas_size": [
+        1024,
+        128
+      ],
+      "frames": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "fps": 12,
+      "duration_ms": 666.6666666666666,
+      "loop": false,
+      "blend": "NORMAL",
+      "scale": 1.0,
+      "origin": [
+        0.5,
+        0.5
+      ],
+      "reduced_frame": 4
+    },
+    {
+      "id": "blocked",
+      "atlas": "blocked-atlas",
+      "frame_size": [
+        128,
+        128
+      ],
+      "atlas_size": [
+        1024,
+        128
+      ],
+      "frames": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "fps": 12,
+      "duration_ms": 666.6666666666666,
+      "loop": false,
+      "blend": "NORMAL",
+      "scale": 1.0,
+      "origin": [
+        0.5,
+        0.5
+      ],
+      "reduced_frame": 4
+    }
+  ]
+}
