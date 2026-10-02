@@ -56,6 +56,40 @@ except ValueError as error:
     (model['OUTPUT'] / 'red-unseated-chain.json').write_text(json.dumps({{'rejected': True, 'reason': str(error)}}))
 else:
     raise RuntimeError('Unseated bearing chain accepted as seated')
+part = bpy.data.objects['S_capillary_follower']
+saved = part.data.copy()
+try:
+    part.data.transform(Matrix.Translation((0.0168, 0, 0)))
+    try:
+        model['verify_forearm_stack']()
+    except ValueError as error:
+        if 'not in one axial layer' not in str(error):
+            raise
+        (model['OUTPUT'] / 'red-forearm-stack.json').write_text(json.dumps({{'rejected': True, 'reason': str(error)}}))
+    else:
+        raise RuntimeError('Separated forearm layers accepted')
+finally:
+    changed = part.data
+    part.data = saved
+    bpy.data.meshes.remove(changed)
+model['verify_forearm_stack']()
+part = bpy.data.objects['S_capillary_clamp_1_bolt']
+saved = part.matrix_world.copy()
+try:
+    part.matrix_world = bpy.data.objects['S_capillary_follower'].matrix_world @ Matrix.Translation((0.0078, 0, 0.095))
+    bpy.context.view_layer.update()
+    try:
+        model['verify_local']('capillary')
+    except ValueError as error:
+        if not all(name in str(error) for name in ('S_capillary_follower', 'S_capillary_clamp_1_bolt')):
+            raise
+        (model['OUTPUT'] / 'red-clamp-bolt-collision.json').write_text(json.dumps({{'rejected': True, 'reason': str(error)}}))
+    else:
+        raise RuntimeError('Clamp bolt collision was omitted from pose checks')
+finally:
+    part.matrix_world = saved
+    bpy.context.view_layer.update()
+model['verify_local']('capillary')
 part = bpy.data.objects['S_capillary_upper']
 saved = part.matrix_world.copy()
 try:
@@ -239,6 +273,15 @@ else:
     raise RuntimeError('In-cup lateral probe removal was accepted')
 for label in ('capillary', 'pH_temp'):
     model['pose'](label, 0, 100)
+try:
+    model['verify_clamps']()
+except ValueError as error:
+    if 'S_capillary_distal_pin' not in str(error):
+        raise
+    (model['OUTPUT'] / 'red-service-untilted.json').write_text(json.dumps({{'rejected': True, 'reason': str(error)}}))
+else:
+    raise RuntimeError('Untilted clamp removal missed the retained pivot')
+model['verify_service_tilt']()
 part = bpy.data.objects['S_pH_temp_clamp_cap']
 saved = part.data.copy()
 try:
@@ -293,13 +336,31 @@ bpy.ops.wm.open_mainfile(filepath=str(model['OUTPUT'] / 'elbow-seated.blend'))
 """
     print(BlenderSocketOracle("127.0.0.1", 9876, timeout=180).execute(code))
     # A fresh addon command lets Blender refresh context after opening the saved artifact.
-    code = f"""import runpy, json
+    code = f"""import bpy, runpy, json
 model = runpy.run_path({str(script)!r})
 gaps = {{label: model['verify_seated'](label) for label in ('capillary', 'pH_temp')}}
+model['verify_forearm_stack']()
 (model['OUTPUT'] / 'seated-file-check.json').write_text(json.dumps(gaps))
 print('Saved seated elbow artifact passed surface readback')
+bpy.ops.wm.open_mainfile(filepath=str(model['OUTPUT'] / 'service.blend'))
 """
     print(BlenderSocketOracle("127.0.0.1", 9876, timeout=30).execute(code))
+    code = f"""import bpy, runpy, json, math
+model = runpy.run_path({str(script)!r})
+angles = {{}}
+for label in ('capillary', 'pH_temp'):
+    model['verify_pose'](label)
+    head = bpy.data.objects[f'S_{{label}}_head'].matrix_world
+    pivot = bpy.data.objects[f'S_{{label}}_tip_bolt'].matrix_world
+    angles[label] = math.degrees((pivot.inverted() @ head).to_quaternion().angle)
+    if abs(angles[label] - 15) > 0.01:
+        raise ValueError('Saved service angle mismatch')
+report = {{'wrist_angles_deg': angles, 'clamps': model['verify_clamps']()}}
+(model['OUTPUT'] / 'service-file-check.json').write_text(json.dumps(report))
+print('Saved service artifact passed angle and removal readback')
+bpy.ops.wm.open_mainfile(filepath=str(model['OUTPUT'] / 'elbow-seated.blend'))
+"""
+    print(BlenderSocketOracle("127.0.0.1", 9876, timeout=60).execute(code))
 
 
 if __name__ == "__main__":

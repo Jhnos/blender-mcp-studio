@@ -9,6 +9,7 @@ from mathutils import Matrix, Vector
 
 from scripts.hand_gates import shell_count
 from scripts.lab_station_motion_check import tree
+from scripts.lab_station_rig import set_electrode_service_tilt
 from scripts.model_lab_simple import verify_clearance
 from src.core.domain.lab_station import ElectrodeArmSpec
 
@@ -22,6 +23,34 @@ def verify_closed_part(part: bpy.types.Object) -> None:
         raise ValueError("Part is not one closed solid: " + part.name)
 
 
+def verify_forearm_stack() -> dict[str, float]:
+    """Read actual shaft faces: both forearm bars occupy the same axial layer."""
+    widths = {}
+    for label in ("capillary", "pH_temp"):
+        side = 1 if label == "capillary" else -1
+        faces = []
+        extent: list[float] = []
+        for suffix in ("lower", "follower"):
+            part = bpy.data.objects[f"S_{label}_{suffix}"]
+            verify_closed_part(part)
+            pair = []
+            for sign in (-1, 1):
+                hit, point, _, _ = part.ray_cast(
+                    Vector((side * sign * 0.03, 0, 0.075)), Vector((-side * sign, 0, 0))
+                )
+                if not hit:
+                    raise ValueError("Forearm shaft face missing: " + part.name)
+                pair.append(side * point.x * 1000)
+            faces.append(pair)
+            extent.extend(side * vertex.co.x * 1000 for vertex in part.data.vertices)
+        if any(abs(a - b) > 0.01 for a, b in zip(*faces, strict=True)):
+            raise ValueError("Forearm bars are not in one axial layer: " + label)
+        widths[label] = max(extent) - min(extent)
+        if widths[label] > 10:
+            raise ValueError("Forearm body stack exceeds 10 mm: " + label)
+    return widths
+
+
 def verify_local(label: str) -> None:
     prefix = "S_" + label + "_"
     members = [
@@ -31,13 +60,11 @@ def verify_local(label: str) -> None:
     extra = [
         obj
         for obj in bpy.data.objects
-        if obj.name.startswith(prefix)
-        and obj.get("compact_head_part")
-        and not obj.get("nominal_hardware")
-        and obj not in members
+        if obj.name.startswith(prefix) and obj.get("compact_head_part") and obj not in members
     ]
+    trees = {obj.name: tree(obj) for obj in [*members, *extra]}
     for first, second in combinations([*members, *extra], 2):
-        if tree(first).overlap(tree(second)):
+        if trees[first.name].overlap(trees[second.name]):
             raise ValueError(f"Electrode self collision: {first.name}, {second.name}")
     # Compare physical bore locations on each mesh through its evaluated world matrix.
     side = 1 if label == "capillary" else -1
@@ -53,9 +80,9 @@ def verify_local(label: str) -> None:
 
     for first, second in (
         (point(upper, 4.2, 0, 150), point(lower, -4.2, 0, 0)),
-        (point(upper, 4.2, 0, 126), point(follower, 12.6, 0, 0)),
+        (point(upper, 4.2, 0, 126), point(follower, -4.2, 0, 0)),
         (point(lower, -4.2, 0, 150), point(platform, 4.2, 0, 0)),
-        (point(follower, 12.6, 0, 150), point(platform, 4.2, 0, -24)),
+        (point(follower, -4.2, 0, 150), point(platform, 4.2, 0, -24)),
         (point(platform, 4.2, ElectrodeArmSpec.platform_offset_mm, 0), point(head, -4.2, 0, 0)),
     ):
         # Axes may differ in X by layer spacing but must be coaxial in the arm plane.
@@ -106,7 +133,7 @@ def verify_pins(label: str) -> int:
                 samples += 1
             # Remove clip before sliding pin out/in; no rigid snap-through claim.
             for shift in range(26):
-                pin.matrix_world = original @ Matrix.Translation((side * shift / 1000, 0, 0))
+                pin.matrix_world = original @ Matrix.Translation((-side * shift / 1000, 0, 0))
                 bpy.context.view_layer.update()
                 if any(tree(pin).overlap(obstacle) for obstacle in obstacles):
                     raise ValueError("Passive pin insertion path obstructed")
@@ -321,3 +348,18 @@ def verify_pose(label: str) -> int:
         if obj.name.startswith(f"S_{label}_probe_") and tree(obj).overlap(vessel):
             raise ValueError("Electrode probe intersects vessel")
     return verify_pins(label)
+
+
+def verify_service_tilt() -> int:
+    """Sample each raised wrist independently; leave both heads in the service setting."""
+    samples = 0
+    for label in ("capillary", "pH_temp"):
+        other = "pH_temp" if label == "capillary" else "capillary"
+        saved = bpy.data.objects[f"S_{other}_head"].matrix_world.copy()
+        for angle in range(16):
+            set_electrode_service_tilt(label, angle)
+            verify_pose(label)
+            if bpy.data.objects[f"S_{other}_head"].matrix_world != saved:
+                raise ValueError("Service wrist tilt moved the other head")
+            samples += 1
+    return samples

@@ -14,9 +14,11 @@ from scripts.blender_mesh_primitives import add_cylinder, assign, boolean, loft_
 from scripts.hollow_hinge_render import look_at
 from scripts.lab_electrode_check import (
     verify_clamps,
+    verify_forearm_stack,
     verify_head_envelopes,
     verify_platform_geometry,
     verify_pose,
+    verify_service_tilt,
 )
 from scripts.lab_electrode_check import (
     verify_knobs as verify_knobs,
@@ -45,7 +47,7 @@ from src.core.domain.lab_station import ElectrodeArmSpec
 from src.core.domain.lab_station_joints import ElbowClosureSpec
 
 ROOT = Path(__file__).resolve().parents[1]
-OUTPUT = ROOT / "tmp/lab-station-electrode-shoulder-teeth"
+OUTPUT = ROOT / "tmp/lab-station-electrode-coplanar"
 
 
 def bake(obj: bpy.types.Object, side: int) -> None:
@@ -75,7 +77,7 @@ def build(label: str) -> None:
                 )
                 finish_arm(obj)
         bake(obj, side)
-    obj = link(prefix + "follower", 12.6, mat, radius_mm=11)
+    obj = link(prefix + "follower", -4.2, mat, radius_mm=11)
     bake(obj, side)
     spec = ElectrodeArmSpec()
     vertices = ((0, 0), (0, -24), (spec.platform_offset_mm, 0))
@@ -106,6 +108,11 @@ def build(label: str) -> None:
         bake(bpy.data.objects[prefix + "carrier_" + suffix], side)
     for joint in ("proximal", "distal"):
         for obj in retained_pivot(prefix + joint + "_", mat):
+            obj.matrix_world = (
+                Matrix.Translation((0.0084, 0, 0))
+                @ Matrix.Diagonal((-1, 1, 1, 1))
+                @ obj.matrix_world
+            )
             bake(obj, side)
     for joint in ("shoulder", "elbow", "tip"):
         for suffix in ("bolt", "nut"):
@@ -250,6 +257,7 @@ def verify() -> dict[str, object]:
         set_pose(screen, tilt_step=step / 3, release_mm=0)
         verify_clearance()
     set_pose(screen, tilt_step=4, release_mm=0)
+    service_tilt_samples = verify_service_tilt()
     clamp_checks = verify_clamps()
     for forward in range(0, 21, 2):
         for label in ("capillary", "pH_temp"):
@@ -275,6 +283,8 @@ def verify() -> dict[str, object]:
         "elbow_axial_release_samples": release_samples,
         "free_motion_poses_elbow_released_mm": 2,
         "clamp_checks": clamp_checks,
+        "service_wrist_tilt_deg": 15,
+        "service_wrist_tilt_samples": service_tilt_samples,
         "clamp_service_lift_mm": 100,
         "both_heads_forward_samples": 11,
         "samples": rows,
@@ -286,6 +296,7 @@ def verify() -> dict[str, object]:
         "soft_liner_halves": 6,
         "head_depth_below_wrist_mm": verify_head_envelopes(),
         "platform_material_samples": verify_platform_geometry(),
+        "forearm_body_stack_mm": verify_forearm_stack(),
         "printed_hand_knobs": 6,
         "knob_bolt_length_mm": 20,
         "knob_bolt_exposure_budget_mm": [0, 1.5],

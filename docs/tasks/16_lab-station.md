@@ -28,6 +28,35 @@
 
 ### Verified facts
 
+- V01.0R.01V：focused 16984 exit 0（`tmp/electrode-coplanar-service.log`）；最後完整 `scripts/ci.sh --real` 95639 exit 0，所有 hard gates green（`tmp/lab-station-electrode-coplanar/ci-coplanar-final.log`）。23 focused domain tests 通過；完整 lint／format／mypy／回歸通過。
+- 現行輸出 `tmp/lab-station-electrode-coplanar/`；兩根前臂在同一軸向層，被動軸／卡扣繞支承層反向安裝。工作配置桿件包絡實測 24.8→8.6 mm，記錄 `stack-comparison.json`；不含上臂、旋鈕與五金，鬆開姿態另有 2 mm 退開量。未削薄桿件或增加五金。
+- 毛細管夾座螺絲孔由 ±10 改 ±8 mm。兩頭抬高 100 mm 後，各自腕軸前傾 15° 才可完整拆裝；32 個 0–15° 獨立腕角、298 個拆裝／止擋取樣通過。各姿態自碰加入夾具金屬件；原 46 單頭位置、11 共同前伸、齒位／退齒／肘部就座及螢幕收折守衛保留。
+- `red-forearm-stack.json`、`red-clamp-bolt-collision.json`、`red-service-untilted.json` 均拒絕，還原後通過。原同側候選因螺栓碰連桿／軸頭失敗，證據留在 `tmp/electrode-coplanar-first.log`、`tmp/electrode-coplanar-bolt-clearance.log`、`tmp/electrode-coplanar-static-red.log` 與 service／wrist study JSON。
+- `electrode-concept.blend` 為原間隙基線；`elbow-seated.blend` 仍只有肘部就座；`service.blend` 為抬高／前傾拆装姿態。真機入口在新 addon 命令重新讀檔，`service-file-check.json` 兩腕角 14.99998°、298 拆裝／止擋通過，之後還原肘部就座檔。working／service 圖已檢視。
+- 首次完整 CI 2415 exit 0，但額外讀檔發現 service 存檔誤加到舊版出圖分支；修正後將實際 service 讀回納入固定 real gate，最終 95639 再次全部通過，不能以第一次綠燈當該檔交付證據。
+- 5S：沿用 6 個既有腳本，未新增模組／公開介面；main 377、check 365、rig 303、render 336、real verifier 367 行，均低於 380 警戒。R37、規格與五金漏驗教訓已同步；舊檔及失敗日誌保留。
+
+### Open failures
+
+- 與參考產品仍有腕端接頭整合、外露關節與沿臂走線的差距；此輪完成同側排列，不宣稱全機外觀定稿。
+- 肩部整組就座與完整轉位、腕部齒槽／就座、螺紋與彈性預緊、工具空間、軟襯保持力、底座／LCD 保持、載荷及實體列印尚未資格化；沒有現行整機製造 STL 發布。
+- 精確容器、探頭、板件、負載、材料、溫度及液體資料仍缺；15° 是粗定位，浸入深度精度未回覆。
+
+### Next step
+
+- focused 16984、完整 95639 均 terminal exit 0，無在跑的驗證；依使用者「仍與參考產品有差」的方向，沿用同側排列，優先收整腕端接座／軸頭與走線，且保留拆裝前傾路徑；肩部就座等工程資格仍在範圍內。
+- `set_electrode_service_tilt` 在既有 tip 軸設定絕對 0–15° 腕角；先 `pose(label, 0, 100)`，再前傾。`pose(label)` 會還原所有頭部零件。`verify_service_tilt` 留在 15°，`verify_clamps` 不自行移動手臂。
+- 原位探頭不應側取；抬高但未前傾也會撞被動軸頭。存檔必須由 `render_electrode_details` 的 service 分支產生，再由 fresh addon 命令讀回，不能拿舊出圖分支的同名檔代替。
+- 保留杯／承液盤 +3.5 mm；肩／肘鬆開與收隙仍是相對位移，禁止累加。真機流程串行，過程中禁止改來源；建立新模組前先查 GitHub。
+
+## 歷史驗證紀錄
+
+以下為逐輪證據與當時的下一步；接手只依上方現行段落與任務索引，不能將歷史下一步重新當成主線。
+
+### V01.0R.01U 接手事實（歷史）
+
+### Verified facts
+
 - V01.0R.01U：focused 74702 exit 0（`tmp/electrode-shoulder-indexed.log`），完整 `scripts/ci.sh --real` 43531 exit 0，所有 hard gates green（`tmp/lab-station-electrode-shoulder-teeth/ci-shoulder-teeth.log`）。18 domain tests 先紅後綠；完整 lint／format／mypy、回歸與交付守衛通過。
 - 現行输出 `tmp/lab-station-electrode-shoulder-teeth/`；`electrode-concept.blend` 保留原裝配間隙，`elbow-seated.blend` 僅肘部已就座，肩部仍保留間隙。working、shoulder-released、indexed-shoulder-raised 已檢視；上輪各輸出目錄保留。
 - 肩部支座／上臂內嵌 24 齒／15°，整個前臂組沿共同軸向退開 2 mm，保持探頭、夾具、被動軸連接；固定支座與肩螺栓／旋鈕保持原位。兩頭各工作角和 +15° 肩位共 40 局部齒面、84 軸向取樣通過；新增肩 +15°／肘 +15° 姿態约後退 24.05／抬高 89.79 mm，閉鏈／避碰／肘部就座通過。
@@ -48,10 +77,6 @@
 - `pose(label)` 會先還原全部矩陣，再套用肩／肘鬆開量；一般連續姿態兩關節各退 2 mm。指定整齒姿態才用 `elbow_release=0`，肩部亦回原間隙。額外肩位透過 `indexed_target(..., shoulder_step=1)`。
 - `apply_take_up` 與 `apply_shoulder_release` 都是相對位移，禁止累加當絕對姿態。舊中立檢查先 reset pose 或讀原間隙檔；就座檔不適合直接作中立基線。
 - 保留杯／承液盤 +3.5 mm 配置；退齒碰杯的負對照已納入 real gate。新模組若有必要，建立前先查 GitHub；保持所有真機流程串行，等待逾時先確認原工作排空。
-
-## 歷史驗證紀錄
-
-以下為逐輪證據與當時的下一步；接手只依上方現行段落與任務索引，不能將歷史下一步重新當成主線。
 
 ### V01.0R.01R–01T 接手事實（歷史）
 

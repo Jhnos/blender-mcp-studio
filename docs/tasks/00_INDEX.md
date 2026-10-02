@@ -4,7 +4,7 @@ Read this file first after a new conversation, compaction, or terminal restart.
 
 ## 接手(2026-09-09,V01.0R.013)
 
-- **目前在做（2026-10-03）:** 16 雙探頭工作站肩部齒槽，V01.0R.01U。focused 74702 exit 0（`tmp/electrode-shoulder-indexed.log`），24 齒、2 mm 整組退開；40 齒面／84 軸向取樣與兩個完整肩齒位通過，杯座右移 3.5 mm 後避碰，兩負對照拒絕。輸出 `tmp/lab-station-electrode-shoulder-teeth/`；完整 `scripts/ci.sh --real` 43531 exit 0，所有 hard gates green（`ci-shoulder-teeth.log`）。**下一步：**肩轉位／就座、腕齒槽、LCD、走線與載荷；整體未定稿。接手讀任務16 hand-off。
+- **目前在做（2026-10-03）:** 16 雙探頭同側前臂，V01.0R.01V。桿件厚度包絡 24.8→8.6 mm，32 腕角／298 拆裝取樣與三負對照通過；抬高後前傾 15° 拆裝，模型讀回通過。focused 16984 exit 0；完整 `scripts/ci.sh --real` 95639 exit 0、所有 hard gates green（`tmp/lab-station-electrode-coplanar/ci-coplanar-final.log`）。**下一步：**沿用此排列收整腕端接座與走線，再續肩／腕鎖定、LCD 與載荷；整體未定稿。接手讀任務16 hand-off。
 - **等驗收:** 15 場景清單不再只有十個;對話路徑第一次有真機閘門(`--real` 32 條全綠)。下一個是 14 第五個實例。
 - 13 已驗收歸檔:對話現在能呼叫本專案自己的產生器。
 - **在等使用者的:** 印。工作單已交付——07 的 V3 試片七項,以及 `hand-gripper` 九節。

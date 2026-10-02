@@ -227,7 +227,7 @@ def compact_probe_head(label: str, mat: bpy.types.Material) -> list[bpy.types.Ob
     spec = ProbeClampSpec(
         jaw_width_mm=20,
         jaw_depth_mm=46 if dual else 30,
-        bolt_y_mm=(-18, 18) if dual else (-10, 10),
+        bolt_y_mm=(-18, 18) if dual else (-8, 8),
     )
     ring_y = -4.2 - offset
     head = add_cylinder(prefix + "head", 11, 8, (0, ring_y, 0), "Y")

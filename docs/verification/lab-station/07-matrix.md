@@ -1,6 +1,6 @@
 # VOC 追溯
 
-Population: R1–R16 為歷史 V10 的 LS_，R17–R24 為 rotary，R25 為 simple，R26–R33 為電極臂系列，現行為 electrode-seated。每個範圍皆涵蓋其兩頭、三探頭、單杯與 HMI；排除檢測佈局副本與診斷物件，任何必要族群為零即 FAIL。歷史證據只屬於該模型，不能當成現行電極臂的製造資格；現行規格見 [01-scope](01-scope.md)。
+Population: R1–R16 為歷史 V10 的 LS_，R17–R24 為 rotary，R25 為 simple，R26–R37 為電極臂系列，現行為 electrode-coplanar。每個範圍皆涵蓋其兩頭、三探頭、單杯與 HMI；排除檢測佈局副本與診斷物件，任何必要族群為零即 FAIL。歷史證據只屬於該模型，不能當成現行電極臂的製造資格；現行規格見 [01-scope](01-scope.md)。
 
 | ID | Requirement | Tier | User-visible | Kind | Verified-by |
 |---|---|---|---|---|---|
@@ -40,3 +40,4 @@ Population: R1–R16 為歷史 V10 的 LS_，R17–R24 為 rotary，R25 為 simp
 | R34 | 末端接頭收短、保留手動角度與可拆夾蓋；雙頭共同前伸不互撞 | voc | yes | behavior | artifact:electrode-short-head/verification.json,electrode-short-head/red-head-depth.json |
 | R35 | 三角平台收至 40 mm 寬，腕軸偏置 22 mm；保留孔周圍材料、閉合及原活動範圍 | voc | yes | behavior | artifact:electrode-compact-platform/verification.json,electrode-compact-platform/red-platform-envelope.json,electrode-compact-platform/red-platform-material.json |
 | R36 | 肩部內嵌齒面可阻擋半齒，整前臂退開保持連接並避杯；另驗完整肩齒位及錯誤咬合／偏杯負對照 | engineering | yes | behavior | artifact:electrode-shoulder-teeth/verification.json,electrode-shoulder-teeth/red-shoulder-engagement.json,electrode-shoulder-teeth/red-shoulder-cup-position.json |
+| R37 | 雙前臂同側排列並縮減桿件厚度；反向被動軸保持止擋，前傾後能拆裝，分層／夾具五金碰撞／未前傾拆裝皆被拒絕 | voc | yes | behavior | artifact:electrode-coplanar/verification.json,electrode-coplanar/red-forearm-stack.json,electrode-coplanar/red-clamp-bolt-collision.json,electrode-coplanar/red-service-untilted.json,electrode-coplanar/service.png |

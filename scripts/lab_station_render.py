@@ -7,7 +7,7 @@ import bpy
 from mathutils import Matrix, Vector
 
 from scripts.hollow_hinge_render import configure_mechanical_camera, look_at, m
-from scripts.lab_station_rig import set_pose
+from scripts.lab_station_rig import set_electrode_service_tilt, set_pose
 
 
 def render_views(
@@ -300,6 +300,13 @@ def render_electrode_details(output: Path, pose: Callable[[str, float, float], N
     look_at(scene.camera, tuple(value * 1000 for value in shoulder.translation))
     scene.render.filepath = str(output / "shoulder-released.png")
     bpy.ops.render.render(write_still=True)
+    for label in ("capillary", "pH_temp"):
+        set_electrode_service_tilt(label)
+    scene.camera.matrix_world = camera_matrix
+    scene.camera.data.ortho_scale = camera_scale
+    scene.render.filepath = str(output / "service.png")
+    bpy.ops.render.render(write_still=True)
+    bpy.ops.wm.save_as_mainfile(filepath=str(output / "service.blend"))
     head = bpy.data.objects["S_pH_temp_head"]
     target = head.matrix_world @ Vector((0.021, 0, -0.038))
     scene.camera.location = target + head.matrix_world.to_3x3() @ Vector((0.055, 0.060, 0.028))

@@ -2,11 +2,28 @@
 
 from __future__ import annotations
 
+import math
 from collections.abc import Sequence
 
 import bpy
+from mathutils import Matrix
 
 from src.core.domain.lab_station import LabStationSpec, Point
+
+
+def set_electrode_service_tilt(label: str, angle_deg: float = 15) -> None:
+    """Absolute wrist setting for the raised-head service path, using the existing pivot."""
+    if not math.isfinite(angle_deg) or not 0 <= angle_deg <= 15:
+        raise ValueError("Service wrist tilt must lie within 0–15 degrees")
+    prefix = "S_" + label + "_"
+    frame = bpy.data.objects[prefix + "tip_bolt"].matrix_world
+    tilted = frame @ Matrix.Rotation(math.radians(angle_deg), 4, "X")
+    for part in bpy.data.objects:
+        if part.name.startswith(prefix) and (
+            part.get("compact_head_part") or part.name.startswith(prefix + "probe_")
+        ):
+            part.matrix_world = tilted
+    bpy.context.view_layer.update()
 
 
 def attach(obj: bpy.types.Object, parent: bpy.types.Object) -> None:
