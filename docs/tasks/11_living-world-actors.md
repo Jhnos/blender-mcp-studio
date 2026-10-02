@@ -27,6 +27,11 @@ full courier gameplay and subsequent B/C expansion stay in PVR STATUS.
 
 - Task index now explicitly retains original room quantitative gaps in Lane A; T1/T2 passed again in `/tmp/full-cast-lane-index-ci.log`. No geometry or runtime change.
 
+- B metadata contract is test-first: six named one-shot effects (8 frames, 128×128, 12fps), six items (ground 128×192 with foot anchor; inventory 64×64). Invalid coverage, frames, timing, paths, scale, anchors and loops reject before publishing. Focused result: 10 intended RED failures, then two boolean-as-number RED failures → 19 total tests passed.
+- Reuse review (2026-10-02): [Blender Spritesheet Renderer](https://github.com/chrishayesmu/Blender-Spritesheet-Renderer) and [Phaser animations](https://docs.phaser.io/phaser/concepts/animations), [blend modes](https://docs.phaser.io/phaser/concepts/display/blend-mode). Keep existing generator runner, bpy render and Pillow publisher; use existing Phaser animation boundary. No upstream code copied or new dependency introduced. NORMAL alpha blend is the portable baseline; effect one-shots do not own inventory or quest state.
+
+- B contract full T1/T2 passed (`/tmp/feedback-contract-final-ci.log`); no bpy, geometry or runtime capability changes in this checkpoint. 5S scan still reports baseline hand-document link candidates outside this task; do not treat it as a clean scan.
+
 ### Open failures
 
 - No asset or real-Blender gate failures. Full PVR public journey is tracked in its living-world verification report.
@@ -34,4 +39,4 @@ full courier gameplay and subsequent B/C expansion stay in PVR STATUS.
 
 ### Next step
 
-- Complete courier public game evidence in PVR; then implement six effects and six items under the existing plan, keeping the complete A/B/C scope active.
+- Finish isolated courier public validation, then connect the B metadata contract to actual Blender models, 48 effect frames and twelve item images, saved-file rerender validation and a playable feedback showcase. B assets/rendering/integration are not yet delivered; C and original-room gaps remain in scope.

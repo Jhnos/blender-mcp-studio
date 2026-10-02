@@ -1,4 +1,4 @@
-"""Versioned, renderer-neutral contract for the first editable actor delivery."""
+"""Renderer-neutral publishing contracts for actors, feedback and items."""
 
 from __future__ import annotations
 
@@ -63,3 +63,97 @@ def validate_actor(spec: dict[str, Any]) -> None:
         frames.extend(clip["frames"])
     if sorted(frames) != list(range(48)):
         raise ValueError("frame coverage mismatch")
+
+
+EFFECT_KINDS = ("pickup", "unlock", "complete", "footsteps", "teleport", "blocked")
+ITEM_KINDS = ("key", "letter", "potion", "purse", "tool", "parcel")
+
+
+def feedback_catalog() -> dict[str, Any]:
+    """Publishing geometry; gameplay decides when a one-shot is emitted."""
+    return {
+        "schema_version": 1,
+        "effects": [
+            {
+                "id": kind,
+                "atlas": kind + "-atlas",
+                "frame_size": [128, 128],
+                "atlas_size": [1024, 128],
+                "frames": list(range(8)),
+                "fps": 12,
+                "duration_ms": 8 * 1000 / 12,
+                "loop": False,
+                "blend": "NORMAL",
+                "scale": 1.0,
+                "origin": [0.5, 0.5],
+                "reduced_frame": 4,
+            }
+            for kind in EFFECT_KINDS
+        ],
+        "items": [
+            {
+                "id": kind,
+                "ground": {"image": kind + "-ground", "size": [128, 192], "anchor": [0.5, 0.75]},
+                "inventory": {"image": kind + "-inventory", "size": [64, 64], "anchor": [0.5, 0.5]},
+            }
+            for kind in ITEM_KINDS
+        ],
+    }
+
+
+def validate_feedback_catalog(catalog: dict[str, Any]) -> None:
+    """Reject incomplete batches and unsafe playback metadata before rendering/publishing."""
+    import math
+
+    def asset_name(value: Any) -> bool:
+        return isinstance(value, str) and bool(re.fullmatch(r"[a-z0-9-]+", value))
+
+    try:
+        if type(catalog["schema_version"]) is not int or catalog["schema_version"] != 1:
+            raise ValueError("unsupported feedback schema")
+        for key, expected in (("effects", EFFECT_KINDS), ("items", ITEM_KINDS)):
+            entries = catalog[key]
+            if len(entries) != len(expected) or {x["id"] for x in entries} != set(expected):
+                raise ValueError("feedback batch coverage mismatch")
+        for effect in catalog["effects"]:
+            if (
+                not asset_name(effect["atlas"])
+                or effect["frame_size"] != [128, 128]
+                or effect["atlas_size"] != [1024, 128]
+                or effect["frames"] != list(range(8))
+                or any(type(frame) is not int for frame in effect["frames"])
+            ):
+                raise ValueError("invalid effect frame geometry")
+            fps, duration, scale = effect["fps"], effect["duration_ms"], effect["scale"]
+            if (
+                any(
+                    isinstance(x, bool) or not isinstance(x, (int, float)) or not math.isfinite(x)
+                    for x in (fps, duration, scale)
+                )
+                or fps != 12
+                or not math.isclose(duration, 8000 / fps)
+                or not 0 < scale <= 1
+                or effect["loop"] is not False
+            ):
+                raise ValueError("invalid one-shot timing or scale")
+            if (
+                effect["origin"] != [0.5, 0.5]
+                or effect["blend"] != "NORMAL"
+                or type(effect["reduced_frame"]) is not int
+                or effect["reduced_frame"] not in effect["frames"]
+            ):
+                raise ValueError("invalid effect presentation")
+        for item in catalog["items"]:
+            for key, size, anchor in (
+                ("ground", [128, 192], [0.5, 0.75]),
+                ("inventory", [64, 64], [0.5, 0.5]),
+            ):
+                image = item[key]
+                if (
+                    not asset_name(image["image"])
+                    or image["size"] != size
+                    or image["anchor"] != anchor
+                ):
+                    raise ValueError("invalid item image geometry")
+    except (KeyError, TypeError, AttributeError) as error:
+        raise ValueError("malformed feedback catalog") from error
