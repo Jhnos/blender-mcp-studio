@@ -22,6 +22,16 @@ def test_liner_flange_cannot_pass_through_jaw_bore() -> None:
         assert spec.liner_outer_radius(bore) - spec.liner_inner_radius(bore) >= 0.9
 
 
+def test_compact_jaw_keeps_outer_wall_and_legacy_width() -> None:
+    import pytest
+
+    assert ProbeClampSpec().jaw_width_mm == 30
+    compact = ProbeClampSpec(jaw_width_mm=20)
+    assert min(compact.jaw_width_mm / 2 - r for _, r in compact.bores(True)) >= 2.5
+    with pytest.raises(ValueError, match="jaw"):
+        ProbeClampSpec(jaw_width_mm=17)
+
+
 def test_invalid_jaw_geometry_is_rejected_before_blender() -> None:
     import pytest
 

@@ -28,23 +28,22 @@
 
 ### Verified facts
 
-- 現行模型為 `tmp/lab-station-electrode-compact/electrode-concept.blend`，設計界線見 [電極臂](../verification/lab-station/13-electrode-arm.md)。兩頭獨立，肩鉸鍊／平行雙桿前臂／三角末端；探頭角度手調。
-- 01M 六旋鈕、六角止轉座、碰撞快取及 oracle 標記解析已有 focused 真機證據。最新完整 CI 的電極臂 gate 通過，46 位置、2760 軸向取樣、16 折屏與故意斷接／移走卡扣／移開螺栓／跨臂碰撞負對照皆保留。
-- 01M 追加傳輸逾時分類與 registry 專屬生成期限；54 adapter tests 通過，正式API重載後 REST focused 5/5 STL尺寸／面數與回報一致。一般命令期限不變，逾時不重播。
-- 真機 CI 第一個 hard failure 立即停止；六個 helper tests 通過。先前失敗的 CI 已明確終止並由只讀 barrier 確認排空。完整 CI 58285 exit 0，所有 hard gates green，日誌 `tmp/lab-station-electrode-compact/ci-knobs-deadline.log`。
-- 已檢視最新工作／抬起圖。版號 V01.0R.01M；本次變更與本段交接一同封存。下方紀錄保留各輪失敗與證據，舊 handle 不代表仍執行。
+- 現行模型為 `tmp/lab-station-electrode-clamps/electrode-concept.blend`，詳見 [電極臂](../verification/lab-station/13-electrode-arm.md)。保留兩頭獨立、肩鉸鍊／平行雙桿／三角末端與手調探頭角度。
+- 新增兩件圓角可拆夾蓋、六片軟襯與四組 M3×20；模型合計 16 螺絲／16 螺母，沒有獨立墊片。兩夾座高度差 22 mm，保留原探頭位置。
+- focused 真機入口 60300 exit 0：46 位置、2760 軸向取樣、16 折屏、10 件封閉夾具與 298 拆裝／止口取樣。原斷接／卡扣／旋鈕／跨臂負對照保留，新增杯內拆探頭及移走夾蓋拒絕。日誌 `tmp/lab-station-electrode-clamps/clamp-service-final.log`。
+- 先前失敗：雙臂前伸時夾蓋互碰，以高度錯開修復；溫度襯套凸緣撞接頸，以局部讓位修復；杯內側取撞杯壁，以先抬高 100 mm 的操作姿態驗證，沒有排除杯壁。三項失敗日誌均留在同一輸出目錄。
+- 已檢視工作圖與抬高後拆裝圖。V01.0R.01N 完整 CI 52890 exit 0，日誌 `tmp/lab-station-electrode-clamps/ci-clamp-service.log`；所有 hard gates green；仍非整機製造資格。
 
 ### Open failures
 
-- 齒槽離合、旋鈕承壓接觸鏈、五金装入、探頭軟襯夾緊、底座承力與 LCD 保持尚未完成。
-- 全五金／線材／連續姿態、載荷及實體列印資格未取得；卡扣的剛體止擋不代表材料彈性保持力合格。沒有現行整機製造 STL 發布。
+- 齒槽離合、旋鈕承壓接觸鏈、其餘五金装入、探頭軟襯夾緊力、底座承力與 LCD 保持尚未完成。
+- 全五金／線材／連續姿態、載荷及實體列印資格未取得；剛體止擋不代表彈性保持力合格。沒有現行整機製造 STL 發布。
 - 精確容器尺寸、實際探頭與板件、負載、材料、溫度及液體資料仍缺；佔位尺寸不可當固定孔依據。
 
 ### Next step
 
-- 完整 CI 已 terminal（exit 0）；先查 git log／工作樹確認封存，再開始下一個幾何版本。沿用逐項 RED→GREEN 和整個 Blender 驗證序列化，不重跑歷史 handle。
-- 夾頭改為緊湊、可側拆的軟襯夾持，沿用既有 clamp 原語與裝入檢查；同時處理軸端外露與關節過渡。不能只將外觀圓角當成夾緊資格。
-- 隨後完成齒槽／承壓／裝配、底座與螢幕、電路與線材、承載與製造包；保留使用者減件與各頭獨立要求。
+- CI 52890 已 terminal（exit 0），本次版號 V01.0R.01N；接手先查 git log 與工作樹確認封存，再進行下一幾何項。
+- 下一幾何項為軸端外露／關節過渡及齒槽承壓；隨後底座與螢幕、電路與線材、承載與製造包，保留減件及各頭獨立要求。
 
 ## 歷史驗證紀錄
 

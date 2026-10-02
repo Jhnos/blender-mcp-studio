@@ -1,8 +1,11 @@
 """Removable probe jaws and rod keepers, built with existing mesh primitives."""
 
-import bpy
+import math
 
-from scripts.blender_mesh_primitives import add_cylinder, assign, boolean, cleanup_mesh
+import bpy
+from mathutils import Matrix
+
+from scripts.blender_mesh_primitives import add_cylinder, assign, boolean, cleanup_mesh, material
 from scripts.lab_station_joints import block
 from src.core.domain.lab_station import Point, ProbeClampSpec
 
@@ -14,12 +17,16 @@ def lined_jaw(
     probe: Point,
     mat: bpy.types.Material,
     soft: bpy.types.Material,
+    *,
+    spec: ProbeClampSpec | None = None,
+    rounded: bool = False,
+    dual: bool | None = None,
 ) -> tuple[bpy.types.Object, list[bpy.types.Object]]:
-    spec = ProbeClampSpec()
+    spec = spec or ProbeClampSpec()
     x, y, pz = probe
     z = pz - 28
-    half_width = (30 - spec.split_gap_mm) / 2
-    center = (30 + spec.split_gap_mm) / 4
+    half_width = (spec.jaw_width_mm - spec.split_gap_mm) / 2
+    center = (spec.jaw_width_mm + spec.split_gap_mm) / 4
     fixed = block(
         "LS_TOOL_jaw", (half_width, spec.jaw_depth_mm, 18), (x + side * center, y, z), mat
     )
@@ -29,14 +36,29 @@ def lined_jaw(
         (x - side * center, y, z),
         mat,
     )
+    if rounded:
+        for part in (fixed, cap):
+            bevel = part.modifiers.new("Rounded jaw edges", "BEVEL")
+            bevel.width, bevel.segments = 0.002, 3
+            bpy.context.view_layer.objects.active = part
+            bpy.ops.object.modifier_apply(modifier=bevel.name)
     boolean(carrier, fixed, "UNION")
     boolean(
         carrier, block("LS_TOOL_split", (spec.split_gap_mm, 48, 22), (x, y, z), mat), "DIFFERENCE"
     )
     liners = []
-    for index, (dy, bore) in enumerate(spec.bores(side > 0)):
+    for index, (dy, bore) in enumerate(spec.bores(side > 0 if dual is None else dual)):
         for part in (carrier, cap):
             boolean(part, add_cylinder("LS_TOOL_probe", bore, 24, (x, y + dy, z)), "DIFFERENCE")
+            if rounded:
+                for dz in (-9.7, 9.7):
+                    boolean(
+                        part,
+                        add_cylinder(
+                            "LS_TOOL_flange_clearance", bore + 1.1, 1.6, (x, y + dy, z + dz)
+                        ),
+                        "DIFFERENCE",
+                    )
         liner = add_cylinder(
             f"LS_FIT_{label}_liner_{index}", spec.liner_outer_radius(bore), 18.4, (x, y + dy, z)
         )
@@ -74,7 +96,12 @@ def lined_jaw(
         boolean(
             cap,
             add_cylinder(
-                "LS_TOOL_clamp_nut", 3.3, 2.8, (x - side * 13.7, y + dy, z), "X", vertices=6
+                "LS_TOOL_clamp_nut",
+                3.3,
+                2.8,
+                (x - side * (spec.jaw_width_mm / 2 - 1.3), y + dy, z),
+                "X",
+                vertices=6,
             ),
             "DIFFERENCE",
         )
@@ -189,3 +216,57 @@ def clamp_hardware(
             )
         )
     return moving, fixed
+
+
+def compact_probe_head(label: str, mat: bpy.types.Material) -> list[bpy.types.Object]:
+    """Reuse split liners in a narrower, rounded jaw attached behind the wrist disc."""
+    dual = label == "pH_temp"
+    offset = -21 if dual else -20
+    z = -44 if dual else -22
+    prefix = "S_" + label + "_"
+    spec = ProbeClampSpec(
+        jaw_width_mm=20,
+        jaw_depth_mm=46 if dual else 30,
+        bolt_y_mm=(-18, 18) if dual else (-10, 10),
+    )
+    ring_y = -4.2 - offset
+    head = add_cylinder(prefix + "head", 11, 8, (0, ring_y, 0), "Y")
+    assign(head, mat)
+    boolean(head, add_cylinder("E_TOOL", 2.7, 20, (0, ring_y, 0), "Y"), "DIFFERENCE")
+    boolean(head, block("E_TOOL", (8, 8, -z - 8), (4.4, ring_y, (z - 4) / 2), mat), "UNION")
+    cap, liners = lined_jaw(
+        head,
+        label,
+        1,
+        (0, 0, z + 28),
+        mat,
+        material("S_soft_liner", (0.12, 0.14, 0.15, 1)),
+        spec=spec,
+        rounded=True,
+        dual=dual,
+    )
+    cap.name = prefix + "clamp_cap"
+    for index, liner in enumerate(liners):
+        liner.name = prefix + f"clamp_liner_{index}"
+    parts = [head, cap, *liners]
+    for index, y in enumerate(spec.bolt_y_mm):
+        bolt, washer, nut = hardware_set(
+            prefix + f"clamp_{index}",
+            "X",
+            (10.2, y, z),
+            -1,
+            20,
+            (-8.6, y, z),
+            bpy.data.materials["S_metal"],
+        )
+        bpy.data.objects.remove(washer, do_unlink=True)
+        boolean(bolt, add_cylinder("E_TOOL", 1.3, 2.2, (12.6, y, z), "X", vertices=6), "DIFFERENCE")
+        for part in (bolt, nut):
+            part["nominal_hardware"] = True
+        parts.extend((bolt, nut))
+    frame = Matrix.Translation((offset / 1000, 0, 0)) @ Matrix.Rotation(-math.pi / 2, 4, "Z")
+    for part in parts:
+        part.data.transform(frame @ part.matrix_world)
+        part.matrix_world = Matrix.Identity(4)
+        part["compact_head_part"] = True
+    return parts

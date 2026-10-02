@@ -1,0 +1,236 @@
+"""World-space interfaces and assembly checks for the compact electrode arms."""
+
+import math
+from itertools import combinations
+
+import bmesh
+import bpy
+from mathutils import Matrix, Vector
+
+from scripts.hand_gates import shell_count
+from scripts.lab_station_motion_check import tree
+
+
+def verify_local(label: str) -> None:
+    prefix = "S_" + label + "_"
+    members = [
+        bpy.data.objects[prefix + s]
+        for s in ("base", "upper", "lower", "follower", "platform", "head")
+    ]
+    extra = [
+        obj
+        for obj in bpy.data.objects
+        if obj.name.startswith(prefix)
+        and obj.get("compact_head_part")
+        and not obj.get("nominal_hardware")
+        and obj not in members
+    ]
+    for first, second in combinations([*members, *extra], 2):
+        if tree(first).overlap(tree(second)):
+            raise ValueError(f"Electrode self collision: {first.name}, {second.name}")
+    # Compare physical bore locations on each mesh through its evaluated world matrix.
+    side = 1 if label == "capillary" else -1
+    upper, lower, follower, platform, head = members[1:]
+
+    def point(obj: bpy.types.Object, x: float, y: float, z: float) -> Vector:
+        local = Vector((side * x / 1000, y / 1000, z / 1000))
+        start = local + Vector((-0.08, 0, 0))
+        for offset in (0, 0.006):
+            if obj.ray_cast(start + Vector((0, 0, offset)), Vector((1, 0, 0)))[0] != bool(offset):
+                raise ValueError("Electrode bore material disconnected: " + obj.name)
+        return obj.matrix_world @ local
+
+    for first, second in (
+        (point(upper, 4.2, 0, 150), point(lower, -4.2, 0, 0)),
+        (point(upper, 4.2, 0, 126), point(follower, 12.6, 0, 0)),
+        (point(lower, -4.2, 0, 150), point(platform, 4.2, 0, 0)),
+        (point(follower, 12.6, 0, 150), point(platform, 4.2, 0, -24)),
+        (point(platform, 4.2, 28, 0), point(head, -4.2, 0, 0)),
+    ):
+        # Axes may differ in X by layer spacing but must be coaxial in the arm plane.
+        axis = upper.matrix_world.to_3x3() @ Vector((1, 0, 0))
+        delta = first - second
+        if (delta - axis * delta.dot(axis)).length > 1e-7:
+            raise ValueError("Electrode physical joint disconnected")
+
+
+def verify_pins(label: str) -> int:
+    """Rigid clearance/axial stops; elastic clip installation is not certified."""
+    prefix = "S_" + label + "_"
+    side = 1 if label == "capillary" else -1
+    members = [
+        bpy.data.objects[prefix + name]
+        for name in ("base", "upper", "lower", "follower", "platform", "head")
+    ]
+    obstacles = [tree(member) for member in members]
+    samples = 0
+    for joint in ("proximal", "distal"):
+        pin = bpy.data.objects[prefix + joint + "_pin"]
+        clip = bpy.data.objects.get(prefix + joint + "_clip")
+        if clip is None:
+            raise ValueError("Passive pivot missing retainer: " + joint)
+        original = pin.matrix_world.copy()
+        clip_original = clip.matrix_world.copy()
+        try:
+            if tree(pin).overlap(tree(clip)) or any(
+                tree(part).overlap(obstacle) for part in (pin, clip) for obstacle in obstacles
+            ):
+                raise ValueError("Passive pivot neutral interference")
+            for shift in (-1.5, 1.5):
+                delta = Matrix.Translation((side * shift / 1000, 0, 0))
+                pin.matrix_world = original @ delta
+                clip.matrix_world = clip_original @ delta
+                bpy.context.view_layer.update()
+                if not any(
+                    tree(part).overlap(obstacle) for part in (pin, clip) for obstacle in obstacles
+                ):
+                    raise ValueError("Passive pivot lacks axial stop")
+                samples += 1
+            clip.matrix_world = clip_original
+            for shift in (-0.6, 0.6):
+                pin.matrix_world = original @ Matrix.Translation((side * shift / 1000, 0, 0))
+                bpy.context.view_layer.update()
+                if not tree(pin).overlap(tree(clip)):
+                    raise ValueError("Retainer misses pin groove shoulder")
+                samples += 1
+            # Remove clip before sliding pin out/in; no rigid snap-through claim.
+            for shift in range(26):
+                pin.matrix_world = original @ Matrix.Translation((side * shift / 1000, 0, 0))
+                bpy.context.view_layer.update()
+                if any(tree(pin).overlap(obstacle) for obstacle in obstacles):
+                    raise ValueError("Passive pin insertion path obstructed")
+                samples += 1
+        finally:
+            pin.matrix_world = original
+            clip.matrix_world = clip_original
+            bpy.context.view_layer.update()
+    return samples
+
+
+def verify_knobs(label: str) -> None:
+    prefix = "S_" + label + "_"
+    obstacles = {
+        obj.name: tree(obj)
+        for obj in bpy.data.objects
+        if obj.type == "MESH" and obj.name.startswith(prefix) and not obj.get("nominal_hardware")
+    }
+    for joint in ("shoulder", "elbow", "tip"):
+        knob = bpy.data.objects.get(prefix + joint + "_knob")
+        if knob is None:
+            raise ValueError("Missing hand knob: " + joint)
+        knob_tree = obstacles[knob.name]
+        for name, obstacle in obstacles.items():
+            if name != knob.name and knob_tree.overlap(obstacle):
+                raise ValueError("Hand knob interference: " + knob.name + ", " + name)
+        bolt = bpy.data.objects[prefix + joint + "_bolt"]
+        nut = bpy.data.objects[prefix + joint + "_nut"]
+        body = bpy.data.objects[prefix + ("platform" if joint == "tip" else "upper")]
+        for moving, fixed in ((bolt, knob_tree), (nut, obstacles[body.name])):
+            if tree(moving).overlap(fixed):
+                raise ValueError("Hex capture neutral interference")
+            saved = moving.matrix_world.copy()
+            try:
+                moving.matrix_world = saved @ Matrix.Rotation(math.pi / 6, 4, "X")
+                bpy.context.view_layer.update()
+                if not tree(moving).overlap(fixed):
+                    raise ValueError("Hex capture cannot transmit torque")
+            finally:
+                moving.matrix_world = saved
+                bpy.context.view_layer.update()
+
+
+def verify_clamps() -> dict[str, int]:
+    """Check real meshes and straight removal paths; no elastic force qualification."""
+    samples, printed = 0, 0
+    for label, liner_count in (("capillary", 2), ("pH_temp", 4)):
+        prefix = "S_" + label + "_"
+        suffixes = ["head", "clamp_cap"] + [f"clamp_liner_{i}" for i in range(liner_count)]
+        suffixes += [f"clamp_{i}_{kind}" for i in range(2) for kind in ("bolt", "nut")]
+        missing = [
+            prefix + suffix for suffix in suffixes if prefix + suffix not in bpy.data.objects
+        ]
+        if missing:
+            raise ValueError("Missing removable probe clamp parts: " + str(missing))
+        parts = [bpy.data.objects[prefix + suffix] for suffix in suffixes]
+        for part in parts:
+            if part.get("nominal_hardware"):
+                continue
+            mesh = bmesh.new()
+            mesh.from_mesh(part.data)
+            invalid_edges = sum(not edge.is_manifold for edge in mesh.edges)
+            mesh.free()
+            if shell_count(part) != 1 or invalid_edges:
+                raise ValueError("Probe clamp is not one closed solid: " + part.name)
+            printed += 1
+        probes = [o for o in bpy.data.objects if o.name.startswith(prefix + "probe_")]
+        if len(probes) != liner_count // 2:
+            raise ValueError("Incomplete probe clamp population: " + label)
+        neutral = {o.name: tree(o) for o in (*parts, *probes)}
+        for first, second in combinations(neutral, 2):
+            if neutral[first].overlap(neutral[second]):
+                raise ValueError("Probe clamp neutral interference: " + first + ", " + second)
+        head, cap = parts[:2]
+        for index in range(liner_count):
+            liner = bpy.data.objects[prefix + f"clamp_liner_{index}"]
+            original = liner.matrix_world.copy()
+            try:
+                for shift in (-0.002, 0.002):
+                    liner.matrix_world = original @ Matrix.Translation((0, 0, shift))
+                    bpy.context.view_layer.update()
+                    moved = tree(liner)
+                    if not any(moved.overlap(neutral[o.name]) for o in (head, cap)):
+                        raise ValueError("Probe liner lacks axial stop: " + liner.name)
+                    samples += 1
+            finally:
+                liner.matrix_world = original
+                bpy.context.view_layer.update()
+        bolts = [bpy.data.objects[prefix + f"clamp_{i}_bolt"] for i in range(2)]
+        nuts = [bpy.data.objects[prefix + f"clamp_{i}_nut"] for i in range(2)]
+        moving_cap = [cap, *nuts] + [
+            bpy.data.objects[prefix + f"clamp_liner_{i}"] for i in range(1, liner_count, 2)
+        ]
+        operations = [(moving_cap, bolts, 1, 25)]
+        operations += [
+            (
+                [probe, bpy.data.objects[prefix + f"clamp_liner_{2 * index}"]],
+                [*moving_cap, *bolts],
+                1,
+                25,
+            )
+            for index, probe in enumerate(sorted(probes, key=lambda obj: obj.name))
+        ]
+        operations += [([bolt], [], -1, 25) for bolt in bolts]
+        operations += [([nut], [], 1, 12) for nut in nuts]
+        for moving, removed, sign, distance in operations:
+            obstacles = {
+                obj.name: tree(obj)
+                for obj in bpy.data.objects
+                if obj.type == "MESH"
+                and not obj.hide_render
+                and obj.name.startswith(("S_", "LS_FIT_", "LS_REF_vessel"))
+                and obj not in moving
+                and obj not in removed
+            }
+            originals = {obj.name: obj.matrix_world.copy() for obj in moving}
+            try:
+                for step in range(distance + 1):
+                    for obj in moving:
+                        obj.matrix_world = originals[obj.name] @ Matrix.Translation(
+                            (0, sign * step / 1000, 0)
+                        )
+                    bpy.context.view_layer.update()
+                    for obj in moving:
+                        moved = tree(obj)
+                        hits = [
+                            name for name, obstacle in obstacles.items() if moved.overlap(obstacle)
+                        ]
+                        if hits:
+                            raise ValueError(
+                                f"Probe clamp removal blocked: {obj.name}, step={step}, {hits}"
+                            )
+                    samples += 1
+            finally:
+                for obj in moving:
+                    obj.matrix_world = originals[obj.name]
+                bpy.context.view_layer.update()
+    return {"closed_printed_parts": printed, "assembly_and_stop_samples": samples}

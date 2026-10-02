@@ -102,13 +102,15 @@ class ProbeClampSpec:
 
     split_gap_mm: float = 0.8
     jaw_depth_mm: float = 46.0
+    jaw_width_mm: float = 30.0
     bolt_y_mm: tuple[float, float] = (-18.0, 18.0)
 
     def __post_init__(self) -> None:
-        values = (self.split_gap_mm, self.jaw_depth_mm, *self.bolt_y_mm)
+        values = (self.split_gap_mm, self.jaw_depth_mm, self.jaw_width_mm, *self.bolt_y_mm)
         if (
             not all(isfinite(v) for v in values)
             or not 0 < self.split_gap_mm <= 1.2
+            or self.jaw_width_mm / 2 - max(r for _, r in self.bores(True)) < 2.5
             or self.jaw_depth_mm / 2 - max(abs(y) for y in self.bolt_y_mm) < 4.8
         ):
             raise ValueError("Invalid jaw gap or fastener edge wall")

@@ -5,7 +5,6 @@ from __future__ import annotations
 import json
 import math
 import shutil
-from itertools import combinations
 from pathlib import Path
 
 import bpy
@@ -13,15 +12,17 @@ from mathutils import Matrix, Vector
 
 from scripts.blender_mesh_primitives import add_cylinder, assign, boolean, loft_rings
 from scripts.hollow_hinge_render import look_at
+from scripts.lab_electrode_check import verify_clamps, verify_knobs, verify_local, verify_pins
 from scripts.lab_station_arm import finish_arm
-from scripts.lab_station_joints import block, hand_knob_hardware, retained_pivot
+from scripts.lab_station_clamp import compact_probe_head
+from scripts.lab_station_joints import hand_knob_hardware, retained_pivot
 from scripts.lab_station_motion_check import tree
 from scripts.lab_station_rig import set_pose
 from scripts.model_lab_simple import hardware, link, verify_clearance
 from src.core.domain.lab_station import ElectrodeArmSpec
 
 ROOT = Path(__file__).resolve().parents[1]
-OUTPUT = ROOT / "tmp/lab-station-electrode-compact"
+OUTPUT = ROOT / "tmp/lab-station-electrode-clamps"
 
 
 def bake(obj: bpy.types.Object, side: int) -> None:
@@ -60,14 +61,8 @@ def build(label: str) -> None:
     boolean(obj, add_cylinder("E_TOOL", 4.8, 5, (6.6, 28, 0), "X", vertices=6), "DIFFERENCE")
     bake(obj, side)
     bpy.data.objects.remove(bpy.data.objects[prefix + "head"], do_unlink=True)
-    obj = add_cylinder(prefix + "head", 11, 8, (-4.2, 0, 0), "X")
-    assign(obj, mat)
-    boolean(obj, add_cylinder("E_TOOL", 2.7, 20, (-4.2, 0, 0), "X"), "DIFFERENCE")
-    boolean(obj, block("E_TOOL", (24, 16, 12), (-14, 0, -16), mat), "UNION")
-    boolean(obj, block("E_TOOL", (26, 22, 22), (-20, 0, -20), mat), "UNION")
-    for dx, radius in ((0, 3),) if label == "capillary" else ((-7, 6), (7, 3)):
-        boolean(obj, add_cylinder("E_TOOL", radius + 0.3, 30, (-20 + dx, 0, -20)), "DIFFERENCE")
-    bake(obj, side)
+    for obj in compact_probe_head(label, mat):
+        bake(obj, side)
     for obj in bpy.data.objects:
         if obj.name.startswith(prefix + "probe_"):
             obj.data.transform(Matrix.Translation(((-24.2 if side < 0 else 24.2) / 1000, 0, 0)))
@@ -134,129 +129,11 @@ def pose(label: str, forward: float = 0, lift: float = 0) -> None:
             upper_angle, 4, "X"
         )
     for obj in bpy.data.objects:
-        if obj.name.startswith(prefix + "probe_"):
+        if obj.name.startswith(prefix) and (
+            obj.name.startswith(prefix + "probe_") or obj.get("compact_head_part")
+        ):
             obj.matrix_world = at(tip)
     bpy.context.view_layer.update()
-
-
-def verify_local(label: str) -> None:
-    prefix = "S_" + label + "_"
-    members = [
-        bpy.data.objects[prefix + s]
-        for s in ("base", "upper", "lower", "follower", "platform", "head")
-    ]
-    for first, second in combinations(members, 2):
-        if tree(first).overlap(tree(second)):
-            raise ValueError(f"Electrode self collision: {first.name}, {second.name}")
-    # Compare physical bore locations on each mesh through its evaluated world matrix.
-    side = 1 if label == "capillary" else -1
-    upper, lower, follower, platform, head = members[1:]
-
-    def point(obj: bpy.types.Object, x: float, y: float, z: float) -> Vector:
-        local = Vector((side * x / 1000, y / 1000, z / 1000))
-        start = local + Vector((-0.08, 0, 0))
-        for offset in (0, 0.006):
-            if obj.ray_cast(start + Vector((0, 0, offset)), Vector((1, 0, 0)))[0] != bool(offset):
-                raise ValueError("Electrode bore material disconnected: " + obj.name)
-        return obj.matrix_world @ local
-
-    for first, second in (
-        (point(upper, 4.2, 0, 150), point(lower, -4.2, 0, 0)),
-        (point(upper, 4.2, 0, 126), point(follower, 12.6, 0, 0)),
-        (point(lower, -4.2, 0, 150), point(platform, 4.2, 0, 0)),
-        (point(follower, 12.6, 0, 150), point(platform, 4.2, 0, -24)),
-        (point(platform, 4.2, 28, 0), point(head, -4.2, 0, 0)),
-    ):
-        # Axes may differ in X by layer spacing but must be coaxial in the arm plane.
-        axis = upper.matrix_world.to_3x3() @ Vector((1, 0, 0))
-        delta = first - second
-        if (delta - axis * delta.dot(axis)).length > 1e-7:
-            raise ValueError("Electrode physical joint disconnected")
-
-
-def verify_pins(label: str) -> int:
-    """Rigid clearance/axial stops; elastic clip installation is not certified."""
-    prefix = "S_" + label + "_"
-    side = 1 if label == "capillary" else -1
-    members = [
-        bpy.data.objects[prefix + name]
-        for name in ("base", "upper", "lower", "follower", "platform", "head")
-    ]
-    obstacles = [tree(member) for member in members]
-    samples = 0
-    for joint in ("proximal", "distal"):
-        pin = bpy.data.objects[prefix + joint + "_pin"]
-        clip = bpy.data.objects.get(prefix + joint + "_clip")
-        if clip is None:
-            raise ValueError("Passive pivot missing retainer: " + joint)
-        original = pin.matrix_world.copy()
-        clip_original = clip.matrix_world.copy()
-        try:
-            if tree(pin).overlap(tree(clip)) or any(
-                tree(part).overlap(obstacle) for part in (pin, clip) for obstacle in obstacles
-            ):
-                raise ValueError("Passive pivot neutral interference")
-            for shift in (-1.5, 1.5):
-                delta = Matrix.Translation((side * shift / 1000, 0, 0))
-                pin.matrix_world = original @ delta
-                clip.matrix_world = clip_original @ delta
-                bpy.context.view_layer.update()
-                if not any(
-                    tree(part).overlap(obstacle) for part in (pin, clip) for obstacle in obstacles
-                ):
-                    raise ValueError("Passive pivot lacks axial stop")
-                samples += 1
-            clip.matrix_world = clip_original
-            for shift in (-0.6, 0.6):
-                pin.matrix_world = original @ Matrix.Translation((side * shift / 1000, 0, 0))
-                bpy.context.view_layer.update()
-                if not tree(pin).overlap(tree(clip)):
-                    raise ValueError("Retainer misses pin groove shoulder")
-                samples += 1
-            # Remove clip before sliding pin out/in; no rigid snap-through claim.
-            for shift in range(26):
-                pin.matrix_world = original @ Matrix.Translation((side * shift / 1000, 0, 0))
-                bpy.context.view_layer.update()
-                if any(tree(pin).overlap(obstacle) for obstacle in obstacles):
-                    raise ValueError("Passive pin insertion path obstructed")
-                samples += 1
-        finally:
-            pin.matrix_world = original
-            clip.matrix_world = clip_original
-            bpy.context.view_layer.update()
-    return samples
-
-
-def verify_knobs(label: str) -> None:
-    prefix = "S_" + label + "_"
-    obstacles = {
-        obj.name: tree(obj)
-        for obj in bpy.data.objects
-        if obj.type == "MESH" and obj.name.startswith(prefix) and not obj.get("nominal_hardware")
-    }
-    for joint in ("shoulder", "elbow", "tip"):
-        knob = bpy.data.objects.get(prefix + joint + "_knob")
-        if knob is None:
-            raise ValueError("Missing hand knob: " + joint)
-        knob_tree = obstacles[knob.name]
-        for name, obstacle in obstacles.items():
-            if name != knob.name and knob_tree.overlap(obstacle):
-                raise ValueError("Hand knob interference: " + knob.name + ", " + name)
-        bolt = bpy.data.objects[prefix + joint + "_bolt"]
-        nut = bpy.data.objects[prefix + joint + "_nut"]
-        body = bpy.data.objects[prefix + ("platform" if joint == "tip" else "upper")]
-        for moving, fixed in ((bolt, knob_tree), (nut, obstacles[body.name])):
-            if tree(moving).overlap(fixed):
-                raise ValueError("Hex capture neutral interference")
-            saved = moving.matrix_world.copy()
-            try:
-                moving.matrix_world = saved @ Matrix.Rotation(math.pi / 6, 4, "X")
-                bpy.context.view_layer.update()
-                if not tree(moving).overlap(fixed):
-                    raise ValueError("Hex capture cannot transmit torque")
-            finally:
-                moving.matrix_world = saved
-                bpy.context.view_layer.update()
 
 
 def verify() -> dict[str, object]:
@@ -287,19 +164,24 @@ def verify() -> dict[str, object]:
         set_pose(screen, tilt_step=step / 3, release_mm=0)
         verify_clearance()
     set_pose(screen, tilt_step=4, release_mm=0)
+    clamp_checks = verify_clamps()
     for label in ("capillary", "pH_temp"):
         pose(label)
     actual_metal = sum(
         bool(o.get("nominal_hardware") or o.get("screen_hardware")) for o in bpy.data.objects
     )
-    if actual_metal != 24:
+    if actual_metal != 32:
         raise ValueError("Electrode hardware budget changed")
     return {
+        "clamp_checks": clamp_checks,
+        "clamp_service_lift_mm": 100,
         "samples": rows,
         "sample_count": len(rows),
         "screen_samples_with_raised_heads": 16,
-        "metal_screws": 12,
-        "metal_nuts": 12,
+        "metal_screws": 16,
+        "metal_nuts": 16,
+        "removable_probe_caps": 2,
+        "soft_liner_halves": 6,
         "printed_hand_knobs": 6,
         "printed_pivots": 4,
         "printed_retaining_clips": 4,
@@ -363,6 +245,33 @@ def main() -> None:
     look_at(scene.camera, tuple(value * 1000 for value in target))
     scene.render.filepath = str(OUTPUT / "retainer-detail.png")
     bpy.ops.render.render(write_still=True)
+    for label in ("capillary", "pH_temp"):
+        pose(label, 0, 100)
+    head = bpy.data.objects["S_pH_temp_head"]
+    target = head.matrix_world @ Vector((0.021, 0, -0.044))
+    scene.camera.location = target + head.matrix_world.to_3x3() @ Vector((0.055, 0.060, 0.028))
+    scene.camera.data.ortho_scale = 0.12
+    look_at(scene.camera, tuple(value * 1000 for value in target))
+    scene.render.filepath = str(OUTPUT / "clamp-detail.png")
+    bpy.ops.render.render(write_still=True)
+    moved = {}
+    try:
+        for obj in bpy.data.objects:
+            if obj.name.startswith("S_pH_temp_clamp_"):
+                shift = -0.015 if obj.name.endswith("_bolt") else 0.018
+                if "liner" in obj.name and int(obj.name.rsplit("_", 1)[1]) % 2 == 0:
+                    continue
+                moved[obj.name] = obj.matrix_world.copy()
+                obj.matrix_world = obj.matrix_world @ Matrix.Translation((0, shift, 0))
+        bpy.context.view_layer.update()
+        scene.render.filepath = str(OUTPUT / "clamp-exploded.png")
+        bpy.ops.render.render(write_still=True)
+    finally:
+        for name, matrix in moved.items():
+            bpy.data.objects[name].matrix_world = matrix
+        bpy.context.view_layer.update()
+    for label in ("capillary", "pH_temp"):
+        pose(label)
     scene.camera.matrix_world = camera_matrix
     scene.camera.data.ortho_scale = camera_scale
     bpy.ops.wm.save_as_mainfile(filepath=str(OUTPUT / "electrode-concept.blend"))

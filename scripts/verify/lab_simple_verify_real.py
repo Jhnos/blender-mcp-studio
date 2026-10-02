@@ -97,6 +97,35 @@ finally:
     part.matrix_world = saved
     bpy.context.view_layer.update()
 model['verify_knobs']('capillary')
+try:
+    model['verify_clamps']()
+except ValueError as error:
+    if 'LS_REF_vessel_250ml_ENVELOPE' not in str(error):
+        raise
+    (model['OUTPUT'] / 'red-service-in-cup.json').write_text(json.dumps({{'rejected': True, 'reason': str(error)}}))
+else:
+    raise RuntimeError('In-cup lateral probe removal was accepted')
+for label in ('capillary', 'pH_temp'):
+    model['pose'](label, 0, 100)
+part = bpy.data.objects['S_pH_temp_clamp_cap']
+saved = part.data.copy()
+try:
+    part.data.transform(Matrix.Translation((0, 0.05, 0)))
+    try:
+        model['verify_clamps']()
+    except ValueError as error:
+        if 'axial stop' not in str(error):
+            raise
+        (model['OUTPUT'] / 'red-clamp-stop.json').write_text(json.dumps({{'rejected': True, 'reason': str(error)}}))
+    else:
+        raise RuntimeError('Detached probe cap was accepted')
+finally:
+    changed = part.data
+    part.data = saved
+    bpy.data.meshes.remove(changed)
+model['verify_clamps']()
+for label in ('capillary', 'pH_temp'):
+    model['pose'](label)
 clearance = model['verify_clearance']
 scope = clearance.__globals__
 original_tree = scope['tree']
