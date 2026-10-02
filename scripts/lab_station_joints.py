@@ -225,13 +225,39 @@ def retained_pivot(
     return pin, clip
 
 
-def electrode_elbow_teeth(label: str, finish: Callable[[bpy.types.Object], None]) -> None:
-    """Recess matched tooth faces into the existing elbow discs in the working pose."""
+def joint_boolean(target: bpy.types.Object, tool: bpy.types.Object, operation: str) -> None:
+    """Calculate small mating features in local millimetres, then restore metre geometry."""
+    frame = target.matrix_world.copy()
+    tool.data.transform(frame.inverted() @ tool.matrix_world)
+    tool.matrix_world = Matrix.Identity(4)
+    target.matrix_world = Matrix.Identity(4)
+    scale = Matrix.Scale(1000, 4)
+    target.data.transform(scale)
+    tool.data.transform(scale)
+    try:
+        boolean(target, tool, operation)
+    finally:
+        target.data.transform(Matrix.Scale(0.001, 4))
+        target.matrix_world = frame
+        bpy.context.view_layer.update()
+
+
+def electrode_joint_teeth(
+    label: str, finish: Callable[[bpy.types.Object], None], joint: str = "elbow"
+) -> None:
+    """Recess matched tooth faces into the paired support and arm in the working pose."""
+    if joint not in ("elbow", "shoulder"):
+        raise ValueError("Unsupported toothed joint")
+    negative = "lower" if joint == "elbow" else "base"
+    tag = joint + "_teeth"
+    tooth_count = (
+        ElectrodeArmSpec.elbow_teeth if joint == "elbow" else ElectrodeArmSpec.shoulder_teeth
+    )
     prefix = "S_" + label + "_"
     if label == "pH_temp":
-        for suffix in ("upper", "lower"):
+        for suffix in ("upper", negative):
             source = bpy.data.objects["S_capillary_" + suffix]
-            if source.get("elbow_teeth") != ElectrodeArmSpec.elbow_teeth:
+            if source.get(tag) != tooth_count:
                 raise ValueError("Build the canonical toothed arm before its mirrored copy")
             target = bpy.data.objects[prefix + suffix]
             mat = target.data.materials[0]
@@ -241,18 +267,20 @@ def electrode_elbow_teeth(label: str, finish: Callable[[bpy.types.Object], None]
             target.data.materials.clear()
             target.data.materials.append(mat)
             finish(target)
-            target["elbow_teeth"] = ElectrodeArmSpec.elbow_teeth
+            target[tag] = tooth_count
             if previous.users == 0:
                 bpy.data.meshes.remove(previous)
         return
     side = 1
-    frame = bpy.data.objects[prefix + "elbow_bolt"].matrix_world @ Matrix.Diagonal((side, 1, 1, 1))
-    spec = SerratedJointSpec(radius_mm=11, bore_radius_mm=2.8, teeth=ElectrodeArmSpec.elbow_teeth)
-    for suffix, cut_center in (("lower", 0.8), ("upper", -0.8)):
+    frame = bpy.data.objects[prefix + joint + "_bolt"].matrix_world @ Matrix.Diagonal(
+        (side, 1, 1, 1)
+    )
+    spec = SerratedJointSpec(radius_mm=11, bore_radius_mm=2.8, teeth=tooth_count)
+    for suffix, cut_center in ((negative, 0.8), ("upper", -0.8)):
         body = bpy.data.objects[prefix + suffix]
         cutter = add_cylinder("E_TOOL", 11.05, 4, (cut_center, 0, 0), "X")
         cutter.matrix_world = frame @ cutter.matrix_world
-        boolean(body, cutter, "DIFFERENCE")
+        joint_boolean(body, cutter, "DIFFERENCE")
         finish(body)
         teeth = serrated_plate(
             "E_TOOL", body.data.materials[0], spec=spec, consistent_diagonal=True
@@ -269,10 +297,12 @@ def electrode_elbow_teeth(label: str, finish: Callable[[bpy.types.Object], None]
             frame @ Matrix.Translation((-0.0048, 0, 0)) @ Matrix.Rotation(math.pi / 2, 4, "Y")
         )
         if suffix == "upper":
-            pocket = add_cylinder("E_TOOL", 4.8, 5, (side * 6.6, 0, 150), "X", vertices=6)
+            pocket = add_cylinder(
+                "E_TOOL", 4.8, 5, (side * 6.6, 0, 150 if joint == "elbow" else 0), "X", vertices=6
+            )
             pocket.matrix_world = body.matrix_world @ pocket.matrix_world
-            boolean(teeth, pocket, "DIFFERENCE")
+            joint_boolean(teeth, pocket, "DIFFERENCE")
             finish(teeth)
-        boolean(body, teeth, "UNION")
+        joint_boolean(body, teeth, "UNION")
         finish(body)
-        body["elbow_teeth"] = spec.teeth
+        body[tag] = spec.teeth

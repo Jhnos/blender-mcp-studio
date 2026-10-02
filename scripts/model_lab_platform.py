@@ -8,32 +8,44 @@ import shutil
 from pathlib import Path
 
 import bpy
-from mathutils import Matrix, Vector
+from mathutils import Matrix
 
 from scripts.blender_mesh_primitives import add_cylinder, assign, boolean, loft_rings
 from scripts.hollow_hinge_render import look_at
 from scripts.lab_electrode_check import (
     verify_clamps,
-    verify_elbow_release,
-    verify_elbow_teeth,
     verify_head_envelopes,
-    verify_knobs,
-    verify_local,
-    verify_pins,
     verify_platform_geometry,
+    verify_pose,
 )
-from scripts.lab_electrode_closure import apply_take_up, verify_seated, verify_take_up
+from scripts.lab_electrode_check import (
+    verify_knobs as verify_knobs,
+)
+from scripts.lab_electrode_check import (
+    verify_local as verify_local,
+)
+from scripts.lab_electrode_check import (
+    verify_pins as verify_pins,
+)
+from scripts.lab_electrode_closure import (
+    apply_shoulder_release,
+    apply_take_up,
+    verify_joint_release,
+    verify_joint_teeth,
+    verify_seated,
+    verify_take_up,
+)
 from scripts.lab_station_arm import finish_arm
 from scripts.lab_station_clamp import compact_probe_head
-from scripts.lab_station_joints import electrode_elbow_teeth, hand_knob_hardware, retained_pivot
-from scripts.lab_station_motion_check import tree
+from scripts.lab_station_joints import electrode_joint_teeth, hand_knob_hardware, retained_pivot
+from scripts.lab_station_render import render_electrode_details
 from scripts.lab_station_rig import set_pose
 from scripts.model_lab_simple import hardware, link, verify_clearance
 from src.core.domain.lab_station import ElectrodeArmSpec
 from src.core.domain.lab_station_joints import ElbowClosureSpec
 
 ROOT = Path(__file__).resolve().parents[1]
-OUTPUT = ROOT / "tmp/lab-station-electrode-compact-platform"
+OUTPUT = ROOT / "tmp/lab-station-electrode-shoulder-teeth"
 
 
 def bake(obj: bpy.types.Object, side: int) -> None:
@@ -108,7 +120,12 @@ def build(label: str) -> None:
 
 
 def pose(
-    label: str, forward: float = 0, lift: float = 0, *, elbow_release: float | None = None
+    label: str,
+    forward: float = 0,
+    lift: float = 0,
+    *,
+    elbow_release: float | None = None,
+    shoulder_release: float | None = None,
 ) -> None:
     root, a, b, c, d, tip = ElectrodeArmSpec().joints(forward, lift)
     side = -1 if label == "capillary" else 1
@@ -165,23 +182,31 @@ def pose(
         obj = bpy.data.objects[prefix + suffix]
         obj.matrix_world = obj.matrix_world @ Matrix.Translation((side * release / 1000, 0, 0))
     bpy.data.objects[prefix + "lower"]["elbow_release_mm"] = release
+    shoulder = (0 if release == 0 else 2) if shoulder_release is None else shoulder_release
+    apply_shoulder_release(label, shoulder)
     bpy.context.view_layer.update()
 
 
-def verify_pose(label: str) -> int:
-    verify_local(label)
-    verify_knobs(label)
-    verify_clearance()
-    vessel = tree(bpy.data.objects["LS_REF_vessel_250ml_ENVELOPE"])
-    for obj in bpy.data.objects:
-        if obj.name.startswith(f"S_{label}_probe_") and tree(obj).overlap(vessel):
-            raise ValueError("Electrode probe intersects vessel")
-    return verify_pins(label)
-
-
 def verify() -> dict[str, object]:
-    tooth_samples = sum(verify_elbow_teeth(label) for label in ("capillary", "pH_temp"))
-    release_samples = sum(verify_elbow_release(label) for label in ("capillary", "pH_temp"))
+    tooth_samples = sum(verify_joint_teeth(label) for label in ("capillary", "pH_temp"))
+    release_samples = sum(verify_joint_release(label) for label in ("capillary", "pH_temp"))
+    shoulder_samples = sum(
+        verify_joint_teeth(label, "shoulder") for label in ("capillary", "pH_temp")
+    )
+    shoulder_release_samples = sum(
+        verify_joint_release(label, "shoulder") for label in ("capillary", "pH_temp")
+    )
+    shoulder_positions = []
+    for label in ("capillary", "pH_temp"):
+        target = ElectrodeArmSpec().indexed_target(1, shoulder_step=1)
+        pose(label, *target, elbow_release=0)
+        verify_pose(label)
+        shoulder_samples += verify_joint_teeth(label, "shoulder")
+        shoulder_release_samples += verify_joint_release(label, "shoulder")
+        shoulder_positions.append(
+            {"label": label, "target": target, "elbow_closure": verify_take_up(label)}
+        )
+        pose(label)
     rows = []
     pin_samples = 0
     indexed = []
@@ -210,8 +235,8 @@ def verify() -> dict[str, object]:
                     transition_samples += 1
             pose(label, *target, elbow_release=0)
             verify_pose(label)
-            verify_elbow_teeth(label)
-            verify_elbow_release(label)
+            verify_joint_teeth(label)
+            verify_joint_release(label)
             if bpy.data.objects[f"S_{other}_head"].matrix_world != saved:
                 raise ValueError("Indexed pose moved the other head")
             closure.append({"label": label, "index": index, "closure": verify_take_up(label)})
@@ -242,6 +267,11 @@ def verify() -> dict[str, object]:
         "elbow_closure": closure,
         "indexed_transition_samples": transition_samples,
         "elbow_local_tooth_samples": tooth_samples,
+        "shoulder_local_tooth_samples": shoulder_samples,
+        "shoulder_axial_release_samples": shoulder_release_samples,
+        "shoulder_indexed_positions": shoulder_positions,
+        "free_motion_poses_shoulder_released_mm": 2,
+        "vessel_center_x_mm": bpy.data.objects["LS_REF_vessel_250ml_ENVELOPE"].location.x * 1000,
         "elbow_axial_release_samples": release_samples,
         "free_motion_poses_elbow_released_mm": 2,
         "clamp_checks": clamp_checks,
@@ -278,12 +308,15 @@ def main() -> None:
     for obj in loaded.objects:
         if obj is not None:
             bpy.context.collection.objects.link(obj)
+    for name in ("LS_FIT_spill_dish", "LS_REF_vessel_250ml_ENVELOPE"):
+        bpy.data.objects[name].location.x += 0.0035
     bpy.context.view_layer.update()
     for label in ("capillary", "pH_temp"):
         build(label)
         pose(label)
-    for label in ("capillary", "pH_temp"):
-        electrode_elbow_teeth(label, finish_arm)
+    for joint in ("elbow", "shoulder"):
+        for label in ("capillary", "pH_temp"):
+            electrode_joint_teeth(label, finish_arm, joint)
     report = verify()
     (OUTPUT / "verification.json").write_text(json.dumps(report, indent=2))
     scene = bpy.context.scene
@@ -302,9 +335,10 @@ def main() -> None:
         ("extended", 20, 100),
         ("screen_folded", 0, 100),
         ("indexed-raised", *ElectrodeArmSpec().indexed_target(3)),
+        ("indexed-shoulder-raised", *ElectrodeArmSpec().indexed_target(1, shoulder_step=1)),
     ):
         for label in ("capillary", "pH_temp"):
-            pose(label, forward, lift, elbow_release=0 if name == "indexed-raised" else None)
+            pose(label, forward, lift, elbow_release=0 if name.startswith("indexed-") else None)
         set_pose(
             bpy.data.objects["LS_SCREEN_CONTROL"],
             tilt_step=0 if name == "screen_folded" else 4,
@@ -316,50 +350,7 @@ def main() -> None:
     for label in ("capillary", "pH_temp"):
         pose(label)
     set_pose(bpy.data.objects["LS_SCREEN_CONTROL"], tilt_step=4, release_mm=0)
-    camera_matrix = scene.camera.matrix_world.copy()
-    camera_scale = scene.camera.data.ortho_scale
-    pivot = bpy.data.objects["S_capillary_distal_pin"].matrix_world
-    target = pivot.translation
-    scene.camera.location = pivot @ Vector((-0.07, -0.035, 0.03))
-    scene.camera.data.ortho_scale = 0.075
-    look_at(scene.camera, tuple(value * 1000 for value in target))
-    scene.render.filepath = str(OUTPUT / "retainer-detail.png")
-    bpy.ops.render.render(write_still=True)
-    for label in ("capillary", "pH_temp"):
-        pose(label, 0, 100)
-    joint = bpy.data.objects["S_capillary_elbow_bolt"].matrix_world
-    scene.camera.location = joint @ Vector((-0.025, -0.065, 0.035))
-    scene.camera.data.ortho_scale = 0.085
-    look_at(scene.camera, tuple(value * 1000 for value in joint.translation))
-    scene.render.filepath = str(OUTPUT / "elbow-released.png")
-    bpy.ops.render.render(write_still=True)
-    head = bpy.data.objects["S_pH_temp_head"]
-    target = head.matrix_world @ Vector((0.021, 0, -0.038))
-    scene.camera.location = target + head.matrix_world.to_3x3() @ Vector((0.055, 0.060, 0.028))
-    scene.camera.data.ortho_scale = 0.12
-    look_at(scene.camera, tuple(value * 1000 for value in target))
-    scene.render.filepath = str(OUTPUT / "clamp-detail.png")
-    bpy.ops.render.render(write_still=True)
-    moved = {}
-    try:
-        for obj in bpy.data.objects:
-            if obj.name.startswith("S_pH_temp_clamp_"):
-                shift = -0.015 if obj.name.endswith("_bolt") else 0.018
-                if "liner" in obj.name and int(obj.name.rsplit("_", 1)[1]) % 2 == 0:
-                    continue
-                moved[obj.name] = obj.matrix_world.copy()
-                obj.matrix_world = obj.matrix_world @ Matrix.Translation((0, shift, 0))
-        bpy.context.view_layer.update()
-        scene.render.filepath = str(OUTPUT / "clamp-exploded.png")
-        bpy.ops.render.render(write_still=True)
-    finally:
-        for name, matrix in moved.items():
-            bpy.data.objects[name].matrix_world = matrix
-        bpy.context.view_layer.update()
-    for label in ("capillary", "pH_temp"):
-        pose(label)
-    scene.camera.matrix_world = camera_matrix
-    scene.camera.data.ortho_scale = camera_scale
+    render_electrode_details(OUTPUT, pose)
     for label in ("capillary", "pH_temp"):
         apply_take_up(label, ElbowClosureSpec().stroke_mm)
         verify_seated(label)

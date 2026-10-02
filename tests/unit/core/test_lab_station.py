@@ -166,3 +166,19 @@ def test_electrode_indexed_targets_keep_shoulder_and_land_on_real_tooth_angles()
     for invalid in (0.5, True):
         with pytest.raises(ValueError):
             spec.indexed_target(invalid)
+
+
+def test_shoulder_index_rotates_the_closed_chain_without_changing_elbow_angle() -> None:
+    from src.core.domain.lab_station import ElectrodeArmSpec
+
+    spec = ElectrodeArmSpec()
+    first = spec.joints(*spec.indexed_target(1))
+    second = spec.joints(*spec.indexed_target(1, shoulder_step=1))
+    angle = math.radians(15)
+    for (x, z), point in zip(first, second, strict=True):
+        assert point == pytest.approx(
+            (x * math.cos(angle) - z * math.sin(angle), x * math.sin(angle) + z * math.cos(angle))
+        )
+    for invalid in (True, 0.5):
+        with pytest.raises(ValueError):
+            spec.indexed_target(1, shoulder_step=invalid)

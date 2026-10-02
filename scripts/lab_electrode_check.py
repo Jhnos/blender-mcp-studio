@@ -9,6 +9,7 @@ from mathutils import Matrix, Vector
 
 from scripts.hand_gates import shell_count
 from scripts.lab_station_motion_check import tree
+from scripts.model_lab_simple import verify_clearance
 from src.core.domain.lab_station import ElectrodeArmSpec
 
 
@@ -169,7 +170,7 @@ def verify_knobs(label: str) -> None:
                 (
                     support,
                     body,
-                    0.5 + float(support.get("elbow_release_mm", 0)) if joint == "elbow" else 0.5,
+                    0.5 + float(support.get(joint + "_release_mm", 0)),
                 ),
                 (nut, body, -0.3),
             ],
@@ -311,66 +312,12 @@ def verify_clamps() -> dict[str, int]:
     return {"closed_printed_parts": printed, "assembly_and_stop_samples": samples}
 
 
-def verify_elbow_release(label: str) -> int:
-    """Sample the existing smooth elbow's axial release envelope before adding teeth."""
-    prefix = "S_" + label + "_"
-    side = 1 if label == "capillary" else -1
-    moving = [bpy.data.objects[prefix + suffix] for suffix in ("lower", "elbow_bolt", "elbow_knob")]
-    originals = {obj.name: obj.matrix_world.copy() for obj in moving}
-    obstacles = {
-        obj.name: tree(obj)
-        for obj in bpy.data.objects
-        if obj.type == "MESH"
-        and not obj.hide_render
-        and obj.name.startswith(("S_", "LS_FIT_", "LS_REF_vessel"))
-        and obj not in moving
-    }
-    try:
-        for step in range(21):
-            for obj in moving:
-                obj.matrix_world = originals[obj.name] @ Matrix.Translation(
-                    (-side * step / 10000, 0, 0)
-                )
-            bpy.context.view_layer.update()
-            for obj in moving:
-                moved = tree(obj)
-                hits = [name for name, obstacle in obstacles.items() if moved.overlap(obstacle)]
-                if hits:
-                    raise ValueError(f"Elbow release blocked: {obj.name}, {step / 10} mm, {hits}")
-    finally:
-        for obj in moving:
-            obj.matrix_world = originals[obj.name]
-        bpy.context.view_layer.update()
-    return 21
-
-
-def verify_elbow_teeth(label: str) -> int:
-    """Local mating-face test; isolated rotations do not claim closed-chain arm motion."""
-    prefix = "S_" + label + "_"
-    upper, lower = (bpy.data.objects[prefix + suffix] for suffix in ("upper", "lower"))
-    side = 1 if label == "capillary" else -1
-    for part in (upper, lower):
-        verify_closed_part(part)
-    original = lower.matrix_world.copy()
-    fixed = tree(upper)
-    samples = 0
-    try:
-        for release in (0, 2):
-            for angle in (-15, -7.5, 0, 7.5, 15):
-                lower.matrix_world = (
-                    original
-                    @ Matrix.Translation((-side * release / 1000, 0, 0))
-                    @ Matrix.Rotation(math.radians(angle), 4, "X")
-                )
-                bpy.context.view_layer.update()
-                contact = bool(tree(lower).overlap(fixed))
-                expected = release == 0 and abs(angle) == 7.5
-                if contact != expected:
-                    raise ValueError(
-                        f"Elbow tooth engagement mismatch: release={release}, angle={angle}, contact={contact}"
-                    )
-                samples += 1
-    finally:
-        lower.matrix_world = original
-        bpy.context.view_layer.update()
-    return samples
+def verify_pose(label: str) -> int:
+    verify_local(label)
+    verify_knobs(label)
+    verify_clearance()
+    vessel = tree(bpy.data.objects["LS_REF_vessel_250ml_ENVELOPE"])
+    for obj in bpy.data.objects:
+        if obj.name.startswith(f"S_{label}_probe_") and tree(obj).overlap(vessel):
+            raise ValueError("Electrode probe intersects vessel")
+    return verify_pins(label)

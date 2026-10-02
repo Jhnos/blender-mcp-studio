@@ -39,3 +39,4 @@ Population: R1–R16 為歷史 V10 的 LS_，R17–R24 為 rotary，R25 為 simp
 | R33 | 肘部四對承壓面於同一狀態就座，收隙過程無阻擋且螺栓外露受限；未就座與不匹配齒面被拒絕，另驗存檔狀態 | engineering | yes | behavior | artifact:electrode-seated/verification.json,electrode-seated/red-unseated-chain.json,electrode-seated/seated-file-check.json |
 | R34 | 末端接頭收短、保留手動角度與可拆夾蓋；雙頭共同前伸不互撞 | voc | yes | behavior | artifact:electrode-short-head/verification.json,electrode-short-head/red-head-depth.json |
 | R35 | 三角平台收至 40 mm 寬，腕軸偏置 22 mm；保留孔周圍材料、閉合及原活動範圍 | voc | yes | behavior | artifact:electrode-compact-platform/verification.json,electrode-compact-platform/red-platform-envelope.json,electrode-compact-platform/red-platform-material.json |
+| R36 | 肩部內嵌齒面可阻擋半齒，整前臂退開保持連接並避杯；另驗完整肩齒位及錯誤咬合／偏杯負對照 | engineering | yes | behavior | artifact:electrode-shoulder-teeth/verification.json,electrode-shoulder-teeth/red-shoulder-engagement.json,electrode-shoulder-teeth/red-shoulder-cup-position.json |

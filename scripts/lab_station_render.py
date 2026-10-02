@@ -1,8 +1,10 @@
 """Presentation of the laboratory assembly and actual printable tooth coupons."""
 
+from collections.abc import Callable
 from pathlib import Path
 
 import bpy
+from mathutils import Matrix, Vector
 
 from scripts.hollow_hinge_render import configure_mechanical_camera, look_at, m
 from scripts.lab_station_rig import set_pose
@@ -270,3 +272,58 @@ def render_base_section(output: Path) -> None:
             obj.hide_render = hidden
         camera.location, camera.rotation_euler, camera.data.ortho_scale = saved
         bpy.context.view_layer.update()
+
+
+def render_electrode_details(output: Path, pose: Callable[[str, float, float], None]) -> None:
+    """Render retained pivots, release and service views of the current electrode model."""
+    scene = bpy.context.scene
+    camera_matrix = scene.camera.matrix_world.copy()
+    camera_scale = scene.camera.data.ortho_scale
+    pivot = bpy.data.objects["S_capillary_distal_pin"].matrix_world
+    target = pivot.translation
+    scene.camera.location = pivot @ Vector((-0.07, -0.035, 0.03))
+    scene.camera.data.ortho_scale = 0.075
+    look_at(scene.camera, tuple(value * 1000 for value in target))
+    scene.render.filepath = str(output / "retainer-detail.png")
+    bpy.ops.render.render(write_still=True)
+    for label in ("capillary", "pH_temp"):
+        pose(label, 0, 100)
+    joint = bpy.data.objects["S_capillary_elbow_bolt"].matrix_world
+    scene.camera.location = joint @ Vector((-0.025, -0.065, 0.035))
+    scene.camera.data.ortho_scale = 0.085
+    look_at(scene.camera, tuple(value * 1000 for value in joint.translation))
+    scene.render.filepath = str(output / "elbow-released.png")
+    bpy.ops.render.render(write_still=True)
+    shoulder = bpy.data.objects["S_capillary_base"].matrix_world
+    scene.camera.location = shoulder @ Vector((0.028, -0.045, 0.025))
+    scene.camera.data.ortho_scale = 0.085
+    look_at(scene.camera, tuple(value * 1000 for value in shoulder.translation))
+    scene.render.filepath = str(output / "shoulder-released.png")
+    bpy.ops.render.render(write_still=True)
+    head = bpy.data.objects["S_pH_temp_head"]
+    target = head.matrix_world @ Vector((0.021, 0, -0.038))
+    scene.camera.location = target + head.matrix_world.to_3x3() @ Vector((0.055, 0.060, 0.028))
+    scene.camera.data.ortho_scale = 0.12
+    look_at(scene.camera, tuple(value * 1000 for value in target))
+    scene.render.filepath = str(output / "clamp-detail.png")
+    bpy.ops.render.render(write_still=True)
+    moved = {}
+    try:
+        for obj in bpy.data.objects:
+            if obj.name.startswith("S_pH_temp_clamp_"):
+                shift = -0.015 if obj.name.endswith("_bolt") else 0.018
+                if "liner" in obj.name and int(obj.name.rsplit("_", 1)[1]) % 2 == 0:
+                    continue
+                moved[obj.name] = obj.matrix_world.copy()
+                obj.matrix_world = obj.matrix_world @ Matrix.Translation((0, shift, 0))
+        bpy.context.view_layer.update()
+        scene.render.filepath = str(output / "clamp-exploded.png")
+        bpy.ops.render.render(write_still=True)
+    finally:
+        for name, matrix in moved.items():
+            bpy.data.objects[name].matrix_world = matrix
+        bpy.context.view_layer.update()
+    for label in ("capillary", "pH_temp"):
+        pose(label, 0, 0)
+    scene.camera.matrix_world = camera_matrix
+    scene.camera.data.ortho_scale = camera_scale

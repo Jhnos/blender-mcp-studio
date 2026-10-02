@@ -6,6 +6,7 @@ from itertools import combinations
 import bpy
 from mathutils import Matrix, Vector
 
+from scripts.lab_electrode_check import verify_closed_part
 from scripts.lab_station_motion_check import tree
 from src.core.domain.lab_station_joints import ElbowClosureSpec
 
@@ -159,3 +160,100 @@ def verify_take_up(label: str) -> dict[str, object]:
         "samples": rows,
         "scope": "Rigid nominal seating, not thread engagement, elastic preload or force qualification.",
     }
+
+
+def shoulder_members(label: str) -> list[bpy.types.Object]:
+    prefix = f"S_{label}_"
+    fixed = {"base", "yaw_bolt", "yaw_nut", "shoulder_bolt", "shoulder_knob"}
+    return [
+        obj
+        for obj in bpy.data.objects
+        if obj.name.startswith(prefix) and obj.name[len(prefix) :] not in fixed
+    ]
+
+
+def apply_shoulder_release(label: str, travel_mm: float) -> None:
+    """Relative axial release of the connected front assembly, retaining the base."""
+    if not math.isfinite(travel_mm) or not 0 <= travel_mm <= 2:
+        raise ValueError("Shoulder release must lie within 0–2 mm")
+    side = 1 if label == "capillary" else -1
+    for obj in shoulder_members(label):
+        obj.matrix_world = obj.matrix_world @ Matrix.Translation((side * travel_mm / 1000, 0, 0))
+    bpy.data.objects[f"S_{label}_base"]["shoulder_release_mm"] = travel_mm
+    bpy.context.view_layer.update()
+
+
+def verify_joint_release(label: str, joint: str = "elbow") -> int:
+    """Sample joint release against the other arm, hardware, vessel and enclosure."""
+    prefix = "S_" + label + "_"
+    side = 1 if label == "capillary" else -1
+    if joint not in ("elbow", "shoulder"):
+        raise ValueError("Unsupported toothed joint")
+    moving = (
+        shoulder_members(label)
+        if joint == "shoulder"
+        else [bpy.data.objects[prefix + suffix] for suffix in ("lower", "elbow_bolt", "elbow_knob")]
+    )
+    originals = {obj.name: obj.matrix_world.copy() for obj in moving}
+    obstacles = {
+        obj.name: tree(obj)
+        for obj in bpy.data.objects
+        if obj.type == "MESH"
+        and not obj.hide_render
+        and obj.name.startswith(("S_", "LS_FIT_", "LS_REF_vessel"))
+        and obj not in moving
+    }
+    try:
+        for step in range(21):
+            for obj in moving:
+                obj.matrix_world = originals[obj.name] @ Matrix.Translation(
+                    ((-side if joint == "elbow" else side) * step / 10000, 0, 0)
+                )
+            bpy.context.view_layer.update()
+            for obj in moving:
+                moved = tree(obj)
+                hits = [name for name, obstacle in obstacles.items() if moved.overlap(obstacle)]
+                if hits:
+                    raise ValueError(f"{joint} release blocked: {obj.name}, {step / 10} mm, {hits}")
+    finally:
+        for obj in moving:
+            obj.matrix_world = originals[obj.name]
+        bpy.context.view_layer.update()
+    return 21
+
+
+def verify_joint_teeth(label: str, joint: str = "elbow") -> int:
+    """Local mating-face test; isolated rotations do not claim closed-chain arm motion."""
+    prefix = "S_" + label + "_"
+    if joint not in ("elbow", "shoulder"):
+        raise ValueError("Unsupported toothed joint")
+    pair = ("upper", "lower") if joint == "elbow" else ("base", "upper")
+    upper, lower = (bpy.data.objects[prefix + suffix] for suffix in pair)
+    side = 1 if label == "capillary" else -1
+    for part in (upper, lower):
+        verify_closed_part(part)
+    original = lower.matrix_world.copy()
+    fixed = tree(upper)
+    samples = 0
+    try:
+        for release in (0, 2):
+            for angle in (-15, -7.5, 0, 7.5, 15):
+                lower.matrix_world = (
+                    original
+                    @ Matrix.Translation(
+                        ((-side if joint == "elbow" else side) * release / 1000, 0, 0)
+                    )
+                    @ Matrix.Rotation(math.radians(angle), 4, "X")
+                )
+                bpy.context.view_layer.update()
+                contact = bool(tree(lower).overlap(fixed))
+                expected = release == 0 and abs(angle) == 7.5
+                if contact != expected:
+                    raise ValueError(
+                        f"{joint} tooth engagement mismatch: release={release}, angle={angle}, contact={contact}"
+                    )
+                samples += 1
+    finally:
+        lower.matrix_world = original
+        bpy.context.view_layer.update()
+    return samples

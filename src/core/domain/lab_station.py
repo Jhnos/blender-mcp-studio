@@ -182,6 +182,7 @@ class ElectrodeArmSpec:
     """Serial shoulder and four-bar forearm; head angle is adjusted separately."""
 
     elbow_teeth: ClassVar[int] = 24
+    shoulder_teeth: ClassVar[int] = 24
     platform_offset_mm: ClassVar[float] = 22
     platform_boss_radius_mm: ClassVar[float] = 9
     reach_mm: float = sqrt(80**2 + 190**2 + 4.2**2 - 20**2)
@@ -210,13 +211,15 @@ class ElectrodeArmSpec:
         d = (c[0] - 24 * u[0], c[1] - 24 * u[1])
         return (0.0, 0.0), a, b, c, d, target
 
-    def indexed_target(self, step: int) -> tuple[float, float]:
-        """Forward target at a whole elbow tooth, retaining the working shoulder angle."""
-        if type(step) is not int:
-            raise ValueError("Elbow tooth index must be an integer")
+    def indexed_target(self, step: int, *, shoulder_step: int = 0) -> tuple[float, float]:
+        """Whole elbow and shoulder tooth targets for the closed linkage."""
+        if type(step) is not int or type(shoulder_step) is not int:
+            raise ValueError("Joint tooth indices must be integers")
         _, a, _, c, _, tip = self.joints()
         angle = atan2(c[1] - a[1], c[0] - a[0]) + radians(step * 360 / self.elbow_teeth)
-        return (
-            a[0] + 150 * cos(angle) + tip[0] - c[0] - self.reach_mm,
-            a[1] + 150 * sin(angle) + tip[1] - c[1] - 72,
-        )
+        x = a[0] + 150 * cos(angle) + tip[0] - c[0]
+        z = a[1] + 150 * sin(angle) + tip[1] - c[1]
+        shoulder = radians(shoulder_step * 360 / self.shoulder_teeth)
+        return x * cos(shoulder) - z * sin(shoulder) - self.reach_mm, x * sin(shoulder) + z * cos(
+            shoulder
+        ) - 72

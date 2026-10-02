@@ -56,6 +56,40 @@ except ValueError as error:
     (model['OUTPUT'] / 'red-unseated-chain.json').write_text(json.dumps({{'rejected': True, 'reason': str(error)}}))
 else:
     raise RuntimeError('Unseated bearing chain accepted as seated')
+part = bpy.data.objects['S_capillary_upper']
+saved = part.matrix_world.copy()
+try:
+    part.matrix_world = saved @ Matrix.Translation((0.002, 0, 0))
+    bpy.context.view_layer.update()
+    try:
+        model['verify_joint_teeth']('capillary', 'shoulder')
+    except ValueError as error:
+        if 'engagement mismatch' not in str(error):
+            raise
+        (model['OUTPUT'] / 'red-shoulder-engagement.json').write_text(json.dumps({{'rejected': True, 'reason': str(error)}}))
+    else:
+        raise RuntimeError('Released shoulder accepted as engaged')
+finally:
+    part.matrix_world = saved
+    bpy.context.view_layer.update()
+model['verify_joint_teeth']('capillary', 'shoulder')
+cup = bpy.data.objects['LS_REF_vessel_250ml_ENVELOPE']
+saved = cup.matrix_world.copy()
+try:
+    cup.location.x -= 0.0035
+    bpy.context.view_layer.update()
+    try:
+        model['verify_joint_release']('pH_temp', 'shoulder')
+    except ValueError as error:
+        if 'LS_REF_vessel_250ml_ENVELOPE' not in str(error):
+            raise
+        (model['OUTPUT'] / 'red-shoulder-cup-position.json').write_text(json.dumps({{'rejected': True, 'reason': str(error)}}))
+    else:
+        raise RuntimeError('Off-centre cup accepted along shoulder release')
+finally:
+    cup.matrix_world = saved
+    bpy.context.view_layer.update()
+model['verify_joint_release']('pH_temp', 'shoulder')
 part = bpy.data.objects['S_pH_temp_clamp_cap']
 saved = part.data.copy()
 try:
@@ -115,7 +149,7 @@ try:
     part.matrix_world = saved @ Matrix.Translation((-0.002, 0, 0))
     bpy.context.view_layer.update()
     try:
-        model['verify_elbow_teeth']('capillary')
+        model['verify_joint_teeth']('capillary')
     except ValueError as error:
         if 'engagement mismatch' not in str(error):
             raise
@@ -125,7 +159,7 @@ try:
 finally:
     part.matrix_world = saved
     bpy.context.view_layer.update()
-model['verify_elbow_teeth']('capillary')
+model['verify_joint_teeth']('capillary')
 part = bpy.data.objects['S_capillary_follower']
 saved = part.data.copy()
 try:

@@ -28,12 +28,39 @@
 
 ### Verified facts
 
+- V01.0R.01U：focused 74702 exit 0（`tmp/electrode-shoulder-indexed.log`），完整 `scripts/ci.sh --real` 43531 exit 0，所有 hard gates green（`tmp/lab-station-electrode-shoulder-teeth/ci-shoulder-teeth.log`）。18 domain tests 先紅後綠；完整 lint／format／mypy、回歸與交付守衛通過。
+- 現行输出 `tmp/lab-station-electrode-shoulder-teeth/`；`electrode-concept.blend` 保留原裝配間隙，`elbow-seated.blend` 僅肘部已就座，肩部仍保留間隙。working、shoulder-released、indexed-shoulder-raised 已檢視；上輪各輸出目錄保留。
+- 肩部支座／上臂內嵌 24 齒／15°，整個前臂組沿共同軸向退開 2 mm，保持探頭、夾具、被動軸連接；固定支座與肩螺栓／旋鈕保持原位。兩頭各工作角和 +15° 肩位共 40 局部齒面、84 軸向取樣通過；新增肩 +15°／肘 +15° 姿態约後退 24.05／抬高 89.79 mm，閉鏈／避碰／肘部就座通過。
+- 杯與承液盤共同右移 3.5 mm；移回杯的負對照在 1.2 mm 退開時撞溫度探頭，退開上臂卻宣稱咬合亦拒絕，還原後通過。未增加五金，仍 16 螺絲／16 螺母。
+- 原 46 單頭位置、11 共同前伸、298 拆裝、2760 被動軸及肘部 120 收隙狀態保留；新增兩個肩位各 15 肘部收隙狀態，存檔重新讀取通過。這些都是有限剛體幾何取樣，不代表預緊／承載。
+- 第二處齒槽布林曾破壞原有效曲面；`tmp/electrode-shoulder-topology.json` 定位切除後 141 非流形邊。細部 Boolean 改本地毫米運算並還原後，封閉性／接面／就座全通過；原失敗日誌保留，教訓回寫。
+- 5S：驗證移至既有 closure／check，局部出圖移至既有 render；main 366、check 323、closure 259、render 329、joints 308 行。無新模組或公開介面；R36 對應肩部正反例與圖。舊接手事实移至本檔歷史段，進度只由索引導引。
+
+### Open failures
+
+- 肩部整組收隙／就座、兩肩齒位之間的完整轉位路徑、腕部齒槽離合及就座尚未完成。
+- 螺紋／彈性預緊、其餘五金裝入及工具空間、探頭軟襯保持力、底座承力、LCD 保持與走線、載荷及實體列印資格未取得；沒有現行整機製造 STL 發布。
+- 精確容器、探頭與板件尺寸、負載、材料、溫度及液體資料仍缺；佔位尺寸不可當固定孔依據。深度微調精度未回覆；15° 為粗定位。
+
+### Next step
+
+- 74702、43531 均 terminal exit 0，無執行中的驗證。下一步以固定支座與整前臂位移為基準，建立肩部收隙模型及實際接觸面量測，再驗完整肩轉位與腕齒槽。
+- `pose(label)` 會先還原全部矩陣，再套用肩／肘鬆開量；一般連續姿態兩關節各退 2 mm。指定整齒姿態才用 `elbow_release=0`，肩部亦回原間隙。額外肩位透過 `indexed_target(..., shoulder_step=1)`。
+- `apply_take_up` 與 `apply_shoulder_release` 都是相對位移，禁止累加當絕對姿態。舊中立檢查先 reset pose 或讀原間隙檔；就座檔不適合直接作中立基線。
+- 保留杯／承液盤 +3.5 mm 配置；退齒碰杯的負對照已納入 real gate。新模組若有必要，建立前先查 GitHub；保持所有真機流程串行，等待逾時先確認原工作排空。
+
+## 歷史驗證紀錄
+
+以下為逐輪證據與當時的下一步；接手只依上方現行段落與任務索引，不能將歷史下一步重新當成主線。
+
+### V01.0R.01R–01T 接手事實（歷史）
+
 - 01T 緊湊平台 focused 81981 exit 0：`tmp/electrode-platform-mirror-fixed.log`。輸出 `tmp/lab-station-electrode-compact-platform/`，兩平台實測 40 mm（舊 50 mm）、零非流形，144 孔周材料取樣與過寬／缺材料負對照通過，原運動／拆裝／就座讀回保留。領域偏置先紅後綠，38 domain／DCC tests 通過。首輪上臂破面，診斷 `tmp/electrode-platform-topology.json` 定位清理由 0→19 邊；保留有效三角化並讓鏡射沿用後通過。平台每步布林整理亦修復螺母座開口。未新增模組。完整 `scripts/ci.sh --real` 4805 exit 0，所有 hard gates green，日誌 `tmp/lab-station-electrode-compact-platform/ci-compact-platform.log`。
 
 - 2026-10-03 短腕版 focused 43488 exit 0：`tmp/electrode-short-head-integrated.log`。毛細管／pH 溫度夾座中心落差由 22／44 改 20／38 mm，外角半徑 4 mm，腕盤夾蓋讓位。實際夾蓋底緣到腕軸 29／47 mm，過長接頭負對照拒絕；46 單頭位置、11 共同前伸、298 拆裝、2760 止擋與就座存檔重讀通過。working／extended／clamp-detail 已檢視。38 domain／DCC tests 與四檔 lint／format／mypy 通過。初期 18 mm 毛細管撞旋鈕，36 mm pH 在共同前伸撞另一夾蓋，均未採用；各輪失敗日誌保留。上一輪因執行中修改來源造成讀回 import 不同步，固定来源後本輪重驗通過；之後完整驗證期間不得改碼。
-- 前輪未完成的肩部退齒 helpers／泛化改名已從生產來源移除；原工作差異保存在 `tmp/shoulder-and-short-head-wip.patch`，避免未接入驗證的試作混入此輪。肩部需求仍未完成，杯座 +3.5 mm 尚未套用。
+- 前輪未完成的肩部退齒 helpers／泛化改名已從生產來源移除；原工作差異保存在 `tmp/shoulder-and-short-head-wip.patch`，避免未接入驗證的試作混入此輪。此為當時未完成試作；本輪肩部及杯座由現行模組實作並重新驗證。
 
-- 現行輸出在 `tmp/lab-station-electrode-compact-platform/`（01T）；上輪 `tmp/lab-station-electrode-short-head/` 與更早 `tmp/lab-station-electrode-seated/` 保留。`electrode-concept.blend` 是原間隙的運動基線，`elbow-seated.blend` 是四對承壓面同時就座的檔案。已檢視 `elbow-seated.png` 並重讀就座檔量測通過。
+- 現行候選輸出在 `tmp/lab-station-electrode-shoulder-teeth/`（01U）；前版 `tmp/lab-station-electrode-compact-platform/`（01T）保留；上輪 `tmp/lab-station-electrode-short-head/` 與更早 `tmp/lab-station-electrode-seated/` 保留。`electrode-concept.blend` 是原間隙的運動基線，`elbow-seated.blend` 是四對承壓面同時就座的檔案。已檢視 `elbow-seated.png` 並重讀就座檔量測通過。
 - 肘部名義收隙行程 0.7 mm：螺母先入座、螺栓頭接觸旋鈕、旋鈕接觸下臂，再合齒。八個整齒位配置各 15 個狀態，共 120 個；每步射線查齒面三半徑各 192 角點和三平面各 12 角點，並查障礙與螺栓外露。這是剛體就座，未證明預緊力。
 - 修復齒面近似不匹配：原實測間隙約 0.13–0.27 mm，配對面與每齒區改用一致三角分割後，各齒位均能就座。齒面側 Ø5.6 mm 局部孔讓位，主孔最小仍 Ø5.4 mm，避免五條破邊。前兩次整合失敗與表面量測日誌保留於 `tmp/electrode-closure-*`、`tmp/electrode-seated-integrated-*.log`。
 - focused 真機 26022 exit 0，日誌 `tmp/electrode-seated-integrated-third.log`；既有齒位／移動／夾具／止擋檢查保留。領域收隙先紅後綠，五個 joints tests 通過。
@@ -42,24 +69,6 @@
 - 01S 5S：沿用四個既有模組，主生成器 364 行、checker 357 行、clamp 277 行；沒有新模組或公開介面。舊模型與失敗日誌保留，未驗的肩部试作移出來源；R34 追溯實際包絡與共同前伸，四張視圖已檢視。完整 CI 18874 exit 0，整機仍未具製造／載荷資格。
 
 - 01T 5S：沿用既有模組，生成器 375 行、checker 376 行、arm 368 行，皆低於 380 行警戒；後續擴充需先分離職責，若新增模組仍先查 GitHub。working／extended／clamp-detail 已檢視，`platform-comparison.json` 獨立讀取新舊檔證實 50→40 mm；R35 與網格清理教訓已回寫。無新增五金或製造資格。
-
-### Open failures
-
-- 肩／腕齒槽離合與整組就座、肘部螺紋／彈性預緊力、其餘五金装入、探頭軟襯夾緊力、底座承力與 LCD 保持尚未完成。
-- 全五金／線材／連續姿態、載荷及實體列印資格未取得；剛體止擋不代表彈性保持力合格。沒有現行整機製造 STL 發布。
-- 精確容器尺寸、實際探頭與板件、負載、材料、溫度及液體資料仍缺；佔位尺寸不可當固定孔依據。
-
-### Next step
-
-- V01.0R.01S 完整 `scripts/ci.sh --real` 18874 已 terminal exit 0，所有 hard gates green，日誌 `tmp/lab-station-electrode-short-head/ci-short-head.log`。01S 為上輪封存版。
-- 01T focused 81981 與完整 CI 4805 均 terminal exit 0；無執行中的驗證。下一步軸端整合與肩／腕齒槽／就座，仍須保留兩頭獨立及既有運動範圍。
-- 末端縮短、圓角與平台收整只完成部分外形收斂；三角平台／軸端整合、走線、肩／腕齒槽與就座、其餘裝配／LCD／載荷仍未完成。深度精度未回覆，15° 仍只是粗定位。
-- 肩部先前試作在 pH 溫度探頭杯內側退 1.2 mm 碰杯，+3.5 mm 杯座候選尚未套用；先保留需求，不恢復未接入驗證的 helpers。
-- 就座檔不適合直接執行舊中立間隙檢查；先用 `pose(label)` 或原間隙 `electrode-concept.blend`。`apply_take_up` 是相對位移，禁止累加。
-
-## 歷史驗證紀錄
-
-以下為逐輪證據與當時的下一步；接手只依上方現行段落與任務索引，不能將歷史下一步重新當成主線。
 
 ### V1–V9 已驗證事實
 
