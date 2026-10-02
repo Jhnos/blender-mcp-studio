@@ -12,17 +12,24 @@ from mathutils import Matrix, Vector
 
 from scripts.blender_mesh_primitives import add_cylinder, assign, boolean, loft_rings
 from scripts.hollow_hinge_render import look_at
-from scripts.lab_electrode_check import verify_clamps, verify_knobs, verify_local, verify_pins
+from scripts.lab_electrode_check import (
+    verify_clamps,
+    verify_elbow_release,
+    verify_elbow_teeth,
+    verify_knobs,
+    verify_local,
+    verify_pins,
+)
 from scripts.lab_station_arm import finish_arm
 from scripts.lab_station_clamp import compact_probe_head
-from scripts.lab_station_joints import hand_knob_hardware, retained_pivot
+from scripts.lab_station_joints import electrode_elbow_teeth, hand_knob_hardware, retained_pivot
 from scripts.lab_station_motion_check import tree
 from scripts.lab_station_rig import set_pose
 from scripts.model_lab_simple import hardware, link, verify_clearance
 from src.core.domain.lab_station import ElectrodeArmSpec
 
 ROOT = Path(__file__).resolve().parents[1]
-OUTPUT = ROOT / "tmp/lab-station-electrode-fasteners"
+OUTPUT = ROOT / "tmp/lab-station-electrode-teeth"
 
 
 def bake(obj: bpy.types.Object, side: int) -> None:
@@ -42,12 +49,15 @@ def build(label: str) -> None:
         obj = link(prefix + suffix, x, mat, radius_mm=11)
         if suffix == "upper":
             boolean(obj, add_cylinder("E_TOOL", 11, 8, (x, 0, 126), "X"), "UNION")
+            finish_arm(obj)
             boolean(obj, add_cylinder("E_TOOL", 2.7, 40, (x, 0, 126), "X"), "DIFFERENCE")
+            finish_arm(obj)
         if suffix == "upper":
             for z in (0, 150):
                 boolean(
                     obj, add_cylinder("E_TOOL", 4.8, 5, (6.6, 0, z), "X", vertices=6), "DIFFERENCE"
                 )
+                finish_arm(obj)
         bake(obj, side)
     obj = link(prefix + "follower", 12.6, mat, radius_mm=11)
     bake(obj, side)
@@ -133,10 +143,17 @@ def pose(label: str, forward: float = 0, lift: float = 0) -> None:
             obj.name.startswith(prefix + "probe_") or obj.get("compact_head_part")
         ):
             obj.matrix_world = at(tip)
+    release = 0 if forward == 0 and lift == 0 else 2
+    for suffix in ("lower", "elbow_bolt", "elbow_knob"):
+        obj = bpy.data.objects[prefix + suffix]
+        obj.matrix_world = obj.matrix_world @ Matrix.Translation((side * release / 1000, 0, 0))
+    bpy.data.objects[prefix + "lower"]["elbow_release_mm"] = release
     bpy.context.view_layer.update()
 
 
 def verify() -> dict[str, object]:
+    tooth_samples = sum(verify_elbow_teeth(label) for label in ("capillary", "pH_temp"))
+    release_samples = sum(verify_elbow_release(label) for label in ("capillary", "pH_temp"))
     rows = []
     pin_samples = 0
     vessel = bpy.data.objects["LS_REF_vessel_250ml_ENVELOPE"]
@@ -173,6 +190,9 @@ def verify() -> dict[str, object]:
     if actual_metal != 32:
         raise ValueError("Electrode hardware budget changed")
     return {
+        "elbow_local_tooth_samples": tooth_samples,
+        "elbow_axial_release_samples": release_samples,
+        "non_working_poses_elbow_released_mm": 2,
         "clamp_checks": clamp_checks,
         "clamp_service_lift_mm": 100,
         "samples": rows,
@@ -208,6 +228,8 @@ def main() -> None:
     for label in ("capillary", "pH_temp"):
         build(label)
         pose(label)
+    for label in ("capillary", "pH_temp"):
+        electrode_elbow_teeth(label, finish_arm)
     report = verify()
     (OUTPUT / "verification.json").write_text(json.dumps(report, indent=2))
     scene = bpy.context.scene
@@ -250,6 +272,12 @@ def main() -> None:
     bpy.ops.render.render(write_still=True)
     for label in ("capillary", "pH_temp"):
         pose(label, 0, 100)
+    joint = bpy.data.objects["S_capillary_elbow_bolt"].matrix_world
+    scene.camera.location = joint @ Vector((-0.025, -0.065, 0.035))
+    scene.camera.data.ortho_scale = 0.085
+    look_at(scene.camera, tuple(value * 1000 for value in joint.translation))
+    scene.render.filepath = str(OUTPUT / "elbow-released.png")
+    bpy.ops.render.render(write_still=True)
     head = bpy.data.objects["S_pH_temp_head"]
     target = head.matrix_world @ Vector((0.021, 0, -0.044))
     scene.camera.location = target + head.matrix_world.to_3x3() @ Vector((0.055, 0.060, 0.028))

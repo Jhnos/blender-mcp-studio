@@ -28,22 +28,23 @@
 
 ### Verified facts
 
-- 現行模型為 `tmp/lab-station-electrode-fasteners/electrode-concept.blend`，詳見 [電極臂](../verification/lab-station/13-electrode-arm.md)。保留兩頭獨立、肩鉸鍊／平行雙桿／三角末端、可拆軟襯夾頭與手調探頭角度。
-- 六個旋鈕螺栓名義 M5×20，螺栓頭座向內 1.2 mm，螺母外露量 4.5 → 0.7 mm。先以原網格觸發 4.5 mm 超限，再修幾何。保留十六組金屬螺丝／螺母，沒有加墊片。
-- 新增各關節四對承壓面獨立位移取樣，要求中立不穿插且在預算內接觸；這不等於同時閉合、预緊力或鎖緊資格。過長螺栓及移開螺栓頭均被拒絕。
-- focused 真機入口 74559 exit 0，日誌 `tmp/electrode-fasteners-bearing-final.log`。46 位置、2760 軸向取樣、16 折屏、10 件封閉夾具及 298 拆裝／止口取樣保留。已檢視新工作圖。
-- V01.0R.01O 完整 CI 69224 exit 0，日誌 `tmp/lab-station-electrode-fasteners/ci-fasteners.log`。所有 hard gates green；本輪有獨立完整證據。
+- 現行模型為 `tmp/lab-station-electrode-teeth/electrode-concept.blend`，詳見 [電極臂](../verification/lab-station/13-electrode-arm.md)。兩頭獨立與可拆軟襯夾頭保留。
+- 肘部兩臂內嵌 Ø22 mm、24 齒、1.2 mm 高齒面，名義間隙 0.2 mm。下桿／肘螺栓／旋鈕退 2 mm；沒有增加外掛零件。非工作展示姿態為鬆開，不是每個角度都可鎖定。
+- focused 真機 92811 exit 0：四個齒槽臂件單殼、零非流形；42 軸向退齒取樣、20 局部齒面案例，咬合半齒阻擋、鬆開可越過；故意鬆開卻聲稱咬合會被拒絕。46 位置、2760 軸向／16 折屏／298 夾具取樣保留。日誌 `tmp/electrode-teeth-integrated-seventh.log`。
+- 修復原上臂切孔破面：每步布林後整理，螺母空間先從齒盤扣除再合併；右臂取得標準側獨立鏡射網格。原失敗、分段定位與修復證據在 `tmp/electrode-upper-*.log`、`tmp/electrode-tooth-mesh-stages.log`；前六次整合失敗日誌保留。
+- 已檢視 `elbow-released.png`。V01.0R.01P 完整 CI 98899 exit 0，日誌 `tmp/lab-station-electrode-teeth/ci-teeth.log`。所有 hard gates green；本輪證據與修改一同封存。
 
 ### Open failures
 
-- 齒槽離合、旋鈕承壓鏈同時閉合與預緊、其餘五金装入、探頭軟襯夾緊力、底座承力與 LCD 保持尚未完成。
+- 肩／腕齒槽離合、肘部各齒位完整閉鏈鎖定、旋鈕承壓鏈同時閉合與預緊、其餘五金装入、探頭軟襯夾緊力、底座承力與 LCD 保持尚未完成。
 - 全五金／線材／連續姿態、載荷及實體列印資格未取得；剛體止擋不代表彈性保持力合格。沒有現行整機製造 STL 發布。
 - 精確容器尺寸、實際探頭與板件、負載、材料、溫度及液體資料仍缺；佔位尺寸不可當固定孔依據。
 
 ### Next step
 
-- CI 69224 已 terminal（exit 0），本輪 V01.0R.01O；接手先查 git log 與工作樹确认封存。
-- 下一幾何項為齒槽實體咬合／脫離行程及承壓鏈同時閉合；不能將四對面分別接觸當作整體可鎖緊。隨後處理其餘軸端與關節過渡；隨後底座與螢幕、電路與線材、承載與製造包，保留減件及各頭獨立要求。
+- CI 98899 已 terminal（exit 0），版本 V01.0R.01P；接手先查 git log 與工作樹確認封存，再處理下一項。
+- 後續處理肘部完整閉鏈齒位／閉合鎖定，以及肩／腕齒槽。15° 為粗定位，已詢問浸入深度需 1 mm／5 mm／手滑調整，尚未收到回答；不自行當作精細調高完成。
+- 再完成其餘關節、底座／LCD、線材與負載／製造資格。整體目標保持 active。
 
 ## 歷史驗證紀錄
 

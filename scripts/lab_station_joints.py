@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import math
+from collections.abc import Callable
 
 import bmesh
 import bpy
@@ -15,9 +16,13 @@ from src.core.domain.lab_station_joints import ScreenHingeSpec, SerratedJointSpe
 
 
 def serrated_plate(
-    name: str, mat: bpy.types.Material, bore_radius_mm: float = 2.7
+    name: str,
+    mat: bpy.types.Material,
+    bore_radius_mm: float = 2.7,
+    *,
+    spec: SerratedJointSpec | None = None,
 ) -> bpy.types.Object:
-    spec = SerratedJointSpec(bore_radius_mm=bore_radius_mm)
+    spec = spec or SerratedJointSpec(bore_radius_mm=bore_radius_mm)
     count = spec.teeth * 8
     radii = (spec.bore_radius_mm, spec.tooth_inner_radius_mm, spec.radius_mm)
     vertices = []
@@ -213,3 +218,47 @@ def retained_pivot(
     for obj in (pin, clip):
         assign(obj, mat)
     return pin, clip
+
+
+def electrode_elbow_teeth(label: str, finish: Callable[[bpy.types.Object], None]) -> None:
+    """Recess matched tooth faces into the existing elbow discs in the working pose."""
+    prefix = "S_" + label + "_"
+    if label == "pH_temp":
+        for suffix in ("upper", "lower"):
+            source = bpy.data.objects["S_capillary_" + suffix]
+            if source.get("elbow_teeth") != 24:
+                raise ValueError("Build the canonical toothed arm before its mirrored copy")
+            target = bpy.data.objects[prefix + suffix]
+            mat = target.data.materials[0]
+            previous = target.data
+            target.data = source.data.copy()
+            target.data.transform(Matrix.Diagonal((-1, 1, 1, 1)))
+            target.data.materials.clear()
+            target.data.materials.append(mat)
+            cleanup_mesh(target)
+            target["elbow_teeth"] = 24
+            if previous.users == 0:
+                bpy.data.meshes.remove(previous)
+        return
+    side = 1
+    frame = bpy.data.objects[prefix + "elbow_bolt"].matrix_world @ Matrix.Diagonal((side, 1, 1, 1))
+    spec = SerratedJointSpec(radius_mm=11)
+    for suffix, facing, base, cut_center in (("lower", 1, -4.8, 0.8), ("upper", -1, 4.6, -0.8)):
+        body = bpy.data.objects[prefix + suffix]
+        cutter = add_cylinder("E_TOOL", 11.05, 4, (cut_center, 0, 0), "X")
+        cutter.matrix_world = frame @ cutter.matrix_world
+        boolean(body, cutter, "DIFFERENCE")
+        finish(body)
+        teeth = serrated_plate("E_TOOL", body.data.materials[0], spec=spec)
+        orientation = Matrix.Rotation(facing * math.pi / 2, 4, "Y")
+        if facing < 0:
+            orientation @= Matrix.Rotation(math.pi / spec.teeth, 4, "Z")
+        teeth.matrix_world = frame @ Matrix.Translation((base / 1000, 0, 0)) @ orientation
+        if suffix == "upper":
+            pocket = add_cylinder("E_TOOL", 4.8, 5, (side * 6.6, 0, 150), "X", vertices=6)
+            pocket.matrix_world = body.matrix_world @ pocket.matrix_world
+            boolean(teeth, pocket, "DIFFERENCE")
+            finish(teeth)
+        boolean(body, teeth, "UNION")
+        finish(body)
+        body["elbow_teeth"] = spec.teeth

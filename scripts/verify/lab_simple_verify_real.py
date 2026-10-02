@@ -48,6 +48,23 @@ sys.path.insert(0, {str(root)!r})
 for name in {modules!r}:
     importlib.reload(importlib.import_module(name))
 model = runpy.run_path({str(script)!r}, run_name='__main__')
+part = bpy.data.objects['S_capillary_lower']
+saved = part.matrix_world.copy()
+try:
+    part.matrix_world = saved @ Matrix.Translation((-0.002, 0, 0))
+    bpy.context.view_layer.update()
+    try:
+        model['verify_elbow_teeth']('capillary')
+    except ValueError as error:
+        if 'engagement mismatch' not in str(error):
+            raise
+        (model['OUTPUT'] / 'red-elbow-engagement.json').write_text(json.dumps({{'rejected': True, 'reason': str(error)}}))
+    else:
+        raise RuntimeError('Disengaged elbow was accepted as locked')
+finally:
+    part.matrix_world = saved
+    bpy.context.view_layer.update()
+model['verify_elbow_teeth']('capillary')
 part = bpy.data.objects['S_capillary_follower']
 saved = part.data.copy()
 try:
