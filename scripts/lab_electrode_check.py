@@ -107,6 +107,24 @@ def verify_pins(label: str) -> int:
     return samples
 
 
+def verify_bearing_contacts(
+    pairs: list[tuple[bpy.types.Object, bpy.types.Object, float]], side: int
+) -> None:
+    """Require each bearing face within its local take-up budget, not force qualification."""
+    for moving, fixed, travel_mm in pairs:
+        original = moving.matrix_world.copy()
+        try:
+            if tree(moving).overlap(tree(fixed)):
+                raise ValueError("Bearing faces already interfere: " + moving.name)
+            moving.matrix_world = original @ Matrix.Translation((side * travel_mm / 1000, 0, 0))
+            bpy.context.view_layer.update()
+            if not tree(moving).overlap(tree(fixed)):
+                raise ValueError("Bearing contact missing within take-up budget: " + moving.name)
+        finally:
+            moving.matrix_world = original
+            bpy.context.view_layer.update()
+
+
 def verify_knobs(label: str) -> None:
     prefix = "S_" + label + "_"
     obstacles = {
@@ -124,7 +142,20 @@ def verify_knobs(label: str) -> None:
                 raise ValueError("Hand knob interference: " + knob.name + ", " + name)
         bolt = bpy.data.objects[prefix + joint + "_bolt"]
         nut = bpy.data.objects[prefix + joint + "_nut"]
+        side = 1 if label == "capillary" else -1
+        bolt_end = max(side * vertex.co.x for vertex in bolt.data.vertices)
+        nut_end = max(side * vertex.co.x for vertex in nut.data.vertices)
+        protrusion_mm = (bolt_end - nut_end) * 1000
+        if not 0 <= protrusion_mm <= 1.5:
+            raise ValueError(f"Knob bolt exposed end outside budget: {protrusion_mm:.3f} mm")
         body = bpy.data.objects[prefix + ("platform" if joint == "tip" else "upper")]
+        support = bpy.data.objects[
+            prefix + {"shoulder": "base", "elbow": "lower", "tip": "head"}[joint]
+        ]
+        verify_bearing_contacts(
+            [(bolt, knob, 0.3), (knob, support, 0.2), (support, body, 0.5), (nut, body, -0.3)],
+            side,
+        )
         for moving, fixed in ((bolt, knob_tree), (nut, obstacles[body.name])):
             if tree(moving).overlap(fixed):
                 raise ValueError("Hex capture neutral interference")

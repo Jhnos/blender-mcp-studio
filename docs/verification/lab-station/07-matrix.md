@@ -1,6 +1,6 @@
 # VOC 追溯
 
-Population: R1–R16 為歷史 V10 的 LS_，R17–R24 為 rotary，R25 為 simple，R26–R29 為電極臂系列，現行為 electrode-clamps。每個範圍皆涵蓋其兩頭、三探頭、單杯與 HMI；排除檢測佈局副本與診斷物件，任何必要族群為零即 FAIL。歷史證據只屬於該模型，不能當成現行電極臂的製造資格；現行規格見 [01-scope](01-scope.md)。
+Population: R1–R16 為歷史 V10 的 LS_，R17–R24 為 rotary，R25 為 simple，R26–R30 為電極臂系列，現行為 electrode-fasteners。每個範圍皆涵蓋其兩頭、三探頭、單杯與 HMI；排除檢測佈局副本與診斷物件，任何必要族群為零即 FAIL。歷史證據只屬於該模型，不能當成現行電極臂的製造資格；現行規格見 [01-scope](01-scope.md)。
 
 | ID | Requirement | Tier | User-visible | Kind | Verified-by |
 |---|---|---|---|---|---|
@@ -33,3 +33,4 @@ Population: R1–R16 為歷史 V10 的 LS_，R17–R24 為 rotary，R25 為 simp
 | R27 | 電極臂被動軸具雙向軸向止擋，移走卡扣被拒絕；不含彈性保持資格 | engineering | yes | behavior | artifact:electrode-compact/verification.json,electrode-compact/red-retainer.json |
 | R28 | 肩肘腕六旋鈕與六角螺母座中立避碰，相對轉角產生止轉接觸；螺栓脫離被拒絕 | engineering | yes | behavior | artifact:electrode-compact/verification.json,electrode-compact/red-knob-drive.json |
 | R29 | 圓角夾蓋與分片軟襯可拆，具軸向止口；抬高後探頭側取通過，杯內側取及移走夾蓋被拒絕 | engineering | yes | behavior | artifact:electrode-clamps/verification.json,electrode-clamps/red-service-in-cup.json,electrode-clamps/red-clamp-stop.json |
+| R30 | 六旋鈕螺栓完整伸出螺母且外露不超過 1.5 mm，四對承壓面各自於預算內接觸；長螺栓與脫離頭部被拒絕 | engineering | yes | behavior | artifact:electrode-fasteners/verification.json,electrode-fasteners/red-bolt-exposure.json,electrode-fasteners/red-knob-drive.json |

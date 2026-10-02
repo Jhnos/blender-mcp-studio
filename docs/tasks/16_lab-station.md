@@ -28,22 +28,22 @@
 
 ### Verified facts
 
-- 現行模型為 `tmp/lab-station-electrode-clamps/electrode-concept.blend`，詳見 [電極臂](../verification/lab-station/13-electrode-arm.md)。保留兩頭獨立、肩鉸鍊／平行雙桿／三角末端與手調探頭角度。
-- 新增兩件圓角可拆夾蓋、六片軟襯與四組 M3×20；模型合計 16 螺絲／16 螺母，沒有獨立墊片。兩夾座高度差 22 mm，保留原探頭位置。
-- focused 真機入口 60300 exit 0：46 位置、2760 軸向取樣、16 折屏、10 件封閉夾具與 298 拆裝／止口取樣。原斷接／卡扣／旋鈕／跨臂負對照保留，新增杯內拆探頭及移走夾蓋拒絕。日誌 `tmp/lab-station-electrode-clamps/clamp-service-final.log`。
-- 先前失敗：雙臂前伸時夾蓋互碰，以高度錯開修復；溫度襯套凸緣撞接頸，以局部讓位修復；杯內側取撞杯壁，以先抬高 100 mm 的操作姿態驗證，沒有排除杯壁。三項失敗日誌均留在同一輸出目錄。
-- 已檢視工作圖與抬高後拆裝圖。V01.0R.01N 完整 CI 52890 exit 0，日誌 `tmp/lab-station-electrode-clamps/ci-clamp-service.log`；所有 hard gates green；仍非整機製造資格。
+- 現行模型為 `tmp/lab-station-electrode-fasteners/electrode-concept.blend`，詳見 [電極臂](../verification/lab-station/13-electrode-arm.md)。保留兩頭獨立、肩鉸鍊／平行雙桿／三角末端、可拆軟襯夾頭與手調探頭角度。
+- 六個旋鈕螺栓名義 M5×20，螺栓頭座向內 1.2 mm，螺母外露量 4.5 → 0.7 mm。先以原網格觸發 4.5 mm 超限，再修幾何。保留十六組金屬螺丝／螺母，沒有加墊片。
+- 新增各關節四對承壓面獨立位移取樣，要求中立不穿插且在預算內接觸；這不等於同時閉合、预緊力或鎖緊資格。過長螺栓及移開螺栓頭均被拒絕。
+- focused 真機入口 74559 exit 0，日誌 `tmp/electrode-fasteners-bearing-final.log`。46 位置、2760 軸向取樣、16 折屏、10 件封閉夾具及 298 拆裝／止口取樣保留。已檢視新工作圖。
+- V01.0R.01O 完整 CI 69224 exit 0，日誌 `tmp/lab-station-electrode-fasteners/ci-fasteners.log`。所有 hard gates green；本輪有獨立完整證據。
 
 ### Open failures
 
-- 齒槽離合、旋鈕承壓接觸鏈、其餘五金装入、探頭軟襯夾緊力、底座承力與 LCD 保持尚未完成。
+- 齒槽離合、旋鈕承壓鏈同時閉合與預緊、其餘五金装入、探頭軟襯夾緊力、底座承力與 LCD 保持尚未完成。
 - 全五金／線材／連續姿態、載荷及實體列印資格未取得；剛體止擋不代表彈性保持力合格。沒有現行整機製造 STL 發布。
 - 精確容器尺寸、實際探頭與板件、負載、材料、溫度及液體資料仍缺；佔位尺寸不可當固定孔依據。
 
 ### Next step
 
-- CI 52890 已 terminal（exit 0），本次版號 V01.0R.01N；接手先查 git log 與工作樹確認封存，再進行下一幾何項。
-- 下一幾何項為軸端外露／關節過渡及齒槽承壓；隨後底座與螢幕、電路與線材、承載與製造包，保留減件及各頭獨立要求。
+- CI 69224 已 terminal（exit 0），本輪 V01.0R.01O；接手先查 git log 與工作樹确认封存。
+- 下一幾何項為齒槽實體咬合／脫離行程及承壓鏈同時閉合；不能將四對面分別接觸當作整體可鎖緊。隨後處理其餘軸端與關節過渡；隨後底座與螢幕、電路與線材、承載與製造包，保留減件及各頭獨立要求。
 
 ## 歷史驗證紀錄
 
@@ -211,7 +211,7 @@
 
 - V01.0R.01L 第三次完整 scripts/ci.sh --real exit 0，全部 hard gates green，ci-retainer-final.log，session 13650 結束。實際載入新 socket 修正後，前兩輪的 report 缺失／錯配與 REST 交付失敗均未重現；初次／二次日誌保留。新卡扣局部圖與 working 已檢視，2760 軸向取樣、46 位置、16 折屏及 displaced-retainer 負對照通過。5S：沿用兩 CAD／驗證模組與既有 socket adapter/test，無新模組／公開 DTO；新失效守衛納入 T2。下一步完成緊湊臂旋鈕／齒槽與夾具，卡扣彈性／材料、全五金／線材／負載與製造匯出仍未取得資格；整體目標保持 ACTIVE。
 
-- 01M：旋鈕缺件守衛先紅；沿用 lab_station_joints 增加六個帶六角孔的列印旋鈕、六角螺栓頭與臂件內螺母座。肩／肘 Ø25，末端 Ø17；較大的末端旋鈕曾撞夾座，縮徑後 /tmp/lab-knob-focused.log exit 0。46 位置下同頭旋鈕碰撞、頭／螺母中立間隙與 30° 相對止轉通過；working 已檢視。三檔 ruff／mypy 通過。5S：沿用三模組，主生成器 393 行，無新模組／公開通道；新增 R28，金屬件仍 12 螺絲／12 螺母。完整 CI session 60392 執行中，ci-knobs.log；先輪詢，不並行操作 Blender。旋鈕承壓接觸鏈、裝入路徑、齒槽與實際鎖緊力未完成，不能稱全關節可鎖定。
+- 01M：旋鈕缺件守衛先紅；沿用 lab_station_joints 增加六個帶六角孔的列印旋鈕、六角螺栓頭與臂件內螺母座。肩／肘 Ø25，末端 Ø17；較大的末端旋鈕曾撞夾座，縮徑後 /tmp/lab-knob-focused.log exit 0。46 位置下同頭旋鈕碰撞、頭／螺母中立間隙與 30° 相對止轉通過；working 已檢視。三檔 ruff／mypy 通過。5S：沿用三模組，主生成器 393 行，無新模組／公開通道；新增 R28，金屬件仍 12 螺絲／12 螺母。完整 CI session 60392 執行中，ci-knobs.log；先輪詢，不並行操作 Blender。旋鈕承壓鏈同時閉合與預緊、裝入路徑、齒槽與實際鎖緊力未完成，不能稱全關節可鎖定。
 
 - 01M 完整 CI session 60392 尚在執行，已知失敗：T2 主生成器 393 行觸發 380 行預警；simple/electrode 與 rotary oracle 等待逾時。Blender 日誌確認逾時後仍繼續渲染；程序取樣 blender-sample.txt 顯示主執行緒仍在執行 Python，並非停住，電腦另有其他高負載工作，未終止它們。不要重啟同一驗證或並行操作 Blender；先輪詢 60392，最新 child 為 rotary support contract。
 - 旋鈕真機階段已結束後，將旋鈕五金與 retained_pivot 建立抽到既有 lab_station_joints（無新模組），主生成器降回預算內；verify_knobs 在每姿態快取不動的 BVH，保留全部碰撞／30°咬合檢查。21 budget／DCC tests、兩檔 mypy 與 ruff 通過。這些整理尚未重新通過真機；版本 01M 已 bump 但未提交，不得當已封存。等待當前 CI terminal 後，先 focused 重建量測耗時／看圖／驗 red-knob-drive，再完整 CI，成功才 checkpoint。下一機械工作仍是旋鈕承壓與裝入、齒槽與夾具。

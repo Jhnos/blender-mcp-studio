@@ -4,7 +4,7 @@ Read this file first after a new conversation, compaction, or terminal restart.
 
 ## 接手(2026-09-09,V01.0R.013)
 
-- **目前在做（2026-10-03）:** 16 雙探頭量測工作站，現行為可側拆軟襯電極臂。V01.0R.01N 完整 `scripts/ci.sh --real` exit 0（52890 已結束，`tmp/lab-station-electrode-clamps/ci-clamp-service.log`），所有 hard gates green。兩夾蓋／六片軟襯、10 件封閉網格、298 拆裝／止口取樣與杯內側取／移走夾蓋負對照通過；46 位置／16 折屏等既有檢查保留。模型：`tmp/lab-station-electrode-clamps/electrode-concept.blend`。**下一步：**軸端／關節外形整合、齒槽與承壓，再底座／LCD、線材及負載／列印資格。尚非整機製造定稿；接手讀任務16頂端 hand-off，不重跑歷史 handle。
+- **目前在做（2026-10-03）:** 16 雙探頭量測工作站，現行為短螺栓軟襯電極臂。V01.0R.01O 完整 `scripts/ci.sh --real` exit 0（69224 已結束，`tmp/lab-station-electrode-fasteners/ci-fasteners.log`），所有 hard gates green。六旋鈕螺栓外露 4.5 → 0.7 mm；四對承壓面分別取樣，過長／脫離負對照通過，既有 46 位置／16 折屏／298 夾具取樣保留。模型：`tmp/lab-station-electrode-fasteners/electrode-concept.blend`。**下一步：**齒槽咬合／脫離與承壓鏈同時閉合，再其餘關節、底座／LCD、線材及負載／列印資格。尚非整機製造定稿；接手讀任務16頂端 hand-off，不重跑歷史 handle。
 - **等驗收:** 15 場景清單不再只有十個;對話路徑第一次有真機閘門(`--real` 32 條全綠)。下一個是 14 第五個實例。
 - 13 已驗收歸檔:對話現在能呼叫本專案自己的產生器。
 - **在等使用者的:** 印。工作單已交付——07 的 V3 試片七項,以及 `hand-gripper` 九節。

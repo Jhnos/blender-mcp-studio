@@ -22,7 +22,7 @@ from scripts.model_lab_simple import hardware, link, verify_clearance
 from src.core.domain.lab_station import ElectrodeArmSpec
 
 ROOT = Path(__file__).resolve().parents[1]
-OUTPUT = ROOT / "tmp/lab-station-electrode-clamps"
+OUTPUT = ROOT / "tmp/lab-station-electrode-fasteners"
 
 
 def bake(obj: bpy.types.Object, side: int) -> None:
@@ -183,6 +183,9 @@ def verify() -> dict[str, object]:
         "removable_probe_caps": 2,
         "soft_liner_halves": 6,
         "printed_hand_knobs": 6,
+        "knob_bolt_length_mm": 20,
+        "knob_bolt_exposure_budget_mm": [0, 1.5],
+        "bearing_take_up_budgets_mm": [0.3, 0.2, 0.5, 0.3],
         "printed_pivots": 4,
         "printed_retaining_clips": 4,
         "pin_samples": pin_samples,

@@ -178,7 +178,7 @@ def hand_knob(name: str, mat: bpy.types.Material, radius_mm: float = 12.5) -> bp
             ),
             "DIFFERENCE",
         )
-    boolean(obj, add_cylinder("E_TOOL", 4.8, 8, (-16, 0, 0), "X", vertices=6), "DIFFERENCE")
+    boolean(obj, add_cylinder("E_TOOL", 4.8, 10.4, (-16, 0, 0), "X", vertices=6), "DIFFERENCE")
     boolean(obj, add_cylinder("E_TOOL", 2.7, 20, (-13.3, 0, 0), "X"), "DIFFERENCE")
     assign(obj, mat)
     return obj
@@ -187,8 +187,8 @@ def hand_knob(name: str, mat: bpy.types.Material, radius_mm: float = 12.5) -> bp
 def hand_knob_hardware(
     prefix: str, mat: bpy.types.Material, metal: bpy.types.Material, radius_mm: float
 ) -> tuple[bpy.types.Object, bpy.types.Object, bpy.types.Object]:
-    bolt = add_cylinder(prefix + "bolt", 2.5, 25, (0.3, 0, 0), "X")
-    boolean(bolt, add_cylinder("E_TOOL", 4.6, 4, (-14.2, 0, 0), "X", vertices=6), "UNION")
+    bolt = add_cylinder(prefix + "bolt", 2.5, 20, (-1, 0, 0), "X")
+    boolean(bolt, add_cylinder("E_TOOL", 4.6, 4, (-13, 0, 0), "X", vertices=6), "UNION")
     nut = add_cylinder(prefix + "nut", 4.6, 4, (6.3, 0, 0), "X", vertices=6)
     boolean(nut, add_cylinder("E_TOOL", 2.6, 6, (6.3, 0, 0), "X"), "DIFFERENCE")
     for obj in (bolt, nut):

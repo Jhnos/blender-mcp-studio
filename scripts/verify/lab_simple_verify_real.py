@@ -88,7 +88,7 @@ try:
     try:
         model['verify_knobs']('capillary')
     except ValueError as error:
-        if 'transmit torque' not in str(error):
+        if 'Bearing contact missing' not in str(error):
             raise
         (model['OUTPUT'] / 'red-knob-drive.json').write_text(json.dumps({{'rejected': True, 'reason': str(error)}}))
     else:
@@ -96,6 +96,26 @@ try:
 finally:
     part.matrix_world = saved
     bpy.context.view_layer.update()
+model['verify_knobs']('capillary')
+part = bpy.data.objects['S_capillary_elbow_bolt']
+saved = part.data.copy()
+try:
+    for vertex in part.data.vertices:
+        if vertex.co.x > 0.008:
+            vertex.co.x += 0.005
+    part.data.update()
+    try:
+        model['verify_knobs']('capillary')
+    except ValueError as error:
+        if 'exposed end outside budget' not in str(error):
+            raise
+        (model['OUTPUT'] / 'red-bolt-exposure.json').write_text(json.dumps({{'rejected': True, 'reason': str(error)}}))
+    else:
+        raise RuntimeError('Overlong knob bolt was accepted')
+finally:
+    changed = part.data
+    part.data = saved
+    bpy.data.meshes.remove(changed)
 model['verify_knobs']('capillary')
 try:
     model['verify_clamps']()
