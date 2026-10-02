@@ -63,7 +63,24 @@ finally:
     part.data = saved
     bpy.data.meshes.remove(changed)
 model['verify_local']('capillary')
-print('Electrode arm and displaced-follower control passed')
+part = bpy.data.objects['S_capillary_proximal_clip']
+saved = part.matrix_world.copy()
+try:
+    part.matrix_world = Matrix.Translation((0, 0, 0.1)) @ saved
+    bpy.context.view_layer.update()
+    try:
+        model['verify_pins']('capillary')
+    except ValueError as error:
+        if 'axial stop' not in str(error):
+            raise
+        (model['OUTPUT'] / 'red-retainer.json').write_text(json.dumps({{'rejected': True, 'reason': str(error)}}))
+    else:
+        raise RuntimeError('Displaced retaining clip was accepted')
+finally:
+    part.matrix_world = saved
+    bpy.context.view_layer.update()
+model['verify_pins']('capillary')
+print('Electrode arm, displaced-follower and displaced-retainer controls passed')
 """
     print(BlenderSocketOracle("127.0.0.1", 9876, timeout=180).execute(code))
 

@@ -15,7 +15,7 @@
 
 上臂 150 mm，兩支前臂各 150 mm；平行四連桿兩側軸距 24 mm，三角板探頭角點偏置 28 mm。關節錯層 8.4 mm、臂厚 8 mm、梁寬 12 mm、臂端盤 Ø22 mm（底座維持原尺寸）。新增第二根前臂放到外側避讓 HMI，夾座接頸與夾座一體，兩頭在工作姿態維持原共杯位置。
 
-調整機構：12 支名義螺絲、12 顆螺母、4 個列印被動軸包絡；無獨立軸套／墊片。不是整機 BOM，不含後續探頭夾緊與板件固定。列印被動軸尚無防脫設計，不能用此包絡當製造軸。
+調整機構：12 支名義螺絲、12 顆螺母、4 個列印溝槽軸與 4 個 C 形卡扣；無獨立軸套／墊片。不是整機 BOM，不含後續探頭夾緊與板件固定。軸身 Ø4.8 mm，溝槽 Ø3.4 × 1.8 mm；卡扣外徑 9、內徑 3.8、厚 1.4、開口 3 mm。卡扣沿用既有 hinge_retention 的環形開口形式，以實體環差集建模。開口小於槽徑，需彈性張開；材料、公差、扣入力與保持力未經試片驗證，不能當製造資格。
 
 ## 驗證邊界
 
@@ -24,6 +24,7 @@
 - 每個位置查五組共同軸線與孔周圍材料、六個結構件全配對表面交叉、雙頭／HMI／外殼交叉及探頭／杯壁交叉。
 - 雙頭抬高後，HMI 16 個收折角度；這不代表所有臂姿態下皆可折屏。
 - `scripts/verify/lab_simple_verify_real.py` 依序重建 simple 與本概念，再移動 follower 材料，必須拒絕且還原後通過。這個入口由完整 real CI 執行。
-- 未驗連續掃掠、全部五金互碰、線材、實體列印、軸防脫、齒槽離合、負載與固定力。自碰檢查只涵蓋列出的六個結構件，不能宣稱全機零干涉。
+- 被動軸追加中立間隙、軸與卡扣共同位移 ±1.5 mm 的臂件止擋、軸相對卡扣位移 ±0.6 mm 的槽肩止擋，以及移除卡扣後 0–25 mm 軸向裝入取樣。移走卡扣的負對照必須拒絕。這些是剛體幾何證據，不證明卡扣彈性或徑向保持力。
+- 未驗連續掃掠、全部五金互碰、線材、實體列印、卡扣彈性保持、齒槽離合、負載與固定力。自碰檢查只涵蓋列出的六個結構件，不能宣稱全機零干涉。
 
-輸出：`tmp/lab-station-electrode-compact/electrode-concept.blend`、`working.png`、`raised.png`、`extended.png`、`screen_folded.png`、`verification.json`、`red-disconnection.json`。無製造 STL 發布。
+輸出：`tmp/lab-station-electrode-compact/electrode-concept.blend`、`working.png`、`raised.png`、`extended.png`、`screen_folded.png`、`verification.json`、`red-disconnection.json`、`retainer-detail.png`、`red-retainer.json`。無製造 STL 發布。

@@ -175,3 +175,13 @@
 - 使用者回饋「好一點但還是跟參考產品有差」。已透過瀏覽器實際檢視 GOnDO 兩張原廠圖；先前未充分核對照片比例，這輪將 Ø36 端盤→Ø22、梁寬16→12、桿距40→24、平台偏置45→28。上臂內藏連動不能僅憑照片宣稱同款；沒有套用 Agilent 的整臂自動水平功能。輸出分離至 tmp/lab-station-electrode-compact，01J 保存原檔供比較。尺寸測試先紅後綠，16 domain tests；focused real /tmp/lab-electrode-compact.log exit 0，46 位置／16 折屏／斷接負對照通過，working 已檢視。完整 CI 待跑。
 
 - V01.0R.01K `scripts/ci.sh --real` exit 0，全部 hard gates green；tmp/lab-station-electrode-compact/ci-real.log，session 49468 結束。四張新視圖均已檢視。5S：沿用兩個生成器與既有驗證入口，修改 link 增加保留預設的端盤半徑參數，舊 simple 不受影響；比例說明覆寫 13-electrode-arm，舊實體輸出保留對照。仍需被動軸防脫、旋鈕／齒槽與夾具，未聲稱完全還原商用電極架。
+
+- 2026-10-02 接手：01K 工作樹乾淨，上輪屬已完成 checkpoint 的進展。Blender LaunchAgent 為 exited／addon socket 無監聽，kickstart 同一已安裝服務後 PID 95354、addon socket LISTEN，重載 compact 模型。新增實網格基線 tmp/lab-station-electrode-compact/passive-pin-baseline.json：四被動軸於三高度共 12 案例對六結構件無表面交叉。passive-pin-retention-red.json 的 20 軸向位移案例證實：四軸向內 −2 mm 皆被 follower 擋住，向外 +2／5／10／20 mm 取樣皆無阻擋；現有單頭軸缺另一側止擋。未改模型、未執行新完整 CI、未新增製造資格。下一步補可裝入的列印防脫構造，再將中立間隙／雙向止擋與移除止擋負對照接入既有 real gate。
+
+- 01L：missing-retainer 先紅；四被動軸加入 Ø3.4 × 1.8 mm 溝槽、厚 1.4 mm 的 C 形卡扣（Ø9／Ø3.8／開口 3 mm），不加金屬件。focused /tmp/lab-pin-focused.log exit 0，46 位置合計 2760 個軸向止擋／槽肩／拔插取樣通過；working 已檢視。32 domain／DCC tests 通過（首次 DCC 拒絕接手筆記重複埠號，改引用 addon socket），ruff／兩檔 mypy 通過。完整 CI session 59559 執行中，ci-retainer.log 目前服務檢查因三個 /tmp 日誌缺檔失敗；先等同一 handle 結束，再重裝 api/web 與完整重跑。卡扣彈性未驗，不能以剛體止擋宣稱實體保持力。5S：沿用現有模組，model 329 行，無新模組／公開通道，新增 R27 與局部圖，輸出仍留 tmp。
+
+- 01L 首次完整 CI session 59559 exit 1，共 8 gate 失敗：服務日誌缺檔、readiness 缺報告／回報其他模型的 bounds、交付 502；新增電極臂 gate（含 displaced-retainer 負對照）通過。已檢視 retainer-detail.png，卡扣開口可見。使用正式 install api／web 恢復服務，health connected、Web 正式 preview 監聽後重跑 session 73908，日誌 ci-retainer-rechecked.log；不要並行操作 Blender。版本已 bump 01L，尚未提交。
+
+- 01L 第二次完整 CI session 73908 exit 1：服務一致性已通過，但仍有 5 個回應缺失／錯配相關 gates 失敗。追查共用 socket，發現 timeout／cancel 後沿用舊串流會誤收遲到回應。新增 loopback 兩案例先紅（red-late-reply.log 都收到 request 1 而非 2），改中止時 disconnect、不 replay，22 adapter tests 全綠。沿用原模組，無新增通道／公開 DTO；LESSONS 新增無 request ID 之中止隔離失效類別，T2 納入守衛。API 正式重載修正後需第三次完整 CI。
+
+- V01.0R.01L 第三次完整 scripts/ci.sh --real exit 0，全部 hard gates green，ci-retainer-final.log，session 13650 結束。實際載入新 socket 修正後，前兩輪的 report 缺失／錯配與 REST 交付失敗均未重現；初次／二次日誌保留。新卡扣局部圖與 working 已檢視，2760 軸向取樣、46 位置、16 折屏及 displaced-retainer 負對照通過。5S：沿用兩 CAD／驗證模組與既有 socket adapter/test，無新模組／公開 DTO；新失效守衛納入 T2。下一步完成緊湊臂旋鈕／齒槽與夾具，卡扣彈性／材料、全五金／線材／負載與製造匯出仍未取得資格；整體目標保持 ACTIVE。

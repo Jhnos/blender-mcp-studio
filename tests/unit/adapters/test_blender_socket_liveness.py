@@ -145,3 +145,54 @@ async def test_send_command_on_a_dead_socket_raises_a_connection_error() -> None
         await client.disconnect()
         server.close()
         await server.wait_closed()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("interruption", ["timeout", "cancel"])
+async def test_interrupted_request_cannot_poison_next_reply(interruption: str) -> None:
+    received = asyncio.Event()
+    release = asyncio.Event()
+    finished = asyncio.Event()
+    connections = 0
+
+    async def handler(reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
+        nonlocal connections
+        connections += 1
+        ordinal = connections
+        try:
+            await reader.read(4096)
+            if ordinal == 1:
+                received.set()
+                await release.wait()
+            writer.write(json.dumps({"request": ordinal}).encode())
+            await writer.drain()
+            if ordinal == 1:
+                finished.set()
+                await reader.read(4096)
+        except ConnectionError:
+            pass
+        finally:
+            if ordinal == 1:
+                finished.set()
+            writer.close()
+
+    server, port = await _serve(handler)
+    client = BlenderSocketClient("127.0.0.1", port, timeout=0.05)
+    await client.connect()
+    try:
+        first = asyncio.create_task(client.send_command({"type": "first"}))
+        await asyncio.wait_for(received.wait(), _DEADLINE)
+        if interruption == "cancel":
+            first.cancel()
+        with pytest.raises(TimeoutError if interruption == "timeout" else asyncio.CancelledError):
+            await first
+        release.set()
+        await asyncio.wait_for(finished.wait(), _DEADLINE)
+        reply = await client.send_command({"type": "second"})
+        assert reply == {"request": 2}, "late first reply was returned to the second caller"
+        assert connections == 2
+    finally:
+        release.set()
+        await client.disconnect()
+        server.close()
+        await server.wait_closed()

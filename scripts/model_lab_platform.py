@@ -71,9 +71,18 @@ def build(label: str) -> None:
     for suffix in ("proximal_pin", "distal_pin"):
         obj = add_cylinder(prefix + suffix, 2.4, 22, (8.2, 0, 0), "X")
         boolean(obj, add_cylinder("E_TOOL", 4.5, 2, (18.2, 0, 0), "X"), "UNION")
+        ring = add_cylinder("E_TOOL", 3.4, 1.8, (-1.1, 0, 0), "X")
+        boolean(ring, add_cylinder("E_TOOL", 1.7, 4, (-1.1, 0, 0), "X"), "DIFFERENCE")
+        boolean(obj, ring, "DIFFERENCE")
         assign(obj, mat)
-        obj["printed_pin_envelope"] = True
+        obj["printed_pivot"] = True
         bake(obj, side)
+        clip = add_cylinder(prefix + suffix.replace("pin", "clip"), 4.5, 1.4, (-1.1, 0, 0), "X")
+        boolean(clip, add_cylinder("E_TOOL", 1.9, 4, (-1.1, 0, 0), "X"), "DIFFERENCE")
+        boolean(clip, block("E_TOOL", (4, 6, 3), (-1.1, 3, 0), mat), "DIFFERENCE")
+        assign(clip, mat)
+        clip["elastic_fit_unqualified"] = True
+        bake(clip, side)
 
 
 def pose(label: str, forward: float = 0, lift: float = 0) -> None:
@@ -102,6 +111,8 @@ def pose(label: str, forward: float = 0, lift: float = 0) -> None:
         ("head", at(tip)),
         ("proximal_pin", at(b)),
         ("distal_pin", at(d)),
+        ("proximal_clip", at(b)),
+        ("distal_clip", at(d)),
     ):
         bpy.data.objects[prefix + suffix].matrix_world = matrix
     for joint, point in (
@@ -154,8 +165,62 @@ def verify_local(label: str) -> None:
             raise ValueError("Electrode physical joint disconnected")
 
 
+def verify_pins(label: str) -> int:
+    """Rigid clearance/axial stops; elastic clip installation is not certified."""
+    prefix = "S_" + label + "_"
+    side = 1 if label == "capillary" else -1
+    members = [
+        bpy.data.objects[prefix + name]
+        for name in ("base", "upper", "lower", "follower", "platform", "head")
+    ]
+    obstacles = [tree(member) for member in members]
+    samples = 0
+    for joint in ("proximal", "distal"):
+        pin = bpy.data.objects[prefix + joint + "_pin"]
+        clip = bpy.data.objects.get(prefix + joint + "_clip")
+        if clip is None:
+            raise ValueError("Passive pivot missing retainer: " + joint)
+        original = pin.matrix_world.copy()
+        clip_original = clip.matrix_world.copy()
+        try:
+            if tree(pin).overlap(tree(clip)) or any(
+                tree(part).overlap(obstacle) for part in (pin, clip) for obstacle in obstacles
+            ):
+                raise ValueError("Passive pivot neutral interference")
+            for shift in (-1.5, 1.5):
+                delta = Matrix.Translation((side * shift / 1000, 0, 0))
+                pin.matrix_world = original @ delta
+                clip.matrix_world = clip_original @ delta
+                bpy.context.view_layer.update()
+                if not any(
+                    tree(part).overlap(obstacle) for part in (pin, clip) for obstacle in obstacles
+                ):
+                    raise ValueError("Passive pivot lacks axial stop")
+                samples += 1
+            clip.matrix_world = clip_original
+            for shift in (-0.6, 0.6):
+                pin.matrix_world = original @ Matrix.Translation((side * shift / 1000, 0, 0))
+                bpy.context.view_layer.update()
+                if not tree(pin).overlap(tree(clip)):
+                    raise ValueError("Retainer misses pin groove shoulder")
+                samples += 1
+            # Remove clip before sliding pin out/in; no rigid snap-through claim.
+            for shift in range(26):
+                pin.matrix_world = original @ Matrix.Translation((side * shift / 1000, 0, 0))
+                bpy.context.view_layer.update()
+                if any(tree(pin).overlap(obstacle) for obstacle in obstacles):
+                    raise ValueError("Passive pin insertion path obstructed")
+                samples += 1
+        finally:
+            pin.matrix_world = original
+            clip.matrix_world = clip_original
+            bpy.context.view_layer.update()
+    return samples
+
+
 def verify() -> dict[str, object]:
     rows = []
+    pin_samples = 0
     vessel = bpy.data.objects["LS_REF_vessel_250ml_ENVELOPE"]
     for label in ("capillary", "pH_temp"):
         other = "pH_temp" if label == "capillary" else "capillary"
@@ -164,6 +229,7 @@ def verify() -> dict[str, object]:
             for lift in range(0 if forward == 0 else 100, 101, 5):
                 pose(label, forward, lift)
                 verify_local(label)
+                pin_samples += verify_pins(label)
                 verify_clearance()
                 for obj in bpy.data.objects:
                     if obj.name.startswith(f"S_{label}_probe_") and tree(obj).overlap(tree(vessel)):
@@ -192,8 +258,10 @@ def verify() -> dict[str, object]:
         "screen_samples_with_raised_heads": 16,
         "metal_screws": 12,
         "metal_nuts": 12,
-        "printed_pivot_envelopes": 4,
-        "scope": "Sampled manual coordinated motion, not automatic vertical guidance. Printed-pin retention, locks, load and printing remain unqualified.",
+        "printed_pivots": 4,
+        "printed_retaining_clips": 4,
+        "pin_samples": pin_samples,
+        "scope": "Sampled manual coordinated motion, not automatic vertical guidance. Rigid axial stops and pin insertion sampled. Elastic clip fit, locks, load and printing remain unqualified.",
     }
 
 
@@ -243,6 +311,17 @@ def main() -> None:
     for label in ("capillary", "pH_temp"):
         pose(label)
     set_pose(bpy.data.objects["LS_SCREEN_CONTROL"], tilt_step=4, release_mm=0)
+    camera_matrix = scene.camera.matrix_world.copy()
+    camera_scale = scene.camera.data.ortho_scale
+    pivot = bpy.data.objects["S_capillary_distal_pin"].matrix_world
+    target = pivot.translation
+    scene.camera.location = pivot @ Vector((-0.07, -0.035, 0.03))
+    scene.camera.data.ortho_scale = 0.075
+    look_at(scene.camera, tuple(value * 1000 for value in target))
+    scene.render.filepath = str(OUTPUT / "retainer-detail.png")
+    bpy.ops.render.render(write_still=True)
+    scene.camera.matrix_world = camera_matrix
+    scene.camera.data.ortho_scale = camera_scale
     bpy.ops.wm.save_as_mainfile(filepath=str(OUTPUT / "electrode-concept.blend"))
 
 

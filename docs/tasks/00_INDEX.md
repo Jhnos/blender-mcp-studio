@@ -4,7 +4,7 @@ Read this file first after a new conversation, compaction, or terminal restart.
 
 ## 接手(2026-09-09,V01.0R.013)
 
-- **目前在做（2026-09-12）:** 16 雙探頭量測工作站。使用者接受商用電極臂參考方向並要求延伸；simple 為基線，前臂改平行雙桿＋三角平台，上臂鉸鍊參與定位、探頭角度另手調。`tmp/lab-station-electrode-compact/electrode-concept.blend`；46 單頭位置、16 折屏角度及斷接負對照通過，01J 已封存；使用者指出仍與參考不同，新增比例修正（Ø22 端盤／24 mm 桿距／28 mm 平台偏置），V01.0R.01K 完整 CI 全綠。ACTIVE，非可印／承重定稿；被動軸防脫與鎖定仍待完成。
+- **目前在做（2026-10-02）:** 16 雙探頭量測工作站。緊湊電極臂維持兩頭獨立、平行前臂與手調探頭角度。`tmp/lab-station-electrode-compact/electrode-concept.blend`；V01.0R.01L 新增四支溝槽軸／四卡扣，46 位置、2760 軸向止擋／插軸取樣、16 折屏及移走卡扣負對照通過。修復 socket 中止後誤收遲到回應，第三次完整 CI 全綠（ci-retainer-final.log）。ACTIVE，非製造／承重定稿；下一步關節旋鈕齒槽與夾緊，卡扣材料／彈性與全機負載資格仍待完成。
 - **等驗收:** 15 場景清單不再只有十個;對話路徑第一次有真機閘門(`--real` 32 條全綠)。下一個是 14 第五個實例。
 - 13 已驗收歸檔:對話現在能呼叫本專案自己的產生器。
 - **在等使用者的:** 印。工作單已交付——07 的 V3 試片七項,以及 `hand-gripper` 九節。

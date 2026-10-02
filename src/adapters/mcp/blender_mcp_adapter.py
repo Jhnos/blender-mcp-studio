@@ -130,13 +130,18 @@ class BlenderSocketClient:
                             return self._decode_response(raw)
                         except json.JSONDecodeError:
                             continue
+            except (TimeoutError, asyncio.CancelledError):
+                # This protocol has no request IDs. A late reply on this stream
+                # cannot be assigned to the next caller, even if it is valid JSON.
+                # Discard the stream, but never replay an uncertain mutation.
+                await self.disconnect()
+                raise
             except ConnectionError as exc:
                 # A peer that hangs up politely sends FIN and the loop above sees EOF.
                 # One that is *reset* — which is what a socket written to after the
                 # addon went away gets — raises here instead, and letting that escape
                 # as a bare OSError breaks the same promise the EOF branch keeps: a
                 # dropped connection must never reach a caller as anything else.
-                # TimeoutError is deliberately not caught; a slow addon is not a gone one.
                 raise BlenderConnectionError(
                     f"Blender at {self._host}:{self._port} dropped the connection ({exc})"
                 ) from exc
