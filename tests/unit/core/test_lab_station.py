@@ -182,3 +182,24 @@ def test_shoulder_index_rotates_the_closed_chain_without_changing_elbow_angle() 
     for invalid in (True, 0.5):
         with pytest.raises(ValueError):
             spec.indexed_target(1, shoulder_step=invalid)
+
+
+def test_continuous_shoulder_path_is_a_rigid_arc_not_a_straight_chord() -> None:
+    from src.core.domain.lab_station import ElectrodeArmSpec
+
+    spec = ElectrodeArmSpec()
+    first = spec.joints(*spec.indexed_target(1))
+    for degree in range(16):
+        angle = math.radians(degree)
+        actual = spec.joints(*spec.angular_target(15, degree))
+        for (x, z), point in zip(first, actual, strict=True):
+            assert point == pytest.approx(
+                (
+                    x * math.cos(angle) - z * math.sin(angle),
+                    x * math.sin(angle) + z * math.cos(angle),
+                )
+            )
+    assert spec.angular_target(15, 15) == pytest.approx(spec.indexed_target(1, shoulder_step=1))
+    for bad in (float("nan"), float("inf")):
+        with pytest.raises(ValueError):
+            spec.angular_target(15, bad)

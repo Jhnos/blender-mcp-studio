@@ -3,6 +3,7 @@
 from pathlib import Path
 
 from scripts.verify.generated_artifact_verify_real import BlenderSocketOracle
+from scripts.verify.lab_electrode_readback_real import verify_saved_electrode
 from src.verification.generator_imports import reload_modules_for
 
 
@@ -327,33 +328,7 @@ bpy.ops.wm.open_mainfile(filepath=str(model['OUTPUT'] / 'arm-seated.blend'))
 """
     # Full electrode motion, renders and fault injections exceed the smaller study budget.
     print(BlenderSocketOracle("127.0.0.1", 9876, timeout=300).execute(code))
-    # A fresh addon command lets Blender refresh context after opening the saved artifact.
-    code = f"""import bpy, runpy, json
-model = runpy.run_path({str(script)!r})
-gaps = {{label: {{joint: model['verify_seated'](label, joint) for joint in ('shoulder', 'elbow')}} for label in ('capillary', 'pH_temp')}}
-model['verify_forearm_stack']()
-model['verify_wrist_geometry']()
-(model['OUTPUT'] / 'seated-file-check.json').write_text(json.dumps(gaps))
-print('Saved seated shoulder and elbow artifact passed surface readback')
-bpy.ops.wm.open_mainfile(filepath=str(model['OUTPUT'] / 'service.blend'))
-"""
-    print(BlenderSocketOracle("127.0.0.1", 9876, timeout=30).execute(code))
-    code = f"""import bpy, runpy, json, math
-model = runpy.run_path({str(script)!r})
-angles = {{}}
-for label in ('capillary', 'pH_temp'):
-    model['verify_pose'](label)
-    head = bpy.data.objects[f'S_{{label}}_head'].matrix_world
-    pivot = bpy.data.objects[f'S_{{label}}_tip_bolt'].matrix_world
-    angles[label] = math.degrees((pivot.inverted() @ head).to_quaternion().angle)
-    if abs(angles[label] - 15) > 0.01:
-        raise ValueError('Saved service angle mismatch')
-report = {{'wrist_angles_deg': angles, 'clamps': model['verify_clamps'](), 'pin_service_samples': model['verify_pin_service']()}}
-(model['OUTPUT'] / 'service-file-check.json').write_text(json.dumps(report))
-print('Saved service artifact passed angle and removal readback')
-bpy.ops.wm.open_mainfile(filepath=str(model['OUTPUT'] / 'arm-seated.blend'))
-"""
-    print(BlenderSocketOracle("127.0.0.1", 9876, timeout=60).execute(code))
+    verify_saved_electrode(script)
 
 
 if __name__ == "__main__":

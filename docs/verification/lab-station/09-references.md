@@ -41,3 +41,7 @@ GitHub 查找 `electrode holder 3d print clamp pH probe` 與分片夾座，檢�
 - [NT7S ParametricCableComb](https://github.com/NT7S/ParametricCableComb)：可參數化的線梳，README 提醒梳齒列印方向影響抗折；適合作尺寸化通道的形式參考，頁面未顯示授權，未複製程式或網格。
 - [Ed Nisley Cable Clips](https://gist.github.com/ednisley/52b8a6303fa130fe38858488b978874b)：線外徑、孔補償與列印線寬分開設定；僅參考參數分離，不採用其 USB 外徑當本機線徑。未複製程式。
 - 沿用本專案圓柱／環差集與夾具工具；目前不引入 OpenSCAD 相依。氣管、pH 線與溫度線外徑已詢問，未取得實測前單路 Ø6 mm 僅作暫定包絡，不能據此發布固定孔或夾持資格。腕端收薄未新增模組；後續若新增理線模組，可由以上查找開始核對，但仍需實際安裝與完整動作驗證。
+
+## 肩部完整轉位驗證拆分前查找（2026-10-03）
+
+建立 `lab_electrode_motion` 與 `lab_electrode_readback_real` 前查阅 [Robotics Toolbox trajectory examples](https://github.com/petercorke/robotics-toolbox-python/blob/main/examples/README.md) 與 [PyBullet Planning](https://github.com/caelan/pybullet-planning/blob/master/README.md)、其 `examples/test_turtlebot_motion.py`。沿用關節空間取樣、隨行部件與障礙檢查的分工；不將端點直線插值當肩部圓弧。此專案已有 Blender 世界網格、儲存檔 oracle 與 FK，不引入第二個物理引擎，未複製外部程式。新模組分別承接原 main 的整段動作情境與原 real verifier 的 fresh-command 讀回，保持既有守衛與串行傳輸。

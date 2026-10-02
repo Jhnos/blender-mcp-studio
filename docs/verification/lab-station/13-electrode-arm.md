@@ -55,7 +55,13 @@
 
 肩部支座固定，前臂整組在最後合齒時向支座靠 0.2 mm。相對名義配置的最終位移為螺母 −0.4、螺栓 +0.3、旋鈕 +0.1、整組前臂 −0.2 mm；螺母的 −0.4 已包含前臂位移，不得重複疊加。總收隙仍為 0.7 mm，沿用四對接面量測，並非螺紋／材料預緊模型。
 
-兩頭各四個原齒位，另加兩個肩 +15°／肘 +15° 姿態，共十個配置；每配置 15 收隙狀態，共 150 個肩部樣本。齒面三半徑各 192 射線角點，其餘接面各 12；檢查全場交叉、名義接觸微分離及螺栓外露量。肩部未就座卻宣稱就座必須拒絕。兩頭肩、肘最後同時就座後保存 `arm-seated.blend`，fresh addon 命令重讀四組承壓鏈；原間隙檔獨立保留供活動驗證。尚未證明肩齒位間的完整轉位掃掠。
+兩頭各四個原齒位，另加兩個肩 +15°／肘 +15° 姿態，共十個配置；每配置 15 收隙狀態，共 150 個肩部樣本。齒面三半徑各 192 射線角點，其餘接面各 12；檢查全場交叉、名義接觸微分離及螺栓外露量。肩部未就座卻宣稱就座必須拒絕。兩頭肩、肘最後同時就座後保存 `arm-seated.blend`，fresh addon 命令重讀四組承壓鏈；原間隙檔獨立保留供活動驗證。肩齒位間的取樣轉位見下節；仍未證明連續掃掠。
+
+## 肩部換一齒位的完整取樣操作
+
+從肘 +15°、肩原齒位、兩關節已就座開始；肘保持就座。依序退回 0.7 mm 收隙（15 狀態）、肩軸向退開 0–2 mm（21）、整組前臂含探頭剛體轉 0–15°（16）、退開量收回（21）、重新收隙（15）。兩頭各 88，合計 176 狀態。另一頭及固定支座矩陣不變；每個狀態查全場交叉、肘部接面、被動軸保持，並以獨立 FK 比對探頭軸位置和探頭轉角。頭部隨臂轉动，不暗中保持鉛直；末端仍可另手調腕角。
+
+路徑是肩部圓弧，並非兩端點間直線。插入另一頭障礙必須拒絕。`shoulder-transfer.json` 列各階段角度與行程；兩頭各起／中／終點圖與終點 blend 保留，`transfer-end-pH_temp.blend` 由 fresh 命令讀回兩關節接面與插銷。這只證明肘 +15° 時肩原位到 +15° 的有限取樣，不代表任意肩角、反向負載、連續掃掠、手指空間或螺紋保持力。
 
 ## 驗證邊界
 
@@ -81,6 +87,6 @@
 - 完整閉鏈：兩頭各四個整齒位共八個位置，查同軸、臂件避碰、旋鈕接觸、被動軸止擋及探頭／杯壁；每個齒位另查退齒與局部咬合。相鄰齒位之間以 2 mm 鬆開姿態取樣十個位置，共 60 個，保持另一頭不動。兩齒之間強制咬合必須被上／下臂交叉檢查拒絕。有限取樣不證明連續掃掠或負載。
 - 整組收隙：八個整齒位配置各 15 個狀態，共 120 個。齒面每狀態查三個半徑各 192 個角點，其他三對平面各 12 個角點；獨立射線讀取實際表面，與當步間隙比較，容差 0.01 mm。接觸對微分離 0.01 mm 後不得殘留交叉，其他移動件／場景障礙無豁免；螺栓外露量仍需在 0–1.5 mm 內。有限表面交叉／射線不代表完整實體體積或載荷分析。
 - `arm-seated.blend` 是肩、肘同時就座狀態，real gate 重新讀檔並量四對面；`electrode-concept.blend` 保留原間隙供運動驗證。未就座卻宣稱就座的負對照必須拒絕。
-- 未驗連續掃掠、全部五金互碰、線材、實體列印、卡扣彈性保持、肩部完整轉位／腕部齒槽離合、整體預緊、負載與固定力。自碰檢查涵蓋上述結構件及全部夾具零件，不能宣稱全機零干涉。
+- 未驗連續掃掠、全部五金互碰、線材、實體列印、卡扣彈性保持、其他肩部轉位／腕部齒槽離合、整體預緊、負載與固定力。自碰檢查涵蓋上述結構件及全部夾具零件，不能宣稱全機零干涉。
 
-輸出：`tmp/lab-station-electrode-shoulder-seated/electrode-concept.blend`、`working.png`、`raised.png`、`extended.png`、`screen_folded.png`、`verification.json`、`red-disconnection.json`、`retainer-detail.png`、`red-retainer.json`、`clamp-detail.png`、`clamp-exploded.png`、`red-service-in-cup.json`、`red-clamp-stop.json`、`elbow-released.png`、`red-elbow-engagement.json`、`indexed-raised.png`、`red-between-indices.json`、`arm-seated.png`、`arm-seated.blend`、`seated-file-check.json`、`red-unseated-chain.json`、`service.png`、`service.blend`、`red-forearm-stack.json`、`red-clamp-bolt-collision.json`、`red-service-untilted.json`。`service.blend` 另由 fresh addon 命令重新讀取，確認兩腕 15°、閉鏈／避碰及完整拆裝，紀錄 `service-file-check.json`；另含 `wrist-detail.png`、`red-wrist-stack.json`、`red-wrist-floor.json`、`red-carrier-retainer.json`、`red-pin-service-blocked.json`；service 讀回另含 156 個全場插銷抽出樣本。新增 `red-unseated-shoulder.json`；無製造 STL 發布。
+輸出：`tmp/lab-station-electrode-shoulder-transfer/electrode-concept.blend`、`working.png`、`raised.png`、`extended.png`、`screen_folded.png`、`verification.json`、`red-disconnection.json`、`retainer-detail.png`、`red-retainer.json`、`clamp-detail.png`、`clamp-exploded.png`、`red-service-in-cup.json`、`red-clamp-stop.json`、`elbow-released.png`、`red-elbow-engagement.json`、`indexed-raised.png`、`red-between-indices.json`、`arm-seated.png`、`arm-seated.blend`、`seated-file-check.json`、`red-unseated-chain.json`、`service.png`、`service.blend`、`red-forearm-stack.json`、`red-clamp-bolt-collision.json`、`red-service-untilted.json`。`service.blend` 另由 fresh addon 命令重新讀取，確認兩腕 15°、閉鏈／避碰及完整拆裝，紀錄 `service-file-check.json`；另含 `wrist-detail.png`、`red-wrist-stack.json`、`red-wrist-floor.json`、`red-carrier-retainer.json`、`red-pin-service-blocked.json`；service 讀回另含 156 個全場插銷抽出樣本。新增 `red-unseated-shoulder.json`；無製造 STL 發布。

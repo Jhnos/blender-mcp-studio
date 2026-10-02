@@ -215,11 +215,19 @@ class ElectrodeArmSpec:
         """Whole elbow and shoulder tooth targets for the closed linkage."""
         if type(step) is not int or type(shoulder_step) is not int:
             raise ValueError("Joint tooth indices must be integers")
+        return self.angular_target(
+            step * 360 / self.elbow_teeth, shoulder_step * 360 / self.shoulder_teeth
+        )
+
+    def angular_target(self, elbow_deg: float, shoulder_deg: float) -> tuple[float, float]:
+        """Forward kinematics for a rigid shoulder arc at a specified relative elbow angle."""
+        if not all(isfinite(value) for value in (elbow_deg, shoulder_deg)):
+            raise ValueError("Joint angles must be finite")
         _, a, _, c, _, tip = self.joints()
-        angle = atan2(c[1] - a[1], c[0] - a[0]) + radians(step * 360 / self.elbow_teeth)
+        angle = atan2(c[1] - a[1], c[0] - a[0]) + radians(elbow_deg)
         x = a[0] + 150 * cos(angle) + tip[0] - c[0]
         z = a[1] + 150 * sin(angle) + tip[1] - c[1]
-        shoulder = radians(shoulder_step * 360 / self.shoulder_teeth)
+        shoulder = radians(shoulder_deg)
         return x * cos(shoulder) - z * sin(shoulder) - self.reach_mm, x * sin(shoulder) + z * cos(
             shoulder
         ) - 72
