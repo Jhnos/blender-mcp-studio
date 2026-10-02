@@ -20,6 +20,7 @@ from scripts.lab_electrode_check import (
     verify_local,
     verify_pins,
 )
+from scripts.lab_electrode_closure import apply_take_up, verify_seated, verify_take_up
 from scripts.lab_station_arm import finish_arm
 from scripts.lab_station_clamp import compact_probe_head
 from scripts.lab_station_joints import electrode_elbow_teeth, hand_knob_hardware, retained_pivot
@@ -27,9 +28,10 @@ from scripts.lab_station_motion_check import tree
 from scripts.lab_station_rig import set_pose
 from scripts.model_lab_simple import hardware, link, verify_clearance
 from src.core.domain.lab_station import ElectrodeArmSpec
+from src.core.domain.lab_station_joints import ElbowClosureSpec
 
 ROOT = Path(__file__).resolve().parents[1]
-OUTPUT = ROOT / "tmp/lab-station-electrode-indexed"
+OUTPUT = ROOT / "tmp/lab-station-electrode-seated"
 
 
 def bake(obj: bpy.types.Object, side: int) -> None:
@@ -172,6 +174,7 @@ def verify() -> dict[str, object]:
     rows = []
     pin_samples = 0
     indexed = []
+    closure = []
     transition_samples = 0
     for label in ("capillary", "pH_temp"):
         other = "pH_temp" if label == "capillary" else "capillary"
@@ -200,6 +203,7 @@ def verify() -> dict[str, object]:
             verify_elbow_release(label)
             if bpy.data.objects[f"S_{other}_head"].matrix_world != saved:
                 raise ValueError("Indexed pose moved the other head")
+            closure.append({"label": label, "index": index, "closure": verify_take_up(label)})
             indexed.append((label, index, *target))
             previous = target
         pose(label)
@@ -220,6 +224,7 @@ def verify() -> dict[str, object]:
         raise ValueError("Electrode hardware budget changed")
     return {
         "indexed_positions": indexed,
+        "elbow_closure": closure,
         "indexed_transition_samples": transition_samples,
         "elbow_local_tooth_samples": tooth_samples,
         "elbow_axial_release_samples": release_samples,
@@ -337,6 +342,14 @@ def main() -> None:
         pose(label)
     scene.camera.matrix_world = camera_matrix
     scene.camera.data.ortho_scale = camera_scale
+    for label in ("capillary", "pH_temp"):
+        apply_take_up(label, ElbowClosureSpec().stroke_mm)
+        verify_seated(label)
+    scene.render.filepath = str(OUTPUT / "elbow-seated.png")
+    bpy.ops.render.render(write_still=True)
+    bpy.ops.wm.save_as_mainfile(filepath=str(OUTPUT / "elbow-seated.blend"))
+    for label in ("capillary", "pH_temp"):
+        pose(label)
     bpy.ops.wm.save_as_mainfile(filepath=str(OUTPUT / "electrode-concept.blend"))
 
 

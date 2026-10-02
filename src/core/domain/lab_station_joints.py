@@ -71,3 +71,34 @@ class ScreenHingeSpec:
             for y in (-18.0, 110.0)
             for z in (-36.0, 18.0)
         )
+
+
+@dataclass(frozen=True, slots=True)
+class ElbowClosureSpec:
+    """Sequential nominal take-up only; force starts after the rigid gaps close."""
+
+    nut_gap_mm: float = 0.2
+    head_gap_mm: float = 0.2
+    knob_gap_mm: float = 0.1
+    tooth_gap_mm: float = SerratedJointSpec().assembly_gap_mm
+
+    def __post_init__(self) -> None:
+        if any(
+            not isfinite(value) or value <= 0
+            for value in (self.nut_gap_mm, self.head_gap_mm, self.knob_gap_mm, self.tooth_gap_mm)
+        ):
+            raise ValueError("Bearing gaps must be finite and positive")
+
+    @property
+    def stroke_mm(self) -> float:
+        return self.nut_gap_mm + self.head_gap_mm + self.knob_gap_mm + self.tooth_gap_mm
+
+    def offsets(self, travel_mm: float) -> dict[str, float]:
+        if not isfinite(travel_mm) or not 0 <= travel_mm <= self.stroke_mm:
+            raise ValueError("Take-up travel outside the rigid closure stroke")
+        return {
+            "elbow_nut": -min(travel_mm, self.nut_gap_mm),
+            "elbow_bolt": max(0, travel_mm - self.nut_gap_mm),
+            "elbow_knob": max(0, travel_mm - self.nut_gap_mm - self.head_gap_mm),
+            "lower": max(0, travel_mm - self.nut_gap_mm - self.head_gap_mm - self.knob_gap_mm),
+        }

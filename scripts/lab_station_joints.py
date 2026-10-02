@@ -21,6 +21,7 @@ def serrated_plate(
     bore_radius_mm: float = 2.7,
     *,
     spec: SerratedJointSpec | None = None,
+    consistent_diagonal: bool = False,
 ) -> bpy.types.Object:
     spec = spec or SerratedJointSpec(bore_radius_mm=bore_radius_mm)
     count = spec.teeth * 8
@@ -57,7 +58,11 @@ def serrated_plate(
     cleanup_mesh(obj)
     editable = bmesh.new()
     editable.from_mesh(obj.data)
-    bmesh.ops.triangulate(editable, faces=list(editable.faces))
+    bmesh.ops.triangulate(
+        editable,
+        faces=list(editable.faces),
+        quad_method="FIXED" if consistent_diagonal else "BEAUTY",
+    )
     editable.to_mesh(obj.data)
     editable.free()
     assign(obj, mat)
@@ -242,18 +247,27 @@ def electrode_elbow_teeth(label: str, finish: Callable[[bpy.types.Object], None]
         return
     side = 1
     frame = bpy.data.objects[prefix + "elbow_bolt"].matrix_world @ Matrix.Diagonal((side, 1, 1, 1))
-    spec = SerratedJointSpec(radius_mm=11, teeth=ElectrodeArmSpec.elbow_teeth)
-    for suffix, facing, base, cut_center in (("lower", 1, -4.8, 0.8), ("upper", -1, 4.6, -0.8)):
+    spec = SerratedJointSpec(radius_mm=11, bore_radius_mm=2.8, teeth=ElectrodeArmSpec.elbow_teeth)
+    for suffix, cut_center in (("lower", 0.8), ("upper", -0.8)):
         body = bpy.data.objects[prefix + suffix]
         cutter = add_cylinder("E_TOOL", 11.05, 4, (cut_center, 0, 0), "X")
         cutter.matrix_world = frame @ cutter.matrix_world
         boolean(body, cutter, "DIFFERENCE")
         finish(body)
-        teeth = serrated_plate("E_TOOL", body.data.materials[0], spec=spec)
-        orientation = Matrix.Rotation(facing * math.pi / 2, 4, "Y")
-        if facing < 0:
-            orientation @= Matrix.Rotation(math.pi / spec.teeth, 4, "Z")
-        teeth.matrix_world = frame @ Matrix.Translation((base / 1000, 0, 0)) @ orientation
+        teeth = serrated_plate(
+            "E_TOOL", body.data.materials[0], spec=spec, consistent_diagonal=True
+        )
+        if suffix == "upper":
+            # Keep the same triangulated front as the lower half, offset by the gap.
+            # Flipping an independently triangulated corrugated quad changes its surface.
+            for vertex in teeth.data.vertices:
+                vertex.co.z = (
+                    0.0094 if abs(vertex.co.z) < 1e-8 else vertex.co.z + spec.assembly_gap_mm / 1000
+                )
+            cleanup_mesh(teeth)
+        teeth.matrix_world = (
+            frame @ Matrix.Translation((-0.0048, 0, 0)) @ Matrix.Rotation(math.pi / 2, 4, "Y")
+        )
         if suffix == "upper":
             pocket = add_cylinder("E_TOOL", 4.8, 5, (side * 6.6, 0, 150), "X", vertices=6)
             pocket.matrix_world = body.matrix_world @ pocket.matrix_world

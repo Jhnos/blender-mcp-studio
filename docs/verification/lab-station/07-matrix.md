@@ -1,6 +1,6 @@
 # VOC 追溯
 
-Population: R1–R16 為歷史 V10 的 LS_，R17–R24 為 rotary，R25 為 simple，R26–R32 為電極臂系列，現行為 electrode-indexed。每個範圍皆涵蓋其兩頭、三探頭、單杯與 HMI；排除檢測佈局副本與診斷物件，任何必要族群為零即 FAIL。歷史證據只屬於該模型，不能當成現行電極臂的製造資格；現行規格見 [01-scope](01-scope.md)。
+Population: R1–R16 為歷史 V10 的 LS_，R17–R24 為 rotary，R25 為 simple，R26–R33 為電極臂系列，現行為 electrode-seated。每個範圍皆涵蓋其兩頭、三探頭、單杯與 HMI；排除檢測佈局副本與診斷物件，任何必要族群為零即 FAIL。歷史證據只屬於該模型，不能當成現行電極臂的製造資格；現行規格見 [01-scope](01-scope.md)。
 
 | ID | Requirement | Tier | User-visible | Kind | Verified-by |
 |---|---|---|---|---|---|
@@ -36,3 +36,4 @@ Population: R1–R16 為歷史 V10 的 LS_，R17–R24 為 rotary，R25 為 simp
 | R30 | 六旋鈕螺栓完整伸出螺母且外露不超過 1.5 mm，四對承壓面各自於預算內接觸；長螺栓與脫離頭部被拒絕 | engineering | yes | behavior | artifact:electrode-fasteners/verification.json,electrode-fasteners/red-bolt-exposure.json,electrode-fasteners/red-knob-drive.json |
 | R31 | 肘部齒槽內嵌兩片封閉臂件，半齒咬合阻擋、退開 2 mm 可調；鬆開不可誤判咬合 | engineering | yes | behavior | artifact:electrode-teeth/verification.json,electrode-teeth/red-elbow-engagement.json,electrode-teeth/elbow-released.png |
 | R32 | 完整平行前臂於四個整齒位保持連接，鬆開後可在齒位間移動；兩齒之間強制咬合被拒絕 | engineering | yes | behavior | artifact:electrode-indexed/verification.json,electrode-indexed/red-between-indices.json,electrode-indexed/indexed-raised.png |
+| R33 | 肘部四對承壓面於同一狀態就座，收隙過程無阻擋且螺栓外露受限；未就座與不匹配齒面被拒絕，另驗存檔狀態 | engineering | yes | behavior | artifact:electrode-seated/verification.json,electrode-seated/red-unseated-chain.json,electrode-seated/seated-file-check.json |

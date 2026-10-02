@@ -28,23 +28,24 @@
 
 ### Verified facts
 
-- 現行模型為 `tmp/lab-station-electrode-indexed/electrode-concept.blend`，詳見 [電極臂](../verification/lab-station/13-electrode-arm.md)。兩頭獨立、平行前臂、可拆軟襯與內嵌肘齒槽保留。
-- ElectrodeArmSpec 計算固定肩角的整齒位目標，齒數與幾何共用來源。領域 RED 缺方法 → 17 tests GREEN。兩頭各第 0–3 齒位，相對抬高約 0／37.3／76.4／114.7 mm，前伸改變約 0／11.9／13.7／5.4 mm。
-- focused 真機 1265 exit 0，`tmp/electrode-indexed-integrated-first.log`：八個完整閉鏈整齒位、60 個鬆開轉位取樣，檢查同軸、臂件／五金、探頭／杯壁；每個齒位另查局部咬合與退齒。既有 46 位置／16 折屏／298 夾具檢查保留。
-- 兩齒之間強制咬合被上／下臂碰撞拒絕，focused 證據 `tmp/electrode-index-midpoint-red.log`，持續負對照納入 real 入口。所有整齒位表示對齊，尚不表示整體預緊力合格。
-- V01.0R.01Q 完整 CI 33951 exit 0，`tmp/lab-station-electrode-indexed/ci-indexed.log`；所有 hard gates green；已檢視重建的 `indexed-raised.png`，兩頭於第三齒位離杯。
+- 現行輸出在 `tmp/lab-station-electrode-seated/`。`electrode-concept.blend` 是原間隙的運動基線，`elbow-seated.blend` 是四對承壓面同時就座的檔案。已檢視 `elbow-seated.png` 並重讀就座檔量測通過。
+- 肘部名義收隙行程 0.7 mm：螺母先入座、螺栓頭接觸旋鈕、旋鈕接觸下臂，再合齒。八個整齒位配置各 15 個狀態，共 120 個；每步射線查齒面三半徑各 192 角點和三平面各 12 角點，並查障礙與螺栓外露。這是剛體就座，未證明預緊力。
+- 修復齒面近似不匹配：原實測間隙約 0.13–0.27 mm，配對面與每齒區改用一致三角分割後，各齒位均能就座。齒面側 Ø5.6 mm 局部孔讓位，主孔最小仍 Ø5.4 mm，避免五條破邊。前兩次整合失敗與表面量測日誌保留於 `tmp/electrode-closure-*`、`tmp/electrode-seated-integrated-*.log`。
+- focused 真機 26022 exit 0，日誌 `tmp/electrode-seated-integrated-third.log`；既有齒位／移動／夾具／止擋檢查保留。領域收隙先紅後綠，五個 joints tests 通過。
+- V01.0R.01R 完整 CI 77945 exit 0，日誌 `tmp/lab-station-electrode-seated/ci-seated.log`。所有 hard gates green；未就座負對照與保存檔重讀也通過。
 
 ### Open failures
 
-- 肩／腕齒槽離合、肘部整體閉合與預緊、旋鈕承壓鏈同時閉合與預緊、其餘五金装入、探頭軟襯夾緊力、底座承力與 LCD 保持尚未完成。
+- 肩／腕齒槽離合與整組就座、肘部螺紋／彈性預緊力、其餘五金装入、探頭軟襯夾緊力、底座承力與 LCD 保持尚未完成。
 - 全五金／線材／連續姿態、載荷及實體列印資格未取得；剛體止擋不代表彈性保持力合格。沒有現行整機製造 STL 發布。
 - 精確容器尺寸、實際探頭與板件、負載、材料、溫度及液體資料仍缺；佔位尺寸不可當固定孔依據。
 
 ### Next step
 
-- CI 33951 已 terminal（exit 0），本輪 V01.0R.01Q；接手先查 git log 與工作樹確認封存。
-- 下一步肘部承壓鏈同時閉合與預緊行程，再肩／腕齒槽。15° 為粗定位，已詢問深度需 1 mm／5 mm／手滑調整，未回覆；不自行宣稱精細調高完成。
-- 再完成其餘關節、底座／LCD、線材與負載／製造資格。整體目標保持 active。
+- CI 77945 已 terminal（exit 0），本輪 V01.0R.01R；接手先查 git log 與工作樹確認封存。
+- 下一步肩／腕齒槽與就座，再其餘裝配／LCD／走線與載荷資格。材料與預緊力不得由剛體幾何代替。
+- 就座檔不適合直接執行舊中立間隙檢查；先用 `pose(label)` 還原原間隙，或載入 `electrode-concept.blend`。`apply_take_up` 是相對位移，禁止累加呼叫；驗證器會逐步還原原矩陣。
+- 深度微調精度仍未回覆；15° 為粗定位，不宣稱精細調高完成。整體目標 active。
 
 ## 歷史驗證紀錄
 

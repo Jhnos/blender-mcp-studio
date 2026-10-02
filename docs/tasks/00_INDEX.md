@@ -4,7 +4,7 @@ Read this file first after a new conversation, compaction, or terminal restart.
 
 ## 接手(2026-09-09,V01.0R.013)
 
-- **目前在做（2026-10-03）:** 16 雙探頭量測工作站，現行為完整連桿整齒定位版。V01.0R.01Q 完整 `scripts/ci.sh --real` exit 0（33951 已結束，`tmp/lab-station-electrode-indexed/ci-indexed.log`），所有 hard gates green。兩頭各四齒位、共八個完整閉鏈位置與 60 個鬆開轉位取樣；齒間強制咬合負對照通過，既有運動／拆裝保留。模型：`tmp/lab-station-electrode-indexed/electrode-concept.blend`，已檢視第三齒位抬高圖。**下一步：**肘部承壓鏈同時閉合與預緊、肩／腕齒槽，再其餘關節、底座／LCD、線材與負載／列印資格。深度微調精度未回覆。尚非整機製造定稿；接手讀任務16 hand-off。
+- **目前在做（2026-10-03）:** 16 雙探頭量測工作站，現行肘部整組就座版。V01.0R.01R 完整 `scripts/ci.sh --real` exit 0（77945 已結束，`tmp/lab-station-electrode-seated/ci-seated.log`），所有 hard gates green。修復齒面分割不匹配；0.7 mm 收隙、八齒位配置共 120 狀態通過表面／障礙／螺栓檢查，就座檔重讀亦通過。輸出：`tmp/lab-station-electrode-seated/`，`elbow-seated.blend` 已就座、`electrode-concept.blend` 保留裝配間隙。**下一步：**肩／腕齒槽與就座、其餘裝配／LCD／線材與載荷資格；肘部預緊力未驗。深度微調精度未回覆，整體未定稿。接手讀任務16，舊中立檢查先載入原間隙檔或 reset pose。
 - **等驗收:** 15 場景清單不再只有十個;對話路徑第一次有真機閘門(`--real` 32 條全綠)。下一個是 14 第五個實例。
 - 13 已驗收歸檔:對話現在能呼叫本專案自己的產生器。
 - **在等使用者的:** 印。工作單已交付——07 的 V3 試片七項,以及 `hand-gripper` 九節。

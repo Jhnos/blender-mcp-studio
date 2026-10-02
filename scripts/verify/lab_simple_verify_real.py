@@ -48,6 +48,14 @@ sys.path.insert(0, {str(root)!r})
 for name in {modules!r}:
     importlib.reload(importlib.import_module(name))
 model = runpy.run_path({str(script)!r}, run_name='__main__')
+try:
+    model['verify_seated']('capillary')
+except ValueError as error:
+    if 'not simultaneously seated' not in str(error):
+        raise
+    (model['OUTPUT'] / 'red-unseated-chain.json').write_text(json.dumps({{'rejected': True, 'reason': str(error)}}))
+else:
+    raise RuntimeError('Unseated bearing chain accepted as seated')
 first = model['ElectrodeArmSpec']().indexed_target(1)
 second = model['ElectrodeArmSpec']().indexed_target(2)
 try:
@@ -208,8 +216,17 @@ finally:
     bpy.context.view_layer.update()
 clearance()
 print('Electrode arm, retainer, knob drive and per-pose clearance cache controls passed')
+bpy.ops.wm.open_mainfile(filepath=str(model['OUTPUT'] / 'elbow-seated.blend'))
 """
     print(BlenderSocketOracle("127.0.0.1", 9876, timeout=180).execute(code))
+    # A fresh addon command lets Blender refresh context after opening the saved artifact.
+    code = f"""import runpy, json
+model = runpy.run_path({str(script)!r})
+gaps = {{label: model['verify_seated'](label) for label in ('capillary', 'pH_temp')}}
+(model['OUTPUT'] / 'seated-file-check.json').write_text(json.dumps(gaps))
+print('Saved seated elbow artifact passed surface readback')
+"""
+    print(BlenderSocketOracle("127.0.0.1", 9876, timeout=30).execute(code))
 
 
 if __name__ == "__main__":

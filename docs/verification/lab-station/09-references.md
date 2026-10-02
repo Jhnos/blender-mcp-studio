@@ -31,3 +31,7 @@ V4 搜尋（2026-09-12）：`openscad/MCAD` 的 nuts_and_bolts、`JohK/nutsnbolt
 GitHub 查找 `electrode holder 3d print clamp pH probe` 與分片夾座，檢視 [ALPHUS](https://github.com/WeirongChen/ALPHUS) 原始儲存庫。其探頭匹配的左右夾片屬超音波探頭穩定架，並非本案圓柱電極的可直接替換夾座；未複製程式或 STL。NIH pH holder 搜尋結果未能讀取內容，不列為已驗證設計依據。
 
 沿用本專案 `lab_station_clamp` 的分片軟襯、軸向止口與六角螺母孔，以及 `lab_station_clamp_check` 的裝入包絡原則。可換襯套與固定夾體分工，實際外形和孔位仍須按目前電極臂的雙探頭間距驗證；舊滑座夾具的通過結果不移植成新夾座的合格證據。
+
+## 承壓鏈閉合檢查的前置查找（2026-10-03）
+
+建立 `lab_electrode_closure` 前查找 GitHub 的 Blender assembly contact／clearance／preload。檢視 [JointForge](https://github.com/NatalieC001/JointForge)：其用途是分割列印件並加入插接鍵，未提供本案螺栓—旋鈕—齒面—螺母閉合驗證，未複製程式或採用其公差推薦。沿用本專案 BVH、世界座標射線與共面接觸微量分離方法；新增模組只編排特定承壓鏈的狀態和量測，不另造 CAD／力學引擎。

@@ -30,3 +30,34 @@ def test_invalid_locking_parts_are_rejected() -> None:
         SerratedJointSpec(tooth_height_mm=-1)
     with pytest.raises(ValueError):
         SerratedJointSpec(release_mm=0.5)
+
+
+def test_elbow_take_up_closes_all_four_faces_without_early_penetration() -> None:
+    from src.core.domain.lab_station_joints import ElbowClosureSpec
+
+    spec = ElbowClosureSpec()
+    assert spec.stroke_mm == pytest.approx(0.7)
+    for travel in (0, 0.1, 0.3, 0.45, 0.6, spec.stroke_mm):
+        offsets = spec.offsets(travel)
+        gaps = (
+            0.2 + offsets["elbow_knob"] - offsets["elbow_bolt"],
+            0.1 + offsets["lower"] - offsets["elbow_knob"],
+            0.2 - offsets["lower"],
+            0.2 + offsets["elbow_nut"],
+        )
+        assert min(gaps) >= -1e-12
+        assert sum(gaps) == pytest.approx(0.7 - travel)
+    assert spec.offsets(spec.stroke_mm) == pytest.approx(
+        {"elbow_nut": -0.2, "elbow_bolt": 0.5, "elbow_knob": 0.3, "lower": 0.2}
+    )
+    with pytest.raises(ValueError):
+        spec.offsets(0.8)
+
+
+def test_elbow_closure_rejects_nonphysical_gaps() -> None:
+    from src.core.domain.lab_station_joints import ElbowClosureSpec
+
+    with pytest.raises(ValueError):
+        ElbowClosureSpec(tooth_gap_mm=-0.1)
+    with pytest.raises(ValueError):
+        ElbowClosureSpec(head_gap_mm=float("nan"))
