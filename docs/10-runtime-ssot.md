@@ -27,6 +27,8 @@
 
 相依宣告的 SSOT 是 `pyproject.toml` 與 `environment.yml`。
 
+Socket 一般回覆期限為 30 秒；AppRuntime 僅為 registry 推導且完整相符的生成程式注入 `GENERATOR_TIMEOUT_S`（900 秒，來源 `src/adapters/generation/authorized_code.py`）。REST／對話共用此設定與同一序列化 socket。逾時回報傳輸失敗與完成未知，丟棄連線，不重播變更。驗證用 HTTP 呼叫保留額外 30 秒回應餘裕。
+
 ## 服務與路由
 
 | 服務 | 監聽 | 對外路徑 | Owner | 用途 |

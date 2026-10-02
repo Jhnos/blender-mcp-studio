@@ -25,3 +25,9 @@ V4 搜尋（2026-09-12）：`openscad/MCAD` 的 nuts_and_bolts、`JohK/nutsnbolt
 ## 底座固定的前置查找
 
 建立 `lab_station_base` 前查閱 [ODRI actuator shell preparation](https://github.com/open-dynamic-robot-initiative/open_robot_actuator_hardware/blob/master/mechanics/actuator_module_v1/details/details_shell_preparation.md)、[PAROL6](https://github.com/Source-robotics/PAROL6-Desktop-robot-arm) 與 [Thor](https://github.com/AngelLM/Thor)。採用旋轉支座、軸套與金屬穿軸分工的配置思路；實際尺寸由本機箱空間決定，沒有複製程式或引用他案承載作為本案資格。
+
+## 緊湊探頭夾座的前置查找（2026-10-02）
+
+GitHub 查找 `electrode holder 3d print clamp pH probe` 與分片夾座，檢視 [ALPHUS](https://github.com/WeirongChen/ALPHUS) 原始儲存庫。其探頭匹配的左右夾片屬超音波探頭穩定架，並非本案圓柱電極的可直接替換夾座；未複製程式或 STL。NIH pH holder 搜尋結果未能讀取內容，不列為已驗證設計依據。
+
+沿用本專案 `lab_station_clamp` 的分片軟襯、軸向止口與六角螺母孔，以及 `lab_station_clamp_check` 的裝入包絡原則。可換襯套與固定夾體分工，實際外形和孔位仍須按目前電極臂的雙探頭間距驗證；舊滑座夾具的通過結果不移植成新夾座的合格證據。

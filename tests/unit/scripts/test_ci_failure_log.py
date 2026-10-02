@@ -55,3 +55,32 @@ def test_a_passing_gate_leaves_nothing_behind(tmp_path: Path) -> None:
 
     assert "PASS" in result.stdout
     assert not list(tmp_path.glob("*.log"))
+
+
+def test_real_failure_stops_before_next_scene_mutation(tmp_path: Path) -> None:
+    result = _drive(
+        "REAL_FAIL_FAST=1\n_run hard 'generation' false\necho NEXT_SCENE_MUTATION", tmp_path
+    )
+    assert result.returncode != 0
+    assert "NEXT_SCENE_MUTATION" not in result.stdout
+    assert list(tmp_path.glob("*.log"))
+
+
+def test_static_failures_still_aggregate(tmp_path: Path) -> None:
+    result = _drive("_run hard 'static' false\necho CONTINUED", tmp_path)
+    assert "CONTINUED" in result.stdout
+
+
+def test_real_success_and_warning_do_not_abort(tmp_path: Path) -> None:
+    result = _drive(
+        "REAL_FAIL_FAST=1\n_run hard 'passing' true\n_run warn 'warning' false\necho CONTINUED",
+        tmp_path,
+    )
+    assert result.returncode == 0
+    assert "CONTINUED" in result.stdout
+
+
+def test_real_tier_enables_fail_fast_before_first_gate() -> None:
+    source = CI.read_text(encoding="utf-8")
+    real_tier = source.split("if (( REAL )); then", 1)[1]
+    assert real_tier.index("REAL_FAIL_FAST=1") < real_tier.index("_run hard")

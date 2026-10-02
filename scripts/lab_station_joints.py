@@ -160,3 +160,56 @@ def screen_control(hmi: bpy.types.Object) -> bpy.types.Object:
     driver(hmi, control, "location", 0, "release_mm*0.001", ("release_mm",))
     bpy.context.view_layer.update()
     return control
+
+
+def hand_knob(name: str, mat: bpy.types.Material, radius_mm: float = 12.5) -> bpy.types.Object:
+    """Scalloped knob with an open hex-head pocket and an integral bearing neck."""
+    obj = add_cylinder(name, radius_mm, 10, (-13.3, 0, 0), "X")
+    for index in range(6):
+        angle = index * math.pi / 3
+        boolean(
+            obj,
+            add_cylinder(
+                "E_TOOL",
+                3,
+                12,
+                (-13.3, (radius_mm + 1.5) * math.cos(angle), (radius_mm + 1.5) * math.sin(angle)),
+                "X",
+            ),
+            "DIFFERENCE",
+        )
+    boolean(obj, add_cylinder("E_TOOL", 4.8, 8, (-16, 0, 0), "X", vertices=6), "DIFFERENCE")
+    boolean(obj, add_cylinder("E_TOOL", 2.7, 20, (-13.3, 0, 0), "X"), "DIFFERENCE")
+    assign(obj, mat)
+    return obj
+
+
+def hand_knob_hardware(
+    prefix: str, mat: bpy.types.Material, metal: bpy.types.Material, radius_mm: float
+) -> tuple[bpy.types.Object, bpy.types.Object, bpy.types.Object]:
+    bolt = add_cylinder(prefix + "bolt", 2.5, 25, (0.3, 0, 0), "X")
+    boolean(bolt, add_cylinder("E_TOOL", 4.6, 4, (-14.2, 0, 0), "X", vertices=6), "UNION")
+    nut = add_cylinder(prefix + "nut", 4.6, 4, (6.3, 0, 0), "X", vertices=6)
+    boolean(nut, add_cylinder("E_TOOL", 2.6, 6, (6.3, 0, 0), "X"), "DIFFERENCE")
+    for obj in (bolt, nut):
+        assign(obj, metal)
+        obj["nominal_hardware"] = True
+    return bolt, nut, hand_knob(prefix + "knob", mat, radius_mm)
+
+
+def retained_pivot(
+    prefix: str, mat: bpy.types.Material
+) -> tuple[bpy.types.Object, bpy.types.Object]:
+    pin = add_cylinder(prefix + "pin", 2.4, 22, (8.2, 0, 0), "X")
+    boolean(pin, add_cylinder("E_TOOL", 4.5, 2, (18.2, 0, 0), "X"), "UNION")
+    ring = add_cylinder("E_TOOL", 3.4, 1.8, (-1.1, 0, 0), "X")
+    boolean(ring, add_cylinder("E_TOOL", 1.7, 4, (-1.1, 0, 0), "X"), "DIFFERENCE")
+    boolean(pin, ring, "DIFFERENCE")
+    pin["printed_pivot"] = True
+    clip = add_cylinder(prefix + "clip", 4.5, 1.4, (-1.1, 0, 0), "X")
+    boolean(clip, add_cylinder("E_TOOL", 1.9, 4, (-1.1, 0, 0), "X"), "DIFFERENCE")
+    boolean(clip, block("E_TOOL", (4, 6, 3), (-1.1, 3, 0), mat), "DIFFERENCE")
+    clip["elastic_fit_unqualified"] = True
+    for obj in (pin, clip):
+        assign(obj, mat)
+    return pin, clip

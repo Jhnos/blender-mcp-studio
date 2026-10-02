@@ -16,6 +16,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
+from src.adapters.blender_response import decode_marked_json  # noqa: E402
 from src.infrastructure.narrowing import (  # noqa: E402
     as_str,
     as_str_keyed_exact,
@@ -63,7 +64,12 @@ class BlenderSocketOracle:
         raise RuntimeError("Blender socket closed before returning complete JSON")
 
     def execute_json(self, code: str) -> Mapping[str, object]:
-        response = self.execute(code)
+        marked = (
+            "import builtins as _oracle_builtins\n"
+            "def print(value): _oracle_builtins.print('ARTIFACT_ORACLE_JSON:' + str(value))\n"
+            + code
+        )
+        response = self.execute(marked)
         result = required(
             response.get("result"),
             as_str_keyed_exact,
@@ -76,11 +82,14 @@ class BlenderSocketOracle:
             message=f"Blender stdout is invalid: {result!r}",
             error=RuntimeError,
         )
-        lines = [line for line in stdout.splitlines() if line.strip()]
-        if not lines:
-            raise RuntimeError("Blender oracle returned empty stdout")
         return required(
-            json.loads(lines[-1]),
+            decode_marked_json(
+                stdout,
+                "ARTIFACT_ORACLE_JSON:",
+                missing="Blender oracle returned no marked payload",
+                invalid="Blender oracle JSON is malformed",
+                error=RuntimeError,
+            ),
             as_str_keyed_exact,
             message="Blender oracle JSON is not an object",
             error=RuntimeError,

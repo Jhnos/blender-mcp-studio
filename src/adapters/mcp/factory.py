@@ -13,6 +13,7 @@ Usage:
 from __future__ import annotations
 
 import os
+from collections.abc import Mapping
 
 from src.core.ports.blender_port import BlenderPort
 from src.core.ports.code_sandbox_port import CodeSandboxPort
@@ -22,6 +23,8 @@ def build_blender_adapter(
     host: str | None = None,
     port: int | None = None,
     sandbox: CodeSandboxPort | None = None,
+    *,
+    script_timeouts: Mapping[str, float] | None = None,
 ) -> BlenderPort:
     """Instantiate a BlenderPort from environment config.
 
@@ -43,4 +46,6 @@ def build_blender_adapter(
 
     _host = host or os.environ.get("BLENDER_HOST", "localhost")
     _port = port or int(os.environ.get("BLENDER_PORT", "9876"))
-    return BlenderMCPAdapter(host=_host, port=_port, sandbox=sandbox)
+    return BlenderMCPAdapter(
+        host=_host, port=_port, sandbox=sandbox, script_timeouts=script_timeouts
+    )

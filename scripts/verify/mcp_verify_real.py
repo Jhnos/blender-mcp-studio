@@ -25,6 +25,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
+from src.adapters.blender_response import decode_marked_json  # noqa: E402
 from src.infrastructure.narrowing import (  # noqa: E402
     as_int,
     as_str,
@@ -87,7 +88,17 @@ def _oracle_stdout(code: str) -> str:
 
 
 def _oracle_json(code: str) -> object:
-    return json.loads(_oracle_stdout(code))
+    marked = (
+        "import builtins as _oracle_builtins\n"
+        "def print(value): _oracle_builtins.print('ORACLE_JSON:' + str(value))\n" + code
+    )
+    return decode_marked_json(
+        _oracle_stdout(marked),
+        "ORACLE_JSON:",
+        missing="Oracle returned no marked JSON",
+        invalid="Oracle returned invalid JSON",
+        error=RuntimeError,
+    )
 
 
 def _cleanup_verification_objects() -> int:

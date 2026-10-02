@@ -1,6 +1,6 @@
 # VOC 追溯
 
-Population: 本次 V10 產生的 LS_ 兩頭、三探頭、單杯與 HMI；排除歷史模型、LS_CHECK_ 佈局副本與 LS_DIAG_；任何必要族群為零即 FAIL。
+Population: R1–R16 為歷史 V10 的 LS_，R17–R24 為 rotary，R25 為 simple，R26–R28 為現行 electrode／electrode-compact。每個範圍皆涵蓋其兩頭、三探頭、單杯與 HMI；排除檢測佈局副本與診斷物件，任何必要族群為零即 FAIL。歷史證據只屬於該模型，不能當成現行電極臂的製造資格；現行規格見 [01-scope](01-scope.md)。
 
 | ID | Requirement | Tier | User-visible | Kind | Verified-by |
 |---|---|---|---|---|---|
@@ -31,3 +31,4 @@ Population: 本次 V10 產生的 LS_ 兩頭、三探頭、單杯與 HMI；排除
 | R25 | 簡化為兩支獨立雙節臂，調整機構 10 螺絲／10 螺母且不需軸套與獨立墊片 | voc | yes | behavior | artifact:simple/verification.json,simple/red-disconnection.json |
 | R26 | 參考實驗室電極臂，前臂雙桿加三角平台；肩與前臂共同定位，兩頭獨立 | voc | yes | behavior | artifact:electrode/verification.json,electrode/red-disconnection.json |
 | R27 | 電極臂被動軸具雙向軸向止擋，移走卡扣被拒絕；不含彈性保持資格 | engineering | yes | behavior | artifact:electrode-compact/verification.json,electrode-compact/red-retainer.json |
+| R28 | 肩肘腕六旋鈕與六角螺母座中立避碰，相對轉角產生止轉接觸；螺栓脫離被拒絕 | engineering | yes | behavior | artifact:electrode-compact/verification.json,electrode-compact/red-knob-drive.json |

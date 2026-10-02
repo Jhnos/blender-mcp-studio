@@ -23,6 +23,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
+from src.adapters.blender_response import decode_marked_json, sequence, text  # noqa: E402
 from src.infrastructure.narrowing import (  # noqa: E402
     as_sequence,
     as_str,
@@ -68,14 +69,19 @@ def o_stdout(code: str) -> str:
 
 
 def o_names() -> list[str]:
-    raw = json.loads(
-        o_stdout("import bpy,json\nprint(json.dumps([o.name for o in bpy.data.objects]))")
+    raw = decode_marked_json(
+        o_stdout(
+            "import bpy,json\nprint('ORACLE_NAMES_JSON:' + json.dumps([o.name for o in bpy.data.objects]))"
+        ),
+        "ORACLE_NAMES_JSON:",
+        missing="Scene oracle returned no marked names",
+        invalid="Scene oracle returned malformed names",
+        error=RuntimeError,
     )
-    return [name for name in raw if isinstance(name, str)]
-
-
-def o_count() -> int:
-    return int(o_stdout("import bpy\nprint(len(bpy.data.objects))"))
+    return [
+        text(name, "scene name", RuntimeError)
+        for name in sequence(raw, "scene names", RuntimeError)
+    ]
 
 
 def rest(method: str, path: str, body: dict[str, object] | None = None) -> tuple[int, object]:

@@ -35,6 +35,7 @@ from src.verification.generated_artifact_contract import (
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 CONTRACT_DIR = PROJECT_ROOT / "scripts" / "verify" / "contracts"
+GENERATOR_TIMEOUT_S = 900.0
 
 
 def contract_for(

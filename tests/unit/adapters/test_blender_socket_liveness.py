@@ -19,7 +19,7 @@ import json
 
 import pytest
 
-from src.adapters.mcp.blender_mcp_adapter import BlenderSocketClient
+from src.adapters.mcp.blender_mcp_adapter import BlenderMCPClient, BlenderSocketClient
 from src.core.domain.exceptions import BlenderConnectionError
 
 _DEADLINE = 2.0
@@ -143,6 +143,58 @@ async def test_send_command_on_a_dead_socket_raises_a_connection_error() -> None
             await client.send_command({"type": "get_scene_info", "params": {}})
     finally:
         await client.disconnect()
+        server.close()
+        await server.wait_closed()
+
+
+@pytest.mark.asyncio
+async def test_timeout_is_not_reported_as_a_failed_script() -> None:
+    server, port = await _serve(_holds_the_socket)
+    socket = BlenderSocketClient("127.0.0.1", port, timeout=0.02)
+    client = BlenderMCPClient(socket)
+    try:
+        with pytest.raises(BlenderConnectionError, match="completion is unknown"):
+            await client.call_tool("execute_code", {"code": "pass"})
+        assert not socket.is_connected
+    finally:
+        await socket.disconnect()
+        server.close()
+        await server.wait_closed()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "tool,code,allowed",
+    [
+        ("execute_code", "registered", True),
+        ("execute_code", "other", False),
+        ("get_scene_info", "registered", False),
+    ],
+)
+async def test_only_exact_registered_scripts_receive_their_longer_deadline(
+    tool: str, code: str, allowed: bool
+) -> None:
+    async def slow_reply(reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
+        try:
+            await reader.read(4096)
+            await asyncio.sleep(0.04)
+            writer.write(b'{"status":"success","result":"done"}')
+            await writer.drain()
+        finally:
+            writer.close()
+
+    server, port = await _serve(slow_reply)
+    socket = BlenderSocketClient("127.0.0.1", port, timeout=0.01)
+    client = BlenderMCPClient(socket, script_timeouts={"registered": 0.5})
+    try:
+        if allowed:
+            result = await client.call_tool(tool, {"code": code})
+            assert result.success and result.output == "done"
+        else:
+            with pytest.raises(BlenderConnectionError, match="completion is unknown"):
+                await client.call_tool(tool, {"code": code})
+    finally:
+        await socket.disconnect()
         server.close()
         await server.wait_closed()
 

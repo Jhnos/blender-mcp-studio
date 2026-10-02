@@ -62,7 +62,10 @@ def build_runtime(env_file: Path | None = None) -> AppRuntime:
     from src.adapters.events.in_memory_event_bus import InMemoryEventBus
     from src.adapters.export.blender_scene_exporter import BlenderSceneExportAdapter
     from src.adapters.factory.concrete_adapter_factory import ConcreteAdapterFactory
-    from src.adapters.generation.authorized_code import authorized_generator_code
+    from src.adapters.generation.authorized_code import (
+        GENERATOR_TIMEOUT_S,
+        authorized_generator_code,
+    )
     from src.adapters.generation.blender_instance_builder import BlenderInstanceBuilder
     from src.adapters.mcp.factory import build_blender_adapter
     from src.adapters.polyhaven.polyhaven_adapter import PolyHavenAdapter
@@ -78,7 +81,10 @@ def build_runtime(env_file: Path | None = None) -> AppRuntime:
 
     load_env(env_file)
     sandbox = BlenderCodeSandbox(authorized=authorized_generator_code)
-    blender = build_blender_adapter(sandbox=sandbox)
+    blender = build_blender_adapter(
+        sandbox=sandbox,
+        script_timeouts={code: GENERATOR_TIMEOUT_S for code in authorized_generator_code()},
+    )
     adapter_factory = ConcreteAdapterFactory()
     llm = adapter_factory.build_llm_adapter()
     event_bus = InMemoryEventBus()

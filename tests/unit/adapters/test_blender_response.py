@@ -62,3 +62,47 @@ def test_each_caller_keeps_its_own_exception_type() -> None:
     """The whole reason the error factory is injected rather than shared."""
     with pytest.raises(PrintReadinessError):
         _decode("nothing here", PrintReadinessError)
+
+
+@pytest.mark.parametrize(
+    "module_name,stdout_name", [("mcp_verify_rest", "o_out"), ("mcp_verify_chat", "o_stdout")]
+)
+def test_scene_name_oracles_ignore_background_logging(
+    monkeypatch, module_name, stdout_name
+) -> None:
+    import importlib
+
+    verifier = importlib.import_module("scripts.verify." + module_name)
+    monkeypatch.setattr(
+        verifier,
+        stdout_name,
+        lambda code: 'Client disconnected\nORACLE_NAMES_JSON:["probe"]\nClient handler stopped',
+    )
+    assert verifier.o_names() == ["probe"]
+
+
+def test_protocol_oracle_ignores_background_logging(monkeypatch) -> None:
+    from scripts.verify import mcp_verify_real
+
+    monkeypatch.setattr(
+        mcp_verify_real,
+        "_oracle_stdout",
+        lambda code: 'Client disconnected\nORACLE_JSON:{"value": 8}\nClient handler stopped',
+    )
+    assert mcp_verify_real._oracle_json('print("unused")') == {"value": 8}
+
+
+def test_artifact_oracle_ignores_trailing_background_logging(monkeypatch) -> None:
+    from scripts.verify.generated_artifact_verify_real import BlenderSocketOracle
+
+    oracle = BlenderSocketOracle("unused", 1)
+    monkeypatch.setattr(
+        oracle,
+        "execute",
+        lambda code: {
+            "result": {
+                "result": 'Client connected\nARTIFACT_ORACLE_JSON:{"value": 8}\nClient stopped'
+            }
+        },
+    )
+    assert oracle.execute_json('print("unused")') == {"value": 8}

@@ -23,6 +23,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
+from src.adapters.blender_response import decode_marked_json, sequence, text  # noqa: E402
 from src.infrastructure.narrowing import as_str, as_str_keyed_exact, dig  # noqa: E402
 
 TS = "bearmacminimac-mini.tail56c751.ts.net"
@@ -61,10 +62,19 @@ def o_out(code: str) -> str:
 
 
 def o_names() -> list[str]:
-    raw = json.loads(
-        o_out("import bpy,json\nprint(json.dumps([o.name for o in bpy.data.objects]))")
+    raw = decode_marked_json(
+        o_out(
+            "import bpy,json\nprint('ORACLE_NAMES_JSON:' + json.dumps([o.name for o in bpy.data.objects]))"
+        ),
+        "ORACLE_NAMES_JSON:",
+        missing="Scene oracle returned no marked names",
+        invalid="Scene oracle returned malformed names",
+        error=RuntimeError,
     )
-    return [name for name in raw if isinstance(name, str)]
+    return [
+        text(name, "scene name", RuntimeError)
+        for name in sequence(raw, "scene names", RuntimeError)
+    ]
 
 
 def rest(method: str, path: str, body: dict[str, object] | None = None) -> tuple[int, object]:
@@ -111,10 +121,18 @@ def main() -> None:
 
     rec("SEED", n in after, f"oracle created {n}; objects now {len(after)} {after}")
     rec("H4-create", len(after) == base_n + 1, f"count {base_n}->{len(after)} (+1)")
-    verts = o_out(f"import bpy\nprint(len(bpy.data.objects['{n}'].data.vertices))")
+    verts = decode_marked_json(
+        o_out(
+            f"import bpy,json\nprint('ORACLE_VERTICES_JSON:' + json.dumps(len(bpy.data.objects['{n}'].data.vertices)))"
+        ),
+        "ORACLE_VERTICES_JSON:",
+        missing="Missing vertex report",
+        invalid="Malformed vertex report",
+        error=RuntimeError,
+    )
     rec(
         "H2-geometry",
-        verts == "8",
+        verts == 8,
         f"{n} real vertex count = {verts} (cube=8; only real bpy yields this)",
     )
 

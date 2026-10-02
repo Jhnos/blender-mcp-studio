@@ -29,6 +29,17 @@ def test_factory_returns_socket_adapter_explicitly(monkeypatch):
     assert isinstance(adapter, BlenderMCPAdapter)
 
 
+def test_factory_preserves_registered_script_deadlines(monkeypatch):
+    monkeypatch.setenv("BLENDER_TRANSPORT", "socket")
+    from src.adapters.mcp.blender_mcp_adapter import BlenderMCPAdapter
+    from src.adapters.mcp.factory import build_blender_adapter
+
+    adapter = build_blender_adapter(script_timeouts={"registered": 0.5})
+    assert isinstance(adapter, BlenderMCPAdapter)
+    assert adapter._mcp._script_timeouts == {"registered": 0.5}
+    assert adapter._socket._timeout == 30.0
+
+
 def test_factory_returns_mcp_client_adapter(monkeypatch):
     """Factory returns MCPClientBlenderAdapter when BLENDER_TRANSPORT=mcp_sse."""
     monkeypatch.setenv("BLENDER_TRANSPORT", "mcp_sse")

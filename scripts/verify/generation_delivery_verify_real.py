@@ -32,6 +32,7 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from scripts.publish_print_package import PACKAGES  # noqa: E402
+from src.adapters.generation.authorized_code import GENERATOR_TIMEOUT_S  # noqa: E402
 from src.core.domain.hand_instances import HAND_INSTANCES  # noqa: E402
 from src.infrastructure.narrowing import (  # noqa: E402
     as_nonempty_sequence,
@@ -46,7 +47,7 @@ from src.verification.package_reproduction import (  # noqa: E402
     sliver_budgets,
 )
 
-BUILD_TIMEOUT_S = 900
+BUILD_TIMEOUT_S = GENERATOR_TIMEOUT_S + 30
 
 
 def self_fqdn() -> str:

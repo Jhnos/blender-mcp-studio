@@ -94,3 +94,17 @@ def test_the_composition_root_wires_the_provider() -> None:
     ]
 
     assert wired, "build_runtime must construct BlenderCodeSandbox with authorized=..."
+
+    deadlines = [
+        keyword.value
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Name)
+        and node.func.id == "build_blender_adapter"
+        for keyword in node.keywords
+        if keyword.arg == "script_timeouts"
+    ]
+    assert len(deadlines) == 1
+    assert ast.unparse(deadlines[0]) == (
+        "{code: GENERATOR_TIMEOUT_S for code in authorized_generator_code()}"
+    ), "Only registry-derived scripts may receive the generation deadline"

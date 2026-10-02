@@ -145,14 +145,17 @@ def verify_clearance() -> None:
         bpy.data.objects[n]
         for n in ("LS_FIT_lcd_front", "LS_FIT_lcd_back", "LS_FIT_chassis", "LS_FIT_lid")
     ]
+    meshes = {obj.name: tree(obj) for obj in (*members, *obstacles)}
     for member in members:
         for obstacle in obstacles:
-            if tree(member).overlap(tree(obstacle)):
+            if meshes[member.name].overlap(meshes[obstacle.name]):
                 raise ValueError(f"Simple arm clearance: {member.name}, {obstacle.name}")
     for left in members:
         if left.name.startswith("S_capillary_"):
             for right in members:
-                if right.name.startswith("S_pH_temp_") and tree(left).overlap(tree(right)):
+                if right.name.startswith("S_pH_temp_") and meshes[left.name].overlap(
+                    meshes[right.name]
+                ):
                     raise ValueError(f"Simple arms collide: {left.name}, {right.name}")
 
 

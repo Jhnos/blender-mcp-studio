@@ -2,6 +2,8 @@
 
 **Status:** ACTIVE
 
+導航：[目標](#goal) · [規格](#specification) · [驗收](#acceptance-checks) · [現行接手](#hand-off) · [歷史驗證](#歷史驗證紀錄)
+
 ## Goal
 
 以 Blender MCP 專案設計動態氣泡表面張力計與 pH／溫度計共用的可列印外殼。
@@ -25,6 +27,30 @@
 ## Hand-off
 
 ### Verified facts
+
+- 現行模型為 `tmp/lab-station-electrode-compact/electrode-concept.blend`，設計界線見 [電極臂](../verification/lab-station/13-electrode-arm.md)。兩頭獨立，肩鉸鍊／平行雙桿前臂／三角末端；探頭角度手調。
+- 01M 六旋鈕、六角止轉座、碰撞快取及 oracle 標記解析已有 focused 真機證據。最新完整 CI 的電極臂 gate 通過，46 位置、2760 軸向取樣、16 折屏與故意斷接／移走卡扣／移開螺栓／跨臂碰撞負對照皆保留。
+- 01M 追加傳輸逾時分類與 registry 專屬生成期限；54 adapter tests 通過，正式API重載後 REST focused 5/5 STL尺寸／面數與回報一致。一般命令期限不變，逾時不重播。
+- 真機 CI 第一個 hard failure 立即停止；六個 helper tests 通過。先前失敗的 CI 已明確終止並由只讀 barrier 確認排空。完整 CI 58285 exit 0，所有 hard gates green，日誌 `tmp/lab-station-electrode-compact/ci-knobs-deadline.log`。
+- 已檢視最新工作／抬起圖。版號 V01.0R.01M；本次變更與本段交接一同封存。下方紀錄保留各輪失敗與證據，舊 handle 不代表仍執行。
+
+### Open failures
+
+- 齒槽離合、旋鈕承壓接觸鏈、五金装入、探頭軟襯夾緊、底座承力與 LCD 保持尚未完成。
+- 全五金／線材／連續姿態、載荷及實體列印資格未取得；卡扣的剛體止擋不代表材料彈性保持力合格。沒有現行整機製造 STL 發布。
+- 精確容器尺寸、實際探頭與板件、負載、材料、溫度及液體資料仍缺；佔位尺寸不可當固定孔依據。
+
+### Next step
+
+- 完整 CI 已 terminal（exit 0）；先查 git log／工作樹確認封存，再開始下一個幾何版本。沿用逐項 RED→GREEN 和整個 Blender 驗證序列化，不重跑歷史 handle。
+- 夾頭改為緊湊、可側拆的軟襯夾持，沿用既有 clamp 原語與裝入檢查；同時處理軸端外露與關節過渡。不能只將外觀圓角當成夾緊資格。
+- 隨後完成齒槽／承壓／裝配、底座與螢幕、電路與線材、承載與製造包；保留使用者減件與各頭獨立要求。
+
+## 歷史驗證紀錄
+
+以下為逐輪證據與當時的下一步；接手只依上方現行段落與任務索引，不能將歷史下一步重新當成主線。
+
+### V1–V9 已驗證事實
 
 - 使用者接受整體概念，但指出頭部不能連在一起、必須各自活動。暫沿用先前兩臂分組；已詢問是否三探頭都需獨立，尚未收到答覆。
 - 末端改為左右分離、前後錯開 16 mm、高度錯開 30 mm。新增各臂獨立的 yaw／shoulder／elbow／head tilt／probe slide 控制，真 Blender 10 組隔離試驗通過，另一頭的 matrix delta 均為 0；產出 `independent-motion.png/json`。
@@ -94,12 +120,12 @@
 - V9：肘部兩側墊片缺件先紅（tmp/lab-station-v8/red-elbow-assembly.log），補入後 216 個名義裝入位置通過。新增軸向餘量檢查：刻意把螺母向外移 4 mm，0 mm 穿出量被拒絕，證據 tmp/lab-station-v9/red-axial-coverage.json。49 focused tests、兩檔 mypy 通過；正例重建通過：合齒穿出約 4 mm、脫齒穿出約 2 mm。
 - V01.0R.01A：完整 CI 的 T3 全部通過；命令 exit 1，唯一失敗為 model_lab_station.py 排版，已以 ruff 修正。T1/T2 重跑 exit 0、全部 hard gates green，紀錄 tmp/lab-station-v9/ci-final.log；原始完整日誌 tmp/lab-station-v9/ci-real.log。肩根連接仍是下一個結構缺口；肘部防鬆／保持力沒有因軸向覆蓋而取得資格。
 
-### Open failures
+### 歷史 V9 未完成項目
 
 - 材料、精確瓶口／瓶高、零件型號、負載、工作溫度與液體尚未確定。
 - 本階段是配置／試配原型，不得聲稱全機可直接裝配或固定力已通過。
 
-### Next step
+### 歷史 V9 後續與版本紀錄
 
 - V3 直上抽出修正保留為可重現 checkpoint；持續完成下列機構資格，不能宣告全目標完成。
 - 優先完成探頭軟夾與滑座的實際固定、背架到腕部的螺栓介面、導桿防脫、根部與底座承力、平台連接、LCD PCB 保持、線材與全姿態／載荷驗證。
@@ -185,3 +211,31 @@
 - 01L 第二次完整 CI session 73908 exit 1：服務一致性已通過，但仍有 5 個回應缺失／錯配相關 gates 失敗。追查共用 socket，發現 timeout／cancel 後沿用舊串流會誤收遲到回應。新增 loopback 兩案例先紅（red-late-reply.log 都收到 request 1 而非 2），改中止時 disconnect、不 replay，22 adapter tests 全綠。沿用原模組，無新增通道／公開 DTO；LESSONS 新增無 request ID 之中止隔離失效類別，T2 納入守衛。API 正式重載修正後需第三次完整 CI。
 
 - V01.0R.01L 第三次完整 scripts/ci.sh --real exit 0，全部 hard gates green，ci-retainer-final.log，session 13650 結束。實際載入新 socket 修正後，前兩輪的 report 缺失／錯配與 REST 交付失敗均未重現；初次／二次日誌保留。新卡扣局部圖與 working 已檢視，2760 軸向取樣、46 位置、16 折屏及 displaced-retainer 負對照通過。5S：沿用兩 CAD／驗證模組與既有 socket adapter/test，無新模組／公開 DTO；新失效守衛納入 T2。下一步完成緊湊臂旋鈕／齒槽與夾具，卡扣彈性／材料、全五金／線材／負載與製造匯出仍未取得資格；整體目標保持 ACTIVE。
+
+- 01M：旋鈕缺件守衛先紅；沿用 lab_station_joints 增加六個帶六角孔的列印旋鈕、六角螺栓頭與臂件內螺母座。肩／肘 Ø25，末端 Ø17；較大的末端旋鈕曾撞夾座，縮徑後 /tmp/lab-knob-focused.log exit 0。46 位置下同頭旋鈕碰撞、頭／螺母中立間隙與 30° 相對止轉通過；working 已檢視。三檔 ruff／mypy 通過。5S：沿用三模組，主生成器 393 行，無新模組／公開通道；新增 R28，金屬件仍 12 螺絲／12 螺母。完整 CI session 60392 執行中，ci-knobs.log；先輪詢，不並行操作 Blender。旋鈕承壓接觸鏈、裝入路徑、齒槽與實際鎖緊力未完成，不能稱全關節可鎖定。
+
+- 01M 完整 CI session 60392 尚在執行，已知失敗：T2 主生成器 393 行觸發 380 行預警；simple/electrode 與 rotary oracle 等待逾時。Blender 日誌確認逾時後仍繼續渲染；程序取樣 blender-sample.txt 顯示主執行緒仍在執行 Python，並非停住，電腦另有其他高負載工作，未終止它們。不要重啟同一驗證或並行操作 Blender；先輪詢 60392，最新 child 為 rotary support contract。
+- 旋鈕真機階段已結束後，將旋鈕五金與 retained_pivot 建立抽到既有 lab_station_joints（無新模組），主生成器降回預算內；verify_knobs 在每姿態快取不動的 BVH，保留全部碰撞／30°咬合檢查。21 budget／DCC tests、兩檔 mypy 與 ruff 通過。這些整理尚未重新通過真機；版本 01M 已 bump 但未提交，不得當已封存。等待當前 CI terminal 後，先 focused 重建量測耗時／看圖／驗 red-knob-drive，再完整 CI，成功才 checkpoint。下一機械工作仍是旋鈕承壓與裝入、齒槽與夾具。
+
+- 接手重驗 37 domain／DCC／budget tests 與 ruff 通過，上一 goal turn 屬具體幾何／守衛進展。60392 已確認持續執行，但已有確定失敗且使用整理前來源，故明確終止該 CI 及所屬子程序（exit 143），並非誤把觀察逾時當停止；Blender read-only barrier 成功回覆，確認先前工作已排空。現以整理後程式 focused 重建，exec 46829，knobs-refactored.log，含實際 elapsed_seconds；等待此 handle，勿並行生成。
+
+- 整理後 focused 46829 的等待於 300 秒逾時（exit 1，knobs-refactored.log），不能推論 Blender 已停。knobs-sample.txt 取樣主執行緒主要為 C_BVHTree_FromPolygons／平衡與頂點讀取；共用 model_lab_simple.verify_clearance 仍在每配對重建相同 BVH，是下一修正目標。已排入只讀空間檢查的計數負對照，exec 9163／red-clearance-rebuild.log，將在前一主執行緒工作後執行；目前仍 live。不要另啟生成或重啟 Blender，先輪詢 9163，再查 red-clearance-rebuild.json。預期舊版每物件多次建 BVH，修正為每姿態一次且保留全配對，將計數守衛納入既有 real 入口。修正尚未寫入；旋鈕與 extracted helpers 的 real acceptance 仍未完成。
+
+- 01M 計數負對照 9163 exit 1，red-clearance-rebuild.json 實測 31 物件／580 次 BVH／單物件最多 27 次，確定為重複計算。model_lab_simple.verify_clearance 改每呼叫一次局部快取，保留原全配對；正例變 31／31／1，移右上臂入左臂拒絕、還原通過。既有 real 入口加入計數與 red-cross-arm 守衛，LESSONS 記錄同姿態重建失效類別。四檔 ruff／mypy 通過。
+- 整理後完整 lab_simple real 入口 exec 8736 exit 0，knobs-cache-verified.log：simple／electrode 重建、卡扣／旋鈕與快取負對照全部通過；working 已重新檢視。完整 CI exec 51041 正執行，ci-knobs-final.log，先輪詢同一 handle；未提交。主生成器 372 行、既有 joints 215 行，無新增模組。
+
+- 01M CI 51041 的 REST o_names 發生 JSONDecodeError，MCP/chat 後續通過；檢查找到整段 stdout 當 JSON、artifact 只取末行的脆弱解析。以背景日誌前後夾入資料的案例重現同類失敗（red-oracle-logging.log、red-artifact-logging.log），REST/chat 名單、REST 頂點數、protocol/artifact JSON 都改沿用標記解析且維持 schema 檢查；11 parser tests、四檔 mypy 通過。停止已失敗且過期的 CI 51041（143），目前排空確認與新版 execute_json 真機呼叫 exec 47523 等待中；先輪詢此 handle，不要並行操作 Blender。成功後重新完整 CI，尚未封存。
+
+- 47523 exit 0 回報 drained=True，確認排空及新版 artifact 標記解析真機通過。第三輪完整 CI exec 48990 執行中，ci-knobs-rechecked.log；目前 T1/T2、REST/MCP/chat 與 readiness fixtures 通過。先輪詢此 handle，不並行 Blender；所有尚未封存的 01M 修改仍需本輪全部 gates 通過。
+
+- 01M 第三輪 CI 48990 仍 live，但 batch-transform 在 seed oracle 的 20 秒等待逾時，隨後 lab-station 生成 oracle 也逾時。REST/MCP/chat/print-readiness 已通過，未復發場景清單 JSON 雜訊錯誤。將 Blender 帶回前景仍無足夠證據支持 App Nap 推論；CUA getApp 觀察亦逾時，不能當應用程式已停證據。PID 95354 仍在運算，其他高負載程序存在但未干預。保留目前 CI 以收集其餘結果，先輪詢 48990／ci-knobs-rechecked.log，不並行 Blender，不宣稱完整通過或 checkpoint。
+
+- 01M：第三輪 CI 48990 已確認失敗後仍跑依賴場景，明確停止所屬程序（143）；只讀 barrier 78019 exit 0，drained=True。既有 test_ci_failure_log 新增真機失敗後不得續改場景，2 red → 6 green；ci.sh 真機 hard failure 現立即退出，靜態仍彙整。完整靜態 CI 97855 exit 0（ci-failfast-static.log）。正在單獨重驗先前 batch seed 逾時，exec 23852／batch-isolated.log；這筆結束前不要並行操作 Blender。最新 working 圖已檢視，方塊夾頭與軸端整合仍與參考有差；未改這些幾何，也未封存01M。
+
+- batch isolated 23852 exit 0，2/2 通過且已清理測試物件。修正後完整 CI exec 47627 正執行，ci-knobs-failfast.log；先輪詢這個 handle，真機失敗即停，不在運行中改 CI、不並行生成。靜態 CI 全綠不替代本次完整真機資格，01M 仍未提交。
+
+- 01M 完整 CI 47627 exit 1，前面所有已執行 gates（含工作站與現行臂）通過，尾端 REST generation delivery 502，fail-fast 阻止後續 determinism。只讀 barrier 通過；舊 API 單獨重驗29325在31.155秒再次502。定位到30秒通用期限，TimeoutError 又被 MCPClient 一般例外分支變成空錯誤的腳本失敗。新增真 loopback 分類與三個期限案例先紅後綠；只為 registry 完整生成碼注入900秒，一般操作30秒不變。54 tests、mypy、ruff通過，API已正式重載75026 exit 0；focused REST 69589／delivery-timed-fixed.log 執行中，不並行生成。無新模組／公開DTO，01M未提交。
+
+- focused REST 69589 exit 0（delivery-timed-fixed.log），5/5 STL重現與API回報一致，耗時28.854秒；這次低於原30秒，長期限邊界由真loopback與接線守衛證明，不將此單次耗時當超時邊界證據。最新完整 CI 58285／ci-knobs-deadline.log 正執行，先輪詢同一handle。前次47627已terminal；不要重跑或並行生成。01M未提交，下一步待全綠後checkpoint；夾頭造型／軟襯與鎖緊仍未完成。
+
+- V01.0R.01M 最終完整 `scripts/ci.sh --real` exit 0，session58285結束，ci-knobs-deadline.log所有hard gates green，包括先前失敗的REST交付及末項determinism。新API已正式載入期限／分類修正。最新工作／抬起視圖與旋鈕負對照已檢視。5S：主生成器372行、socket adapter351行、專案技能150行；既有模組重用、現行與歷史規格分開，新增來源查找紀錄，生成件留tmp。沒有整機製造資格；下一步可側拆軟襯夾頭、軸端與關節過渡，再齒槽／承壓／裝配與負載。

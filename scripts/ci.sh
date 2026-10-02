@@ -47,6 +47,10 @@ _run() {  # _run <hard|warn> <label> <cmd...>
     printf '  %sFAIL%s %s %s(full output: %s)%s\n' "$RED" "$RST" "$label" "$DIM" "$log" "$RST"
     printf '%s\n' "$out" | tail -15 | sed 's/^/       /'
     FAILED+=("$label")
+    if (( ${REAL_FAIL_FAST:-0} )); then
+      printf '  Stopped: real gates share one scene. Blender work may still be running; drain it before restarting.\n'
+      exit 1
+    fi
   fi
 }
 
@@ -80,6 +84,8 @@ _run hard "python unit + e2e (pytest)" "$PY" -m pytest tests/unit tests/e2e -q -
 _run hard "web unit + dummy run (vitest)" bash -c 'cd web && npx vitest run'
 
 if (( REAL )); then
+  # A timed-out generator may still own Blender. Never run dependent scene gates.
+  REAL_FAIL_FAST=1
   _tier "T3 · real machine (MCP↔Blender)"
   if nc -z localhost 9876 2>/dev/null; then
     # Deployment artifacts live on this machine only, so this belongs here and

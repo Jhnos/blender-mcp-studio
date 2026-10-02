@@ -18,6 +18,8 @@ scripts/ci.sh          # T1 static + T2 unit/headless dummy run；commit 前必�
 scripts/ci.sh --real   # T3 REST/MCP/readiness/batch + hand-v3 契約與重現差分；需要 Blender addon 已就緒
 ```
 
+真機階段任何 hard gate 失敗後立即停止，避免後續操作污染共享場景。逾時不代表 Blender 已停止；重跑前必須確認先前工作已排空。靜態與單元階段仍彙整失敗。
+
 ### T3 裡的產出物閘門（2026-09-08 起）
 
 | 閘門 | 讀什麼 | 首跑秒數（Mac，2026-09-08） |

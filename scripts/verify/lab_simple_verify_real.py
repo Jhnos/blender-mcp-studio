@@ -80,7 +80,54 @@ finally:
     part.matrix_world = saved
     bpy.context.view_layer.update()
 model['verify_pins']('capillary')
-print('Electrode arm, displaced-follower and displaced-retainer controls passed')
+part = bpy.data.objects['S_capillary_elbow_bolt']
+saved = part.matrix_world.copy()
+try:
+    part.matrix_world = saved @ Matrix.Translation((-0.03, 0, 0))
+    bpy.context.view_layer.update()
+    try:
+        model['verify_knobs']('capillary')
+    except ValueError as error:
+        if 'transmit torque' not in str(error):
+            raise
+        (model['OUTPUT'] / 'red-knob-drive.json').write_text(json.dumps({{'rejected': True, 'reason': str(error)}}))
+    else:
+        raise RuntimeError('Disconnected knob drive was accepted')
+finally:
+    part.matrix_world = saved
+    bpy.context.view_layer.update()
+model['verify_knobs']('capillary')
+clearance = model['verify_clearance']
+scope = clearance.__globals__
+original_tree = scope['tree']
+counts = {{}}
+def counted_tree(obj):
+    counts[obj.name] = counts.get(obj.name, 0) + 1
+    return original_tree(obj)
+scope['tree'] = counted_tree
+try:
+    clearance()
+finally:
+    scope['tree'] = original_tree
+if not counts or max(counts.values()) != 1:
+    raise RuntimeError('Clearance rebuilt immutable geometry more than once')
+(model['OUTPUT'] / 'clearance-builds.json').write_text(json.dumps(counts))
+part = bpy.data.objects['S_pH_temp_upper']
+saved = part.matrix_world.copy()
+try:
+    part.matrix_world = bpy.data.objects['S_capillary_upper'].matrix_world @ Matrix.Translation((0.007, 0.001, 0))
+    bpy.context.view_layer.update()
+    try:
+        clearance()
+    except ValueError as error:
+        (model['OUTPUT'] / 'red-cross-arm.json').write_text(json.dumps({{'rejected': True, 'reason': str(error)}}))
+    else:
+        raise RuntimeError('Per-pose cache missed a new cross-arm collision')
+finally:
+    part.matrix_world = saved
+    bpy.context.view_layer.update()
+clearance()
+print('Electrode arm, retainer, knob drive and per-pose clearance cache controls passed')
 """
     print(BlenderSocketOracle("127.0.0.1", 9876, timeout=180).execute(code))
 

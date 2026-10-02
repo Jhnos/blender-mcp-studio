@@ -14,7 +14,7 @@ from mathutils import Matrix, Vector
 from scripts.blender_mesh_primitives import add_cylinder, assign, boolean, loft_rings
 from scripts.hollow_hinge_render import look_at
 from scripts.lab_station_arm import finish_arm
-from scripts.lab_station_joints import block
+from scripts.lab_station_joints import block, hand_knob_hardware, retained_pivot
 from scripts.lab_station_motion_check import tree
 from scripts.lab_station_rig import set_pose
 from scripts.model_lab_simple import hardware, link, verify_clearance
@@ -42,6 +42,11 @@ def build(label: str) -> None:
         if suffix == "upper":
             boolean(obj, add_cylinder("E_TOOL", 11, 8, (x, 0, 126), "X"), "UNION")
             boolean(obj, add_cylinder("E_TOOL", 2.7, 40, (x, 0, 126), "X"), "DIFFERENCE")
+        if suffix == "upper":
+            for z in (0, 150):
+                boolean(
+                    obj, add_cylinder("E_TOOL", 4.8, 5, (6.6, 0, z), "X", vertices=6), "DIFFERENCE"
+                )
         bake(obj, side)
     obj = link(prefix + "follower", 12.6, mat, radius_mm=11)
     bake(obj, side)
@@ -52,6 +57,7 @@ def build(label: str) -> None:
         boolean(obj, add_cylinder("E_TOOL", 11, 8, (4.2, y, z), "X"), "UNION")
     for y, z in vertices:
         boolean(obj, add_cylinder("E_TOOL", 2.7, 30, (4.2, y, z), "X"), "DIFFERENCE")
+    boolean(obj, add_cylinder("E_TOOL", 4.8, 5, (6.6, 28, 0), "X", vertices=6), "DIFFERENCE")
     bake(obj, side)
     bpy.data.objects.remove(bpy.data.objects[prefix + "head"], do_unlink=True)
     obj = add_cylinder(prefix + "head", 11, 8, (-4.2, 0, 0), "X")
@@ -68,21 +74,19 @@ def build(label: str) -> None:
     hardware(prefix + "carrier_", bpy.data.materials["S_metal"])
     for suffix in ("bolt", "nut"):
         bake(bpy.data.objects[prefix + "carrier_" + suffix], side)
-    for suffix in ("proximal_pin", "distal_pin"):
-        obj = add_cylinder(prefix + suffix, 2.4, 22, (8.2, 0, 0), "X")
-        boolean(obj, add_cylinder("E_TOOL", 4.5, 2, (18.2, 0, 0), "X"), "UNION")
-        ring = add_cylinder("E_TOOL", 3.4, 1.8, (-1.1, 0, 0), "X")
-        boolean(ring, add_cylinder("E_TOOL", 1.7, 4, (-1.1, 0, 0), "X"), "DIFFERENCE")
-        boolean(obj, ring, "DIFFERENCE")
-        assign(obj, mat)
-        obj["printed_pivot"] = True
-        bake(obj, side)
-        clip = add_cylinder(prefix + suffix.replace("pin", "clip"), 4.5, 1.4, (-1.1, 0, 0), "X")
-        boolean(clip, add_cylinder("E_TOOL", 1.9, 4, (-1.1, 0, 0), "X"), "DIFFERENCE")
-        boolean(clip, block("E_TOOL", (4, 6, 3), (-1.1, 3, 0), mat), "DIFFERENCE")
-        assign(clip, mat)
-        clip["elastic_fit_unqualified"] = True
-        bake(clip, side)
+    for joint in ("proximal", "distal"):
+        for obj in retained_pivot(prefix + joint + "_", mat):
+            bake(obj, side)
+    for joint in ("shoulder", "elbow", "tip"):
+        for suffix in ("bolt", "nut"):
+            bpy.data.objects.remove(bpy.data.objects[prefix + joint + "_" + suffix], do_unlink=True)
+        for obj in hand_knob_hardware(
+            prefix + joint + "_",
+            mat,
+            bpy.data.materials["S_metal"],
+            8.5 if joint == "tip" else 12.5,
+        ):
+            bake(obj, side)
 
 
 def pose(label: str, forward: float = 0, lift: float = 0) -> None:
@@ -124,6 +128,11 @@ def pose(label: str, forward: float = 0, lift: float = 0) -> None:
     ):
         for suffix in ("bolt", "nut"):
             bpy.data.objects[prefix + joint + "_" + suffix].matrix_world = at(point)
+    for joint, point in (("shoulder", root), ("elbow", a), ("tip", tip)):
+        bpy.data.objects[prefix + joint + "_knob"].matrix_world = at(point)
+        bpy.data.objects[prefix + joint + "_nut"].matrix_world = at(point) @ Matrix.Rotation(
+            upper_angle, 4, "X"
+        )
     for obj in bpy.data.objects:
         if obj.name.startswith(prefix + "probe_"):
             obj.matrix_world = at(tip)
@@ -218,6 +227,38 @@ def verify_pins(label: str) -> int:
     return samples
 
 
+def verify_knobs(label: str) -> None:
+    prefix = "S_" + label + "_"
+    obstacles = {
+        obj.name: tree(obj)
+        for obj in bpy.data.objects
+        if obj.type == "MESH" and obj.name.startswith(prefix) and not obj.get("nominal_hardware")
+    }
+    for joint in ("shoulder", "elbow", "tip"):
+        knob = bpy.data.objects.get(prefix + joint + "_knob")
+        if knob is None:
+            raise ValueError("Missing hand knob: " + joint)
+        knob_tree = obstacles[knob.name]
+        for name, obstacle in obstacles.items():
+            if name != knob.name and knob_tree.overlap(obstacle):
+                raise ValueError("Hand knob interference: " + knob.name + ", " + name)
+        bolt = bpy.data.objects[prefix + joint + "_bolt"]
+        nut = bpy.data.objects[prefix + joint + "_nut"]
+        body = bpy.data.objects[prefix + ("platform" if joint == "tip" else "upper")]
+        for moving, fixed in ((bolt, knob_tree), (nut, obstacles[body.name])):
+            if tree(moving).overlap(fixed):
+                raise ValueError("Hex capture neutral interference")
+            saved = moving.matrix_world.copy()
+            try:
+                moving.matrix_world = saved @ Matrix.Rotation(math.pi / 6, 4, "X")
+                bpy.context.view_layer.update()
+                if not tree(moving).overlap(fixed):
+                    raise ValueError("Hex capture cannot transmit torque")
+            finally:
+                moving.matrix_world = saved
+                bpy.context.view_layer.update()
+
+
 def verify() -> dict[str, object]:
     rows = []
     pin_samples = 0
@@ -229,6 +270,7 @@ def verify() -> dict[str, object]:
             for lift in range(0 if forward == 0 else 100, 101, 5):
                 pose(label, forward, lift)
                 verify_local(label)
+                verify_knobs(label)
                 pin_samples += verify_pins(label)
                 verify_clearance()
                 for obj in bpy.data.objects:
@@ -258,6 +300,7 @@ def verify() -> dict[str, object]:
         "screen_samples_with_raised_heads": 16,
         "metal_screws": 12,
         "metal_nuts": 12,
+        "printed_hand_knobs": 6,
         "printed_pivots": 4,
         "printed_retaining_clips": 4,
         "pin_samples": pin_samples,

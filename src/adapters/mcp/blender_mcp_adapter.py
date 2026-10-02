@@ -6,6 +6,7 @@ import asyncio
 import contextlib
 import json
 import logging
+from collections.abc import Mapping
 from dataclasses import replace
 
 from src.adapters.blender_scene_decoding import decode_object_details, decode_scene_summary
@@ -95,7 +96,9 @@ class BlenderSocketClient:
             raise ValueError(f"Blender returned a JSON {type(parsed).__name__}, expected an object")
         return narrowed
 
-    async def send_command(self, payload: dict[str, object]) -> dict[str, object]:
+    async def send_command(
+        self, payload: dict[str, object], *, timeout: float | None = None
+    ) -> dict[str, object]:
         """Send JSON payload and recv until we have a complete JSON response.
 
         Acquires _lock to prevent concurrent callers from interleaving
@@ -120,7 +123,7 @@ class BlenderSocketClient:
                 self._writer.write(data)
                 await self._writer.drain()
 
-                async with asyncio.timeout(self._timeout):
+                async with asyncio.timeout(self._timeout if timeout is None else timeout):
                     while True:
                         chunk = await self._reader.read(4096)
                         if not chunk:
@@ -183,8 +186,11 @@ class BlenderMCPClient(MCPPort):
         "get_viewport_screenshot",
     ]
 
-    def __init__(self, socket: BlenderSocketClient) -> None:
+    def __init__(
+        self, socket: BlenderSocketClient, *, script_timeouts: Mapping[str, float] | None = None
+    ) -> None:
         self._socket = socket
+        self._script_timeouts = dict(script_timeouts or {})
 
     async def call_tool(self, tool_name: str, arguments: dict[str, object]) -> ToolResult:
         # Enforcement: a high-level tool here means a caller bypassed the
@@ -201,7 +207,11 @@ class BlenderMCPClient(MCPPort):
                 error=f"{tool_name} reached the addon untranslated (translation bypassed)",
             )
         try:
-            response = await self._socket.send_command({"type": tool_name, "params": arguments})
+            code = arguments.get("code") if tool_name == _EXECUTE_CODE_TOOL else None
+            timeout = self._script_timeouts.get(code) if isinstance(code, str) else None
+            response = await self._socket.send_command(
+                {"type": tool_name, "params": arguments}, timeout=timeout
+            )
             if response.get("status") == "error":
                 message: object = response.get("message")
                 return ToolResult(
@@ -216,6 +226,11 @@ class BlenderMCPClient(MCPPort):
             )
         except BlenderConnectionError:
             raise
+        except TimeoutError as exc:
+            raise BlenderConnectionError(
+                "Blender response timed out; command completion is unknown. "
+                "The connection was discarded; the command was not replayed."
+            ) from exc
         except Exception as e:
             return ToolResult(success=False, output=None, error=str(e))
 
@@ -249,9 +264,11 @@ class BlenderMCPAdapter(BlenderPort):
         host: str,
         port: int,
         sandbox: CodeSandboxPort | None = None,
+        *,
+        script_timeouts: Mapping[str, float] | None = None,
     ) -> None:
         self._socket = BlenderSocketClient(host, port)
-        self._mcp = BlenderMCPClient(self._socket)
+        self._mcp = BlenderMCPClient(self._socket, script_timeouts=script_timeouts)
         self._sandbox = sandbox
 
     async def connect(self) -> None:
