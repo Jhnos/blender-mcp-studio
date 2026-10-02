@@ -28,6 +28,34 @@
 
 ### Verified facts
 
+- V01.0R.022：完整 `scripts/ci.sh --real` 8784 terminal exit 0，所有 hard gates green（`tmp/lab-station-electrode-guides-aligned/ci-aligned-guides.log`）。先由舊 frame 觸發通道異側紅例，改位置／方向分離後通過；red-facing-recheck.json 留下再次注入舊方向的拒絕證據。初次 red-facing.log 僅收 stdout，原錯誤在工具 stderr，不把空檔當證據。
+- 現行正式輸出 `tmp/lab-station-electrode-guides-aligned/`。只將前臂導線夾通道轉向與上臂同側，保留桿中心、尺寸、四件數量與原五金。90 通道／孔壁射線、8 徑向止擋、46 姿態、4140 插銷樣本、60 轉位樣本及完整肩轉位仍通過。
+- guide-controls.json 四反例：缺件、穿桿、裝錯 parent、反轉實際網格；還原後重驗幾何。保存檔重讀及近照已核對。Blender 已還原新 arm-seated，restored-file-check.json 再查四導線夾及六組承壓鏈。
+- 線路研究保留 `tmp/lab-station-cable-study/` 與 `tmp/lab-station-cable-sameside/`。原朝向加 6 mm 孔口直段，72 組只有 32 組找到保留候選中的實體淨空路徑；同側後為 72／72，但獨立挑線產生 18／144 個未通過線間距的配對，不能宣稱整組通過。
+- 雙線改為共用控制柄／鼓出側，分別解固定長度。180 mm 的八姿態都有配對候選，27311 terminal exit 0：paired-structure-clearance.json 對全部可見實體通過 8／8。最小取樣半徑 17.272 mm、兩線中心距離下界 6.111 mm（Ø6 包絡餘量約 0.111 mm）；未指定材料通過半徑。paired-work／paired-service 圖與 blend 已產出，抬升圖已檢視。
+- 5S：沒有新增生產模組／公開介面／依賴。routes 268、main 372 行；朝向與實際孔壁的正負對照沿用既有 real gate，研究脚本留 tmp。R45、規格、GitHub／igus 來源與鏡射方向教訓同步；研究曲線未加入正式產生器。
+
+### Open failures
+
+- 八個離散姿態不代表中間變形、迴圈不翻面、動作中的線間距、材料半徑／疲勞／拉力合格。研究最小間距很小，不是實物公差資格；180 mm 不能當裁線指示。
+- 導線夾沒有已驗證的軸向抓線能力；固定夾間段長只是邊界條件。尚需定義探頭到基座的完整路徑、兩端固定點、總長、夾孔滑動及鬆弛餘量。
+- 其餘肩角與連續掃掠、螺紋／彈性預緊、工具／手指空間、軟襯／卡扣保持力、底座／LCD、載荷及實體列印仍未資格化。線材外徑、實際容器／探頭／板件、負載、材料、溫度／液體與精度資料未齊；沒有現行整機製造 STL。
+
+### Next step
+
+- 8784、27311 均 terminal exit 0，沒有執行中的驗證。先釐清完整線路的固定端與可滑動導引點，再將雙線共同路徑接到中間動作檢查；保留真實未確認的線徑／彎曲半徑假設，不能拿離散曲線當柔性力學結果。
+- 從 paired-structure-clearance.json 的八組候選接手；readme 記有研究腳本與早期失败。工作／抬升研究檔是 paired-work.blend／paired-service.blend，正式檔是 guides-aligned/arm-seated.blend。研究曲線只覆蓋跨肘段。
+- guide_frame 將桿中心位置與通道朝向分開；兩頭各自同側。不要回復「role 決定通道方向」。導線夾直接 parent 到臂，不重複加入肩變換；相對 take-up 不可累加。
+- 真機仍串行，執行中不改產生器。開檔後用 fresh 命令；超時先排空。新模組先查 GitHub，render 379 行，新增呈現前按責任拆分，不能縮寫規避預算。後续仍需底座／LCD 及物理資格。
+
+## 歷史驗證紀錄
+
+以下為逐輪證據與當時的下一步；接手只依上方現行段落與任務索引，不能將歷史下一步重新當成主線。
+
+### V01.0R.021 接手事實（歷史）
+
+### Verified facts
+
 - V01.0R.021：完整 `scripts/ci.sh --real` 86223 terminal exit 0，所有 hard gates green（`tmp/lab-station-electrode-guides/ci-guides-phased.log`）。領域測試先缺類別紅，再 21/21 通過；完整動作 study 56519 exit 0，31 focused tests 通過。
 - 現行輸出 `tmp/lab-station-electrode-guides/`。四個可換沿臂導線夾，不增加金屬五金；毛細管單通道、pH／溫度雙通道。暫定線外徑 6 mm、孔 6.4 mm、側口 4.8 mm、壁厚 1.6 mm，夾在既有 8 × 12 mm 臂上。實際線徑未確認。
 - 四件均單一封閉網格；90 個孔壁射線及 8 個徑向止擋樣本通過。缺件、錯誤父物件與撞臂三反例均拒絕。導線夾直接隨所屬臂運動，既有動作、退齒、收隙、拆卸及肩部 176 狀態轉位均包含導線夾障礙檢查。
@@ -46,10 +74,6 @@
 - guide_frame 定義臂局部座標；上／下臂通道分居不同側，跨肘需處理軸向偏移，不能直接穿關節。導線夾父物件是所屬 arm，避免肩部整組變換重複套用。尚未建線材曲線。
 - 真機串行且執行中不改來源；build、每頭 verify、render、反例各獨立 300 秒。build 清除舊 phase 報告，第二階段缺第一階段即失敗。開檔後 fresh 命令讀回，逾時先排空。
 - 新模組先查 GitHub；render 379 行，新增呈現前需移既有責任或合適拆分。工作檔 arm-seated 六關節貼合；service-seated 只兩腕貼合，肩肘退開。既有相對 take-up 不可累加。
-
-## 歷史驗證紀錄
-
-以下為逐輪證據與當時的下一步；接手只依上方現行段落與任務索引，不能將歷史下一步重新當成主線。
 
 ### V01.0R.020 接手事實（歷史）
 

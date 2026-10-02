@@ -77,7 +77,7 @@ from scripts.model_lab_simple import link, verify_clearance
 from src.core.domain.lab_station import ElectrodeArmSpec
 
 ROOT = Path(__file__).resolve().parents[1]
-OUTPUT = ROOT / "tmp/lab-station-electrode-guides"
+OUTPUT = ROOT / "tmp/lab-station-electrode-guides-aligned"
 
 
 def bake(obj: bpy.types.Object, side: int) -> None:

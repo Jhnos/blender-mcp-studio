@@ -49,3 +49,9 @@ GitHub 查找 `electrode holder 3d print clamp pH probe` 與分片夾座，檢�
 ## 可換扣式導線夾模組前置查找（2026-10-03）
 
 建立 lab_electrode_routes 前重新檢視 [Ed Nisley Cable Clips](https://gist.github.com/ednisley/52b8a6303fa130fe38858488b978874b) 與 [slide-n-snap](https://github.com/benjamin-edward-morgan/openscad-slide-n-snap/blob/master/slide-n-snap.scad)。參考線徑／製程間隙分離與可拆扣接形式；本案要扣住現有 8×12 mm 桿身，不直接套用外部尺寸。沿用本地 block／cylinder／Boolean、BVH 及真機 oracle，不引入 OpenSCAD 或複製程式。扣入力、材料疲勞及線材實際尺寸仍需試片；不能以剛體開口小於桿身當保持力證明。
+
+## 跨肘線材路徑研究查找（2026-10-03）
+
+查閱 [BlenderHarnessTools](https://github.com/PhilBladen/BlenderHarnessTools) 的線束與最小彎曲半徑可視化，以及 [beziers.py](https://github.com/simoncozens/beziers.py) 的曲線操作範圍。沿用 Blender 幾何與標準三次曲線解析式做可重現研究，未複製外部碼、安裝插件或新增生產模組；固定線長、端點切向、實體及線間距分開檢查。
+
+[igus 彎曲半徑選型說明](https://www.igus.com/company/energy-chains-select-bend-radius-cable-carrier-ca) 要求遵循線材製造商的最小半徑。其頁面引用的舊版規範不當作本案現行合規判準；Ø6 mm 只是包絡，未取得各電纜／氣管的實際規格前，不以外徑倍率宣称可反覆彎折或寿命合格。

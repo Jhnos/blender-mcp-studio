@@ -1,6 +1,6 @@
 # VOC 追溯
 
-Population: R1–R16 為歷史 V10 的 LS_，R17–R24 為 rotary，R25 為 simple，R26–R44 為電極臂系列，現行為 electrode-guides。每個範圍皆涵蓋其兩頭、三探頭、單杯與 HMI；排除檢測佈局副本與診斷物件，任何必要族群為零即 FAIL。歷史證據只屬於該模型，不能當成現行電極臂的製造資格；現行規格見 [01-scope](01-scope.md)。
+Population: R1–R16 為歷史 V10 的 LS_，R17–R24 為 rotary，R25 為 simple，R26–R45 為電極臂系列，現行為 electrode-guides-aligned。每個範圍皆涵蓋其兩頭、三探頭、單杯與 HMI；排除檢測佈局副本與診斷物件，任何必要族群為零即 FAIL。歷史證據只屬於該模型，不能當成現行電極臂的製造資格；現行規格見 [01-scope](01-scope.md)。
 
 | ID | Requirement | Tier | User-visible | Kind | Verified-by |
 |---|---|---|---|---|---|
@@ -48,3 +48,4 @@ Population: R1–R16 為歷史 V10 的 LS_，R17–R24 為 rotary，R25 為 simp
 | R42 | 腕部 24 齒定位、2 mm 退開與隨平台計算維修角；整齒通過／半齒及錯角拒絕，實際間隙和保存檔讀回 | engineering | yes | behavior | artifact:electrode-wrist-seated/verification.json,electrode-wrist-seated/red-wrist-half-index.json,electrode-wrist-seated/red-wrist-off-index.json,electrode-wrist-seated/wrist-release-file-check.json,electrode-wrist-seated/wrist-released.blend |
 | R43 | 腕部四接面同時就座，調整後可重鎖，肩轉位保持腕部貼合 | engineering | yes | behavior | artifact:electrode-wrist-seated/verification.json,electrode-wrist-seated/red-unseated-wrist.json,electrode-wrist-seated/red-wrist-seating-blocked.json,electrode-wrist-seated/seated-file-check.json,electrode-wrist-seated/service-seated-file-check.json,electrode-wrist-seated/transfer-file-check.json,electrode-wrist-seated/wrist-seated-detail.png |
 | R44 | 四件可換導線夾隨正確連桿移動，通道與止擋實測，運動／拆卸無碰撞；缺件／穿桿／裝錯桿拒絕 | engineering | yes | behavior | artifact:electrode-guides/verification.json,electrode-guides/guide-controls.json,electrode-guides/guide-file-check.json,electrode-guides/guide-detail.png |
+| R45 | 通道同側而桿身中心保留；反轉實際通道網格拒絕，孔壁／止擋／動作與保存檔仍驗；不含線材路徑資格 | engineering | yes | behavior | artifact:electrode-guides-aligned/verification.json,electrode-guides-aligned/guide-controls.json,electrode-guides-aligned/guide-file-check.json,electrode-guides-aligned/guide-detail.png |

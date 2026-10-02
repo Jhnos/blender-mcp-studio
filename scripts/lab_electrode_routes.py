@@ -24,7 +24,7 @@ def guide_frame(label: str, role: str) -> Matrix:
     side = (1 if label == "capillary" else -1) * (1 if role == "upper" else -1)
     return Matrix.Translation(
         (side * 0.0042, 0, CableGuideSpec.bar_station_mm / 1000)
-    ) @ Matrix.Diagonal((side, 1, 1, 1))
+    ) @ Matrix.Diagonal((1 if label == "capillary" else -1, 1, 1, 1))
 
 
 def channels(label: str) -> tuple[float, ...]:
@@ -145,6 +145,10 @@ def verify_guide_geometry() -> dict[str, object]:
     spec = CableGuideSpec()
     rows = {}
     for label in ("capillary", "pH_temp"):
+        upper = guide_frame(label, "upper").to_3x3() @ Vector((1, 0, 0))
+        lower = guide_frame(label, "lower").to_3x3() @ Vector((1, 0, 0))
+        if upper.dot(lower) < 0.999:
+            raise ValueError("Cable guide channels face opposite sides")
         for role in ("upper", "lower"):
             obj = bpy.data.objects[guide_name(label, role)]
             mesh = bmesh.new()
@@ -228,6 +232,22 @@ def verify_guide_controls() -> dict[str, str]:
             obj.name, obj.matrix_basis = original_name, original_matrix
             bpy.context.view_layer.update()
         verify_guides(required=True)
+    reflection = Matrix.Translation((0.0084, 0, 0)) @ Matrix.Diagonal((-1, 1, 1, 1))
+    try:
+        obj.data.transform(reflection)
+        obj.data.flip_normals()
+        try:
+            verify_guide_geometry()
+        except ValueError as error:
+            if "Cable guide channel/wall mismatch" not in str(error):
+                raise
+            results["reversed_channel"] = str(error)
+        else:
+            raise ValueError("Reversed cable guide accepted")
+    finally:
+        obj.data.transform(reflection)
+        obj.data.flip_normals()
+    verify_guide_geometry()
     return results
 
 

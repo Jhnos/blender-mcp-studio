@@ -101,7 +101,7 @@
 - `arm-seated.blend` 是肩、肘、腕同時就座狀態，real gate 重新讀檔並量每關節四對面；`electrode-concept.blend` 保留原間隙供運動驗證。未就座卻宣稱就座的負對照必須拒絕。
 - 未驗連續掃掠、全部五金互碰、線材、實體列印、卡扣彈性保持、其他肩部轉位、整體預緊、負載與固定力。自碰檢查涵蓋上述結構件及全部夾具零件，不能宣稱全機零干涉。
 
-輸出：`tmp/lab-station-electrode-guides/electrode-concept.blend`、`working.png`、`raised.png`、`extended.png`、`screen_folded.png`、`verification.json`、`red-disconnection.json`、`retainer-detail.png`、`red-retainer.json`、`clamp-detail.png`、`clamp-exploded.png`、`red-service-in-cup.json`、`red-clamp-stop.json`、`elbow-released.png`、`red-elbow-engagement.json`、`indexed-raised.png`、`red-between-indices.json`、`arm-seated.png`、`arm-seated.blend`、`seated-file-check.json`、`red-unseated-chain.json`、`service.png`、`service.blend`、`red-forearm-stack.json`、`red-clamp-bolt-collision.json`、`released-untilted-service.json`。`service.blend` 另由 fresh addon 命令重新讀取，確認兩腕約 19.313°、閉鏈／避碰及完整拆裝，紀錄 `service-file-check.json`；另含 `wrist-detail.png`、`red-wrist-stack.json`、`red-wrist-floor.json`、`red-carrier-retainer.json`、`red-pin-service-blocked.json`；service 讀回另含 156 個全場插銷抽出樣本。新增 `red-unseated-shoulder.json`；無製造 STL 發布。
+輸出：`tmp/lab-station-electrode-guides-aligned/electrode-concept.blend`、`working.png`、`raised.png`、`extended.png`、`screen_folded.png`、`verification.json`、`red-disconnection.json`、`retainer-detail.png`、`red-retainer.json`、`clamp-detail.png`、`clamp-exploded.png`、`red-service-in-cup.json`、`red-clamp-stop.json`、`elbow-released.png`、`red-elbow-engagement.json`、`indexed-raised.png`、`red-between-indices.json`、`arm-seated.png`、`arm-seated.blend`、`seated-file-check.json`、`red-unseated-chain.json`、`service.png`、`service.blend`、`red-forearm-stack.json`、`red-clamp-bolt-collision.json`、`released-untilted-service.json`。`service.blend` 另由 fresh addon 命令重新讀取，確認兩腕約 19.313°、閉鏈／避碰及完整拆裝，紀錄 `service-file-check.json`；另含 `wrist-detail.png`、`red-wrist-stack.json`、`red-wrist-floor.json`、`red-carrier-retainer.json`、`red-pin-service-blocked.json`；service 讀回另含 156 個全場插銷抽出樣本。新增 `red-unseated-shoulder.json`；無製造 STL 發布。
 
 ## 腕部整組收隙與三關節同時貼合
 
@@ -117,6 +117,6 @@
 
 導線夾是獨立封閉實體，以 parent 跟隨所屬桿，不加入肩部剛體成員清單重複移動。全姿態、退齒、收隙及肩轉位檢查納入導線夾；夾具與插銷拆卸的障礙集合亦涵蓋它們。驗證通道通暢與孔周材料共 90 射線，徑向移動兩方向各 2 mm 必須遇桿身止擋，共 8 樣本；這不代表扣入力、保持力或軸向定位。
 
-要求四件均存在且跟隨正確桿，缺件、移入桿身及裝錯 parent 必須拒絕，還原後通過。arm-seated 保存檔重新檢查數量、通道、單一封閉實體、徑向止擋與全場干涉。guide-detail 顯示雙通道近照。尚未建立跨關節線材路徑、彎曲半徑或鬆弛長度，不以此宣稱走線完成。
+上下臂的通道朝同側，桿身中心位置仍各自保留；位置鏡射與通道朝向分開計算，避免線材為了連接兩孔而橫跨桿身。要求四件均存在且跟隨正確桿，缺件、移入桿身、裝錯 parent 及反轉實際通道網格必須拒絕，還原後通過。arm-seated 保存檔重新檢查數量、通道、單一封閉實體、徑向止擋與全場干涉。guide-detail 顯示雙通道近照。研究模型以孔口 6 mm 直段接外側兩段曲線，固定同一段線長後比較各姿態。線對線間距必須共同求解，不能以每條線各自避開實體代替配對檢查。研究曲線尚未加入正式產生器；材料最小彎曲半徑、姿態間連續變形、實際線长及夾持力均不在導線夾幾何資格內。研究圖不作裁線或製造依據。
 
 建模、各頭完整動作驗證及出圖由同一入口串行執行，各自完成才進下一階段；保留原 main 的完整流程、所有取樣與守衛。兩頭分別保存 motion-capillary／motion-pH_temp 報告，再合併姿態、收隙列表與取樣數；共杯、折屏及雙頭操作仍由每階段整機檢查，未刪除。建模開始移除舊階段報告，缺第一頭報告不能合併。拆階段只分離等待期限，不變更幾何驗收條件。

@@ -4,7 +4,7 @@ Read this file first after a new conversation, compaction, or terminal restart.
 
 ## 接手
 
-- **目前在做（2026-10-03）:** 16 四個可換沿臂導線夾，V01.0R.021。完整 `scripts/ci.sh --real` 86223 exit 0、所有 hard gates green（`tmp/lab-station-electrode-guides/ci-guides-phased.log`）；保存檔四導線夾及六承壓鏈重讀通過。首次 1474 逾時已排空，改為兩頭串行驗證且報告與拆分前一致。**下一步：**跨關節線材迴圈／彎曲空間，再續底座／LCD／載荷；Ø6 mm 暫定，整體未定稿。接手讀任務16 hand-off。
+- **目前在做（2026-10-03）:** 16 同側導線夾，V01.0R.022。完整 `scripts/ci.sh --real` 8784 exit 0、所有 hard gates green（tmp/lab-station-electrode-guides-aligned/ci-aligned-guides.log）；反裝網格拒絕、四導線夾與六承壓鏈讀回通過，Blender 已還原正式 arm-seated。雙線研究 27311 exit 0，八姿態共同線間距與實體淨空候選通過，但最小餘量僅約 0.111 mm、未資格化材料／連續變形。研究圖 paired-service.png 在 tmp/lab-station-cable-sameside/。**下一步：**完整線路固定端／滑動條件與中間動作，再續底座／LCD／載荷；Ø6 mm 暫定，整體未定稿。接手讀任務16 hand-off。
 - **等驗收:** 15 場景清單不再只有十個;對話路徑第一次有真機閘門(`--real` 32 條全綠)。下一個是 14 第五個實例。
 - 13 已驗收歸檔:對話現在能呼叫本專案自己的產生器。
 - **在等使用者的:** 印。工作單已交付——07 的 V3 試片七項,以及 `hand-gripper` 九節。
