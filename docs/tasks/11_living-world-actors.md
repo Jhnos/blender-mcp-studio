@@ -25,6 +25,8 @@ full courier gameplay and subsequent B/C expansion stay in PVR STATUS.
 
 - Source editing instructions now specify render isolation and exact assembled-preview camera settings; doc-only T1/T2 passed (`/tmp/full-cast-source-doc-ci.log`). Blend geometry is unchanged from the real-verified source.
 
+- Task index now explicitly retains original room quantitative gaps in Lane A; T1/T2 passed again in `/tmp/full-cast-lane-index-ci.log`. No geometry or runtime change.
+
 ### Open failures
 
 - No asset or real-Blender gate failures. Full PVR public journey is tracked in its living-world verification report.
