@@ -6,6 +6,7 @@ from scripts.verify.generated_artifact_verify_real import BlenderSocketOracle
 from scripts.verify.lab_cable_routes_verify_real import verify_cable_routes
 from scripts.verify.lab_electrode_readback_real import (
     verify_electrode_configurations,
+    verify_mesh_refinement,
     verify_saved_electrode,
 )
 from src.verification.generator_imports import reload_modules_for
@@ -45,6 +46,7 @@ model['verify_interfaces']('capillary')
 print('Reduced arm study and disconnected-material control passed')
 """
     print(BlenderSocketOracle("127.0.0.1", 9876, timeout=180).execute(code))
+    verify_mesh_refinement(root)
     script = root / "scripts/model_lab_platform.py"
     modules = reload_modules_for(root, script)
     code = f"""import bpy, importlib, runpy, sys, json

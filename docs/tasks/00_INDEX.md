@@ -4,9 +4,9 @@ Read this file first after a new conversation, compaction, or terminal restart.
 
 ## 接手
 
-- **目前在做（2026-10-03）:** 任務16，完整依序拆卸／重裝已通過完整 CI，正在準備版本封存。
-- **最近機器閘門:** 61711 `scripts/ci.sh --real` terminal exit0，ci-cycle-complete.log 全部 hard gates green；正式 MCP 十一套46案例及五項全域控制逐項核對通過。正式場景已開回，cycle-restored-formal.json 證明六就座鏈與四導線夾通過。VERSION已升02E，尚待提交與最終部署。
-- **下一步／研究接手:** 整理交接與5S、升版CHANGELOG、提交checkpoint／推送／部署讀回。其後繼續連續間隙界限、基座／LCD、電路及物理資格；硬體型號與線管外徑已詢問未答。
+- **目前在做（2026-10-03）:** 任務16；完整真機CI8268已exit0、all hard gates green。MCP十一套46案例及5全域控制通過，正式場景fresh readback六就座鏈與四導線夾通過。無live Blender工作。
+- **最近機器閘門:** 最終兩平台／四導線夾共用網格守衛及正反例全綠；本輪升版02F準備封存，部署仍02E。研究細節已搬入任務歷史段。
+- **下一步:** 升版／commit／checkpoint／部署讀回，然後精度安全全1520配對及連續資格；全機基座／LCD與硬體資格仍未完。
 
 - **等驗收:** 15 場景清單不再只有十個;對話路徑第一次有真機閘門(`--real` 32 條全綠)。下一個是 14 第五個實例。
 - 13 已驗收歸檔:對話現在能呼叫本專案自己的產生器。

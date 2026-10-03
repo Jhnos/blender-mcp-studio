@@ -11,6 +11,7 @@ from pathlib import Path
 import bpy
 from mathutils import Matrix, Vector
 
+from scripts.blender_mesh_primitives import refine_closed_mesh
 from scripts.hollow_hinge_render import look_at
 from scripts.lab_electrode_check import (
     verify_clamps as verify_clamps,
@@ -239,6 +240,8 @@ def build_scene(
     for joint in ("elbow", "shoulder", "tip"):
         for label in ("capillary", "pH_temp"):
             electrode_joint_teeth(label, finish_arm, joint)
+    for label in ("capillary", "pH_temp"):
+        refine_closed_mesh(bpy.data.objects[f"S_{label}_platform"])
     build_guides()
     bpy.context.scene["electrode_configuration"] = json.dumps(asdict(configuration), sort_keys=True)
 

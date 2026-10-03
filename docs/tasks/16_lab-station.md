@@ -28,11 +28,10 @@
 
 ### Verified facts
 
-- V01.0R.02E封存準備：61711完整 `scripts/ci.sh --real` terminal exit0，`tmp/lab-station-route-engine/ci-cycle-complete.log` 全部hard gates green。離線與正式MCP十一套46案例逐項通過；各套scene_restored及五項全域控制全true。
-- 完整CI後開回正式 `tmp/lab-station-electrode-guides-aligned/arm-seated.blend`，fresh oracle核對六就座鏈與四導線夾，`cycle-restored-formal.json`通過。無執行中的Blender工作。
-- 同一不可變ClampStep資料驅動毛細管208／pH260步依序拆卸與反向重裝；移出件保持原位置並列入障礙，九段線路全程檢查。兩套MCP正式入口192.50／230.00秒；原始變換欄位的正常及callback中斷還原、指定障礙及故意遺留1mm反例均驗證。
-- 兩張cycle-extracted PNG已實際檢視；維修移出件需手持支撐，非正常組裝懸浮。線長及Ø6mm仍為研究假設，不能作製造規格。
-- 5S：研究細節移入歷史，沿用既有純資料／fixture／service邊界；無新增模組、依賴或公開工具。純資料238、維修fixture363、主fixture375行，未達380警戒。既有原始變換還原LESSON適用，不重複新增同義教訓。
+- 完整 `scripts/ci.sh --real` session8268已terminal exit0（d59a2c），ci-refined-mesh.log所有hard gates green。正式MCP十一套46案例逐套passed／scene_restored，五全域控制全true；離線46案例亦通過。
+- 共用refine_closed_mesh只在最終兩平台及四導線夾邊界運作；保留封閉、非零面積、原頂點子集與1e-8m位移預算。重合及共線正例、開放及過量合點反例、冪等均由既有真機入口執行。
+- 六件生成網格獨立double面積與有向邊驗證、六壓扁三角反例通過。完整回歸後df6114開回正式arm-seated，fresh command六就座鏈與四導線夾通過；refined-restored-formal.json保存。來源修復不代表全行程碰撞或負載資格。
+- 本輪版本02F，準備封存；部署讀回待執行。5S已將研究紀錄搬入歷史；共用函式沿用既有模組，無新依賴，readback370行、主驗證379行，未達380預警。無執行中的Blender工作。
 
 ### Open failures
 
@@ -42,11 +41,74 @@
 
 ### Next step
 
-- 完成本輪02E提交、checkpoint、push、最終API部署及實際版本／十一套46案例讀回；全工作站保持ACTIVE。
-- 接續連續間隙界限研究；GitHub FCL與MoveIt官方CCD來源已列09-references，需明確運動模型及薄障礙／擦邊／旋轉／不收斂控制，不能僅以API名稱稱連續資格。再推進基座／LCD、真實接口與物理資格。
-- 依使用者持續推進要求，checkpoint後繼續，暫不要求清除對話。
+- 完成5S／升版／commit／checkpoint／部署讀回；完整CI與正式場景讀回已通過。
+- 精度安全全1520配對與連續資格、全工作站基座／LCD、真實接口與物理資格仍未完。已詢問的硬體資料不重問；checkpoint後繼續。
 
 ## 歷史驗證紀錄
+
+### 網格修整與連續平移研究（封存前原始紀錄）
+
+### Verified facts
+
+- 最新3034／48af72：本輪正式MCP已PASS；mcp-verification.json更新時間1791031787.636785，獨立assert確認11套46案例、每套passed／scene_restored及5全域控制全true。rotary lift亦PASS。8268仍live，3039 poll未terminal；後續機構閘門繼續，來源/runtime凍結，不能宣稱整輪CI完成。
+
+- 8268仍live，3009 wait已確認simple two-link study PASS，lab_simple子程序已退出，當前子程序44909為verification_mcp_verify_real。ec1628獨立讀取本輪engine-verification.json共46筆，逐筆passed與expected==observed全true。兩頭移位／拆裝循環正例及指定障礙皆涵蓋，尚不能宣稱正式MCP或整輪CI完成。來源/runtime持續凍結。
+
+- 最新CI **8268 live**，ci-refined-mesh.log；T1靜態全通過、T2 Python／Web全通過，T3 LaunchAgents／REST／MCP已通過。源碼／runtime凍結，先輪詢同一session，不要並行Blender／重启。更新交接時未完成整輪。
+- b1488f補永久excessive控制：只在runpy函式globals替換bmesh proxy，故意remove_doubles用1e-6m、輸入待移除點距5e-8m；守衛準確以vertex displacement budget拒絕且snapshot未變，finally還原proxy。四種合成情境同入口全通過，readback370行，ruff通過。没有新增生產依賴或模組。
+
+- 最新來源邊界取代下方前輪實作：refine_closed_mesh僅在model_lab_platform.build_scene完成各齒面後修整兩平台，以及build_guides完成局部座標後修整四夾。finish_arm已回原樣；在每個中間finish加守衛會於S_capillary_upper中途失敗（60687），未放寬門檻。
+- 永久verify_generated_triangles接到verify_saved_electrode，独立以Python double叉積及有向邊計數驗六件loop triangles，每件附純資料壓扁面負對照。舊檔236f95 RED；完整來源初跑40175亦抓到S_capillary_platform退化，不只pH平台252。
+- 毛細管平台退化為三個不同但完全共線的頂點（最短邊1.62348e-5m），微焊接無法處理。capillary-edge-flip.log副本驗證最長共邊旋轉對角線後零退化／封閉、頂點逐值不變、volume_delta0。永久合成共線四面體先f632eb RED，再3ad7c6 GREEN；與重合頂點、開放拒絕不變、冪等共用同入口。修整仍保留1e-8m頂點預算，沒調寬。
+- 45733完整build_scene GREEN，refined-final-boundary-green.log／generated-triangle-check.json：平台6242與6690三角面、四夾376／376／814／842，六件與六負對照通過。研究generated.blend已保存，finally開回正式arm-seated。refined-functional.json平台144孔位射線、四導線夾孔道／止擋與forearm_stack／wrist_geometry通過；refined-build/overview.png已檢視。沒有完整連續、負載或實體結論。
+- 最新ruff與全域mypy dc47ad exit0；新增非空輸出守衛後38ecc3合成控制再次通過。無live工作、未完整CI／提交／升版，正式仍02E。下一步位移拒絕控制、完整真機回歸及1520配對精度問題。
+
+- 本輪永久化：scripts/blender_mesh_primitives.py新增refine_closed_mesh，副本BEAUTY三角化、必要時1e-8m焊接；要求封閉／非零面積／候選頂點為原頂點子集／原頂點至候選最大距離不超1e-8m，通過才寫回。接入finish_arm封閉回退及build_guides完成局部座標後。未提交，VERSION仍02E。
+- 永久控制verify_mesh_refinement已接既有lab_simple_verify_real入口：缺函式先RED（KeyError），加入實作後GREEN；封閉退化四面體修復、開放網格拒絕不變及冪等。40717再次通過，並重播標準pose來源：平台最後UNION仍252退化，finish後3340頂點／6690面／零退化／零非流形。證據platform-teeth-refined-stage.json；finally正式檔已重開。
+- 74101四導線夾從來源重建，逐三角double面積皆非零；既有孔道／止擋幾何檢查通過，refined-guides.json保存；finally正式檔已重開。ruff全修改檔與全src/api/scripts mypy（37773）exit0。完整CI、全1520配對、部署尚未跑，無live工作。
+
+- 清理候選研究：platform-cleanup-study.json顯示既有1e-5m焊接產生2非流形邊、dissolve後3，觸發finish回退；1e-8m副本焊接可零退化且封閉。cleanup-functional-study平台／四導線夾／六就座链通過，但獨立雙向頂點距離1.1817e-8m超預定1e-8，RED保留，不放寬門檻。
+- 67726移除不必要dissolve後exit0：weld-functional-study.json平台／導線夾／六就座鏈通過，weld-independent-study.json兩件double面積零退化、水密／面向一致；平台雙向頂點距離max9.77890585e-9m、導線夾6.98491931e-9m，候選至原頂點皆0。relative volume delta6.67e-10／9.30e-9。只操作data副本、finally恢復，正式檔未改；這是來源修復候選，尚未永久TDD／完整回歸。
+
+- 72576標準生成姿態重播精確重現平台缺陷：挖齒座／finish後1105頂點、2216多邊形、零退化；最後齒面UNION後3686頂點／4435多邊形、252退化，finish後3686／7382仍252，與正式檔一致。platform-teeth-canonical-stage.json保存；91162先在已就座姿態重播最後0退化，證明必須還原實際生成姿態，不可用錯場景的綠燈取代。兩次均finally恢復暫時函式及開回arm-seated，無live工作。
+- joint_boolean已在target局部毫米執行，不是單純未換尺度；下一步檢查最後UNION的相對變換與finish_arm清理回退，不能假設再改單位即修復。
+
+- 33767平台來源分階段研究exit0：從lab_electrode_module.build的AST擷取原平台建構段執行（不重寫幾何），逐次Boolean／finish／bake量測。中途Boolean產生1／4／22／32等退化三角但finish均清至0；最終819頂點／1645多邊形、零退化／非流形0，platform-stage-study.json保存。暫時函式globals包裝已finally恢復，研究物件移除，host finally重開arm-seated。故现有252退化的來源仍需追後續electrode_joint_teeth tip流程，不能把基礎平台建構当已定位根因。
+
+- 獨立三角化研究：triangulation-independent.json六副本頂點逐值不變，relative volume差最大1.77e-9；BEAUTY＋double世界變換後五物件局部／世界零面積皆0，上方pH導線夾局部仍1（世界變換浮點擾動變非零不算修復）。全部水密／面向一致。
+- 表面旁證工具自身尺度失效：triangulation-self-meter.json同網格對自身取樣仍報最大0.177mm；換毫米座標後triangulation-surface-mm.json自身誤差<1.1e-7mm，雙向各64面心取樣偏差<8.5e-7mm。這只是取樣旁證、非全表面Hausdorff證明；不能使用公尺尺度的原始closest_point_naive數字判形狀改變。
+- coincident-vertex-study.json在記憶體副本試微小焊接：pH平台1e-12m可移除117重合點且保持封閉／體積，但bmesh零面積面仍73；1e-9m仍33，上方pH導線夾仍1。bmesh面積判零與double三角面判零計數不同，不可混用。沒有修改正式物件；仍應定位來源而非逐步放大焊接距離。
+
+- mesh-degeneracy-study.json定位：七物件無modifier且原多邊形均零非流形邊；LCD背殼不是原始開口，loop-triangle輸出才非水密／退化。lcd_front及部分導線夾退化源於mathutils世界座標float精度，Python double矩陣乘法可消除多數；不可把旋轉後極小非零面積當修復原始退化。pH平台原有252零面積多邊形／局部三角，來源含重合頂點；其餘多為共線三點的三角分割問題。
+- triangulation-options.json只操作記憶體副本：LCD背殼BEAUTY／BEAUTY、ALTERNATE／BEAUTY及SHORT_EDGE／BEAUTY均零面積面0／非流形0；EAR_CLIP在背殼引入2非流形邊。yaw_bolt各候選零面積0／非流形0。沒有修改或儲存正式物件，尚需獨立double面積／體積／表面偏差驗證，不能只採bmesh自身報告。
+
+- 完整配對研究：7527初匯出19件／1463配對，排除清單揭露既有prefix未含LS_REF_lcd_pcb／touch_glass／terminal_allowance；78074改收全場可渲染mesh，19件／141去重world網格／1520配對、excluded空，host finally已開回arm-seated。98232全配對exit0：1387clear、133unknown_topology，2.74秒；fcl-all-pairs.json保存，不能宣稱全綠。
+- 133不確定對應七物件：LS_FIT_lcd_back非水密且4零面積三角；lcd_front1、capillary_lower導線夾6、pH_lower20、pH_upper16、capillary_yaw_bolt1、pH_temp_platform605零面積三角。後六者水密且面向一致。尚需區分三角化退化與原始幾何缺陷；不直接丟棄面或豁免。正式模型／程式尚未變更。
+
+- 96839實際候選穩健性研究exit0：22配對×正反向×1e-8／1e-7／1e-6m裕量共132全clear；三探頭×正反向六個0.1mm薄障礙控制皆blocked，起終表面距離均大於1e-6m。fcl-actual-robustness.json已host逐項assert。此為匯出網格上的研究，不改正式場景；各裕量通過不等於已證明求解器全域數值誤差上界。
+
+- 實際候選研究：17318匯出19件／22候選網格exit0，host finally開回arm-seated；10420離線FCL距離／分離平面／區間與初始包含研究exit0，22候選全clear、共928查詢、量測1.81秒，fcl-actual-candidates.json已核對。只涵蓋匯出的22候選純平移，尚非全流程／線路／自交資格，數值誤差裕量1e-8m尚需量化契約；不能直接升為正式驗收。
+- 隔離環境新增trimesh5.1.1／rtree1.4.1（32882 exit0），正式依賴未動。fcl-solid-controls.json七控制通過：雙向包含、分離、開放網格、錯誤面向、空網格、第二分離成分內藏。contains採三方向結果一致，表面間隙先大於裕量才判內外；拓樸只驗有限／水密／一致面向／非零面積／正體積，沒有自交證明。
+
+- 分離平面研究GREEN：fcl-plane-controls.json同90案例全符合預期、max_queries=1；使用nearest-points只建議方向，實際以所有頂點沿法向投影及整段平移投影界限獨立驗證，無法分離則回原中點距離界限。此前18個near_clear RED保留，沒有增查詢預算或改預期。
+- fcl-hole-controls.json六案例全通過：兩方向的穿孔clear各21查詢／11葉區間；撞孔壁與孔內薄障礙各1查詢blocked。六案例兩端皆零表面碰撞，證明非只看端點且沒有凸包填洞。仍須初始實體包含、mesh有效性與數值容差契約，尚未用於22組實際候選或正式MCP。
+
+- FCL靜態距離研究：fcl-distance-controls.json共450筆（3方向／3尺度／正反向／5橫向間隙／5位置含重複）全部符合解析無號表面距離。fcl-containment-control.json顯示內藏小盒表面距離0.45且零接觸，故必須另做實體包含，不能據正距離宣稱無重疊。
+- 區間研究fcl-interval-controls.json共90案例：72符合預期，18個near_clear在10000查詢預算耗盡回unknown，沒有被當成clear；預算0亦unknown。此方法以中點表面距離大於半段最大位移＋尺度誤差裕量證明區間，擦邊允許blocked／unknown。極近平行路徑的全位移界限過於保守，尚未達實用資格；下一步研究可驗證的投影分離平面／方向界限，保留本次RED，不以增加預算或改預期掩蓋問題。
+
+- 擴充CCD研究RED：fcl-expanded-controls.json涵蓋3方向×3尺度×正反向×穿越／避開／近擦邊兩側／精確擦邊×重複2次，180筆中94不符解析碰撞／接觸時間，42組重複結果不同。每次重建全新網格後fcl-fresh-controls.json仍80失敗，但重複差異歸零。先前三案例通過不足以採用；目前polynomial與CA都不具本案資格，不接入正式MCP。此為隔離包與研究呼叫方式的觀察，尚未判定上游根因。
+
+- FCL研究：91643隔離venv安裝python-fcl0.7.0.11／numpy2.4.6／Cython3.3.0成功，正式環境與依賴未動。6294初始變換網格控制顯示CA漏掉薄障礙／擦邊，polynomial結果忽略固定件初始變換的表現（避開誤報、時間錯誤），不能直接採用。頂點先轉世界座標、初始transform identity後，polynomial三案例正確，穿越／擦邊時間0.4625與解析值相符；CA仍漏報。fcl-controls.json與fcl-controls-world.json保存，已用獨立host assert核對。尚須新鮮幾何／重複呼叫副作用、任意方向／縮放／反向／孔洞／包含與不收斂控制，再用於22組候選；無連續資格結論。
+
+- 02E封存完成：bd50242已推送，checkpoint94039／push65038／API部署24852／正式讀回64037皆exit0。cycle-deployed.json實讀02E、11工具、十一套46案例，三服務監聽，封存後工作樹乾淨。
+- 連續平移研究74926 exit0：重用既有凸包／包含檢查，19移出件產生22組保守包絡相交候選，translation-hull-study.json保存。多數涉及孔洞、襯套及螺栓；不能把包絡相交視為實際碰撞，也不能直接豁免。67683初跑只因清單預期17而實際19失敗，修正研究計數後重跑。host finally已開回arm-seated，無執行中工作。下一步需解析這22組或採能保留凹形孔洞的平移掃掠；未更改正式程式或新增依賴。
+
+- V01.0R.02E封存準備：61711完整 `scripts/ci.sh --real` terminal exit0，`tmp/lab-station-route-engine/ci-cycle-complete.log` 全部hard gates green。離線與正式MCP十一套46案例逐項通過；各套scene_restored及五項全域控制全true。
+- 完整CI後開回正式 `tmp/lab-station-electrode-guides-aligned/arm-seated.blend`，fresh oracle核對六就座鏈與四導線夾，`cycle-restored-formal.json`通過。無執行中的Blender工作。
+- 同一不可變ClampStep資料驅動毛細管208／pH260步依序拆卸與反向重裝；移出件保持原位置並列入障礙，九段線路全程檢查。兩套MCP正式入口192.50／230.00秒；原始變換欄位的正常及callback中斷還原、指定障礙及故意遺留1mm反例均驗證。
+- 兩張cycle-extracted PNG已實際檢視；維修移出件需手持支撐，非正常組裝懸浮。線長及Ø6mm仍為研究假設，不能作製造規格。
+- 5S：研究細節移入歷史，沿用既有純資料／fixture／service邊界；無新增模組、依賴或公開工具。純資料238、維修fixture363、主fixture375行，未達380警戒。既有原始變換還原LESSON適用，不重複新增同義教訓。
+
 
 以下為逐輪證據與當時的下一步；接手只依上方現行段落與任務索引，不能將歷史下一步重新當成主線。
 

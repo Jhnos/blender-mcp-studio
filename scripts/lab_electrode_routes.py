@@ -8,7 +8,13 @@ import bpy
 from mathutils import Matrix, Vector
 from mathutils.bvhtree import BVHTree
 
-from scripts.blender_mesh_primitives import add_cylinder, assign, boolean, material
+from scripts.blender_mesh_primitives import (
+    add_cylinder,
+    assign,
+    boolean,
+    material,
+    refine_closed_mesh,
+)
 from scripts.hand_gates import shell_count
 from scripts.hollow_hinge_render import look_at
 from scripts.lab_station_joints import block
@@ -91,6 +97,7 @@ def build_guides() -> None:
             obj.data.transform(frame)
             if frame.determinant() < 0:
                 obj.data.flip_normals()
+            refine_closed_mesh(obj)
             obj.parent = bpy.data.objects[f"S_{label}_{role}"]
             obj.matrix_parent_inverse = Matrix.Identity(4)
             obj.matrix_basis = Matrix.Identity(4)

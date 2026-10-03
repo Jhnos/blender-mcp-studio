@@ -193,3 +193,74 @@ def cleanup_mesh(obj: bpy.types.Object) -> None:
     editable.to_mesh(obj.data)
     editable.free()
     obj.data.update()
+
+
+def refine_closed_mesh(obj: bpy.types.Object) -> None:
+    """Repair coincident/collinear triangles atomically within a 1e-8 m vertex budget."""
+    from mathutils.kdtree import KDTree
+
+    mesh = bmesh.new()
+    mesh.from_mesh(obj.data)
+    originals = [tuple(vertex.co) for vertex in mesh.verts]
+    limit = 1e-8
+
+    def zero_area(face: bmesh.types.BMFace) -> bool:
+        a, b, c = [tuple(vertex.co) for vertex in face.verts]
+        u = [b[i] - a[i] for i in range(3)]
+        v = [c[i] - a[i] for i in range(3)]
+        return (
+            math.hypot(
+                u[1] * v[2] - u[2] * v[1],
+                u[2] * v[0] - u[0] * v[2],
+                u[0] * v[1] - u[1] * v[0],
+            )
+            == 0
+        )
+
+    try:
+        if (
+            not mesh.faces
+            or not all(math.isfinite(value) for point in originals for value in point)
+            or any(not edge.is_manifold for edge in mesh.edges)
+        ):
+            raise ValueError("Refinement requires a finite closed mesh")
+        bmesh.ops.triangulate(
+            mesh, faces=list(mesh.faces), quad_method="BEAUTY", ngon_method="BEAUTY"
+        )
+        if any(zero_area(face) for face in mesh.faces):
+            bmesh.ops.remove_doubles(mesh, verts=list(mesh.verts), dist=limit)
+            bmesh.ops.triangulate(
+                mesh, faces=list(mesh.faces), quad_method="BEAUTY", ngon_method="BEAUTY"
+            )
+        # A collinear face and the triangle across its longest edge share one
+        # planar surface. Flip that diagonal without moving any vertex.
+        for face in list(mesh.faces):
+            if not face.is_valid or not zero_area(face):
+                continue
+            edge = max(
+                face.edges,
+                key=lambda item: math.dist(tuple(item.verts[0].co), tuple(item.verts[1].co)),
+            )
+            if edge.is_manifold and all(len(item.verts) == 3 for item in edge.link_faces):
+                bmesh.ops.rotate_edges(mesh, edges=[edge], use_ccw=False)
+        if (
+            not mesh.faces
+            or any(not edge.is_manifold for edge in mesh.edges)
+            or any(zero_area(face) for face in mesh.faces)
+        ):
+            raise ValueError(f"Refinement cannot preserve a closed nondegenerate mesh: {obj.name}")
+        points = [tuple(vertex.co) for vertex in mesh.verts]
+        if not points or not set(points).issubset(set(originals)):
+            raise ValueError("Refinement introduced displaced vertices")
+        tree = KDTree(len(points))
+        for index, point in enumerate(points):
+            tree.insert(point, index)
+        tree.balance()
+        for point in originals:
+            nearest, _, _ = tree.find(point)
+            if math.dist(point, tuple(nearest)) > limit:
+                raise ValueError("Refinement exceeds the vertex displacement budget")
+        mesh.to_mesh(obj.data)
+        obj.data.update()
+    finally:
+        mesh.free()

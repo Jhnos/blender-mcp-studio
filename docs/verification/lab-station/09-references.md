@@ -87,3 +87,5 @@ GitHub 查找 `electrode holder 3d print clamp pH probe` 與分片夾座，檢�
 - 2026-10-03查閱 [FCL](https://github.com/flexible-collision-library/fcl)：同一介面族提供網格碰撞、最短距離與連續碰撞；連續呼叫需要初始及目標變換。[ContinuousCollisionRequest原始碼](https://github.com/flexible-collision-library/fcl/blob/master/include/fcl/narrowphase/continuous_collision_request.h)列出平移、線性、螺旋與樣條運動，預設為CCDM_TRANS及CCDC_NAIVE，不能僅憑API名稱把結果當成任意機構路徑保證。
 - [MoveIt Bullet CCD官方示例](https://moveit.picknik.ai/main/doc/examples/bullet_collision_checker/bullet_collision_checker.html)提供兩端離散姿態安全但途中穿過箱子的反例。採納這類辨識控制；實際連桿關節路徑與可變形線路須另證明符合所用運動模型。不能以端點剛體插值替代本案的實際關節／定長線路變化。
 - 適用邊界：此為後續連續間隙方法的來源比較，尚未引入FCL／Bullet依賴，也不改變現有固定取樣的證據範圍。若採用現成求解器，須明確選擇運動及求解方式，驗證薄障礙、擦邊、旋轉與失敗／未收斂狀態，不能把不確定結果當作clear。
+
+- [python-fcl](https://github.com/BerkeleyAutomation/python-fcl)與[請求類別原始碼](https://github.com/BerkeleyAutomation/python-fcl/blob/master/src/fcl/collision_data.py)：Python binding預設solver為CONSERVATIVE_ADVANCEMENT，與FCL C++預設不同。研究採隔離venv及顯式solver／運動類型；三角網格須用解析薄障礙、擦邊與clear對照測試驗證變換處理與接觸時間，不能把套件預設結果直接當作資格。

@@ -6,6 +6,7 @@ from scripts.verify.generated_artifact_verify_real import BlenderSocketOracle
 
 
 def verify_saved_electrode(script: Path) -> None:
+    verify_generated_triangles(script.parents[1])
     # A fresh addon command lets Blender refresh context after opening the saved artifact.
     code = f"""import bpy, runpy, json
 model = runpy.run_path({str(script)!r})
@@ -248,3 +249,122 @@ print('Independent clamp service: 298 samples, both working-pose controls and re
         print(oracle.execute(code))
     finally:
         oracle.execute(f"import bpy\nbpy.ops.wm.open_mainfile(filepath={str(restore)!r})")
+
+
+def verify_generated_triangles(root: Path) -> None:
+    """Independently inspect saved platform/guide triangles and a collapsed-face control."""
+    code = f"""import bpy, math, json
+from pathlib import Path
+names = [f'S_{{head}}_platform' for head in ('capillary', 'pH_temp')]
+names += [f'LS_ROUTE_{{head}}_{{role}}' for head in ('capillary', 'pH_temp') for role in ('upper', 'lower')]
+def inspect(points, faces):
+    if not faces or not all(math.isfinite(x) for p in points for x in p):
+        raise ValueError('Empty or nonfinite mesh')
+    edges = {{}}
+    for face in faces:
+        if len(face) != 3:
+            raise ValueError('Nontriangular output')
+        a,b,c = [points[i] for i in face]
+        u = [b[i]-a[i] for i in range(3)]
+        v = [c[i]-a[i] for i in range(3)]
+        cross = (u[1]*v[2]-u[2]*v[1],u[2]*v[0]-u[0]*v[2],u[0]*v[1]-u[1]*v[0])
+        if math.hypot(*cross) == 0:
+            raise ValueError('Zero-area output triangle')
+        for i,j in zip(face, face[1:]+face[:1]):
+            edge = tuple(sorted((i,j)))
+            edges.setdefault(edge, []).append((i,j))
+    if any(len(pair) != 2 or pair[0] != pair[1][::-1] for pair in edges.values()):
+        raise ValueError('Open or inconsistently oriented output')
+    return len(faces)
+report = {{}}
+for name in names:
+    mesh = bpy.data.objects[name].data
+    mesh.calc_loop_triangles()
+    points = [tuple(v.co) for v in mesh.vertices]
+    faces = [tuple(p.vertices) for p in mesh.loop_triangles]
+    try:
+        report[name] = inspect(points, faces)
+    except ValueError as error:
+        raise ValueError(name + ': ' + str(error)) from error
+    corrupted = list(points)
+    corrupted[faces[0][1]] = corrupted[faces[0][0]]
+    try:
+        inspect(corrupted, faces)
+    except ValueError as error:
+        if str(error) != 'Zero-area output triangle':
+            raise
+    else:
+        raise AssertionError('Collapsed output triangle accepted: ' + name)
+output = Path({str(root / "tmp/lab-station-route-engine/generated-triangle-check.json")!r})
+output.parent.mkdir(parents=True, exist_ok=True)
+output.write_text(json.dumps(report))
+print('Six saved platform/guide meshes and collapsed-face controls passed:', report)
+"""
+    print(BlenderSocketOracle("127.0.0.1", 9876, timeout=30).execute(code))
+
+
+def verify_mesh_refinement(root: Path) -> None:
+    """Exercise the shared mesh repair on closed-degenerate and open controls."""
+    code = f"""import bpy, runpy, math
+from types import SimpleNamespace
+refine = runpy.run_path({str(root / "scripts/blender_mesh_primitives.py")!r})['refine_closed_mesh']
+original_bmesh = refine.__globals__['bmesh']
+vertices = [(0,0,0),(.001,0,0),(0,.001,0),(0,0,.001),(0,0,0)]
+faces = [(0,2,4),(4,2,1),(0,4,3),(4,1,3),(0,3,2),(1,2,3)]
+def snapshot(mesh):
+    return ([tuple(v.co) for v in mesh.vertices], [tuple(p.vertices) for p in mesh.polygons])
+for case in ('coincident', 'open', 'collinear', 'excessive'):
+    mesh = bpy.data.meshes.new('REFINEMENT_control')
+    controls = vertices if case != 'collinear' else vertices[:-1] + [(0,.0005,0)]
+    if case == 'excessive':
+        controls = vertices[:-1] + [(0,5e-8,0)]
+    triangles = faces if case != 'collinear' else [(0,2,4),(4,2,1),(0,4,1),(0,1,3),(0,3,2),(1,2,3)]
+    mesh.from_pydata(controls, [], triangles[:-1] if case == 'open' else triangles)
+    obj = bpy.data.objects.new('REFINEMENT_control', mesh)
+    bpy.context.collection.objects.link(obj)
+    before = snapshot(mesh)
+    try:
+        if case == 'excessive':
+            ops = SimpleNamespace(triangulate=original_bmesh.ops.triangulate,
+                rotate_edges=original_bmesh.ops.rotate_edges,
+                remove_doubles=lambda bm, **kw: original_bmesh.ops.remove_doubles(bm, verts=kw['verts'], dist=1e-6))
+            refine.__globals__['bmesh'] = SimpleNamespace(new=original_bmesh.new, types=original_bmesh.types, ops=ops)
+        if case in ('open', 'excessive'):
+            try:
+                refine(obj)
+            except ValueError as error:
+                expected = 'Refinement exceeds the vertex displacement budget' if case == 'excessive' else 'Refinement requires a finite closed mesh'
+                assert str(error) == expected, (case, str(error))
+                assert snapshot(obj.data) == before, 'Rejected refinement mutated the input'
+            else:
+                raise AssertionError('Invalid refinement accepted: ' + case)
+        else:
+            refine(obj)
+            points, triangles = snapshot(obj.data)
+            expected = (5,6) if case == 'collinear' else (4,4)
+            assert (len(points),len(triangles)) == expected, 'Degenerate tetrahedron not repaired'
+            assert set(points) == set(before[0]), 'Refinement moved control vertices'
+            edges = {{}}
+            for face in triangles:
+                assert len(face) == 3
+                a,b,c = [points[i] for i in face]
+                u = [b[i]-a[i] for i in range(3)]
+                v = [c[i]-a[i] for i in range(3)]
+                cross = (u[1]*v[2]-u[2]*v[1],u[2]*v[0]-u[0]*v[2],u[0]*v[1]-u[1]*v[0])
+                assert math.hypot(*cross) > 0, 'Refinement retained a zero-area triangle'
+                for i,j in zip(face, face[1:]+face[:1]):
+                    edge = tuple(sorted((i,j)))
+                    edges[edge] = edges.get(edge,0)+1
+            assert all(count == 2 for count in edges.values()), 'Refinement opened the mesh'
+            saved = snapshot(obj.data)
+            refine(obj)
+            assert snapshot(obj.data) == saved, 'Refinement is not idempotent'
+    finally:
+        refine.__globals__['bmesh'] = original_bmesh
+        data = obj.data
+        bpy.data.objects.remove(obj, do_unlink=True)
+        if data.users == 0:
+            bpy.data.meshes.remove(data)
+print('Coincident/collinear repair, idempotence, atomic open/excessive-weld rejection passed')
+"""
+    print(BlenderSocketOracle("127.0.0.1", 9876, timeout=30).execute(code))
