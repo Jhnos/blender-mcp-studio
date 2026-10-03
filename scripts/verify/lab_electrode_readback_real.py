@@ -252,10 +252,10 @@ print('Independent clamp service: 298 samples, both working-pose controls and re
 
 
 def verify_generated_triangles(root: Path) -> None:
-    """Independently inspect saved platform/guide triangles and a collapsed-face control."""
+    """Independently inspect saved arm/platform/guide triangles and a collapsed-face control."""
     code = f"""import bpy, math, json
 from pathlib import Path
-names = [f'S_{{head}}_platform' for head in ('capillary', 'pH_temp')]
+names = [f'S_{{head}}_{{part}}' for head in ('capillary', 'pH_temp') for part in ('upper', 'platform')]
 names += [f'LS_ROUTE_{{head}}_{{role}}' for head in ('capillary', 'pH_temp') for role in ('upper', 'lower')]
 def inspect(points, faces):
     if not faces or not all(math.isfinite(x) for p in points for x in p):
@@ -298,7 +298,7 @@ for name in names:
 output = Path({str(root / "tmp/lab-station-route-engine/generated-triangle-check.json")!r})
 output.parent.mkdir(parents=True, exist_ok=True)
 output.write_text(json.dumps(report))
-print('Six saved platform/guide meshes and collapsed-face controls passed:', report)
+print('Eight saved arm/platform/guide meshes and collapsed-face controls passed:', report)
 """
     print(BlenderSocketOracle("127.0.0.1", 9876, timeout=30).execute(code))
 

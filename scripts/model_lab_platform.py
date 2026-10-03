@@ -241,7 +241,8 @@ def build_scene(
         for label in ("capillary", "pH_temp"):
             electrode_joint_teeth(label, finish_arm, joint)
     for label in ("capillary", "pH_temp"):
-        refine_closed_mesh(bpy.data.objects[f"S_{label}_platform"])
+        for part in ("upper", "platform"):
+            refine_closed_mesh(bpy.data.objects[f"S_{label}_{part}"])
     build_guides()
     bpy.context.scene["electrode_configuration"] = json.dumps(asdict(configuration), sort_keys=True)
 

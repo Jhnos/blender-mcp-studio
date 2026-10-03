@@ -28,23 +28,56 @@
 
 ### Verified facts
 
-- 完整 `scripts/ci.sh --real` session8268已terminal exit0（d59a2c），ci-refined-mesh.log所有hard gates green。正式MCP十一套46案例逐套passed／scene_restored，五全域控制全true；離線46案例亦通過。
-- 共用refine_closed_mesh只在最終兩平台及四導線夾邊界運作；保留封閉、非零面積、原頂點子集與1e-8m位移預算。重合及共線正例、開放及過量合點反例、冪等均由既有真機入口執行。
-- 六件生成網格獨立double面積與有向邊驗證、六壓扁三角反例通過。完整回歸後df6114開回正式arm-seated，fresh command六就座鏈與四導線夾通過；refined-restored-formal.json保存。來源修復不代表全行程碰撞或負載資格。
-- 本輪版本02F，準備封存；部署讀回待執行。5S已將研究紀錄搬入歷史；共用函式沿用既有模組，無新依賴，readback370行、主驗證379行，未達380預警。無執行中的Blender工作。
+- V01.0R.02G：最終修整邊界擴至兩上臂，沿用共用refine_closed_mesh；永久局部三角守衛由六件擴至八件，各含壓扁負對照。舊上臂先RED，來源修復重建後GREEN，未放寬位移預算。
+- 完整CI27464 exit0，ci-upper-refined.log全hard gates green；本輪MCP十一套46案例、場景還原及五全域控制全通過。正式場景八mesh及反例、六就座鏈／四導線夾fresh readback通過，upper-restored-formal.json保存。
+- 局部守衛先於世界變換的研究匯出，19移動件／141網格／1520配對、無排除；正反向三裕量共9120 clear，六中途薄障礙blocked。僅拆卸純平移研究，非任意動作或負載資格。
+- 隔離httpx2 2.13.1完整headless1166及pip check通過，正式依賴未改。5S將逐輪紀錄搬入歷史；沿用現有模組，無新增生產依賴，驗證檔仍低於380行。無live工作；準備02G提交／checkpoint／部署。
 
 ### Open failures
 
 - 固定取樣尚非連續掃掠、任意雙頭組合、螺紋／工具／手部空間、移出件支撐或材料／負載資格。
 - 基座／LCD、電路與接口、載荷及實體試印未完成。幫浦／壓力／pH前端／供電板型號及線管外徑已詢問未答，不阻擋機構後續研究。
-- Starlette TestClient偏好httpx2的警告待隔離環境相容性驗證；僅dry-run，尚未修改依賴。
+- Starlette TestClient偏好httpx2的警告：隔離71項e2e已通過，完整headless1166項亦通過，依賴宣告尚待；正式依賴未改。
 
 ### Next step
 
-- 完成5S／升版／commit／checkpoint／部署讀回；完整CI與正式場景讀回已通過。
-- 精度安全全1520配對與連續資格、全工作站基座／LCD、真實接口與物理資格仍未完。已詢問的硬體資料不重問；checkpoint後繼續。
+- 完成02G提交／checkpoint／部署讀回，再補dev httpx2依賴及連續資格整合。
+- 全機基座／LCD、真實電路接口、載荷與實體資格仍未完成；硬體型號已詢問未答，不重問。
 
 ## 歷史驗證紀錄
+
+### 上臂修整與全配對研究（封存前原始紀錄）
+
+### Verified facts
+
+- 3168完整CI27464 terminal exit0、all hard gates green。521e43讀回本輪MCP11套46案例、各套passed／scene_restored及5全域控制全true。ac34ff開回正式arm-seated，八網格＋壓扁反例、六就座鏈及四導線夾通過，upper-restored-formal.json保存。無live工作。下一步5S／升版／checkpoint／部署，來源尚未封存。
+
+- 本輪機構階段完成後engine-verification.json獨立host遞迴讀回46個案例，全部evidence.passed且expected==observed。27464仍live，3141實讀MCP子程序18050執行1:06，Blender CPU94.2%；目前只有離線全綠，尚未正式MCP／整輪CI完成。
+
+- 3139輪詢確認本輪simple two-link study PASS，84999機構階段完成；27464仍live，後續正式MCP註冊驗證繼續。尚不能宣稱整輪CI完成；來源/runtime保持凍結。
+
+- 79ac4d新局部守衛匯出資料的六薄障礙控制exit0：三探頭×正反向，路徑中間插入0.1mm障礙，起終距離均大於1e-6m、六者全部blocked，fcl-guarded-obstacles.json保存並host重新assert。沒有操作Blender或變更源碼；27464仍live（3107），84999當時6:17／Blender CPU160%。
+
+- httpx2隔離完整headless8194 exit0：tests/unit＋tests/e2e合計1166 passed in23.54s，httpx2-headless.log保存；正式依賴仍未改。既有pyproject將httpx列runtime，TestClient新偏好屬dev依賴候選，應在當前真機CI完成後另行宣告及驗證。27464仍live，84999子程序4:52、Blender CPU129%，無terminal結果。
+
+- httpx2隔離相容性前進：本機Starlette1.3.1的TestClient優先import httpx2，未安裝才警告fallback httpx。38129在tmp/httpx2-compat-env（system-site-packages）只安裝隔離httpx2 2.13.1／httpcore2 2.13.1等；59812隔離環境tests/e2e 71 passed in3.51s，httpx2-e2e.log。正式環境／依賴檔未改；尚須完整headless與宣告依賴決策，不能當技術債已結案。CI27464仍live，來源/runtime凍結。
+
+- 3091／3ea56f確認同一27464 live；T1/T2、REST／MCP／對話、readiness／batch、工作站fit／lift／clamp／左右arm契約皆PASS。14c108實讀lab_simple_verify_real子程序84999與Blender CPU162%，無terminal錯誤；來源/runtime保持凍結，先等同一handle。
+
+- 54255離線全配對穩健性exit0：同一局部守衛匯出資料，正反向×1e-8／1e-7／1e-6m共六輪，每輪1520 clear且invalid空，合計9120；fcl-all-guarded-robustness.json獨立host readback已assert。未並行碰Blender；完整CI27464仍live，T1/T2及REST／MCP協定PASS。裕量比較仍非求解器全域誤差上界／自交／任意運動資格。
+
+- 最新完整CI27464 live（aa4a76），ci-upper-refined.log；來源及runtime凍結，不並行操作Blender。研究匯出已在局部三角化後、世界變換前檢查有限值／封閉／非零面積；b6841e正確拒絕舊上臂。11509修正場景19件／141網格／1520配對、無排除，finally正式場景恢復；7013全1520 clear、無invalid網格，3.06秒，fcl-all-local-guarded.json。此為既有拆卸純平移研究，不是全機任意動作／自交／數值全域誤差／負載資格。下一步先輪詢同一27464。
+
+- 上臂永久守衛擴至八件：31f8e9先RED S_capillary_upper零面積；c8ef41共用refine副本GREEN。build_scene最終邊界擴至兩上臂，93027重建及八件／八壓扁反例通過（兩上臂各9382三角）。研究host後段錯誤沿用前一command的m而失敗，90913f改fresh runpy後平台／導線夾／前臂stack／腕幾何全通過；finally正式場景恢復。upper-build/generated.blend保存。ruff／format／diff通過；未完整CI／提交／升版，無live工作。
+
+- 新研究43546 exit0，export-refined.log：BEAUTY三角化暫存mesh＋Python double世界變換，19件／141網格／1520配對、excluded空；finally正式場景恢復。translation-all-refined.json保存。79326離線fcl-all-refined.json全1520 clear、3.08秒、invalid空。
+- 獨立局部檢查cd7245 RED：refined-local-audit.json共83可見物件，S_capillary_upper一個zero_area，其餘零；所有nonmanifold零。世界座標數值擾動掩蓋局部退化，故上述全綠不具資格。來源尚未改，無live工作。下一步上臂最終來源修復及匯出前局部守衛，不可改容差掩蓋。
+
+- 完整 `scripts/ci.sh --real` session8268已terminal exit0（d59a2c），ci-refined-mesh.log所有hard gates green。正式MCP十一套46案例逐套passed／scene_restored，五全域控制全true；離線46案例亦通過。
+- 共用refine_closed_mesh只在最終兩平台及四導線夾邊界運作；保留封閉、非零面積、原頂點子集與1e-8m位移預算。重合及共線正例、開放及過量合點反例、冪等均由既有真機入口執行。
+- 六件生成網格獨立double面積與有向邊驗證、六壓扁三角反例通過。完整回歸後df6114開回正式arm-seated，fresh command六就座鏈與四導線夾通過；refined-restored-formal.json保存。來源修復不代表全行程碰撞或負載資格。
+- 02F a4163f1已推送；checkpoint20856 exit0，API部署53435 exit0，b207ca／ce1375正式讀回版本02F、11工具／11套46案例、Blender connected及三服務監聽，refined-deployed.json保存。5S已將研究紀錄搬入歷史；共用函式沿用既有模組，無新依賴，readback370行、主驗證379行，未達380預警。無執行中的Blender工作。
+
 
 ### 網格修整與連續平移研究（封存前原始紀錄）
 
