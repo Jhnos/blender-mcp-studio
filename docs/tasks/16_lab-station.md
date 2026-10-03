@@ -28,6 +28,43 @@
 
 ### Verified facts
 
+- V01.0R.02D：完整 `scripts/ci.sh --real` session17505 terminal exit0；`tmp/lab-station-route-engine/ci-transfer-complete.log` 全部hard gates green。離線及正式MCP九套42案例逐項通過；MCP每套scene_restored與四項全域還原／非法輸入控制全true，已重讀新報告。
+- 兩套單頭transfer各188取樣，14階段、13個相鄰邊界狀態一致：工作位鬆鎖、退齒、位移、轉腕、復位、維修位就座；另一頭全程保持鎖定。三關節干涉／已就座面隙與九段線路共用檢查，中途指定障礙反例各一列通過。終點採indexed_target(3,0)，前移4.637651516mm／抬高114.711320431mm。固定取樣不是連續運動資格。
+- ServiceState／ServiceStep加入既有純資料檔，由同一ServiceFixture執行；MCP／離線共用入口，沒有新模組、依賴或公開工具（仍11項）。非有限、矛盾、陣列形狀／可變性、流程分派、障礙辨識均有先紅後綠證據，詳歷史。
+- 完整CI後重新開啟正式arm-seated，再以fresh oracle量測六就座鏈與四導線夾通過，`transfer-restored-formal.json`保存。正式場景仍是`tmp/lab-station-electrode-guides-aligned/arm-seated.blend`；走線配置為`tmp/lab-station-module-configurations/cable-clearance.blend`。
+- 兩張`transfer-seated-{head}.png`／blend由通過狀態重建，產圖前六就座鏈與九段線路再驗；圖片已實際檢視。線長與Ø6mm是研究假設，不能作裁線／製造規格。
+- 5S：研究交接移至歷史；純案例201、配件250、主fixture375行，AGENTS75／CLAUDE7／project skill150。R55、MCP使用說明、機構文件與LESSON同步；架構仍使用既有資料／fixture／service邊界，沒有新增依賴方向。生成證據留tmp。
+
+### Open failures
+
+- 固定取樣不是連續掃掠、任意雙頭組合、材料／拉力或負載資格。個別拆卸路徑以removed前置條件檢查，尚非完整依序拆卸／重裝。
+- 基座／LCD、電路與接口、載荷及實體試印未完成。幫浦／壓力／pH前端／供電板型號與線管外徑已詢問未答，不阻擋機構後續工作。
+- Starlette TestClient偏好httpx2的警告仍待隔離環境相容性驗證；先前只有dry-run，未安裝或修改依賴。
+
+### Next step
+
+- 無live Blender工作。02D已升版、完整CI與正式場景讀回通過；文件／架構／預算／版本及案例56測試已通過；接續提交checkpoint／推送／最終API部署與版本讀回，證據存transfer-deployed.json。封存完成後做按真實先後次序的拆卸／重裝，再處理取樣間隙保守界限及真實接口。
+- 全工作站保持ACTIVE；延續共用資料／執行器，不重寫逐版測試。依使用者持續推進要求，checkpoint後繼續，暫不要求清除對話。
+
+## 歷史驗證紀錄
+
+以下為逐輪證據與當時的下一步；接手只依上方現行段落與任務索引，不能將歷史下一步重新當成主線。
+
+### V01.0R.02D 整合研究交接（封存前）
+
+### Verified facts
+
+- 95560 transfer-registered terminal exit0：兩套正式入口各兩案例全通過、restored=true；毛細管201.65秒／pH253.03秒，皆小於300秒，transfer-registered.json保存。82098兩張transfer-seated-{head}.png／blend產出前重新量六就座鏈及九段線路，已實際檢視，pH圖已展示。
+- 86162 scripts/ci.sh terminal exit0，ci-transfer-static-final.log全部hard gates green。85563／41593先因container-narrowing守衛拒絕（formatter把說明移離呼叫），修正typed欄位不變式註記後獨立守衛及完整CI綠。關節三元组形狀／可變list反例先紅後38focused綠。沒有新模組；純案例202、配件250、主fixture375行；AGENTS75／CLAUDE7／skill150。
+- 49447 API預檢部署exit0；啟動前約48秒尚未監聽，未重啟或改期限，live程序sample顯示事件迴圈，稍後health connected。43830 canonical MCP清單exit0，transfer-preflight-catalog.json實讀九套42案例。版本仍02C，這是完整CI前載入，不是本輪封存或完成資格。R55、MCP說明、機構文件及流程銜接LESSON已更新。
+- 59180完整共用資料重播terminal exit0，376列全通過、416.89秒；另一頭保持三關節全鎖緊，indexed-full-transfer.json保存。新transfer兩套各一頭188取樣＋獨立中途障礙控制已登錄SERVICE_CASES（預期正式目錄九套42案例），沿用ServiceFixture／run_service_cases，不新增模組／依賴或公開工具。
+- 轉移分派反例先紅（transfer-control-red.log，誤走verify_clamps）後59799真機綠；指定中途障礙被拒絕、只有一列控制觀察。控制辨識守衛擴含transfer，無關碰撞不得充當指定障礙。新登錄先KeyError紅→21案例資料測試綠；合計37focused與ruff／全mypy通過。順帶修正離線摘要被service_results覆寫而報錯單線案例數。尚未完整CI／部署／升版提交。
+- 60782 indexed-closure-sequence terminal exit0，180列機構／九段線路零失敗（185.2秒）；工作位鬆鎖與維修位收緊各三關節，已就座關節逐列量面間隙。新ServiceState／ServiceStep及service_transfer_steps加入既有純案例模組，串為每頭188步；兩項測試先因缺介面紅後20綠，階段銜接、起終就座、移動全退齒及非有限／矛盾命令有守衛，ruff與全mypy通過。未接MCP／未完整CI／未升版提交。
+- 6659 indexed-entry-sequence terminal exit0、360.87秒：196列機構／九段線路全通過，兩頭14個相鄰階段的六項姿態參數銜接一致；結果indexed-entry-sequence.json。路徑終點三關節已復位但未收隙，接續驗工作位鬆鎖與維修位收緊。總耗時超單套MCP300秒；整合需保留真實操作邊界與完整覆蓋，不能直接加長期限。
+- 17872 indexed-service-study terminal exit0、34.66秒：indexed_target(3,0)及(1,1)兩候選、兩頭共四列通過；各頭三關節收隙取樣、全就座間隙、全場干涉、九段線路及134／164個別拆件樣本通過，indexed-service-study.json保存。選(3,0)前移4.637651516／抬高114.711320431mm進一步驗路徑；這只是終點研究，拆件時尚未同步線路觀察，不能稱完整流程通過。
+- 02C封存完成：ab35ef0已推送；checkpoint23957、push80386、API部署15254、部署讀回36640皆terminal exit0。service-deployed.json讀回02C、11工具、七套38案例，API／Web／addon皆在監聽。
+- 初始退齒研究：24774在抬高100mm卻強制腕部零角度咬合的起點出現六筆機構碰撞，wrist-raised-zero-release-rejected.json保存；零角度不是抬高後的可咬合齒位。85012改從工作位退腕齒，22取樣通過，wrist-working-release.json保存。
+- 17432 terminal exit0，265.37秒：兩頭各依序退腕、退肘、退肩、抬高、轉腕、復位，共152取樣，機構與九段線路零失敗；十個相鄰階段邊界的五項姿態參數完全一致。service-entry-sequence.json與service-entry-sequence.log保存，host finally已開回正式arm-seated。這是研究，未接入正式MCP，肩肘最後仍退開2mm，亦未涵蓋承壓鏈初始鬆鎖。
 - V01.0R.02C：完整scripts/ci.sh --real **88702 terminal exit0**，tmp/lab-station-route-engine/ci-service-complete.log所有hard gates green。正式MCP七套38案例、各套scene_restored與custom_property_oracle_controls／scene_preserved／exception_restores_scene／unknown_extra_code_missing_model_rejected全部true；mcp-verification.json已逐項重讀。無進行中程序。
 - 878842 fresh開回arm-seated後，六承壓鏈與四導線夾讀回通過，service-restored-formal.json保存。正式場景仍是tmp/lab-station-electrode-guides-aligned/arm-seated.blend；走線通過配置是tmp/lab-station-module-configurations/cable-clearance.blend。
 - ServiceProbe／WRIST_POINTS純資料與ServiceFixture分開，離線及MCP共用run_service_cases。兩頭腕部各32正常取樣；拆件130／156移動與4／8止擋；工作位兩個機構拒絕、兩個套件的線路障礙反例都通過。正式pH頭段family更新為412列研究通過值，其餘八段不變。
@@ -44,12 +81,9 @@
 
 ### Next step
 
-- 本輪機器閘門完成；封存commit後執行checkpoint_check、push、API部署並讀回版本與七套38案例，結果存service-deployed.json。不可重跑已terminal的88702。
+- **目前live：17505完整scripts/ci.sh --real**，ci-transfer-complete.log；source／環境凍結，不啟動第二個Blender工作，輪詢同handle至terminal。靜態86162、兩套正式入口95560、預檢API49447與canonical目錄43830已terminal，不要重跑。完整CI通過後逐項讀engine-verification／mcp-verification九套42案例與恢復控制、開回正式arm-seated讀回六就座鏈，然後5S／升版CHANGELOG／提交checkpoint／推送／最終API部署與版本讀回。全工作站仍ACTIVE，完整順序拆裝未完成。
 - 保留全工作站目標。下一工程項目是按真實先後次序的拆卸／重裝與初始軸向退齒取樣，再處理取樣間隙的保守界限及真實接口；沿用資料／共用執行器，不重寫逐版測試。
 
-## 歷史驗證紀錄
-
-以下為逐輪證據與當時的下一步；接手只依上方現行段落與任務索引，不能將歷史下一步重新當成主線。
 
 ### V01.0R.02C 整合研究交接（封存前）
 

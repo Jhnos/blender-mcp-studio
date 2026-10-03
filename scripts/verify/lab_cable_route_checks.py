@@ -257,10 +257,10 @@ def run(output: Path, *, render: bool = True) -> None:
     path.write_text(json.dumps(report, indent=2))
     require_complete(MOTION_CASES, motions)
     for suite_id, service_cases in SERVICE_CASES.items():
-        results = run_service_cases(suite_id)
-        report[suite_id] = [asdict(row) for row in results]
+        service_results = run_service_cases(suite_id)
+        report[suite_id] = [asdict(row) for row in service_results]
         path.write_text(json.dumps(report, indent=2))
-        require_complete(service_cases, results)
+        require_complete(service_cases, service_results)
     print(
         f"Shared scenarios: {len(controls)} contact, {len(pairs)} wire-pair, "
         f"{len(results)} single-route, {len(bundles)} bundle, {len(chains)} full-chain "

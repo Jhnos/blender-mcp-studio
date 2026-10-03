@@ -202,3 +202,12 @@ MOTION_CASES保留正例與固定4mm方塊反例。反例在純升降中間pH頭
 ServiceProbe與WRIST_POINTS是純資料，ServiceFixture沿用verify_clamps／fit_family／validate_motion，MCP与離線共用run_service_cases。只有明確指定的removed零件可從該步障礙集合排除；快取只重用不可變曲線計算，不保存活動場景的碰撞判定。失敗仍由外層preserve_current_scene恢復。
 
 這是帶前置條件的個別拆件路徑，不是完整依序拆卸與重新裝回的操作資格；取樣間連續掃掠、載荷、材料與實體試印仍需另驗。公開使用仍透過list_verification_suites與run_verification_suite，不接受任意程式或外部路徑。
+
+
+## 已鎖緊工作位至已鎖緊維修位
+
+`electrode-transfer-capillary`與`electrode-transfer-pH_temp`分別調整一頭，另一頭保持工作位三關節貼合。維修目標從域規格的肘第3齒／肩第0齒求得：前移約4.638mm、抬高114.711mm，腕角亦依此位置求可咬合齒位，不使用任意高度上的零腕角。
+
+ServiceState以不可變三元組記錄肩／肘／腕的退齒量及收隙比例，ServiceStep記錄階段；service_transfer_steps串接14階段、每頭188個取樣。依序鬆腕／肘／肩，退腕／肘／肩，移動、转腕，復腕／肘／肩，緊肩／肘／腕。相鄰階段終點與起點相同；移動時三齒面均退開2mm，同一關節不能同時退齒與收緊。
+
+共用ServiceFixture逐步套用絕對姿態，檢查三關節干涉、已就座面間隙與九段定長線路；另一頭的變換不得改變。正常案例保留全部取樣，障礙案例直接重建同一路徑的抬高中點，要求命中自己加入的線路障礙。兩者均由現有MCP／離線登錄執行，恢復原場景。這是剛體幾何與取樣路徑資格，不涵蓋實際旋鈕扭轉／工具操作、完整順序拆裝、連續掃掠或材料承載。

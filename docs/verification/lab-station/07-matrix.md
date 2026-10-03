@@ -58,3 +58,4 @@ Population: R1–R16 為歷史 V10 的 LS_，R17–R24 為 rotary，R25 為 simp
 | R52 | 同一曲線分支於兩頭各11升降姿態維持定長與淨空；兩端淨空的中途方塊反例須拒絕；固定步距不宣稱連續掃掠 | engineering | yes | behavior | artifact:route-engine/engine-verification.json,route-engine/mcp-verification.json,route-engine/motion-pH_temp-050.png |
 | R53 | 共用family以新錨點重驗兩頭各31個升降／前後／混合姿態；身份／尺寸拒絕與固定中途障礙物；不宣稱連續掃掠或任意姿態 | engineering | yes | behavior | artifact:route-engine/engine-verification.json,route-engine/mcp-verification.json |
 | R54 | 單頭腕部32取樣／拆件130或156移動取樣加止擋，另一頭不動；共用MCP情境、工作位與正確障礙拒絕，不宣稱完整順序維修或連續掃掠 | engineering | yes | behavior | artifact:route-engine/engine-verification.json,route-engine/mcp-verification.json,route-engine/service-working-final.json |
+| R55 | 單頭由三關節已就座工作位經14階段188取樣至全就座維修位，鄰頭鎖緊不動；階段銜接、九段線路、中途指定障礙及場景恢復共用MCP檢查 | engineering | yes | behavior | artifact:route-engine/transfer-registered.json,route-engine/engine-verification.json,route-engine/mcp-verification.json |

@@ -93,7 +93,7 @@ arbitrary Python.
 
 ### 登錄測試
 
-先呼叫 `list_verification_suites`，再將回傳的 `suite_id` 傳給 `run_verification_suite`。目前有 `cable-contact-controls`（10個實體／自接觸／跨段、7個線對線正反例）、`electrode-head-routes`（4個獨立探頭端走線姿態）、`electrode-head-bundle`（三線共同工作／各自抬高姿態與一個阻擋反例）、`electrode-full-chains`（三條底座至探頭完整線的工作與各自抬高姿態），以及 `electrode-cable-motion`（以同一組保存參數重驗62個升降／抬高後前後伸縮／混合取樣姿態，另驗升降端點安全但中途受阻的反例）。另有 `electrode-wrist-service`（兩頭各32個退齒／旋轉／復位取樣與障礙反例）及 `electrode-clamp-service`（286個拆件移動取樣、12個止擋，工作位及障礙反例）。六個探頭套件要求目前開啟已生成的工作站電極臂模型；工具不載入、建立或覆寫使用者模型。測試會暫時建立配件或調整臂姿態，完成後恢復姿態、肩肘及腕部退齒屬性（包含原本未建立的屬性）、選取與active object；無法恢復即回報執行錯誤。
+先呼叫 `list_verification_suites`，再將回傳的 `suite_id` 傳給 `run_verification_suite`。目前有 `cable-contact-controls`（10個實體／自接觸／跨段、7個線對線正反例）、`electrode-head-routes`（4個獨立探頭端走線姿態）、`electrode-head-bundle`（三線共同工作／各自抬高姿態與一個阻擋反例）、`electrode-full-chains`（三條底座至探頭完整線的工作與各自抬高姿態），以及 `electrode-cable-motion`（以同一組保存參數重驗62個升降／抬高後前後伸縮／混合取樣姿態，另驗升降端點安全但中途受阻的反例）。另有 `electrode-wrist-service`（兩頭各32個退齒／旋轉／復位取樣與障礙反例）及 `electrode-clamp-service`（286個拆件移動取樣、12個止擋，工作位及障礙反例）。新增 `electrode-transfer-capillary` 與 `electrode-transfer-pH_temp`，各驗一頭由已鎖緊工作位經鬆鎖、退齒、轉位、復位至已鎖緊維修位的188個取樣，以及獨立中途線路障礙反例；另一頭保持鎖緊。八個探頭套件要求目前開啟已生成的工作站電極臂模型；工具不載入、建立或覆寫使用者模型。測試會暫時建立配件或調整臂姿態，完成後恢復姿態、肩肘及腕部退齒屬性（包含原本未建立的屬性）、選取與active object；無法恢復即回報執行錯誤。
 
 本工作站走線套件的通過基準使用 `cable-clearance` 配置；可在Blender開啟 `tmp/lab-station-route-engine/motion-lift-pH_temp-+000-000.blend` 後執行。其他配置仍依實際量測回傳結果，不會因同樣是電極臂模型就自動通過。
 

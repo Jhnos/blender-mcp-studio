@@ -162,7 +162,11 @@ def test_service_catalog_preserves_wrist_samples_and_independent_head_controls()
     catalog = {s.suite_id: s for s in registered_suites()}
     for suite_id, cases in SERVICE_CASES.items():
         assert catalog[suite_id].cases == tuple((c.name, c.expected) for c in cases)
-        assert {c.inputs.head for c in cases if c.expected == "clear"} == {"capillary", "pH_temp"}
+        if cases[0].inputs.operation != "transfer":
+            assert {c.inputs.head for c in cases if c.expected == "clear"} == {
+                "capillary",
+                "pH_temp",
+            }
         assert any(c.expected == "blocked" for c in cases)
     clamps = SERVICE_CASES["electrode-clamp-service"]
     assert {c.inputs.head for c in clamps if c.inputs.control == "working"} == {
@@ -170,3 +174,88 @@ def test_service_catalog_preserves_wrist_samples_and_independent_head_controls()
         "pH_temp",
     }
     assert any(c.inputs.control == "obstacle" for c in clamps)
+
+
+def test_service_transfer_is_contiguous_and_starts_and_ends_seated() -> None:
+    from src.core.domain.lab_station import ElectrodeArmSpec
+    from src.verification.electrode_service_cases import service_transfer_steps
+
+    steps = service_transfer_steps()
+    assert len(steps) == 188
+    assert steps[0].state.forward_mm == steps[0].state.lift_mm == 0
+    assert steps[0].state.closure == steps[-1].state.closure == (1, 1, 1)
+    assert steps[0].state.release_mm == steps[-1].state.release_mm == (0, 0, 0)
+    target = ElectrodeArmSpec().indexed_target(3, shoulder_step=0)
+    assert (steps[-1].state.forward_mm, steps[-1].state.lift_mm) == target
+    boundaries = 0
+    for before, after in zip(steps, steps[1:], strict=False):
+        if before.stage != after.stage:
+            assert before.state == after.state
+            boundaries += 1
+    assert boundaries == 13
+    for step in steps:
+        if step.stage in ("transfer", "rotate"):
+            assert step.state.release_mm == (2, 2, 2)
+            assert step.state.closure == (0, 0, 0)
+    assert {step.stage for step in steps} == {
+        "unseat-tip",
+        "unseat-elbow",
+        "unseat-shoulder",
+        "release-tip",
+        "release-elbow",
+        "release-shoulder",
+        "transfer",
+        "rotate",
+        "reseat-tip",
+        "reseat-elbow",
+        "reseat-shoulder",
+        "seat-shoulder",
+        "seat-elbow",
+        "seat-tip",
+    }
+
+
+def test_service_state_rejects_conflicting_or_nonfinite_joint_commands() -> None:
+    from dataclasses import FrozenInstanceError
+
+    from src.verification.electrode_service_cases import ServiceState
+
+    for kwargs in (
+        {"forward_mm": float("nan")},
+        {"lift_mm": float("inf")},
+        {"angle_deg": float("nan")},
+        {"release_mm": (0, 0, 2.1)},
+        {"closure": (-0.1, 0, 0)},
+        {"closure": (0, 1.1, 0)},
+        {"release_mm": (0, 2, 0), "closure": (0, 0.1, 0)},
+    ):
+        with pytest.raises(ValueError):
+            ServiceState(**kwargs)
+    state = ServiceState()
+    with pytest.raises(FrozenInstanceError):
+        state.lift_mm = 5
+
+
+def test_transfer_catalog_has_independent_heads_and_obstruction_controls() -> None:
+    from src.verification.cable_route_cases import registered_suites
+    from src.verification.electrode_service_cases import SERVICE_CASES
+
+    catalog = {s.suite_id: s for s in registered_suites()}
+    for head in ("capillary", "pH_temp"):
+        key = "electrode-transfer-" + head
+        cases = SERVICE_CASES[key]
+        assert catalog[key].cases == tuple((c.name, c.expected) for c in cases)
+        assert {c.inputs.head for c in cases} == {head}
+        assert {c.inputs.operation for c in cases} == {"transfer"}
+        assert [(c.inputs.control, c.expected) for c in cases] == [
+            ("none", "clear"),
+            ("obstacle", "blocked"),
+        ]
+
+
+def test_service_joint_values_are_immutable_three_joint_records() -> None:
+    from src.verification.electrode_service_cases import ServiceState
+
+    for values in ((0, 0), (0, 0, 0, 0), [0, 0, 0]):
+        with pytest.raises(ValueError):
+            ServiceState(release_mm=values, closure=values)
