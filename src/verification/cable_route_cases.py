@@ -1,6 +1,6 @@
 """Cable test inputs and expectations; importing this registry never requires Blender."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import Literal
 
 from src.core.domain.cable_paths import CubicPath
@@ -16,6 +16,7 @@ class ContactProbe:
     curve: CubicPath
     check: Literal["surface", "self"] = "surface"
     terminal: bool = False
+    prefix: tuple[CubicPath, ...] = ()
 
 
 def surface(
@@ -71,6 +72,26 @@ CONTACT_CASES = (
             "self",
         ),
         "clear",
+    ),
+    Scenario(
+        "chain_join_clear",
+        ContactProbe(
+            RouteBoundary("chain", (0, 0, 0), (60, 0, 0), (1, 0, 0), (1, 0, 0), 70),
+            straight((30, 0, 0), (60, 0, 0)),
+            "self",
+            prefix=(straight((0, 0, 0), (30, 0, 0)),),
+        ),
+        "clear",
+    ),
+    Scenario(
+        "chain_remote_return_rejected",
+        ContactProbe(
+            RouteBoundary("chain-loop", (0, 0, 0), (0, 0, 0), (1, 1, 0), (1, -1, 0), 60),
+            CubicPath(((0, 0, 0), (20, 20, 0), (-20, 20, 0), (0, 0, 0))).split()[1],
+            "self",
+            prefix=(CubicPath(((0, 0, 0), (20, 20, 0), (-20, 20, 0), (0, 0, 0))).split()[0],),
+        ),
+        "nonlocal_self_contact",
     ),
 )
 
@@ -130,6 +151,7 @@ class RoutePose:
     length_mm: float
     lift_mm: float = 0
     preview_stem: str | None = None
+    segment: Literal["base", "joint", "head"] = "head"
 
 
 ROUTE_CASES = (
@@ -155,6 +177,7 @@ class BundlePose:
     ph_temp_lift_mm: float = 0
     obstruction_radius_mm: float | None = None
     preview_stem: str | None = None
+    routes: tuple[RoutePose, ...] = BUNDLE_ROUTES
 
 
 BUNDLE_CASES = (
@@ -173,9 +196,37 @@ BUNDLE_CASES = (
 )
 
 
+CHAIN_SEGMENTS: tuple[Literal["base", "joint", "head"], ...] = ("base", "joint", "head")
+CHAIN_ROUTES = tuple(
+    replace(route, segment=segment, length_mm=length)
+    for route in BUNDLE_ROUTES
+    for segment, length in zip(CHAIN_SEGMENTS, (200, 150, route.length_mm), strict=True)
+)
+CHAIN_CASES = tuple(
+    Scenario(
+        case.name.replace("bundle_", "chain_"),
+        replace(
+            case.inputs,
+            routes=CHAIN_ROUTES,
+            preview_stem=case.inputs.preview_stem.replace("bundle-", "chain-"),
+        ),
+        "found",
+    )
+    for case in BUNDLE_CASES[:3]
+    if case.inputs.preview_stem is not None
+)
+
+
 def registered_suites() -> tuple["VerificationSuite", ...]:
     """Catalog coverage is derived from the exact cases the Blender runner consumes."""
     return (
+        VerificationSuite(
+            "electrode-full-chains",
+            "Electrode full cable chains",
+            "Three connected base/joint/head chains in three sampled poses. "
+            "Provisional exterior base ports; no connector, continuous motion or material qualification.",
+            tuple((case.name, case.expected) for case in CHAIN_CASES),
+        ),
         VerificationSuite(
             "electrode-head-bundle",
             "Electrode head bundle",

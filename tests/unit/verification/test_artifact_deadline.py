@@ -48,3 +48,29 @@ async def test_only_generator_uses_generation_deadline(monkeypatch, skip):
     assert calls == (
         [("read", 180)] if skip else [("generate", GENERATOR_TIMEOUT_S), ("read", 180)]
     )
+
+
+@pytest.mark.parametrize("suite_count", [1, 4])
+def test_offline_suite_batch_budget_scales_without_extending_scene_read(monkeypatch, suite_count):
+    from pathlib import Path
+
+    from scripts.verify import lab_cable_routes_verify_real as cable_gate
+    from src.adapters.verification.authorized_code import VERIFICATION_TIMEOUT_S
+
+    calls = []
+
+    class Oracle:
+        def __init__(self, host, port, timeout):
+            self.timeout = timeout
+
+        def execute(self, code):
+            calls.append(self.timeout)
+            return {}
+
+    monkeypatch.setattr(cable_gate, "BlenderSocketOracle", Oracle)
+    monkeypatch.setattr(
+        cable_gate, "registered_suites", lambda: (None,) * suite_count, raising=False
+    )
+    monkeypatch.setattr(cable_gate, "reload_modules_for", lambda *_: ())
+    cable_gate.verify_cable_routes(Path("/test"))
+    assert calls == [60, VERIFICATION_TIMEOUT_S * suite_count]

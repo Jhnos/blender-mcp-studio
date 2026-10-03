@@ -12,7 +12,7 @@ from src.verification.scenario_runner import Observation, Scenario, require_comp
 
 @pytest.mark.parametrize("case", CONTACT_CASES, ids=lambda case: case.name)
 def test_contact_fixture_path_matches_declared_terminals(case: Scenario[ContactProbe]) -> None:
-    sampled = sample_path((case.inputs.curve,))
+    sampled = sample_path((*case.inputs.prefix, case.inputs.curve))
     assert sampled.points_mm[0] == case.inputs.boundary.start_mm
     assert sampled.points_mm[-1] == case.inputs.boundary.end_mm
     assert case.expected in {
@@ -89,3 +89,22 @@ def test_bundle_catalog_covers_all_three_channels_and_independent_lifts() -> Non
         (c.name, c.expected) for c in BUNDLE_CASES
     )
     assert len(catalog["cable-contact-controls"].cases) == len(CONTACT_CASES) + len(PAIR_CASES)
+
+
+def test_full_chain_matrix_keeps_three_ordered_segments_per_wire() -> None:
+    from src.verification.cable_route_cases import CHAIN_CASES, CHAIN_ROUTES, registered_suites
+
+    assert len(CHAIN_ROUTES) == 9
+    for start in (0, 3, 6):
+        wire = CHAIN_ROUTES[start : start + 3]
+        assert [r.segment for r in wire] == ["base", "joint", "head"]
+        assert len({(r.head, r.channel) for r in wire}) == 1
+    assert [(c.inputs.capillary_lift_mm, c.inputs.ph_temp_lift_mm) for c in CHAIN_CASES] == [
+        (0, 0),
+        (100, 0),
+        (0, 100),
+    ]
+    assert all(c.inputs.routes == CHAIN_ROUTES and c.expected == "found" for c in CHAIN_CASES)
+    assert next(
+        s for s in registered_suites() if s.suite_id == "electrode-full-chains"
+    ).cases == tuple((c.name, c.expected) for c in CHAIN_CASES)

@@ -28,6 +28,33 @@
 
 ### Verified facts
 
+- API44157部署exit0；正式MCP目錄確認四套28案例。86288完整CI terminal exit0，ci-chain.log所有hard gates green；包含四套MCP28案例、正常／例外場景還原及三拒絕控制。
+- V01.0R.028：擴充既有sample_chain／select_route.prefix，同線三段合併查接點、切向、半徑及非局部自碰；BundleFixture改讀配置路徑，異線全段納入occupied。無新模組或依賴；28focused通過，mypy／ruff格式通過（測試import排序曾失敗，已修正）。
+- 研究45614因重載清單漏掉直接引用入口失敗，沒有執行幾何；改從研究入口推導closure，3544 exit0，九段各自淨空且各線串接無自碰。正式共用fixture 50657 exit0，10控制與三個九段姿態通過，chain-focused.json留證。
+- sample_chain單元先缺函式紅→綠；CHAIN_CASES登錄先缺資料紅→綠；整批離線等待預算兩案例先紅→綠，按登錄套件數乘既有300秒，讀場景60秒及單一MCP期限不增。65792共用離線入口terminal exit0，chain-preview.log：10接觸、7線對線、4單段、4頭段組合、3完整鏈，共28案例通過。三張chain-*預覽已實際檢視，底座口仍是假定外部端點。
+
+
+
+- 完整CI後fresh開回arm-seated並讀回六承壓鏈及4導線夾通過，chain-restored-formal.json留證。正式MCP量測報告重讀共28案例。
+- 5S：走線326／配件346／規劃178／案例250行，指示75／7及skill150行，無新模組或依賴。R51、MCP目錄、走線說明與跨段LESSON同步；R50／R51表格斷行修正，027交接移入歷史保留。
+
+### Open failures
+
+- 三條完整線的跨段銜接與三個離散姿態已驗；姿態之間的連續變形、實體接頭、材料／拉力仍未驗。Ø6mm是假設，每條底座200mm／跨肘150mm，加頭段220／170／170mm均僅研究長度。
+- 候選配置雙頭同抬拆蓋仍有碰撞，一次一頭維修研究尚未進入共用情境。底座／LCD、電路、載荷與實體列印待完成。已向使用者詢問幫浦、壓力感測器、pH／供電板型號與線管外徑，未有回覆；可繼續機構驗證。
+
+### Next step
+
+- 86288已terminal exit0，無進行中真機程序。下一工程項目為同一條線在姿態間的變形及單頭維修情境；不能只重選互不連續的候選。部署讀回應為四套28案例。
+- 後續以Scenario資料＋共用執行器＋可清理配件擴充姿態變形與單頭維修；MCP共用同一登錄，不複製逐版測試。走線仍用RouteCase／RouteSearchSpec。
+- 正式場景tmp/lab-station-electrode-guides-aligned/arm-seated.blend，證據tmp/lab-station-route-engine/；完整工作站目標保持ACTIVE。
+
+## 歷史驗證紀錄
+
+以下為逐輪證據與當時的下一步；接手只依上方現行段落與任務索引，不能將歷史下一步重新當成主線。
+
+### V01.0R.027 封存接手
+
 - V01.0R.027：沿用lab_cable_routes加入雙線保守包絡／occupied候選排除；資料表新增7線對線案例與4三線組合情境，無新模組。GitHub查trimesh後保留既有KDTree。PairFixture先因缺pair_hit紅，補實作後通過；30focused測試、ruff及mypy通過。
 - BundleFixture真機77405 exit1，bundle-suite.json保留：只抬pH/temp100mm時，pH150mm的43候選皆碰實體（下臂24／平台被動軸12／卡扣5／平台2）。86068固定170mm研究三姿態各三線通過，bundle-length-study.log／json留證；BUNDLE_ROUTES固定220／170／170mm，非裁線規格。
 - 19560離線入口terminal exit0，bundle-final.log：8接觸、7線對線、4單線、4三線案例全通過；engine-verification.json保存量測。三線工作／分別抬高100mm三張PNG及blend已產出並目視檢查；放大保留線包絡反例須全因wire_contact拒絕。
@@ -37,20 +64,6 @@
 - 正式場景已開回arm-seated；一次讀回腳本誤用不存在的導線模組名後已修正，50652 exit0，六承壓鏈及4導線夾均通過，bundle-restored-formal.json留證。
 - 5S：走線322、配件326、案例199行；指示檔75／7、專案skill150行，無新模組／依賴。來源、R50、MCP使用文件與研究範圍已同步，026交接移到歷史段落保留。封存前22項文件／版本／預算守衛通過。
 
-### Open failures
-
-- 已驗三條頭段的線間距與三個離散姿態；跨段銜接、移動中的連續變形、材料／拉力仍未驗。Ø6mm是假設，220／170／170mm僅幾何研究長度。
-- 候選配置雙頭同抬拆蓋仍有碰撞，一次一頭維修研究尚未進入共用情境。底座／LCD、電路、載荷與實體列印待完成。
-
-### Next step
-
-- 完整CI24112已結束exit0；下一工程項目為跨段銜接及單頭維修情境。部署以正式MCP三套目錄及載入VERSION讀回核對。
-- 後續以Scenario資料＋共用執行器＋可清理配件擴充跨段與單頭維修；MCP共用同一登錄，不複製逐版測試。走線仍用RouteCase／RouteSearchSpec。
-- 正式場景tmp/lab-station-electrode-guides-aligned/arm-seated.blend，證據tmp/lab-station-route-engine/；完整工作站目標保持ACTIVE。
-
-## 歷史驗證紀錄
-
-以下為逐輪證據與當時的下一步；接手只依上方現行段落與任務索引，不能將歷史下一步重新當成主線。
 
 ### V01.0R.026 封存接手
 

@@ -52,3 +52,31 @@ def test_required_bend_radius_is_a_constraint_not_a_render_setting() -> None:
 
 def test_geometry_inspection_can_reach_beyond_twelve_smooth_candidates() -> None:
     assert len(candidates(boundary(), RouteSearchSpec(candidate_count=256))) > 24
+
+
+def test_chain_samples_all_segments_with_shared_join_and_length() -> None:
+    from src.core.planning.cable_path_plan import sample_chain
+
+    first = candidates(boundary(), RouteSearchSpec(candidate_count=8))[0]
+    second = candidates(
+        replace(
+            boundary(),
+            name="second",
+            start_mm=(60, 0, 0),
+            end_mm=(120, 0, 0),
+            start_direction=(0, 0, -1),
+            end_direction=(0, 0, 1),
+        ),
+        RouteSearchSpec(candidate_count=8),
+    )[0]
+    joined = sample_chain((first, second))
+    assert joined.points_mm[0] == first.boundary.start_mm
+    assert joined.points_mm[-1] == second.boundary.end_mm
+    assert joined.length_lower_mm == pytest.approx(300, abs=0.05)
+    assert joined.points_mm.count(first.boundary.end_mm) == 1
+    with pytest.raises(ValueError, match="radius"):
+        sample_chain((first, replace(second, boundary=replace(second.boundary, cable_radius_mm=4))))
+    with pytest.raises(ValueError, match="join"):
+        sample_chain((second, first))
+    with pytest.raises(ValueError, match="empty"):
+        sample_chain(())

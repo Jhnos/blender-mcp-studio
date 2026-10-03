@@ -4,7 +4,18 @@ from dataclasses import dataclass
 from math import dist, isfinite
 from random import Random
 
-from src.core.domain.cable_paths import CubicPath, add, cross, dot, mix, scale, subtract, unit
+from src.core.domain.cable_paths import (
+    CubicPath,
+    SampledPath,
+    add,
+    cross,
+    dot,
+    mix,
+    sample_path,
+    scale,
+    subtract,
+    unit,
+)
 from src.core.domain.lab_station import Point
 
 
@@ -58,6 +69,16 @@ class RouteCandidate:
     parameters_mm: tuple[float, float, float, float, float]
     estimated_length_mm: float
     sampled_min_radius_mm: float
+
+
+def sample_chain(segments: tuple[RouteCandidate, ...]) -> SampledPath:
+    """One wire keeps a uniform radius and connected, co-directed segment joins."""
+    if not segments:
+        raise ValueError("Cable chain cannot be empty")
+    radius = segments[0].boundary.cable_radius_mm
+    if any(segment.boundary.cable_radius_mm != radius for segment in segments):
+        raise ValueError("Cable chain radius must be uniform")
+    return sample_path(tuple(curve for segment in segments for curve in segment.curves))
 
 
 def straight(a: Point, b: Point) -> CubicPath:

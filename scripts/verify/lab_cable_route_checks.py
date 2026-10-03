@@ -16,6 +16,7 @@ from src.core.planning.cable_path_plan import RouteCandidate, RouteSearchSpec
 from src.verification.cable_route_cases import (
     BUNDLE_CASES,
     BUNDLE_ROUTES,
+    CHAIN_CASES,
     CONTACT_CASES,
     PAIR_CASES,
     ROUTE_CASES,
@@ -35,8 +36,13 @@ class ContactFixture:
 
     def observe(self, case: ContactProbe) -> Observation:
         if case.check == "self":
+            if case.prefix and any(
+                routes.nonlocal_self_hit(sample_path((curve,)), case.boundary.cable_radius_mm)
+                for curve in (*case.prefix, case.curve)
+            ):
+                raise ValueError("Chain control requires individually clear segments")
             hit = routes.nonlocal_self_hit(
-                sample_path((case.curve,)), case.boundary.cable_radius_mm
+                sample_path((*case.prefix, case.curve)), case.boundary.cable_radius_mm
             )
             return Observation(str(hit["reason"]) if hit else "clear", {"hit": hit})
         bpy.ops.mesh.primitive_cube_add(size=0.02, location=(2, 2, 2))
@@ -153,13 +159,17 @@ class BundleFixture:
         model.pose("capillary", 0, case.capillary_lift_mm)
         model.pose("pH_temp", 0, case.ph_temp_lift_mm)
         obstacles = routes.RouteObstacles()
-        occupied: list[RouteCandidate] = []
+        wires: dict[tuple[str, int], list[RouteCandidate]] = {}
         reports = []
-        for route in BUNDLE_ROUTES:
+        for route in case.routes:
+            key = (route.head, route.channel)
+            prefix = tuple(wires.get(key, []))
+            occupied = tuple(s for k, segments in wires.items() if k != key for s in segments)
             selected, report = routes.select_route(
-                routes.RouteCase(route.head, route.channel, "head", route.length_mm),
+                routes.RouteCase(route.head, route.channel, route.segment, route.length_mm),
                 RouteSearchSpec(candidate_count=256),
-                occupied=tuple(occupied),
+                occupied=occupied,
+                prefix=prefix,
                 obstacles=obstacles,
             )
             reports.append({"found": selected is not None, **report})
@@ -171,26 +181,30 @@ class BundleFixture:
                     raise ValueError(
                         "Obstruction control must reject candidates specifically on wire contact"
                     )
-                return Observation("not_found", {"routes": reports, "expected_routes": 3})
-            if not occupied and case.obstruction_radius_mm is not None:
+                return Observation(
+                    "not_found", {"routes": reports, "expected_routes": len(case.routes)}
+                )
+            if not wires and case.obstruction_radius_mm is not None:
                 selected = replace(
                     selected,
                     boundary=replace(selected.boundary, cable_radius_mm=case.obstruction_radius_mm),
                 )
-            occupied.append(selected)
-        if len(occupied) != 3:
+            wires.setdefault(key, []).append(selected)
+        if len(wires) != 3:
             raise ValueError("Bundle requires capillary, pH and temperature head routes")
         if self.output is not None and case.preview_stem:
             colors = ((0.05, 0.25, 0.85, 1), (0.85, 0.15, 0.05, 1), (0.02, 0.55, 0.25, 1))
-            for selected, color in zip(occupied, colors, strict=True):
-                routes.draw_route(selected, color)
+            for segments, color in zip(wires.values(), colors, strict=True):
+                for selected in segments:
+                    routes.draw_route(selected, color)
             save_preview(self.output, case.preview_stem)
         return Observation(
             "found",
             {
                 "routes": reports,
                 "pair_count": 3,
-                "scope": "Three head segments in one sampled pose",
+                "segment_count": len(case.routes),
+                "scope": "Three wires with declared connected segments in one sampled pose",
             },
         )
 
@@ -227,9 +241,14 @@ def run(output: Path, *, render: bool = True) -> None:
     report["bundle_evidence"] = [asdict(row) for row in bundles]
     path.write_text(json.dumps(report, indent=2))
     require_complete(BUNDLE_CASES, bundles)
+    chains = run_scenarios(CHAIN_CASES, bundle_fixture.observe, bundle_fixture.cleanup)
+    report["chain_cases"] = [asdict(case) for case in CHAIN_CASES]
+    report["chain_evidence"] = [asdict(row) for row in chains]
+    path.write_text(json.dumps(report, indent=2))
+    require_complete(CHAIN_CASES, chains)
     print(
         f"Shared scenarios: {len(controls)} contact, {len(pairs)} wire-pair, "
-        f"{len(results)} single-route and {len(bundles)} bundle cases passed"
+        f"{len(results)} single-route, {len(bundles)} bundle and {len(chains)} full-chain cases passed"
     )
 
 
@@ -294,13 +313,14 @@ def run_registered(suite_id: str) -> dict[str, object]:
             results = run_scenarios(CONTACT_CASES, fixture.observe, fixture.cleanup)
             pair_fixture = PairFixture()
             results += run_scenarios(PAIR_CASES, pair_fixture.observe, pair_fixture.cleanup)
-        elif suite_id == "electrode-head-bundle":
+        elif suite_id in ("electrode-head-bundle", "electrode-full-chains"):
             if "electrode_configuration" not in bpy.context.scene:
                 raise ValueError(
                     "Open a generated lab-station electrode assembly before running this suite"
                 )
             bundle_fixture = BundleFixture()
-            results = run_scenarios(BUNDLE_CASES, bundle_fixture.observe, bundle_fixture.cleanup)
+            cases = CHAIN_CASES if suite_id == "electrode-full-chains" else BUNDLE_CASES
+            results = run_scenarios(cases, bundle_fixture.observe, bundle_fixture.cleanup)
         elif suite_id == "electrode-head-routes":
             if "electrode_configuration" not in bpy.context.scene:
                 raise ValueError(

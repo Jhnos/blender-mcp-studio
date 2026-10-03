@@ -19,6 +19,7 @@ from src.core.planning.cable_path_plan import (
     RouteCandidate,
     RouteSearchSpec,
     candidates,
+    sample_chain,
 )
 
 
@@ -235,6 +236,7 @@ def select_route(
     search: RouteSearchSpec | None = None,
     *,
     occupied: tuple[RouteCandidate, ...] = (),
+    prefix: tuple[RouteCandidate, ...] = (),
     obstacles: RouteObstacles | None = None,
 ) -> tuple[RouteCandidate | None, dict[str, object]]:
     search = search or RouteSearchSpec()
@@ -254,7 +256,8 @@ def select_route(
         ):
             attempts.append({"reason": "length_interval"})
             continue
-        self_hit = nonlocal_self_hit(sampled, request.cable_radius_mm)
+        connected = sample_chain((*prefix, candidate)) if prefix else sampled
+        self_hit = nonlocal_self_hit(connected, request.cable_radius_mm)
         if self_hit is not None:
             attempts.append(self_hit)
             continue
@@ -289,6 +292,7 @@ def select_route(
                 "selected_parameters_mm": candidate.parameters_mm,
                 "curve_controls_mm": [c.controls_mm for c in candidate.curves],
                 "occupied_routes": [route.boundary.name for route in occupied],
+                "connected_segments": [route.boundary.name for route in (*prefix, candidate)],
                 "scope": "One pose; checked against declared occupied routes only. No material or motion qualification",
             }
         attempts.append(hit)
