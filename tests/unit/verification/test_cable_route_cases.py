@@ -61,3 +61,31 @@ def test_real_bootstrap_reloads_cases_runner_and_production_measurements() -> No
         "scripts.lab_cable_routes",
         "scripts.model_lab_platform",
     } <= set(closure)
+
+
+def test_bundle_catalog_covers_all_three_channels_and_independent_lifts() -> None:
+    from src.verification.cable_route_cases import (
+        BUNDLE_CASES,
+        BUNDLE_ROUTES,
+        PAIR_CASES,
+        registered_suites,
+    )
+
+    assert [(c.inputs.capillary_lift_mm, c.inputs.ph_temp_lift_mm) for c in BUNDLE_CASES[:3]] == [
+        (0, 0),
+        (100, 0),
+        (0, 100),
+    ]
+    assert [(r.head, r.channel, r.length_mm) for r in BUNDLE_ROUTES] == [
+        ("capillary", 0, 220),
+        ("pH_temp", 0, 170),
+        ("pH_temp", 1, 170),
+    ]
+    assert BUNDLE_CASES[-1].expected == "not_found"
+    assert BUNDLE_CASES[-1].inputs.obstruction_radius_mm == 500
+    assert {c.expected for c in PAIR_CASES} == {"clear", "wire_contact"}
+    catalog = {s.suite_id: s for s in registered_suites()}
+    assert catalog["electrode-head-bundle"].cases == tuple(
+        (c.name, c.expected) for c in BUNDLE_CASES
+    )
+    assert len(catalog["cable-contact-controls"].cases) == len(CONTACT_CASES) + len(PAIR_CASES)

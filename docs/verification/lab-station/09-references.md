@@ -72,3 +72,5 @@ GitHub 查找 `electrode holder 3d print clamp pH probe` 與分片夾座，檢�
 - [pytest-dev/pytest](https://github.com/pytest-dev/pytest)、[pytest參數化](https://docs.pytest.org/en/stable/how-to/parametrize.html)：沿用現有pytest執行純Python案例矩陣；Blender端使用同樣的案例／配件分離方式，重用本專案VerificationEvidence與VerificationSummary。未新增測試框架、第三方程式碼或依賴。
 
 - [FastMCP官方工具文件原始碼](https://github.com/PrefectHQ/fastmcp/blob/main/docs/servers/tools.mdx)：沿用現有FastMCP typed output、ToolError與工具annotations；不引入新的MCP server或背景worker，透過同一AppRuntime及BlenderPort提供登錄測試。
+
+- 線對線擴充前檢索GitHub [trimesh proximity](https://github.com/mikedh/trimesh/blob/main/trimesh/proximity.py)：提供網格與點鄰近查询；本案已有Blender KDTree與保守曲線取樣，沿用既有模組建立線包絡檢查，不新增網格依賴或另一套碰撞框架。

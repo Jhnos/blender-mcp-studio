@@ -21,7 +21,7 @@ def test_rest_uses_shared_service_for_catalog_run_and_errors() -> None:
     app = create_app(runtime=runtime, require_identity=False)
     assert app.state.verification is runtime.verification
     with TestClient(app) as client:
-        assert len(client.get("/api/verification/suites").json()) == 2
+        assert len(client.get("/api/verification/suites").json()) == len(registered_suites())
         result = client.post("/api/verification/suites/cable-contact-controls/run")
         assert result.status_code == 200 and result.json()["passed"] is False
         verification.run.assert_awaited_once_with("cable-contact-controls")

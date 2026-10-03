@@ -3,7 +3,7 @@
 import json
 from collections.abc import Iterator
 from contextlib import contextmanager
-from dataclasses import asdict
+from dataclasses import asdict, replace
 from pathlib import Path
 
 import bpy
@@ -12,8 +12,18 @@ from scripts import lab_cable_routes as routes
 from scripts import model_lab_platform as model
 from scripts.lab_station_render import configure_electrode_view
 from src.core.domain.cable_paths import sample_path
-from src.core.planning.cable_path_plan import RouteSearchSpec
-from src.verification.cable_route_cases import CONTACT_CASES, ROUTE_CASES, ContactProbe, RoutePose
+from src.core.planning.cable_path_plan import RouteCandidate, RouteSearchSpec
+from src.verification.cable_route_cases import (
+    BUNDLE_CASES,
+    BUNDLE_ROUTES,
+    CONTACT_CASES,
+    PAIR_CASES,
+    ROUTE_CASES,
+    BundlePose,
+    ContactProbe,
+    PairProbe,
+    RoutePose,
+)
 from src.verification.scenario_runner import Observation, require_complete, run_scenarios
 
 
@@ -63,18 +73,51 @@ class ContactFixture:
                 bpy.data.meshes.remove(mesh)
 
 
+class PairFixture:
+    @staticmethod
+    def observe(case: PairProbe) -> Observation:
+        first = sample_path((case.first,), step_mm=case.step_mm)
+        second = sample_path((case.second,), step_mm=case.step_mm)
+        hit = routes.pair_hit(first, case.first_radius_mm, second, case.second_radius_mm)
+        reverse = routes.pair_hit(second, case.second_radius_mm, first, case.first_radius_mm)
+        if bool(hit) != bool(reverse):
+            raise ValueError("Wire contact must be symmetric")
+        return Observation("wire_contact" if hit else "clear", {"hit": hit})
+
+    @staticmethod
+    def cleanup(case: PairProbe) -> None:
+        pass
+
+
+def reset_heads(*, previews: bool = False) -> None:
+    for obj in list(bpy.data.objects):
+        if previews and obj.name.startswith("RESEARCH_route_"):
+            data = obj.data
+            bpy.data.objects.remove(obj, do_unlink=True)
+            if isinstance(data, bpy.types.Curve) and data.users == 0:
+                bpy.data.curves.remove(data)
+    for head in ("capillary", "pH_temp"):
+        model.pose(head)
+    bpy.context.view_layer.update()
+
+
+def save_preview(output: Path, stem: str) -> None:
+    scene = configure_electrode_view()
+    scene.render.resolution_x = 1000
+    scene.render.resolution_y = 850
+    scene.render.resolution_percentage = 100
+    scene.render.filepath = str(output / (stem + ".png"))
+    bpy.ops.render.render(write_still=True)
+    bpy.ops.wm.save_as_mainfile(filepath=str(output / (stem + ".blend")))
+
+
 class RouteFixture:
     def __init__(self, output: Path, *, render: bool) -> None:
         self.output = output
         self.render = render
 
     def cleanup(self, case: RoutePose) -> None:
-        for obj in list(bpy.data.objects):
-            if self.render and obj.name.startswith("RESEARCH_route_"):
-                bpy.data.objects.remove(obj, do_unlink=True)
-        for head in ("capillary", "pH_temp"):
-            model.pose(head)
-        bpy.context.view_layer.update()
+        reset_heads(previews=self.render)
 
     def observe(self, case: RoutePose) -> Observation:
         self.cleanup(case)
@@ -85,13 +128,7 @@ class RouteFixture:
         )
         if selected is not None and self.render and case.preview_stem:
             routes.draw_route(selected, (0.04, 0.05, 0.06, 1))
-            scene = configure_electrode_view()
-            scene.render.resolution_x = 1000
-            scene.render.resolution_y = 850
-            scene.render.resolution_percentage = 100
-            scene.render.filepath = str(self.output / (case.preview_stem + ".png"))
-            bpy.ops.render.render(write_still=True)
-            bpy.ops.wm.save_as_mainfile(filepath=str(self.output / (case.preview_stem + ".blend")))
+            save_preview(self.output, case.preview_stem)
         return Observation(
             "found" if selected is not None else "not_found",
             {
@@ -102,14 +139,73 @@ class RouteFixture:
         )
 
 
+class BundleFixture:
+    """All selected head routes share one obstacle snapshot and reserve earlier envelopes."""
+
+    def __init__(self, output: Path | None = None) -> None:
+        self.output = output
+
+    def cleanup(self, case: BundlePose) -> None:
+        reset_heads(previews=self.output is not None)
+
+    def observe(self, case: BundlePose) -> Observation:
+        self.cleanup(case)
+        model.pose("capillary", 0, case.capillary_lift_mm)
+        model.pose("pH_temp", 0, case.ph_temp_lift_mm)
+        obstacles = routes.RouteObstacles()
+        occupied: list[RouteCandidate] = []
+        reports = []
+        for route in BUNDLE_ROUTES:
+            selected, report = routes.select_route(
+                routes.RouteCase(route.head, route.channel, "head", route.length_mm),
+                RouteSearchSpec(candidate_count=256),
+                occupied=tuple(occupied),
+                obstacles=obstacles,
+            )
+            reports.append({"found": selected is not None, **report})
+            if selected is None:
+                if case.obstruction_radius_mm is not None and (
+                    not report.get("wire_rejections")
+                    or report.get("wire_rejections") != report.get("candidate_count")
+                ):
+                    raise ValueError(
+                        "Obstruction control must reject candidates specifically on wire contact"
+                    )
+                return Observation("not_found", {"routes": reports, "expected_routes": 3})
+            if not occupied and case.obstruction_radius_mm is not None:
+                selected = replace(
+                    selected,
+                    boundary=replace(selected.boundary, cable_radius_mm=case.obstruction_radius_mm),
+                )
+            occupied.append(selected)
+        if len(occupied) != 3:
+            raise ValueError("Bundle requires capillary, pH and temperature head routes")
+        if self.output is not None and case.preview_stem:
+            colors = ((0.05, 0.25, 0.85, 1), (0.85, 0.15, 0.05, 1), (0.02, 0.55, 0.25, 1))
+            for selected, color in zip(occupied, colors, strict=True):
+                routes.draw_route(selected, color)
+            save_preview(self.output, case.preview_stem)
+        return Observation(
+            "found",
+            {
+                "routes": reports,
+                "pair_count": 3,
+                "scope": "Three head segments in one sampled pose",
+            },
+        )
+
+
 def run(output: Path, *, render: bool = True) -> None:
     output.mkdir(parents=True, exist_ok=True)
     contact_fixture = ContactFixture()
     controls = run_scenarios(CONTACT_CASES, contact_fixture.observe, contact_fixture.cleanup)
+    pair_fixture = PairFixture()
+    pairs = run_scenarios(PAIR_CASES, pair_fixture.observe, pair_fixture.cleanup)
     report: dict[str, object] = {
         "schema_version": 2,
         "controls": {row.evidence.name: row.evidence.passed for row in controls},
         "control_evidence": [asdict(row) for row in controls],
+        "pair_evidence": [asdict(row) for row in pairs],
         "control_cases": [asdict(case) for case in CONTACT_CASES],
         "route_cases": [asdict(case) for case in ROUTE_CASES],
         "rows": [],
@@ -117,14 +213,23 @@ def run(output: Path, *, render: bool = True) -> None:
     path = output / "engine-verification.json"
     path.write_text(json.dumps(report, indent=2))
     require_complete(CONTACT_CASES, controls)
+    require_complete(PAIR_CASES, pairs)
     fixture = RouteFixture(output, render=render)
     results = run_scenarios(ROUTE_CASES, fixture.observe, fixture.cleanup)
     report["route_evidence"] = [asdict(row) for row in results]
     report["rows"] = [dict(row.measurements) for row in results]
     path.write_text(json.dumps(report, indent=2))
     require_complete(ROUTE_CASES, results)
+    bundle_fixture = BundleFixture(output if render else None)
+    bundles = run_scenarios(BUNDLE_CASES, bundle_fixture.observe, bundle_fixture.cleanup)
+    report["bundle_cases"] = [asdict(case) for case in BUNDLE_CASES]
+    report["bundle_routes"] = [asdict(route) for route in BUNDLE_ROUTES]
+    report["bundle_evidence"] = [asdict(row) for row in bundles]
+    path.write_text(json.dumps(report, indent=2))
+    require_complete(BUNDLE_CASES, bundles)
     print(
-        f"Shared scenario runner: {len(controls)} contact cases and {len(results)} route cases passed"
+        f"Shared scenarios: {len(controls)} contact, {len(pairs)} wire-pair, "
+        f"{len(results)} single-route and {len(bundles)} bundle cases passed"
     )
 
 
@@ -187,6 +292,15 @@ def run_registered(suite_id: str) -> dict[str, object]:
         if suite_id == "cable-contact-controls":
             fixture = ContactFixture()
             results = run_scenarios(CONTACT_CASES, fixture.observe, fixture.cleanup)
+            pair_fixture = PairFixture()
+            results += run_scenarios(PAIR_CASES, pair_fixture.observe, pair_fixture.cleanup)
+        elif suite_id == "electrode-head-bundle":
+            if "electrode_configuration" not in bpy.context.scene:
+                raise ValueError(
+                    "Open a generated lab-station electrode assembly before running this suite"
+                )
+            bundle_fixture = BundleFixture()
+            results = run_scenarios(BUNDLE_CASES, bundle_fixture.observe, bundle_fixture.cleanup)
         elif suite_id == "electrode-head-routes":
             if "electrode_configuration" not in bpy.context.scene:
                 raise ValueError(

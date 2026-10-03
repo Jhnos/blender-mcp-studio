@@ -28,6 +28,32 @@
 
 ### Verified facts
 
+- V01.0R.027：沿用lab_cable_routes加入雙線保守包絡／occupied候選排除；資料表新增7線對線案例與4三線組合情境，無新模組。GitHub查trimesh後保留既有KDTree。PairFixture先因缺pair_hit紅，補實作後通過；30focused測試、ruff及mypy通過。
+- BundleFixture真機77405 exit1，bundle-suite.json保留：只抬pH/temp100mm時，pH150mm的43候選皆碰實體（下臂24／平台被動軸12／卡扣5／平台2）。86068固定170mm研究三姿態各三線通過，bundle-length-study.log／json留證；BUNDLE_ROUTES固定220／170／170mm，非裁線規格。
+- 19560離線入口terminal exit0，bundle-final.log：8接觸、7線對線、4單線、4三線案例全通過；engine-verification.json保存量測。三線工作／分別抬高100mm三張PNG及blend已產出並目視檢查；放大保留線包絡反例須全因wire_contact拒絕。
+- 部署API64673 exit0。15556正式MCP初始連線502、尚未進套件；健康檢查恢復後70943 terminal exit0，mcp-bundle-rechecked.log：三套23案例、場景完整還原、三拒絕控制及例外恢復通過。24112完整CI terminal exit0，ci-bundle.log所有hard gates green。
+
+
+- 正式場景已開回arm-seated；一次讀回腳本誤用不存在的導線模組名後已修正，50652 exit0，六承壓鏈及4導線夾均通過，bundle-restored-formal.json留證。
+- 5S：走線322、配件326、案例199行；指示檔75／7、專案skill150行，無新模組／依賴。來源、R50、MCP使用文件與研究範圍已同步，026交接移到歷史段落保留。封存前22項文件／版本／預算守衛通過。
+
+### Open failures
+
+- 已驗三條頭段的線間距與三個離散姿態；跨段銜接、移動中的連續變形、材料／拉力仍未驗。Ø6mm是假設，220／170／170mm僅幾何研究長度。
+- 候選配置雙頭同抬拆蓋仍有碰撞，一次一頭維修研究尚未進入共用情境。底座／LCD、電路、載荷與實體列印待完成。
+
+### Next step
+
+- 完整CI24112已結束exit0；下一工程項目為跨段銜接及單頭維修情境。部署以正式MCP三套目錄及載入VERSION讀回核對。
+- 後續以Scenario資料＋共用執行器＋可清理配件擴充跨段與單頭維修；MCP共用同一登錄，不複製逐版測試。走線仍用RouteCase／RouteSearchSpec。
+- 正式場景tmp/lab-station-electrode-guides-aligned/arm-seated.blend，證據tmp/lab-station-route-engine/；完整工作站目標保持ACTIVE。
+
+## 歷史驗證紀錄
+
+以下為逐輪證據與當時的下一步；接手只依上方現行段落與任務索引，不能將歷史下一步重新當成主線。
+
+### V01.0R.026 封存接手
+
 - 測試模組化已於025封存。使用者明確更正為整合MCP（非MVP），授權公開目錄由九項擴至十一項；新增list_verification_suites／run_verification_suite。
 - 新VerificationService經窄port取得typed量測，REST與MCP注入同一AppRuntime服務／序列化Blender port。目錄由同一案例表推導兩套：8接觸控制、4探頭走線；不接受任意程式或路徑。漏跑、重複、錯誤套件、偽造成功與未恢復場景均拒絕；真實檢查未通過則回passed=false報告。
 - 公開驗證保留目前模型、原始transform欄位、關節屬性與選取，清除自己建立的物件和mesh。單獨正式MCP93114 exit0（mcp-final-rechecked.log）：12案例、未知名稱／多餘code／缺模型三拒絕、非預設姿態、例外恢復通過；獨立socket前後快照核對物件、網格、姿態、選取、目前檔案與render path。
@@ -37,20 +63,6 @@
 - 正式arm-seated場景還原41822 exit0，六承壓鏈與required導線夾fresh重讀通過，mcp-restored-formal.json留證。34項文件／版本／架構／budget守衛通過。
 - 5S：MCP adapter305、Blender配件212、新真機入口127行，指示檔75／7、專案skill150行；沿用Scenario／VerificationSummary與marker解碼，無外部依賴。架構SSOT／AST錨點、工具目錄、ADR007、R49、使用說明與兩條LESSONS守衛同步；HTML已實際渲染檢視，產物留tmp。
 
-### Open failures
-
-- 四個走線案例仍各自獨立，整束線間距、跨段、中間變形與材料／拉力未驗。Ø6mm是假設；220／150mm不是裁線規格。
-- 候選配置雙頭同抬拆蓋仍有碰撞，一次一頭維修研究尚未進入共用情境。底座／LCD、電路、載荷與實體列印待完成。
-
-### Next step
-
-- 本輪MCP整合已通過完整CI並升版026；无執行中的CI。後續從共用案例與走線模組擴充跨段／線間距，不新增逐版入口。
-- 後續以Scenario資料＋共用執行器＋可清理配件擴充；MCP共用同一登錄，不複製逐版測試。走線仍用RouteCase／RouteSearchSpec。
-- 正式場景tmp/lab-station-electrode-guides-aligned/arm-seated.blend，證據tmp/lab-station-route-engine/。下一工程項目為跨段／線間距與單頭維修情境；完整工作站目標保持ACTIVE。
-
-## 歷史驗證紀錄
-
-以下為逐輪證據與當時的下一步；接手只依上方現行段落與任務索引，不能將歷史下一步重新當成主線。
 
 ### V01.0R.025 封存接手
 

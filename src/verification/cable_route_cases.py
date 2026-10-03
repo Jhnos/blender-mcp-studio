@@ -76,6 +76,54 @@ CONTACT_CASES = (
 
 
 @dataclass(frozen=True, slots=True)
+class PairProbe:
+    first: CubicPath
+    second: CubicPath
+    first_radius_mm: float = 3
+    second_radius_mm: float = 3
+    step_mm: float = 0.15
+
+
+PAIR_CASES = (
+    Scenario(
+        "pair_unequal_radius_clear",
+        PairProbe(straight((0, 0, 0), (30, 0, 0)), straight((0, 7, 0), (30, 7, 0)), 1, 5),
+        "clear",
+    ),
+    Scenario(
+        "pair_parallel_clear",
+        PairProbe(straight((0, 0, 0), (30, 0, 0)), straight((0, 8, 0), (30, 8, 0))),
+        "clear",
+    ),
+    Scenario(
+        "pair_tangent_rejected",
+        PairProbe(straight((0, 0, 0), (30, 0, 0)), straight((0, 6, 0), (30, 6, 0))),
+        "wire_contact",
+    ),
+    Scenario(
+        "pair_crossing_between_samples",
+        PairProbe(straight((-5, 0, 0), (5, 0, 0)), straight((0, -5, 0), (0, 5, 0)), 0.1, 0.1, 20),
+        "wire_contact",
+    ),
+    Scenario(
+        "pair_spatial_clear",
+        PairProbe(straight((0, 0, 0), (30, 0, 0)), straight((15, -15, 8), (15, 15, 8))),
+        "clear",
+    ),
+    Scenario(
+        "pair_unequal_radius_rejected",
+        PairProbe(straight((0, 0, 0), (30, 0, 0)), straight((0, 6, 0), (30, 6, 0)), 1, 5),
+        "wire_contact",
+    ),
+    Scenario(
+        "pair_negative_coordinates",
+        PairProbe(straight((-30, 0, 0), (-1, 0, 0)), straight((-30, -8, 0), (-1, -8, 0))),
+        "clear",
+    ),
+)
+
+
+@dataclass(frozen=True, slots=True)
 class RoutePose:
     head: Literal["capillary", "pH_temp"]
     channel: int
@@ -94,14 +142,52 @@ ROUTE_CASES = (
 )
 
 
+BUNDLE_ROUTES = (
+    RoutePose("capillary", 0, 220),
+    RoutePose("pH_temp", 0, 170),
+    RoutePose("pH_temp", 1, 170),
+)
+
+
+@dataclass(frozen=True, slots=True)
+class BundlePose:
+    capillary_lift_mm: float = 0
+    ph_temp_lift_mm: float = 0
+    obstruction_radius_mm: float | None = None
+    preview_stem: str | None = None
+
+
+BUNDLE_CASES = (
+    Scenario("bundle_working", BundlePose(preview_stem="bundle-working"), "found"),
+    Scenario(
+        "bundle_capillary_raised",
+        BundlePose(capillary_lift_mm=100, preview_stem="bundle-capillary-raised"),
+        "found",
+    ),
+    Scenario(
+        "bundle_ph_temp_raised",
+        BundlePose(ph_temp_lift_mm=100, preview_stem="bundle-ph-temp-raised"),
+        "found",
+    ),
+    Scenario("bundle_obstruction_rejected", BundlePose(obstruction_radius_mm=500), "not_found"),
+)
+
+
 def registered_suites() -> tuple["VerificationSuite", ...]:
     """Catalog coverage is derived from the exact cases the Blender runner consumes."""
     return (
         VerificationSuite(
+            "electrode-head-bundle",
+            "Electrode head bundle",
+            "Three head segments checked together in working and independent raised poses, "
+            "plus an obstruction control. No cross-segment, continuous motion or material qualification.",
+            tuple((case.name, case.expected) for case in BUNDLE_CASES),
+        ),
+        VerificationSuite(
             "cable-contact-controls",
             "Cable contact controls",
             "Synthetic clearance/contact checks; no material or load qualification.",
-            tuple((case.name, case.expected) for case in CONTACT_CASES),
+            tuple((case.name, case.expected) for case in (*CONTACT_CASES, *PAIR_CASES)),
         ),
         VerificationSuite(
             "electrode-head-routes",

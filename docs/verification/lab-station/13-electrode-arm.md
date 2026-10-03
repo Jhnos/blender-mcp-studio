@@ -141,6 +141,16 @@ MCP與REST使用同一組案例與執行器，工具與使用方式見 [[../../1
 
 輸出：`tmp/lab-station-electrode-guides-aligned/electrode-concept.blend`、`working.png`、`raised.png`、`extended.png`、`screen_folded.png`、`verification.json`、`red-disconnection.json`、`retainer-detail.png`、`red-retainer.json`、`clamp-detail.png`、`clamp-exploded.png`、`red-service-in-cup.json`、`red-clamp-stop.json`、`elbow-released.png`、`red-elbow-engagement.json`、`indexed-raised.png`、`red-between-indices.json`、`arm-seated.png`、`arm-seated.blend`、`seated-file-check.json`、`red-unseated-chain.json`、`service.png`、`service.blend`、`red-forearm-stack.json`、`red-clamp-bolt-collision.json`、`released-untilted-service.json`。`service.blend` 另由 fresh addon 命令重新讀取，確認兩腕約 19.313°、閉鏈／避碰及完整拆裝，紀錄 `service-file-check.json`；另含 `wrist-detail.png`、`red-wrist-stack.json`、`red-wrist-floor.json`、`red-carrier-retainer.json`、`red-pin-service-blocked.json`；service 讀回另含 156 個全場插銷抽出樣本。新增 `red-unseated-shoulder.json`；無製造 STL 發布。
 
+## 三條探頭端線路共同檢查
+
+沿用RouteCase與同一候選搜尋，`occupied`宣告已選路徑，每個新候選同時查機構、自接觸與這些路徑的包絡。線對線門檻使用兩線半徑、各自半個最大取樣步距與曲線偏差之和；最近點查詢沿用Blender KDTree。沒有把零厚度中心線不相交當成線管不碰撞。
+
+PAIR_CASES包含平行淨空、剛好相切、兩個取樣点之間的交叉、三維錯開、不等半徑的相切／淨空及負座標，正反方向結果必須相同。BUNDLE_CASES宣告工作、只抬毛細管100mm、只抬pH／溫度100mm及放大保留路徑的阻擋反例；反例必須確實由wire_contact拒絕全部候選。三條路徑共用當次姿態的實體快照，案例由同一Scenario執行器執行並接入MCP登錄。
+
+三線組合的配置資料固定毛細管220mm、pH與溫度各170mm，三姿態使用同一組長度；150mm的pH抬高反例保留在bundle-suite.json，所有候選被真實臂件拒絕。170mm研究於三姿態各三線均找到候選，完整證據由engine-verification.json的bundle_evidence保存。預覽藍色為毛細管、橙色為pH、綠色為溫度線。
+
+本組僅檢查下臂導線夾至探頭的三條區段；基座與跨肘區段、姿態間連續變形、材料半徑與線長仍需另驗。順序式有界搜尋找不到組合不等於不存在解，不得把失敗靜默跳過或改寫預期。
+
 ## 腕部整組收隙與三關節同時貼合
 
 腕部沿用肘部的四接面收隙次序，總行程 0.7 mm；相對名義位置，螺母 −0.2、螺栓 +0.5、旋鈕 +0.3、夾頭與全部探頭／夾具 +0.2 mm，三角平台固定。四接面分別為螺栓頭／旋鈕、旋鈕／夾頭、夾頭齒面／平台、平台／螺母。這是剛體間隙閉合，不是螺紋扭矩或彈性預緊。

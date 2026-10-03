@@ -10,6 +10,7 @@ from scripts.verify.generated_artifact_verify_real import BlenderSocketOracle
 from scripts.verify.mcp_verify_real import DEFAULT_MCP_URL
 from src.adapters.blender_response import decode_marked_json, execute_code_output, sequence
 from src.infrastructure.narrowing import as_str_keyed_exact, required
+from src.verification.cable_route_cases import registered_suites
 
 ROOT = Path(__file__).resolve().parents[2]
 SNAPSHOT = """import bpy,json,hashlib
@@ -58,7 +59,8 @@ bpy.data.objects['S_capillary_lower']['elbow_release_mm']=.123
             assert {"list_verification_suites", "run_verification_suite"} <= {t.name for t in tools}
             catalog = await client.call_tool("list_verification_suites", {})
             assert not catalog.is_error
-            for suite_id, count in (("cable-contact-controls", 8), ("electrode-head-routes", 4)):
+            for suite in registered_suites():
+                suite_id, count = suite.suite_id, len(suite.cases)
                 result = await client.call_tool("run_verification_suite", {"suite_id": suite_id})
                 data = required(
                     result.structured_content,
@@ -117,7 +119,9 @@ except RuntimeError as error:
             json.dumps(evidence, indent=2)
         )
         print(
-            "MCP: 2 suites, 12 measured cases, scene preservation and 3 rejection controls passed"
+            f"MCP: {len(registered_suites())} suites, "
+            f"{sum(len(s.cases) for s in registered_suites())} measured cases, "
+            "scene preservation and 3 rejection controls passed"
         )
     finally:
         oracle.execute(f"import bpy\nbpy.ops.wm.open_mainfile(filepath={str(restore)!r})")

@@ -207,12 +207,40 @@ def nonlocal_self_hit(sampled: SampledPath, radius_mm: float) -> dict[str, objec
     return None
 
 
+def pair_hit(
+    first: SampledPath, first_radius_mm: float, second: SampledPath, second_radius_mm: float
+) -> dict[str, object] | None:
+    """Conservative pair envelope includes both paths' unsampled-step/deviation bounds."""
+    threshold = first.inspection_radius_mm(first_radius_mm) + second.inspection_radius_mm(
+        second_radius_mm
+    )
+    tree = KDTree(len(second.points_mm))
+    for index, point_mm in enumerate(second.points_mm):
+        tree.insert(Vector(point_mm), index)
+    tree.balance()
+    for index, point_mm in enumerate(first.points_mm):
+        _, other, distance = tree.find(Vector(point_mm))
+        if distance <= threshold:
+            return {
+                "reason": "wire_contact",
+                "samples": [index, other],
+                "distance_mm": float(distance),
+                "threshold_mm": threshold,
+            }
+    return None
+
+
 def select_route(
-    case: RouteCase, search: RouteSearchSpec | None = None
+    case: RouteCase,
+    search: RouteSearchSpec | None = None,
+    *,
+    occupied: tuple[RouteCandidate, ...] = (),
+    obstacles: RouteObstacles | None = None,
 ) -> tuple[RouteCandidate | None, dict[str, object]]:
     search = search or RouteSearchSpec()
     request = measure(case)
-    obstacles = RouteObstacles()
+    obstacles = obstacles or RouteObstacles()
+    neighbours = [(route, sample_path(route.curves)) for route in occupied]
     attempts: list[dict[str, object]] = []
     choices = candidates(request, search)
     for candidate in choices:
@@ -230,6 +258,22 @@ def select_route(
         if self_hit is not None:
             attempts.append(self_hit)
             continue
+        wire_hit = next(
+            (
+                {**hit, "other_route": route.boundary.name}
+                for route, other in neighbours
+                if (
+                    hit := pair_hit(
+                        sampled, request.cable_radius_mm, other, route.boundary.cable_radius_mm
+                    )
+                )
+                is not None
+            ),
+            None,
+        )
+        if wire_hit is not None:
+            attempts.append(wire_hit)
+            continue
         hit = obstacles.first_hit(
             sampled, request, probe_name(case) if case.segment == "head" else None
         )
@@ -244,7 +288,8 @@ def select_route(
                 "sampled_min_radius_mm": candidate.sampled_min_radius_mm,
                 "selected_parameters_mm": candidate.parameters_mm,
                 "curve_controls_mm": [c.controls_mm for c in candidate.curves],
-                "scope": "One geometric route in one pose; no wire-pair, material or motion qualification",
+                "occupied_routes": [route.boundary.name for route in occupied],
+                "scope": "One pose; checked against declared occupied routes only. No material or motion qualification",
             }
         attempts.append(hit)
     return None, {
@@ -253,6 +298,7 @@ def select_route(
         "boundary": asdict(request),
         "candidate_count": len(choices),
         "rejected": attempts,
+        "wire_rejections": sum(row.get("reason") == "wire_contact" for row in attempts),
         "scope": "No clear candidate in this bounded search; not a proof that no path exists",
     }
 
