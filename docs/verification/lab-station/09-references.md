@@ -61,3 +61,8 @@ GitHub 查找 `electrode holder 3d print clamp pH probe` 與分片夾座，檢�
 - [cqparts 文件](https://cqparts.github.io/cqparts/doc/)：參數化 Part／Assembly 分工；作接口與配置分離參考。
 - [blender-cad](https://github.com/Fleynaro/blender-cad)：Blender 宣告式可重用零件建模；不引入另一個建模依賴。
 - 本專案已有 hand instance registry、domain spec 與產生器鏈，電極臂沿用此分工；未複製上述專案程式碼。此輪是抽取既有邏輯，不新增一個 CAD 引擎或複製每版腳本。
+
+## 曲線與走線共用化（2026-10-03）
+
+- [dhermes/bezier](https://github.com/dhermes/bezier)、[官方Curve文件](https://bezier.readthedocs.io/en/stable/python/reference/bezier.curve.html)：比較既有曲線求值、細分及長度工具。沿用本專案研究中的三次曲線形式，抽成小型純Python領域運算與Blender檢查邊界；未複製第三方程式碼，未加入數值套件或二進位依賴。
+- 搜尋結果只證明有既有工具，不構成此裝置的走線或材料資格；本地直線／圓弧、長度上下界、正反例與實體案例才是實作證據。

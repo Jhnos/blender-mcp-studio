@@ -28,6 +28,32 @@
 
 ### Verified facts
 
+- 共用柔性走線入口已建立：`cable_paths.py` 純毫米曲線與保守細分、`cable_path_plan.py` 不可變邊界／搜尋配置與候選、`lab_cable_routes.py` Blender錨點量測／實體與自接觸檢查／呈現。後續變體只改 `RouteCase`／`RouteSearchSpec`，不複製生成器。
+- V01.0R.024：18項曲線／規劃單元測試通過；單獨真機73888及完整CI28222均terminal exit0，all hard gates green；日誌 `tmp/lab-station-route-engine/ci-route-engine.log`。完整CI再次通過8個控制、4個單線單姿態案例與既有全部回歸。
+- 毛細管頭段220mm研究長度，在工作／單頭抬高100mm的幾何候選分別拒絕39／19個候選後找到淨空線路；取樣最小曲率半徑約12.78／15.96mm。pH與溫度頭段150mm工作位亦找到候選。報告保存配置、錨點、控制點、長度上下界和拒絕原因。
+- 曲線長度以弦長／控制多邊形長度夾住；碰撞半徑含取樣步距與曲線偏差餘量。終端只能接在實際外向表面，完全埋入、自接觸、穿透、半徑變大及鏡射網格有真機對照。保留全部有界候選，避免平順排序提前截斷可行路徑；新教訓与測試同步。
+- 5S：現有023配置入口及69件讀回沿用；新模組142／157／276行，真機入口83行，低於380預警；無新依賴或公開工具。先查bezier GitHub與官方文件，來源見09-references；生成資料仍只在tmp。
+
+### Open failures
+
+- 以上四案例各自獨立，尚未證明整組線束、跨段線間距、中間變形、材料最小半徑、保持力與拉力。Ø6mm是假設；220／150mm不是裁線規格。
+- cable-clearance仍是候選配置；雙頭同抬拆蓋有碰撞，研究的一次一頭298維修樣本尚未整合成共用操作情境。
+- 整機底座／LCD、電路、載荷、材料及實體列印資格仍未完成，沒有可宣稱整機合格的製造STL。
+
+### Next step
+
+- 完整CI28222已terminal exit0，無正在執行的驗證。兩張毛細管預覽已檢視；正式場景重新開啟、fresh命令查六承壓鏈與導線夾，證據 `tmp/lab-station-route-engine/restored-formal.json`。Blender仍須串行，逾時先排空同一handle。
+- 之後從同一走線入口擴充跨段／線對線與連續姿態檢查，另將單頭維修次序資料化。禁止複製逐版產生器或source字串替換。
+- 正式場景仍為 `tmp/lab-station-electrode-guides-aligned/arm-seated.blend`；路徑研究在 `tmp/lab-station-route-engine/`，配置研究在 `tmp/lab-station-module-configurations/`。
+
+## 歷史驗證紀錄
+
+以下為逐輪證據與當時的下一步；接手只依上方現行段落與任務索引，不能將歷史下一步重新當成主線。
+
+### V01.0R.023 封存接手
+
+### Verified facts
+
 - V01.0R.023：完整 `scripts/ci.sh --real` 87822 terminal exit0，所有 hard gates green，日誌 `tmp/lab-station-module-configurations/ci-module-configurations.log`。T1/T2、既有電極臂完整動作／拆装／承壓／讀回，及新配置讀回均通過。
 - `scripts/lab_electrode_module.py` 從主檔搬出93行零件建構；主檔306行，domain367行，clamp288行，未提高380行預警門檻。`ProbeHeadSpec`、`ElectrodeAssemblySpec` 與唯讀 `ELECTRODE_ASSEMBLIES` 保持尺寸／位置唯一來源。`build_scene(configuration, output=...)` 共用入口，輸出隔離，場景存 `electrode_configuration`。
 - baseline 與 cable-clearance 均69件，共用入口連建原版、候選、候選重建：單殼／非流形、夾座與探頭實際14mm偏移、杯位−6mm、另一頭／腕軸／平台不變、重建不累加皆通過。`configuration-readback.json` 是整套CI中的證據；先前34509單獨重建亦通過。
@@ -48,9 +74,6 @@
 - 規格在 `src/core/domain/lab_station.py`，零件建構在 `scripts/lab_electrode_module.py`，組裝入口在 `scripts/model_lab_platform.py`；配置真機閘門在 `scripts/verify/lab_electrode_readback_real.py::verify_electrode_configurations`，由既有lab_simple real入口呼叫。試作可直接傳dataclass，不改或複製建模函式。
 - 已跑完整CI87822 terminal exit0，無執行中的驗證。Blender操作仍必須串行，執行中不改產生器；逾時先查同一handle。正式視圖還原guides-aligned/arm-seated，配置產出在module-configurations/，不要開舊offset-head當最新候選。
 
-## 歷史驗證紀錄
-
-以下為逐輪證據與當時的下一步；接手只依上方現行段落與任務索引，不能將歷史下一步重新當成主線。
 
 ### V01.0R.022 封存接手
 

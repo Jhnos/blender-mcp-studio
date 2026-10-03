@@ -4,8 +4,9 @@ Read this file first after a new conversation, compaction, or terminal restart.
 
 ## 接手
 
-- **目前在做（2026-10-03）:** 任務16，V01.0R.023 共用電極臂模組。不可變配置同步夾座／探頭／杯位，原版與候選使用同一入口；69件讀回及重建不累加通過。完整 `scripts/ci.sh --real` 87822 terminal exit0、all hard gates green，證據 `tmp/lab-station-module-configurations/ci-module-configurations.log`；兩配置已重新開檔核對設定並產出預覽。下一步依使用者要求將走線研究收斂成共通設定與檢查入口，禁止再複製逐版產生器，然後處理毛細管端干涉。無執行中的CI。接手讀任務16 hand-off。
-- **研究接手:** `tmp/lab-station-full-route/README.md` 收錄被拒絕偏移、114/114 活動樣本、承壓／腕齒、一次抬一頭維修298樣本、pH端走線通過與毛細管端仍干涉；最新候選 `cup6-working.blend`。此前51抬升雙線研究見 `tmp/lab-station-cable-lift/README.md`。所有研究仍非完整線路／載荷／材料資格，Ø6線包絡暫定；新共用產生器未宣稱完成製造資格。V01.0R.022歷史證據保留在任務16歷史段；十份旧夾座產生器移到研究archive-generators，後續改配置。
+- **目前在做（2026-10-03）:** 任務16，V01.0R.024 共用柔性走線模組。純曲線domain、資料化候選planning、Blender量測／碰撞adapter共用入口，禁止複製逐版產生器。完整 `scripts/ci.sh --real` 28222 terminal exit0、all hard gates green，日誌 `tmp/lab-station-route-engine/ci-route-engine.log`。18項單元測試、8控制／4單線姿態案例通過。正式場景已還原並fresh核對六承壓鏈與導線夾。無執行中的CI；接手讀任務16 hand-off。
+- **下一步／研究接手:** 由共用走線入口擴充跨段、線對線及連續姿態檢查，並把一次抬一頭維修順序資料化。新報告、兩張毛細管預覽在 `tmp/lab-station-route-engine/`；220mm毛細管頭段工作／抬高100mm已有幾何候選，但不是裁線或材料資格。舊研究 `tmp/lab-station-full-route/README.md` 的114活動／298單頭維修及失敗歷史仍保留；十份舊產生器在archive-generators，不作新入口。全走線、底座／LCD、電路與物理資格仍未完成。
+
 - **等驗收:** 15 場景清單不再只有十個;對話路徑第一次有真機閘門(`--real` 32 條全綠)。下一個是 14 第五個實例。
 - 13 已驗收歸檔:對話現在能呼叫本專案自己的產生器。
 - **在等使用者的:** 印。工作單已交付——07 的 V3 試片七項,以及 `hand-gripper` 九節。
