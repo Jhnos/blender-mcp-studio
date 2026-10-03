@@ -2,6 +2,7 @@
 
 from dataclasses import dataclass
 from math import atan2, cos, degrees, dist, isfinite, radians, sin, sqrt
+from types import MappingProxyType
 from typing import ClassVar
 
 Point = tuple[float, float, float]
@@ -275,3 +276,92 @@ class CableGuideSpec:
     @property
     def channel_x_mm(self) -> float:
         return self.arm_cavity_mm[0] / 2 + self.wall_mm + self.bore_mm / 2
+
+
+@dataclass(frozen=True, slots=True)
+class ProbeHeadSpec:
+    """One wrist interface and a configurable collar; coordinates are local mm."""
+
+    dual: bool = False
+    forward_mm: float = 0.0
+    inward_mm: float = 0.0
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.dual, bool) or not all(
+            isfinite(v) and 0 <= v <= 14 for v in (self.forward_mm, self.inward_mm)
+        ):
+            raise ValueError("Probe head offsets must be finite within the 0–14 mm study envelope")
+        if (
+            self.inward_mm > 8
+            or self.jaw.jaw_depth_mm / 2 - self.inward_mm < -4.2 - self.mount_offset_mm - 3
+        ):
+            raise ValueError("Probe head inward offset exceeds the neck overlap envelope")
+
+    @property
+    def mount_offset_mm(self) -> float:
+        return -21 if self.dual else -20
+
+    @property
+    def jaw(self) -> ProbeClampSpec:
+        return ProbeClampSpec(
+            jaw_width_mm=20,
+            jaw_depth_mm=46 if self.dual else 30,
+            bolt_y_mm=(-18, 18) if self.dual else (-8, 8),
+        )
+
+    @property
+    def jaw_origin_mm(self) -> Point:
+        return -self.forward_mm, -self.inward_mm, -38 if self.dual else -20
+
+    @property
+    def neck_size_mm(self) -> Point:
+        z = self.jaw_origin_mm[2]
+        relief = 12 if self.forward_mm else 8
+        return 8 + self.forward_mm, 8, -z - relief
+
+    @property
+    def neck_center_mm(self) -> Point:
+        z = self.jaw_origin_mm[2]
+        return (
+            4.4 - self.forward_mm / 2,
+            -4.2 - self.mount_offset_mm,
+            (z if self.forward_mm else z - 4) / 2,
+        )
+
+    def probe_shift_mm(self, side: int) -> Point:
+        if side not in (-1, 1):
+            raise ValueError("Probe head side must be -1 or 1")
+        return side * self.inward_mm, self.forward_mm, 0
+
+
+@dataclass(frozen=True, slots=True)
+class ElectrodeAssemblySpec:
+    """Instance data for the existing shoulder/four-bar/wrist module family."""
+
+    capillary: ProbeHeadSpec = ProbeHeadSpec()
+    ph_temperature: ProbeHeadSpec = ProbeHeadSpec(dual=True)
+    vessel_shift_mm: Point = (3.5, 0, 0)
+
+    def __post_init__(self) -> None:
+        if self.capillary.dual or not self.ph_temperature.dual:
+            raise ValueError("Assembly probe populations must match their head interfaces")
+        if len(self.vessel_shift_mm) != 3 or not all(isfinite(v) for v in self.vessel_shift_mm):
+            raise ValueError("Vessel placement must be a finite mm vector")
+
+    def head(self, label: str) -> ProbeHeadSpec:
+        if label == "capillary":
+            return self.capillary
+        if label == "pH_temp":
+            return self.ph_temperature
+        raise ValueError("Unknown electrode head: " + label)
+
+
+# Read-only presets are instance data; arbitrary custom dataclasses use the same builder.
+ELECTRODE_ASSEMBLIES = MappingProxyType(
+    {
+        "baseline": ElectrodeAssemblySpec(),
+        "cable-clearance": ElectrodeAssemblySpec(
+            ph_temperature=ProbeHeadSpec(dual=True, forward_mm=14), vessel_shift_mm=(3.5, -6, 0)
+        ),
+    }
+)

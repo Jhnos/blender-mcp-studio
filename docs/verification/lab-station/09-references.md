@@ -55,3 +55,9 @@ GitHub 查找 `electrode holder 3d print clamp pH probe` 與分片夾座，檢�
 查閱 [BlenderHarnessTools](https://github.com/PhilBladen/BlenderHarnessTools) 的線束與最小彎曲半徑可視化，以及 [beziers.py](https://github.com/simoncozens/beziers.py) 的曲線操作範圍。沿用 Blender 幾何與標準三次曲線解析式做可重現研究，未複製外部碼、安裝插件或新增生產模組；固定線長、端點切向、實體及線間距分開檢查。
 
 [igus 彎曲半徑選型說明](https://www.igus.com/company/energy-chains-select-bend-radius-cable-carrier-ca) 要求遵循線材製造商的最小半徑。其頁面引用的舊版規範不當作本案現行合規判準；Ø6 mm 只是包絡，未取得各電纜／氣管的實際規格前，不以外徑倍率宣称可反覆彎折或寿命合格。
+
+## 參數化模組復用（2026-10-03）
+
+- [cqparts 文件](https://cqparts.github.io/cqparts/doc/)：參數化 Part／Assembly 分工；作接口與配置分離參考。
+- [blender-cad](https://github.com/Fleynaro/blender-cad)：Blender 宣告式可重用零件建模；不引入另一個建模依賴。
+- 本專案已有 hand instance registry、domain spec 與產生器鏈，電極臂沿用此分工；未複製上述專案程式碼。此輪是抽取既有邏輯，不新增一個 CAD 引擎或複製每版腳本。

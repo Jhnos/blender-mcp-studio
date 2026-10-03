@@ -5,12 +5,12 @@ from __future__ import annotations
 import json
 import math
 import shutil
+from dataclasses import asdict
 from pathlib import Path
 
 import bpy
 from mathutils import Matrix, Vector
 
-from scripts.blender_mesh_primitives import add_cylinder, assign, boolean, loft_rings
 from scripts.hollow_hinge_render import look_at
 from scripts.lab_electrode_check import (
     verify_clamps as verify_clamps,
@@ -55,6 +55,8 @@ from scripts.lab_electrode_closure import (
     verify_seated as verify_seated,
 )
 from scripts.lab_electrode_closure import verify_take_up as verify_take_up
+from scripts.lab_electrode_module import bake as bake
+from scripts.lab_electrode_module import build as build
 from scripts.lab_electrode_motion import motion_report, verify_shoulder_transfer
 from scripts.lab_electrode_motion import verify_service_tilt as verify_service_tilt
 from scripts.lab_electrode_motion import verify_wrist_faces as verify_wrist_faces
@@ -65,95 +67,22 @@ from scripts.lab_electrode_routes import build_guides, render_guide_detail, veri
 from scripts.lab_electrode_routes import verify_guide_controls as verify_guide_controls
 from scripts.lab_electrode_routes import verify_guides as verify_guides
 from scripts.lab_station_arm import finish_arm
-from scripts.lab_station_clamp import compact_probe_head
-from scripts.lab_station_joints import electrode_joint_teeth, hand_knob_hardware, retained_pivot
+from scripts.lab_station_joints import electrode_joint_teeth
 from scripts.lab_station_render import (
     configure_electrode_view,
     render_electrode_details,
     render_electrode_seated,
 )
 from scripts.lab_station_rig import set_electrode_service_tilt, set_electrode_wrist_pose, set_pose
-from scripts.model_lab_simple import link, verify_clearance
-from src.core.domain.lab_station import ElectrodeArmSpec
+from scripts.model_lab_simple import verify_clearance
+from src.core.domain.lab_station import (
+    ELECTRODE_ASSEMBLIES,
+    ElectrodeArmSpec,
+    ElectrodeAssemblySpec,
+)
 
 ROOT = Path(__file__).resolve().parents[1]
 OUTPUT = ROOT / "tmp/lab-station-electrode-guides-aligned"
-
-
-def bake(obj: bpy.types.Object, side: int) -> None:
-    obj.data.transform(obj.matrix_world)
-    obj.matrix_world = Matrix.Identity(4)
-    if side > 0:
-        obj.data.transform(Matrix.Diagonal((-1, 1, 1, 1)))
-    finish_arm(obj)
-
-
-def build(label: str) -> None:
-    side = -1 if label == "capillary" else 1
-    prefix = "S_" + label + "_"
-    mat = bpy.data.objects[prefix + "upper"].data.materials[0]
-    for suffix, x in (("upper", 4.2), ("lower", -4.2)):
-        bpy.data.objects.remove(bpy.data.objects[prefix + suffix], do_unlink=True)
-        obj = link(prefix + suffix, x, mat, radius_mm=11)
-        if suffix == "upper":
-            boolean(obj, add_cylinder("E_TOOL", 11, 8, (x, 0, 126), "X"), "UNION")
-            finish_arm(obj)
-            boolean(obj, add_cylinder("E_TOOL", 2.7, 40, (x, 0, 126), "X"), "DIFFERENCE")
-            finish_arm(obj)
-        if suffix == "upper":
-            for z in (0, 150):
-                boolean(
-                    obj, add_cylinder("E_TOOL", 4.8, 5, (6.6, 0, z), "X", vertices=6), "DIFFERENCE"
-                )
-                finish_arm(obj)
-        bake(obj, side)
-    obj = link(prefix + "follower", -4.2, mat, radius_mm=11)
-    bake(obj, side)
-    spec = ElectrodeArmSpec()
-    vertices = ((0, 0), (0, -24), (spec.platform_offset_mm, 0))
-    obj = loft_rings(prefix + "platform", [[(x, y, z) for y, z in vertices] for x in (0.2, 8.2)])
-    assign(obj, mat)
-    for y, z in vertices:
-        boolean(
-            obj, add_cylinder("E_TOOL", spec.platform_boss_radius_mm, 8, (4.2, y, z), "X"), "UNION"
-        )
-        finish_arm(obj)
-    for y, z in vertices:
-        boolean(obj, add_cylinder("E_TOOL", 2.7, 30, (4.2, y, z), "X"), "DIFFERENCE")
-        finish_arm(obj)
-    boolean(
-        obj,
-        add_cylinder("E_TOOL", 4.8, 5, (6.6, spec.platform_offset_mm, 0), "X", vertices=6),
-        "DIFFERENCE",
-    )
-    bake(obj, side)
-    bpy.data.objects.remove(bpy.data.objects[prefix + "head"], do_unlink=True)
-    for obj in compact_probe_head(label, mat):
-        bake(obj, side)
-    for obj in bpy.data.objects:
-        if obj.name.startswith(prefix + "probe_"):
-            obj.data.transform(Matrix.Translation(((-24.2 if side < 0 else 24.2) / 1000, 0, 0)))
-    for joint in ("proximal", "distal", "carrier"):
-        for obj in retained_pivot(
-            prefix + joint + "_", mat, axial_float_mm=2 if joint == "carrier" else 0
-        ):
-            obj.matrix_world = (
-                Matrix.Translation((0.0084, 0, 0))
-                @ Matrix.Diagonal((-1, 1, 1, 1))
-                @ obj.matrix_world
-            )
-            bake(obj, side)
-    for joint in ("shoulder", "elbow", "tip"):
-        for suffix in ("bolt", "nut"):
-            bpy.data.objects.remove(bpy.data.objects[prefix + joint + "_" + suffix], do_unlink=True)
-        for obj in hand_knob_hardware(
-            prefix + joint + "_",
-            mat,
-            bpy.data.materials["S_metal"],
-            8.5 if joint == "tip" else 12.5,
-            depth_mm=7.5 if joint == "tip" else 10,
-        ):
-            bake(obj, side)
 
 
 def pose(
@@ -284,11 +213,15 @@ def render_wrist_release() -> None:
     configure_electrode_view()
 
 
-def build_scene() -> None:
-    OUTPUT.mkdir(parents=True, exist_ok=True)
+def build_scene(
+    configuration: ElectrodeAssemblySpec = ELECTRODE_ASSEMBLIES["baseline"],
+    *,
+    output: Path = OUTPUT,
+) -> None:
+    output.mkdir(parents=True, exist_ok=True)
     for name in ("motion-capillary.json", "motion-pH_temp.json", "verification.json"):
-        (OUTPUT / name).unlink(missing_ok=True)
-    baseline = OUTPUT / "baseline.blend"
+        (output / name).unlink(missing_ok=True)
+    baseline = output / "baseline.blend"
     shutil.copyfile(ROOT / "tmp/lab-station-simple/simple-concept.blend", baseline)
     for obj in list(bpy.data.objects):
         bpy.data.objects.remove(obj, do_unlink=True)
@@ -298,15 +231,16 @@ def build_scene() -> None:
         if obj is not None:
             bpy.context.collection.objects.link(obj)
     for name in ("LS_FIT_spill_dish", "LS_REF_vessel_250ml_ENVELOPE"):
-        bpy.data.objects[name].location.x += 0.0035
+        bpy.data.objects[name].location += Vector(configuration.vessel_shift_mm) / 1000
     bpy.context.view_layer.update()
     for label in ("capillary", "pH_temp"):
-        build(label)
+        build(label, configuration.head(label))
         pose(label)
     for joint in ("elbow", "shoulder", "tip"):
         for label in ("capillary", "pH_temp"):
             electrode_joint_teeth(label, finish_arm, joint)
     build_guides()
+    bpy.context.scene["electrode_configuration"] = json.dumps(asdict(configuration), sort_keys=True)
 
 
 def verify_scene(label: str | None = None) -> None:

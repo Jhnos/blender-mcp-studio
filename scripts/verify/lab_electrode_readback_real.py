@@ -93,3 +93,81 @@ print('Saved shoulder transfer endpoint passed three bearing chains and pins')
 bpy.ops.wm.open_mainfile(filepath=str(model['OUTPUT'] / 'arm-seated.blend'))
 """
     print(BlenderSocketOracle("127.0.0.1", 9876, timeout=30).execute(code))
+
+
+def verify_electrode_configurations(script: Path) -> None:
+    """Rebuild variants through one entry and read meshes, never patch source strings."""
+    code = f"""import bpy, bmesh, runpy, json
+from pathlib import Path
+model = runpy.run_path({str(script)!r})
+output = model['ROOT'] / 'tmp/lab-station-module-configurations'
+output.mkdir(parents=True, exist_ok=True)
+def snapshot():
+    rows = {{}}
+    for obj in bpy.data.objects:
+        if obj.type != 'MESH' or not obj.name.startswith('S_'):
+            continue
+        rows[obj.name] = {{
+            'bounds': [[min(v.co[i] for v in obj.data.vertices), max(v.co[i] for v in obj.data.vertices)] for i in range(3)],
+            'matrix': [list(row) for row in obj.matrix_world],
+        }}
+        if obj.get('compact_head_part') and not obj.get('nominal_hardware'):
+            mesh = bmesh.new()
+            mesh.from_mesh(obj.data)
+            try:
+                if any(not edge.is_manifold for edge in mesh.edges):
+                    raise ValueError('Configured head is not manifold: ' + obj.name)
+                pending = set(mesh.verts)
+                stack = [pending.pop()]
+                while stack:
+                    vertex = stack.pop()
+                    for edge in vertex.link_edges:
+                        other = edge.other_vert(vertex)
+                        if other in pending:
+                            pending.remove(other)
+                            stack.append(other)
+                if pending:
+                    raise ValueError('Configured head has disconnected material: ' + obj.name)
+            finally:
+                mesh.free()
+    return rows
+reports = {{}}
+for preset in ('baseline', 'cable-clearance', 'cable-clearance'):
+    spec = model['ELECTRODE_ASSEMBLIES'][preset]
+    model['build_scene'](spec, output=output / preset)
+    actual = json.loads(bpy.context.scene['electrode_configuration'])
+    expected = json.loads(json.dumps(model['asdict'](spec)))
+    if actual != expected:
+        raise ValueError('Saved configuration differs from builder input')
+    current = snapshot()
+    for label in ('capillary', 'pH_temp'):
+        model['verify_pose'](label)
+    vessel = list(bpy.data.objects['LS_REF_vessel_250ml_ENVELOPE'].location)
+    if preset == 'baseline':
+        baseline, base_vessel = current, vessel
+    else:
+        if current.keys() != baseline.keys():
+            raise ValueError('Configured build changed the part population')
+        for name, original in baseline.items():
+            if name.startswith('S_capillary_') and current[name] != original:
+                raise ValueError('Independent capillary module changed')
+            shifted = name.startswith('S_pH_temp_') and ('_clamp_' in name or '_probe_' in name)
+            if shifted:
+                for axis in range(3):
+                    delta = 0.014 if axis == 1 else 0
+                    if any(abs(a - b - delta) > 1e-6 for a, b in zip(current[name]['bounds'][axis], original['bounds'][axis])):
+                        raise ValueError('Configured collar/probe shift mismatch: ' + name)
+        for suffix in ('tip_bolt', 'platform', 'upper', 'lower'):
+            if current['S_pH_temp_' + suffix] != baseline['S_pH_temp_' + suffix]:
+                raise ValueError('Wrist or arm interface changed')
+        if any(abs(a - b - delta) > 1e-6 for a, b, delta in zip(vessel, base_vessel, (0, -0.006, 0))):
+            raise ValueError('Configured vessel shift mismatch')
+        if preset in reports and reports[preset] != current:
+            raise ValueError('Repeated build accumulated configuration offsets')
+    reports[preset] = current
+    bpy.ops.wm.save_as_mainfile(filepath=str(output / (preset + '.blend')))
+(output / 'configuration-readback.json').write_text(json.dumps({{'presets': list(reports), 'part_counts': {{key: len(value) for key, value in reports.items()}}, 'repeat_matches': True}}, indent=2))
+print('Shared builder: baseline, variant and repeated variant passed mesh readback')
+bpy.ops.wm.open_mainfile(filepath=str(model['OUTPUT'] / 'arm-seated.blend'))
+"""
+    print(BlenderSocketOracle("127.0.0.1", 9876, timeout=300).execute(code))

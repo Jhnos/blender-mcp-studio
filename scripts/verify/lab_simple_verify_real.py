@@ -3,7 +3,10 @@
 from pathlib import Path
 
 from scripts.verify.generated_artifact_verify_real import BlenderSocketOracle
-from scripts.verify.lab_electrode_readback_real import verify_saved_electrode
+from scripts.verify.lab_electrode_readback_real import (
+    verify_electrode_configurations,
+    verify_saved_electrode,
+)
 from src.verification.generator_imports import reload_modules_for
 
 
@@ -365,6 +368,7 @@ bpy.ops.wm.open_mainfile(filepath=str(model['OUTPUT'] / 'arm-seated.blend'))
     # Fault injections run only after generation returns, in the same unchanged scene.
     print(BlenderSocketOracle("127.0.0.1", 9876, timeout=300).execute(code))
     verify_saved_electrode(script)
+    verify_electrode_configurations(script)
 
 
 if __name__ == "__main__":

@@ -28,6 +28,34 @@
 
 ### Verified facts
 
+- V01.0R.023：完整 `scripts/ci.sh --real` 87822 terminal exit0，所有 hard gates green，日誌 `tmp/lab-station-module-configurations/ci-module-configurations.log`。T1/T2、既有電極臂完整動作／拆装／承壓／讀回，及新配置讀回均通過。
+- `scripts/lab_electrode_module.py` 從主檔搬出93行零件建構；主檔306行，domain367行，clamp288行，未提高380行預警門檻。`ProbeHeadSpec`、`ElectrodeAssemblySpec` 與唯讀 `ELECTRODE_ASSEMBLIES` 保持尺寸／位置唯一來源。`build_scene(configuration, output=...)` 共用入口，輸出隔離，場景存 `electrode_configuration`。
+- baseline 與 cable-clearance 均69件，共用入口連建原版、候選、候選重建：單殼／非流形、夾座與探頭實際14mm偏移、杯位−6mm、另一頭／腕軸／平台不變、重建不累加皆通過。`configuration-readback.json` 是整套CI中的證據；先前34509單獨重建亦通過。
+- 原始配置測試因缺少規格介面而紅；76536實體差異檢查拒絕候選非流形。`_solid_boolean` 將中間清理收進共用圓角夾座路徑，再驗兩配置通過。13項配置／夾座、18項配置／預算／嵌入碼、50項相關測試通過，完整CI亦涵蓋；既有教訓「中間輸入有效」及「消費端須跟上參數」已有守衛，不重複追加教訓。
+- 研究保留 `tmp/lab-station-full-route/README.md`：114姿態、298單頭維修取樣、出線候選與失敗證據；十份舊夾座字串替換腳本已搬到 `archive-generators/`，不得作新變體入口。跨肘51樣本研究仍見 `tmp/lab-station-cable-lift/README.md`。
+- 84634 terminal exit0：baseline與cable-clearance保存檔重新開啟，場景配置與輸入規格相符，兩張PNG已目視；`baseline-saved-configuration.json`／`cable-clearance-saved-configuration.json`保留讀回內容。
+- 5S：新增的是共用模組及其測試，不是另一份設計變體；無新依賴／公开工具。R46、13模組配置、09來源更新。先查cqparts／blender-cad並沿用本專案既有spec/instance模式，未取用外部程式碼。
+
+### Open failures
+
+- cable-clearance 是候選配置，不是通過整機資格的替代預設。兩頭同時抬起拆蓋會碰撞；一次抬一頭維修298樣本通過，但此操作順序尚未進入共用驗證情境配置。預設baseline維持原完整資格範圍。
+- 毛細管端保留的走線候選仍碰撞；pH雙線僅工作／抬升端點找到淨空候選。完整路徑、固定端／可滑動點、跨段線間距、中間變形、材料最小半徑與拉力未資格化；Ø6mm是假設，180mm不是裁線規格。
+- 目前模組是既有150mm臂與單／雙孔頭的家族；沒有宣稱任意臂長、孔徑、負載可互換。全走線、底座／LCD、電路、載荷、材料與實體列印仍待完成。
+
+### Next step
+
+- **使用者要求優先：**後續變體以不可變配置＋共用模組＋共用驗證進行，禁止再複製一份產生器或inspect.getsource後字串替換。先把走線研究的共通輸入／候選／檢查收斂成同一入口，再處理毛細管干涉；保存失敗案例作回歸。
+- 規格在 `src/core/domain/lab_station.py`，零件建構在 `scripts/lab_electrode_module.py`，組裝入口在 `scripts/model_lab_platform.py`；配置真機閘門在 `scripts/verify/lab_electrode_readback_real.py::verify_electrode_configurations`，由既有lab_simple real入口呼叫。試作可直接傳dataclass，不改或複製建模函式。
+- 已跑完整CI87822 terminal exit0，無執行中的驗證。Blender操作仍必須串行，執行中不改產生器；逾時先查同一handle。正式視圖還原guides-aligned/arm-seated，配置產出在module-configurations/，不要開舊offset-head當最新候選。
+
+## 歷史驗證紀錄
+
+以下為逐輪證據與當時的下一步；接手只依上方現行段落與任務索引，不能將歷史下一步重新當成主線。
+
+### V01.0R.022 封存接手
+
+### Verified facts
+
 - V01.0R.022：完整 `scripts/ci.sh --real` 8784 terminal exit 0，所有 hard gates green（`tmp/lab-station-electrode-guides-aligned/ci-aligned-guides.log`）。先由舊 frame 觸發通道異側紅例，改位置／方向分離後通過；red-facing-recheck.json 留下再次注入舊方向的拒絕證據。初次 red-facing.log 僅收 stdout，原錯誤在工具 stderr，不把空檔當證據。
 - 現行正式輸出 `tmp/lab-station-electrode-guides-aligned/`。只將前臂導線夾通道轉向與上臂同側，保留桿中心、尺寸、四件數量與原五金。90 通道／孔壁射線、8 徑向止擋、46 姿態、4140 插銷樣本、60 轉位樣本及完整肩轉位仍通過。
 - guide-controls.json 四反例：缺件、穿桿、裝錯 parent、反轉實際網格；還原後重驗幾何。保存檔重讀及近照已核對。Blender 已還原新 arm-seated，restored-file-check.json 再查四導線夾及六組承壓鏈。
@@ -48,9 +76,6 @@
 - guide_frame 將桿中心位置與通道朝向分開；兩頭各自同側。不要回復「role 決定通道方向」。導線夾直接 parent 到臂，不重複加入肩變換；相對 take-up 不可累加。
 - 真機仍串行，執行中不改產生器。開檔後用 fresh 命令；超時先排空。新模組先查 GitHub，render 379 行，新增呈現前按責任拆分，不能縮寫規避預算。後续仍需底座／LCD 及物理資格。
 
-## 歷史驗證紀錄
-
-以下為逐輪證據與當時的下一步；接手只依上方現行段落與任務索引，不能將歷史下一步重新當成主線。
 
 ### V01.0R.021 接手事實（歷史）
 
