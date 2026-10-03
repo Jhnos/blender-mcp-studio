@@ -30,6 +30,7 @@ from api.routers import (
     scene,
     scene_export,
     snapshots,
+    verification,
     vision,
 )
 from api.routers.ws_manager import ConnectionManager, viewport_broadcast_loop
@@ -121,6 +122,7 @@ def _publish_runtime_state(app: FastAPI, runtime: AppRuntime) -> None:
     app.state.polyhaven = runtime.polyhaven
     app.state.text3d = runtime.text3d
     app.state.mechanical_generation = runtime.mechanical_generation
+    app.state.verification = runtime.verification
     app.state.conversational_modeling = runtime.conversational_modeling
     app.state.modeling_pipeline = runtime.modeling_pipeline
     app.state.iterative_refinement = runtime.iterative_refinement
@@ -183,6 +185,7 @@ def create_app(
         shared_runtime.scene_operations,
         shared_runtime.scene_operations,
         shared_runtime.print_readiness,
+        shared_runtime.verification,
     )
 
     allowed_hosts = {"127.0.0.1", "localhost"}
@@ -236,6 +239,7 @@ def create_app(
     app.include_router(scene_export.router)
     app.include_router(print_readiness.router)
     app.include_router(generation.router)
+    app.include_router(verification.router)
 
     @app.get("/api/health")
     async def health() -> dict[str, str]:

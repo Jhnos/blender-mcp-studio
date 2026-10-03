@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from typing import Any
+from unittest.mock import AsyncMock
 
 import pytest
 from fastmcp import Client, FastMCP
@@ -38,9 +39,13 @@ EXPECTED_TOOLS = {
     "get_scene_info",
     "get_viewport_screenshot",
     "modify_object",
+    "list_verification_suites",
+    "run_verification_suite",
 }
 
 POLICY = {
+    "list_verification_suites": (True, False, True, False),
+    "run_verification_suite": (False, False, True, False),
     "blender_status": (True, False, True, False),
     "get_scene_info": (True, False, True, False),
     "get_object_info": (True, False, True, False),
@@ -116,7 +121,9 @@ def fake_scene_service() -> FakeSceneService:
 def server_for(fake_scene_service: FakeSceneService) -> FastMCP:
     from src.adapters.mcp_server import create_mcp_server
 
-    return create_mcp_server(fake_scene_service, fake_scene_service, fake_scene_service)
+    return create_mcp_server(
+        fake_scene_service, fake_scene_service, fake_scene_service, AsyncMock()
+    )
 
 
 @pytest.mark.asyncio

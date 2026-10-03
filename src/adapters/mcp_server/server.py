@@ -35,8 +35,10 @@ from src.core.domain.scene_operations import (
     SceneSummary,
     Vector3,
 )
+from src.core.domain.verification import VerificationError, VerificationReport, VerificationSuite
 from src.core.ports.print_readiness_port import PrintReadinessQueryPort
 from src.core.ports.scene_operations_port import SceneCommandPort, SceneQueryPort
+from src.core.ports.verification_port import VerificationQueryPort
 
 
 def _vec(value: tuple[float, float, float] | None) -> Vector3 | None:
@@ -53,6 +55,7 @@ def create_mcp_server(
     queries: SceneQueryPort,
     commands: SceneCommandPort,
     print_readiness: PrintReadinessQueryPort,
+    verification: VerificationQueryPort,
 ) -> FastMCP:
     """Create the public MCP registry using only incoming application ports."""
 
@@ -261,6 +264,42 @@ def create_mcp_server(
             spec = MaterialSpec(object_name, material_name, rgba, metallic, roughness)
             return await commands.apply_material(spec)
         except (SceneOperationError, BlenderConnectionError) as exc:
+            raise _tool_error(exc) from exc
+
+    @mcp.tool(
+        timeout=5.0,
+        annotations=ToolAnnotations(
+            title="List verification suites",
+            readOnlyHint=True,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=False,
+        ),
+    )
+    async def list_verification_suites() -> tuple[VerificationSuite, ...]:
+        """List registered model checks, their required model and case coverage."""
+        return await verification.list_suites()
+
+    @mcp.tool(
+        timeout=330.0,
+        annotations=ToolAnnotations(
+            title="Run verification suite",
+            readOnlyHint=False,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=False,
+        ),
+    )
+    async def run_verification_suite(suite_id: Name) -> VerificationReport:
+        """Run a registered suite on the current scene and restore poses and selection.
+
+        Accepts only names from list_verification_suites. Creates temporary fixtures
+        or moves electrode poses during checks. Returns individual measured verdicts;
+        a failed check is a report, not an execution error. Does not build or load models.
+        """
+        try:
+            return await verification.run(suite_id)
+        except (VerificationError, BlenderConnectionError) as exc:
             raise _tool_error(exc) from exc
 
     return mcp

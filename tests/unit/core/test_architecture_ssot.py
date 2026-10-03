@@ -12,6 +12,12 @@ ARTIFACT = PROJECT_ROOT / "docs" / "architecture.html"
 ARCHITECTURE_DOC = PROJECT_ROOT / "docs" / "01-architecture.md"
 
 CODE_ANCHORS = {
+    "verification_service": ("src/core/use_cases/verification.py", "class", "VerificationService"),
+    "verification_adapter": (
+        "src/adapters/verification/blender_verification.py",
+        "class",
+        "BlenderVerificationAdapter",
+    ),
     "fastapi": ("api/main.py", "function", "create_app"),
     "stdio_proxy": ("scripts/run_mcp_stdio_proxy.py", "function", "main"),
     "mcp_adapter": ("src/adapters/mcp_server/server.py", "function", "create_mcp_server"),

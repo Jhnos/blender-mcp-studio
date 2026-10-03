@@ -7,8 +7,8 @@
 {
   "meta": {
     "name": "Blender MCP Studio",
-    "version": "batch-transform-v1",
-    "updated": "2026-07-19",
+    "version": "registered-verification-v1",
+    "updated": "2026-10-03",
     "invariant": "All inbound transports converge on one AppRuntime and one Blender addon socket."
   },
   "levels": ["clients", "gateway", "proxy", "process", "inbound", "application", "adapter", "engine"],
@@ -61,14 +61,14 @@
       "id": "rest_ws", "level": "inbound", "label": "REST + WebSocket adapters",
       "responsibility": "Serve Web UI workflows through presentation-specific routes",
       "inputs": ["REST DTO", "chat frames"], "outputs": ["application calls"],
-      "invariants": ["overlapping use cases share application services"], "dependsOn": ["scene_service", "print_service", "batch_service"],
+      "invariants": ["overlapping use cases share application services"], "dependsOn": ["verification_service", "scene_service", "print_service", "batch_service"],
       "adr": "MCP_LAYER_ADR §A", "status": "confirmed"
     },
     {
       "id": "mcp_adapter", "level": "inbound", "label": "Curated FastMCP adapter",
-      "responsibility": "Expose nine strict client-neutral tools through incoming ports",
+      "responsibility": "Expose eleven strict client-neutral tools through incoming ports",
       "inputs": ["validated tool arguments"], "outputs": ["structured content", "image content", "ToolError"],
-      "invariants": ["exactly nine tools", "execute_code absent", "legacy SSE absent"], "dependsOn": ["scene_service", "print_service"],
+      "invariants": ["exactly eleven tools", "execute_code absent", "legacy SSE absent"], "dependsOn": ["verification_service", "scene_service", "print_service"],
       "adr": "MCP_LAYER_ADR §A", "status": "confirmed",
       "anchor": {"path": "src/adapters/mcp_server/server.py", "kind": "function", "symbol": "create_mcp_server"}
     },
@@ -76,7 +76,7 @@
       "id": "app_runtime", "level": "application", "label": "AppRuntime",
       "responsibility": "Own one composed dependency graph and one Blender connection lifecycle",
       "inputs": ["startup", "shutdown"], "outputs": ["shared ports and adapters"],
-      "invariants": ["connect once", "disconnect once", "same object identity for REST and MCP"], "dependsOn": ["scene_service", "print_service", "batch_service", "blender_adapter"],
+      "invariants": ["connect once", "disconnect once", "same object identity for REST and MCP"], "dependsOn": ["verification_service", "scene_service", "print_service", "batch_service", "blender_adapter"],
       "adr": "MCP_LAYER_ADR §A", "status": "confirmed",
       "anchor": {"path": "api/runtime.py", "kind": "class", "symbol": "AppRuntime"}
     },
@@ -104,6 +104,8 @@
       "adr": "Batch transform design §Architecture", "status": "confirmed",
       "anchor": {"path": "src/core/use_cases/batch_transform.py", "kind": "class", "symbol": "BatchTransformService"}
     },
+    {"id": "verification_service", "level": "application", "label": "VerificationService", "responsibility": "Resolve registered suites and validate complete ordered evidence", "inputs": ["registered suite"], "outputs": ["typed verification evidence"], "invariants": ["no caller code or paths", "scene restoration required"], "dependsOn": ["verification_adapter"], "adr": "01-architecture.md ADR007", "status": "confirmed", "anchor": {"path": "src/core/use_cases/verification.py", "kind": "class", "symbol": "VerificationService"}},
+    {"id": "verification_adapter", "level": "adapter", "label": "BlenderVerificationAdapter", "responsibility": "Run registry-derived checks through the shared Blender connection", "inputs": ["registered suite"], "outputs": ["typed verification evidence"], "invariants": ["no caller code or paths", "scene restoration required"], "dependsOn": ["blender_adapter"], "adr": "01-architecture.md ADR007", "status": "confirmed", "anchor": {"path": "src/adapters/verification/blender_verification.py", "kind": "class", "symbol": "BlenderVerificationAdapter"}},
     {
       "id": "generation_service", "level": "application", "label": "MechanicalGenerationService",
       "responsibility": "Resolve a registered instance slug and check the build against the part list it declares",
@@ -161,6 +163,11 @@
     }
   ],
   "edges": [
+    {"from": "rest_ws", "to": "verification_service", "contract": "VerificationQueryPort", "data": "registered verification", "critical": true},
+    {"from": "mcp_adapter", "to": "verification_service", "contract": "VerificationQueryPort", "data": "registered verification", "critical": true},
+    {"from": "app_runtime", "to": "verification_service", "contract": "constructs once", "data": "registered verification", "critical": true},
+    {"from": "verification_service", "to": "verification_adapter", "contract": "VerificationRunnerPort", "data": "registered verification", "critical": true},
+    {"from": "verification_adapter", "to": "blender_adapter", "contract": "BlenderPort", "data": "registered verification", "critical": true},
     {"from": "http_hosts", "to": "tailnet_gateway", "contract": "MCP Streamable HTTP", "data": "/blender/mcp"},
     {"from": "stdio_hosts", "to": "stdio_proxy", "contract": "MCP stdio", "data": "JSON-RPC"},
     {"from": "stdio_proxy", "to": "tailnet_gateway", "contract": "HTTP proxy", "data": "MCP messages"},

@@ -106,5 +106,6 @@ def test_the_composition_root_wires_the_provider() -> None:
     ]
     assert len(deadlines) == 1
     assert ast.unparse(deadlines[0]) == (
-        "{code: GENERATOR_TIMEOUT_S for code in authorized_generator_code()}"
-    ), "Only registry-derived scripts may receive the generation deadline"
+        "{**{code: GENERATOR_TIMEOUT_S for code in authorized_generator_code()}, "
+        "**{code: VERIFICATION_TIMEOUT_S for code in authorized_verification_code()}}"
+    ), "Only registered generator and verification scripts may receive extended deadlines"

@@ -28,6 +28,34 @@
 
 ### Verified facts
 
+- 測試模組化已於025封存。使用者明確更正為整合MCP（非MVP），授權公開目錄由九項擴至十一項；新增list_verification_suites／run_verification_suite。
+- 新VerificationService經窄port取得typed量測，REST與MCP注入同一AppRuntime服務／序列化Blender port。目錄由同一案例表推導兩套：8接觸控制、4探頭走線；不接受任意程式或路徑。漏跑、重複、錯誤套件、偽造成功與未恢復場景均拒絕；真實檢查未通過則回passed=false報告。
+- 公開驗證保留目前模型、原始transform欄位、關節屬性與選取，清除自己建立的物件和mesh。單獨正式MCP93114 exit0（mcp-final-rechecked.log）：12案例、未知名稱／多餘code／缺模型三拒絕、非預設姿態、例外恢復通過；獨立socket前後快照核對物件、網格、姿態、選取、目前檔案與render path。
+- 矩陣指定恢復造成小數漂移，被獨立比較抓到；改保存原始變換欄位，未放寬容差。MCP重測51746曾在工具清單遇入口502，正式health恢復後93114通過；不是模型失敗。
+- 完整CI5235排版失敗，T2時明確停止143，未進真機；格式修正後完整CI82324的chat讀回失敗即停。單獨3496回報0/1卻exit0，查明舊chat harness未判退出碼、WS90秒短於服務300秒。兩個負例先紅後綠，沿用VerificationSummary與固定五項涵蓋；先清理再量基線，WS360秒／oracle60秒。14 focused tests和mypy通過，97647真機5/5 exit0（chat-isolated-fixed.log）。
+- 完整CI31824 exit1：T1/T2、REST／MCP／chat／readiness／batch通過，lab_station生成超過既有oracle180秒；日誌ci-mcp-complete.log。只讀barrier81472 exit0，確認背景生成完成。generator原採同一180秒oracle，現只對生成沿用正式GENERATOR_TIMEOUT_S=900，讀回／skip不變；新deadline測試先1紅1綠，修正後通過。V01.0R.026完整重跑30499 terminal exit0，ci-mcp-deadline.log所有hard gates green；包含新增MCP套件、完整chat五項與所有模型交付回歸。
+- 正式arm-seated場景還原41822 exit0，六承壓鏈與required導線夾fresh重讀通過，mcp-restored-formal.json留證。34項文件／版本／架構／budget守衛通過。
+- 5S：MCP adapter305、Blender配件212、新真機入口127行，指示檔75／7、專案skill150行；沿用Scenario／VerificationSummary與marker解碼，無外部依賴。架構SSOT／AST錨點、工具目錄、ADR007、R49、使用說明與兩條LESSONS守衛同步；HTML已實際渲染檢視，產物留tmp。
+
+### Open failures
+
+- 四個走線案例仍各自獨立，整束線間距、跨段、中間變形與材料／拉力未驗。Ø6mm是假設；220／150mm不是裁線規格。
+- 候選配置雙頭同抬拆蓋仍有碰撞，一次一頭維修研究尚未進入共用情境。底座／LCD、電路、載荷與實體列印待完成。
+
+### Next step
+
+- 本輪MCP整合已通過完整CI並升版026；无執行中的CI。後續從共用案例與走線模組擴充跨段／線間距，不新增逐版入口。
+- 後續以Scenario資料＋共用執行器＋可清理配件擴充；MCP共用同一登錄，不複製逐版測試。走線仍用RouteCase／RouteSearchSpec。
+- 正式場景tmp/lab-station-electrode-guides-aligned/arm-seated.blend，證據tmp/lab-station-route-engine/。下一工程項目為跨段／線間距與單頭維修情境；完整工作站目標保持ACTIVE。
+
+## 歷史驗證紀錄
+
+以下為逐輪證據與當時的下一步；接手只依上方現行段落與任務索引，不能將歷史下一步重新當成主線。
+
+### V01.0R.025 封存接手
+
+### Verified facts
+
 - 測試已分層：`scenario_runner.py` 共用非空唯一案例／量測／必清理／完整涵蓋判定；`cable_route_cases.py` 8個接觸與4個實際姿態資料；`lab_cable_route_checks.py` Blender配件；原真機入口只保留連線、重載和finally開回正式檔。沿用VerificationEvidence／Summary，不新增測試框架。
 - TDD：新執行器測試先因缺模組紅，再10項綠；案例矩陣與重載守衛後共21項通過。mypy及ruff通過。26793單獨真機terminal exit0，四路徑完整rows與024報告逐欄相等；`modular-equivalence.json`保留相等與8／4案例證據。V01.0R.025完整CI4762 terminal exit0、all hard gates green，日誌 `tmp/lab-station-route-engine/ci-modular-tests.log`。正式場景已fresh核對六承壓鏈與導線夾，`modular-restored.json`留證。
 - 每例保存穩定名稱、expected、observed、detail及量測；量測例外不能被當成預期拒絕，清理失敗立即停，漏跑／重複／順序錯誤不可通過。六個表面案例各自建立並移除鏡射方塊；自接觸與正常直線都具名，不再手寫True表。host用finally還原場景，傳輸逾時仍須先排空。
@@ -46,9 +74,6 @@
 - 後續測試以Scenario資料＋共用執行器＋可清理配件擴充，不複製逐版測試腳本；走線仍走既有RouteCase／RouteSearchSpec。
 - 正式場景 `tmp/lab-station-electrode-guides-aligned/arm-seated.blend`，研究／新證據 `tmp/lab-station-route-engine/`。下一工程項目仍為跨段／線間距與單頭維修情境。
 
-## 歷史驗證紀錄
-
-以下為逐輪證據與當時的下一步；接手只依上方現行段落與任務索引，不能將歷史下一步重新當成主線。
 
 ### V01.0R.024 封存接手
 

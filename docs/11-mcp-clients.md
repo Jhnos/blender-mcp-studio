@@ -60,6 +60,8 @@ examples, not server requirements.
 | `get_object_info` | Read | Return transforms, visibility, and materials for one object |
 | `get_viewport_screenshot` | Read | Return a bounded PNG viewport capture |
 | `check_print_readiness` | Read | Inspect visible meshes for slicing risks and millimetre metrics without changing the scene |
+| `list_verification_suites` | Read | List registered tests, scope and expected case coverage |
+| `run_verification_suite` | Temporary mutation | Run a registered suite on the current model and restore its poses and selection |
 | `create_object` | Write | Create a mesh cube, curve, light, or camera |
 | `modify_object` | Destructive write | Change transforms or visibility |
 | `delete_object` | Destructive write | Permanently remove one object |
@@ -78,6 +80,8 @@ arbitrary Python.
 | `get_object_info` | yes | no | yes | 10 s |
 | `get_viewport_screenshot` | yes | no | yes | 30 s |
 | `check_print_readiness` | yes | no | yes | 30 s |
+| `list_verification_suites` | yes | no | yes | 5 s |
+| `run_verification_suite` | no | no | yes | 330 s |
 | `create_object` | no | no | no | 30 s |
 | `modify_object` | no | yes | yes | 30 s |
 | `delete_object` | no | yes | no | 30 s |
@@ -86,6 +90,12 @@ arbitrary Python.
 所有工具都設 `openWorldHint=false`。名稱有長度上限，向量恰好三個有限數字，
 顏色是 `[0,1]` 的 RGBA，變異類 schema 拒絕額外屬性。
 **Tool annotation 只是建議性的**——實際邊界由 identity middleware 與 registry 強制。
+
+### 登錄測試
+
+先呼叫 `list_verification_suites`，再將回傳的 `suite_id` 傳給 `run_verification_suite`。目前有 `cable-contact-controls`（8個接觸正反例）與 `electrode-head-routes`（4個探頭端走線姿態）。後者要求目前開啟已生成的工作站電極臂模型；工具不載入、建立或覆寫使用者模型。測試會暫時建立配件或調整臂姿態，完成後恢復姿態、關節屬性、選取與active object；無法恢復即回報執行錯誤。
+
+回傳包含 `suite_id`、`passed`、逐項 `checks`（name／expected／observed／passed／detail）、`scope` 和 `scene_restored`。`passed=false` 表示有測試未通過；未知測試、缺少模型、缺漏證據或Blender不可用則是工具錯誤。測試名稱是封閉登錄集合，不能傳程式碼、檔案路徑或自訂預期值。REST的 `/api/verification/suites` 與 `/api/verification/suites/{suite_id}/run` 使用同一服務。
 
 ## Codex configuration example
 
@@ -97,7 +107,7 @@ project's `.codex/config.toml` for a project-scoped connection:
 url = "https://bearmacminimac-mini.tail56c751.ts.net/blender/mcp"
 required = true
 startup_timeout_sec = 20
-tool_timeout_sec = 60
+tool_timeout_sec = 360
 ```
 
 Restart or open a new Codex task, then inspect `/mcp`. Codex's current config
@@ -164,7 +174,7 @@ because GUI-launched clients do not reliably inherit the shell working directory
 
 ## 接上之後
 
-**安全邊界**（identity、Host/Origin、protocol version、九項工具相等性、公網散布的
+**安全邊界**（identity、Host/Origin、protocol version、十一項工具相等性、公網散布的
 前提）完整說明見 [[01-architecture]] 的安全邊界一節。這裡只提醒 client 開發者三件事：
 
 - `/mcp` **不是** identity exemption。缺少可信 Tailnet identity 的請求會收到 HTTP 401。

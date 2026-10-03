@@ -30,6 +30,10 @@ from src.infrastructure.narrowing import (  # noqa: E402
     as_str_keyed_exact,
     dig,
 )
+from src.verification.generated_artifact_verdict import (  # noqa: E402
+    VerificationEvidence,
+    VerificationSummary,
+)
 
 TS = "bearmacminimac-mini.tail56c751.ts.net"
 BASE = f"https://{TS}/blender"
@@ -37,7 +41,7 @@ WS_URL = f"wss://{TS}/blender/ws/chat"
 ORACLE = ("127.0.0.1", 9876)
 
 
-def oracle(code: str, timeout: float = 10) -> dict[str, object] | None:
+def oracle(code: str, timeout: float = 60) -> dict[str, object] | None:
     s = socket.create_connection(ORACLE, timeout=timeout)
     s.settimeout(timeout)
     s.sendall(json.dumps({"type": "execute_code", "params": {"code": code}}).encode())
@@ -97,7 +101,7 @@ def rest(method: str, path: str, body: dict[str, object] | None = None) -> tuple
         return (resp.status, json.loads(raw) if "json" in ct else raw)
 
 
-def ws_chat(text: str, timeout: float = 90) -> tuple[str, str | None, str | None]:
+def ws_chat(text: str, timeout: float = 360) -> tuple[str, str | None, str | None]:
     """Drive the real WS chat path; return (final_content, blender_output, session_id)."""
     import websocket  # websocket-client
 
@@ -139,10 +143,10 @@ def main() -> None:
         print(f"[{'PASS' if ok else 'FAIL'}] {hid}: {detail}")
 
     print("=== PRECHECK ===")
+    teardown()  # exclude residue from the measured baseline
     base_names = o_names()
     base_n = len(base_names)
     print(f"baseline oracle: {base_n} objects {base_names}")
-    teardown()  # clean any residue first
 
     nonce = f"verify_{random.randint(10000, 99999)}"
     print(f"\n=== H0: chat NL -> real Blender mutation (nonce={nonce}) ===")
@@ -212,6 +216,14 @@ def main() -> None:
         print(f"  {hid:4} {'PASS' if ok else 'FAIL'}  {detail}")
     npass = sum(1 for _, ok, _ in results if ok)
     print(f"\n{npass}/{len(results)} assertions passed")
+    summary = VerificationSummary(
+        tuple(VerificationEvidence(name, ok, str(detail)) for name, ok, detail in results)
+    )
+    if (
+        tuple(name for name, _, _ in results) != ("H0", "H4", "H2", "H6", "H7")
+        or not summary.passed
+    ):
+        raise ValueError("Chat verification failed or did not cover all five checks")
 
 
 if __name__ == "__main__":

@@ -1,6 +1,8 @@
 """Blender fixtures and measurements for the shared scenario runner."""
 
 import json
+from collections.abc import Iterator
+from contextlib import contextmanager
 from dataclasses import asdict
 from pathlib import Path
 
@@ -35,7 +37,12 @@ class ContactFixture:
         mirrored = self.object.matrix_world.determinant() < 0
         if not mirrored:
             raise ValueError("Contact fixture must exercise a mirrored mesh")
-        hit = routes.RouteObstacles().first_hit(
+        obstacles = routes.RouteObstacles()
+        name = self.object.name
+        obstacles.meshes = {name: obstacles.meshes[name]}
+        obstacles.bounds = {name: obstacles.bounds[name]}
+        obstacles.closed.intersection_update({name})
+        hit = obstacles.first_hit(
             sample_path((case.curve,)),
             case.boundary,
             self.object.name if case.terminal else None,
@@ -49,8 +56,11 @@ class ContactFixture:
 
     def cleanup(self, case: ContactProbe) -> None:
         if self.object is not None:
+            mesh = self.object.data
             bpy.data.objects.remove(self.object, do_unlink=True)
             self.object = None
+            if mesh.users == 0:
+                bpy.data.meshes.remove(mesh)
 
 
 class RouteFixture:
@@ -60,7 +70,7 @@ class RouteFixture:
 
     def cleanup(self, case: RoutePose) -> None:
         for obj in list(bpy.data.objects):
-            if obj.name.startswith("RESEARCH_route_"):
+            if self.render and obj.name.startswith("RESEARCH_route_"):
                 bpy.data.objects.remove(obj, do_unlink=True)
         for head in ("capillary", "pH_temp"):
             model.pose(head)
@@ -116,3 +126,87 @@ def run(output: Path, *, render: bool = True) -> None:
     print(
         f"Shared scenario runner: {len(controls)} contact cases and {len(results)} route cases passed"
     )
+
+
+@contextmanager
+def preserve_current_scene() -> Iterator[None]:
+    """Restore only fields this suite can change; never open or overwrite a user file."""
+    if bpy.context.mode != "OBJECT":
+        raise ValueError("Switch Blender to Object Mode before running verification")
+    keys = ("shoulder_release_mm", "elbow_release_mm", "wrist_release_mm")
+    fields = (
+        "location",
+        "rotation_euler",
+        "rotation_quaternion",
+        "rotation_axis_angle",
+        "scale",
+        "delta_location",
+        "delta_rotation_euler",
+        "delta_rotation_quaternion",
+        "delta_scale",
+    )
+    saved = [
+        (
+            obj,
+            {field: tuple(getattr(obj, field)) for field in fields},
+            {key: obj[key] for key in keys if key in obj},
+        )
+        for obj in bpy.data.objects
+    ]
+    original_objects = set(bpy.data.objects)
+    original_meshes = set(bpy.data.meshes)
+    selected = tuple(bpy.context.selected_objects)
+    active = bpy.context.view_layer.objects.active
+    try:
+        yield
+    finally:
+        for obj, transforms, properties in saved:
+            for field, values in transforms.items():
+                setattr(obj, field, values)
+            for key in keys:
+                if key in properties:
+                    obj[key] = properties[key]
+                elif key in obj:
+                    del obj[key]
+        for obj in bpy.context.view_layer.objects:
+            obj.select_set(obj in selected)
+        bpy.context.view_layer.objects.active = active
+        bpy.context.view_layer.update()
+        if set(bpy.data.objects) != original_objects or set(bpy.data.meshes) != original_meshes:
+            raise ValueError("Verification left missing or additional objects/meshes")
+        for obj, transforms, properties in saved:
+            if {field: tuple(getattr(obj, field)) for field in fields} != transforms or {
+                key: obj[key] for key in keys if key in obj
+            } != properties:
+                raise ValueError("Verification could not restore " + obj.name)
+
+
+def run_registered(suite_id: str) -> dict[str, object]:
+    """Public, bounded checks reuse offline cases without loading, saving or rendering scenes."""
+    with preserve_current_scene():
+        if suite_id == "cable-contact-controls":
+            fixture = ContactFixture()
+            results = run_scenarios(CONTACT_CASES, fixture.observe, fixture.cleanup)
+        elif suite_id == "electrode-head-routes":
+            if "electrode_configuration" not in bpy.context.scene:
+                raise ValueError(
+                    "Open a generated lab-station electrode assembly before running this suite"
+                )
+            route_fixture = RouteFixture(Path(), render=False)
+            results = run_scenarios(ROUTE_CASES, route_fixture.observe, route_fixture.cleanup)
+        else:
+            raise ValueError("Unknown registered verification suite: " + suite_id)
+    return {
+        "suite_id": suite_id,
+        "restored": True,
+        "checks": [
+            {
+                "name": row.evidence.name,
+                "expected": row.expected,
+                "observed": row.observed,
+                "passed": row.evidence.passed,
+                "detail": row.evidence.detail,
+            }
+            for row in results
+        ],
+    }

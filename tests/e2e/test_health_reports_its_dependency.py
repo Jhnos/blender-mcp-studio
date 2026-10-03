@@ -113,6 +113,7 @@ def _runtime(blender: BlenderPort) -> AppRuntime:
         polyhaven=marker,
         text3d=None,
         mechanical_generation=marker,
+        verification=marker,
         conversational_modeling=marker,
         modeling_pipeline=marker,
         iterative_refinement=None,

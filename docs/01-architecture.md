@@ -162,6 +162,13 @@ FastAPI 的 lifespan 擁有 Blender 的 connect/disconnect；組合後的 FastMC
 完整決策脈絡與 rejected alternatives 見
 [archived MCP layer ADR](archive/2026-07-client-neutral-mcp/development/MCP_LAYER_ADR.md)。
 
+### ADR-007：登錄驗證套件共用測試與交付路徑
+
+- 決策：使用者要求測試模組化並整合到MCP；新增list_verification_suites／run_verification_suite，公開目錄由九項擴至十一項，任意execute_code仍不開放。
+- 組成：案例表推導VerificationSuite；VerificationService只依賴VerificationRunnerPort，REST／MCP注入AppRuntime同一服務。Blender adapter重用Scenario執行器與配件，透過既有序列化BlenderPort執行。
+- 邊界：只接登錄名稱，腳本由封閉目錄推導；sandbox與adapter使用同一字串來源，延長逾時亦只套用該集合。外部量測在adapter嚴格解碼，service核對套件、完整案例及場景恢復，不把部分結果當通過。
+- 場景：公開驗證不開檔、不生成或保存模型、不算圖；暫時姿態與配件在同一socket請求內恢復。工具非read-only，結果不代表材料、連續運動或整機製造資格。
+
 ## 安全邊界
 
 | 控制項 | 強制的行為 |
@@ -169,13 +176,13 @@ FastAPI 的 lifespan 擁有 Blender 的 connect/disconnect；組合後的 FastMC
 | Tailnet identity | 除 `/api/health` 外的所有 HTTP；`/mcp` 缺 identity → 401 |
 | Host/Origin guard | 由 loopback 與 `CORS_ORIGINS` 推導的嚴格 allowlist |
 | Protocol version | 不支援的 `MCP-Protocol-Version` → HTTP 400 |
-| Tool surface | 恰好九項工具的相等性檢查；`execute_code` 不存在 |
+| Tool surface | 恰好十一項工具的相等性檢查；`execute_code` 不存在 |
 | Error mapping | 可復原的 domain error 轉成可行動的 `ToolError`／HTTP 422 |
 | Error masking | 非預期的 MCP 內部錯誤不把 traceback 洩漏給 client |
 | Socket serialization | `BlenderSocketClient` 內的單一 `asyncio.Lock` |
 
 - `/api/health` 是**唯一**的 identity exemption，存在理由是讓 watchdog 探測 process。
-- MCP public catalog 固定九項 curated tools，刻意不含 `execute_code`；第九項
+- MCP public catalog 固定十一項 curated tools，刻意不含 `execute_code`；第九項
   `check_print_readiness` 是唯讀、冪等且 30 秒 timeout。
 - `POST /api/instances/{slug}/build` 會在 Blender 裡跑 Python，所以它**沒有 request body**：
   輸入只有 slug，而 slug 只能索引 `HAND_INSTANCES` 這個封閉集合。程式碼字串由登錄表條目

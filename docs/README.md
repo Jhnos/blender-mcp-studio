@@ -11,7 +11,7 @@ Blender MCP Studio 的文件樹。**一檔一主題，互相 `[[wikilink]]` 指�
 | [[00-context]] | 專案目的、範圍、不在範圍 | 第一次接觸這個專案 |
 | [[01-architecture]] | 核心不變式、分層、ADR、安全邊界 | 動任何 `src/`、`api/`、`web/src/` 之前 |
 | [[10-runtime-ssot]] | **埠、路由、canonical URL、環境變數** | 需要任何埠號或位址時（別處都不寫這些） |
-| [[11-mcp-clients]] | MCP 連線契約、九項工具、各 host 設定 | 接 MCP client 或改工具目錄 |
+| [[11-mcp-clients]] | MCP 連線契約、十一項工具、各 host 設定 | 接 MCP client 或改工具目錄 |
 | [[12-deployment]] | LaunchAgent 部署、identity、prefix 契約 | 部署或改服務設定 |
 | [[20-conventions]] | 程式碼風格、命名、DI、commit 慣例 | 寫 code 之前 |
 | [[30-verification]] | **CI 分層、驗證指令、什麼不算證據** | 宣告「完成」之前 |

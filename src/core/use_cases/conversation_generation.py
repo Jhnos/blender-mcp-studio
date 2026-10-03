@@ -5,7 +5,7 @@ real: that module is about turning dialogue into a command, while this one
 describes a capability and executes it. They change for different reasons.
 
 Distinct from the public MCP catalogue, which `docs/01-architecture.md` fixes
-at nine curated tools. That catalogue is what an outside client may call; this
+at eleven curated tools. That catalogue is what an outside client may call; this
 list is what the LLM inside this process may call, and the two have never been
 the same set. `tests/e2e/test_mcp_streamable_http.py` watches for them merging.
 """

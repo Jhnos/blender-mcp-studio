@@ -24,6 +24,7 @@ from src.core.use_cases.modeling_pipeline import ModelingPipelineUseCase
 from src.core.use_cases.print_readiness import PrintReadinessService
 from src.core.use_cases.scene_export import SceneExportService
 from src.core.use_cases.scene_operations import SceneOperationsService
+from src.core.use_cases.verification import VerificationService
 
 
 @dataclass(frozen=True, slots=True)
@@ -46,6 +47,7 @@ class AppRuntime:
     polyhaven: PolyHavenPort
     text3d: Text3DGenerationPort | None
     mechanical_generation: MechanicalGenerationService
+    verification: VerificationService
 
     # Use cases are assembled here, not in delivery adapters. Building them in a
     # router hides the wiring behind ``app.state``'s ``Any`` and puts a
@@ -76,14 +78,24 @@ def build_runtime(env_file: Path | None = None) -> AppRuntime:
     from src.adapters.session.sqlite_session_store import SQLiteSessionStore
     from src.adapters.snapshot.sqlite_snapshot_store import SQLiteSnapshotStore
     from src.adapters.text3d.hunyuan3d_adapter import build_text3d_adapter
+    from src.adapters.verification.authorized_code import (
+        VERIFICATION_TIMEOUT_S,
+        authorized_verification_code,
+    )
+    from src.adapters.verification.blender_verification import BlenderVerificationAdapter
     from src.adapters.vision.factory import build_vision_adapter
     from src.infrastructure.env_loader import load_env
+    from src.verification.cable_route_cases import registered_suites
 
     load_env(env_file)
-    sandbox = BlenderCodeSandbox(authorized=authorized_generator_code)
+    authorized = authorized_generator_code() | authorized_verification_code()
+    sandbox = BlenderCodeSandbox(authorized=lambda: authorized)
     blender = build_blender_adapter(
         sandbox=sandbox,
-        script_timeouts={code: GENERATOR_TIMEOUT_S for code in authorized_generator_code()},
+        script_timeouts={
+            **{code: GENERATOR_TIMEOUT_S for code in authorized_generator_code()},
+            **{code: VERIFICATION_TIMEOUT_S for code in authorized_verification_code()},
+        },
     )
     adapter_factory = ConcreteAdapterFactory()
     llm = adapter_factory.build_llm_adapter()
@@ -108,6 +120,7 @@ def build_runtime(env_file: Path | None = None) -> AppRuntime:
         polyhaven=PolyHavenAdapter(),
         text3d=build_text3d_adapter(),
         mechanical_generation=generation,
+        verification=VerificationService(BlenderVerificationAdapter(blender), registered_suites()),
         conversational_modeling=ConversationalModelingUseCase(
             llm=llm,
             blender=blender,

@@ -38,6 +38,8 @@ _EXPECTED_TOOLS = {
     "get_scene_info",
     "get_viewport_screenshot",
     "modify_object",
+    "list_verification_suites",
+    "run_verification_suite",
 }
 
 
@@ -102,6 +104,7 @@ def make_fake_runtime() -> AppRuntime:
         polyhaven=marker,
         text3d=None,
         mechanical_generation=marker,
+        verification=marker,
         conversational_modeling=marker,
         modeling_pipeline=marker,
         iterative_refinement=None,
@@ -240,8 +243,8 @@ def test_client_name_does_not_change_capabilities_or_catalog() -> None:
     assert observations[0][1] == _EXPECTED_TOOLS
 
 
-def test_the_public_catalog_stays_nine_and_never_gains_the_generation_tools() -> None:
-    """`docs/01-architecture.md` fixes the public catalogue at nine curated tools.
+def test_public_catalog_includes_verification_but_not_generation_tools() -> None:
+    """`docs/01-architecture.md` declares eleven curated public tools.
 
     The conversation inside this process gained `list_instances` and
     `build_instance`; that list and this catalogue are different surfaces, and
@@ -250,5 +253,5 @@ def test_the_public_catalog_stays_nine_and_never_gains_the_generation_tools() ->
     """
     from src.core.use_cases.conversation_generation import GENERATION_TOOL_NAMES
 
-    assert len(_EXPECTED_TOOLS) == 9
+    assert len(_EXPECTED_TOOLS) == 11
     assert not (_EXPECTED_TOOLS & GENERATION_TOOL_NAMES)

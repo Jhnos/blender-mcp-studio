@@ -5,6 +5,7 @@ from typing import Literal
 
 from src.core.domain.cable_paths import CubicPath
 from src.core.domain.lab_station import Point
+from src.core.domain.verification import VerificationSuite
 from src.core.planning.cable_path_plan import RouteBoundary, straight
 from src.verification.scenario_runner import Scenario
 
@@ -91,3 +92,22 @@ ROUTE_CASES = (
     Scenario("ph_working", RoutePose("pH_temp", 0, 150), "found"),
     Scenario("temperature_working", RoutePose("pH_temp", 1, 150), "found"),
 )
+
+
+def registered_suites() -> tuple["VerificationSuite", ...]:
+    """Catalog coverage is derived from the exact cases the Blender runner consumes."""
+    return (
+        VerificationSuite(
+            "cable-contact-controls",
+            "Cable contact controls",
+            "Synthetic clearance/contact checks; no material or load qualification.",
+            tuple((case.name, case.expected) for case in CONTACT_CASES),
+        ),
+        VerificationSuite(
+            "electrode-head-routes",
+            "Electrode head routes",
+            "Four independent routes on the current electrode assembly; poses are restored. "
+            "Requires the lab-station electrode model. No bundle, continuous motion or material qualification.",
+            tuple((case.name, case.expected) for case in ROUTE_CASES),
+        ),
+    )

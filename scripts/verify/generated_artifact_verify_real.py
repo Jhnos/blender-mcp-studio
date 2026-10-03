@@ -17,6 +17,7 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from src.adapters.blender_response import decode_marked_json  # noqa: E402
+from src.adapters.generation.authorized_code import GENERATOR_TIMEOUT_S  # noqa: E402
 from src.infrastructure.narrowing import (  # noqa: E402
     as_str,
     as_str_keyed_exact,
@@ -138,7 +139,10 @@ async def verify(args: argparse.Namespace) -> int:
     contract = load_contract(args.contract)
     oracle = BlenderSocketOracle(args.blender_host, args.blender_port)
     if not args.skip_generate:
-        oracle.execute(build_generator_code(contract, PROJECT_ROOT))
+        generator = BlenderSocketOracle(
+            args.blender_host, args.blender_port, timeout=GENERATOR_TIMEOUT_S
+        )
+        generator.execute(build_generator_code(contract, PROJECT_ROOT))
     observation = oracle.execute_json(oracle_code(contract))
     readiness_report = await mcp_readiness(args.mcp_url, args.identity)
     readiness = {

@@ -92,7 +92,7 @@ https://bearmacminimac-mini.tail56c751.ts.net/blender/mcp
 ~/miniconda3/envs/blender-mcp/bin/python scripts/run_mcp_stdio_proxy.py
 ```
 
-完整 client 設定、九項工具與安全邊界見
+完整 client 設定、十一項工具與安全邊界見
 [docs/11-mcp-clients.md](docs/11-mcp-clients.md)。MCP server 不辨識或特判 host 名稱。
 
 ### 匯出 3D 列印模型
