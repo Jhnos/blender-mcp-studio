@@ -74,3 +74,5 @@ GitHub 查找 `electrode holder 3d print clamp pH probe` 與分片夾座，檢�
 - [FastMCP官方工具文件原始碼](https://github.com/PrefectHQ/fastmcp/blob/main/docs/servers/tools.mdx)：沿用現有FastMCP typed output、ToolError與工具annotations；不引入新的MCP server或背景worker，透過同一AppRuntime及BlenderPort提供登錄測試。
 
 - 線對線擴充前檢索GitHub [trimesh proximity](https://github.com/mikedh/trimesh/blob/main/trimesh/proximity.py)：提供網格與點鄰近查询；本案已有Blender KDTree與保守曲線取樣，沿用既有模組建立線包絡檢查，不新增網格依賴或另一套碰撞框架。
+
+- 跨姿態模組前檢索GitHub [OMPL離散／連續碰撞比較](https://github.com/ompl/omplapp/blob/main/demos/SE3RigidBodyPlanning/CollisionCheckers.cpp) 與 [PyElastica](https://github.com/GazzolaLab/PyElastica)。前者明確分開姿態與動作檢查，後者提供細長柔性體力學模擬。本案先沿用既有定長曲線、Blender BVH/KDTree及Scenario，固定曲線分支並重播中間姿態；不引入缺乏材料輸入的力學模型，不將有限取樣標成連續碰撞證明。新增motion orchestrator／fixture只分離跨姿態選擇和合成反例，沒有複製幾何判準。

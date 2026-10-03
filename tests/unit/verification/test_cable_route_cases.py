@@ -108,3 +108,14 @@ def test_full_chain_matrix_keeps_three_ordered_segments_per_wire() -> None:
     assert next(
         s for s in registered_suites() if s.suite_id == "electrode-full-chains"
     ).cases == tuple((c.name, c.expected) for c in CHAIN_CASES)
+
+
+def test_motion_cases_require_middle_samples_and_blocked_control() -> None:
+    from src.verification.cable_route_cases import MOTION_CASES, registered_suites
+
+    assert [c.expected for c in MOTION_CASES] == ["clear", "blocked"]
+    assert all(c.inputs.lifts_mm == tuple(range(0, 101, 10)) for c in MOTION_CASES)
+    assert [c.inputs.insert_obstacle for c in MOTION_CASES] == [False, True]
+    assert next(
+        s for s in registered_suites() if s.suite_id == "electrode-cable-motion"
+    ).cases == tuple((c.name, c.expected) for c in MOTION_CASES)

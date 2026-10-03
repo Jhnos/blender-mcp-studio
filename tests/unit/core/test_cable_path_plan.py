@@ -80,3 +80,37 @@ def test_chain_samples_all_segments_with_shared_join_and_length() -> None:
         sample_chain((second, first))
     with pytest.raises(ValueError, match="empty"):
         sample_chain(())
+
+
+def test_continuation_retains_family_and_rejects_identity_or_length_changes() -> None:
+    from src.core.planning.cable_path_plan import continue_route
+
+    original = candidates(boundary(), RouteSearchSpec(candidate_count=8))[0]
+    assert continue_route(original, original.boundary) == original
+    moved = replace(original.boundary, end_mm=(60, 1, 1))
+    continued = continue_route(original, moved)
+    assert continued is not None
+    assert continued.parameters_mm[:4] == original.parameters_mm[:4]
+    assert continued.parameters_mm[4] * original.parameters_mm[4] > 0
+    measured = sample_path(continued.curves)
+    assert measured.points_mm[-1] == moved.end_mm
+    assert measured.length_lower_mm == pytest.approx(original.boundary.length_mm, abs=0.05)
+    for changed in (
+        replace(moved, name="other"),
+        replace(moved, length_mm=160),
+        replace(moved, cable_radius_mm=4),
+        replace(moved, lead_mm=7),
+    ):
+        with pytest.raises(ValueError, match="same cable"):
+            continue_route(original, changed)
+
+
+def test_continuation_keeps_bend_constraint_and_fails_without_a_length_solution() -> None:
+    from src.core.planning.cable_path_plan import continue_route
+
+    original = candidates(boundary(), RouteSearchSpec(candidate_count=8))[0]
+    assert continue_route(original, original.boundary, minimum_sampled_radius_mm=1000) is None
+    assert continue_route(original, replace(original.boundary, end_mm=(149, 0, 0))) is None
+    for invalid in (-1, float("nan"), float("inf")):
+        with pytest.raises(ValueError, match="radius"):
+            continue_route(original, original.boundary, minimum_sampled_radius_mm=invalid)

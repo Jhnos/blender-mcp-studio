@@ -11,6 +11,7 @@ import bpy
 from scripts import lab_cable_routes as routes
 from scripts import model_lab_platform as model
 from scripts.lab_station_render import configure_electrode_view
+from scripts.verify.lab_cable_motion_checks import MotionFixture
 from src.core.domain.cable_paths import sample_path
 from src.core.planning.cable_path_plan import RouteCandidate, RouteSearchSpec
 from src.verification.cable_route_cases import (
@@ -18,6 +19,7 @@ from src.verification.cable_route_cases import (
     BUNDLE_ROUTES,
     CHAIN_CASES,
     CONTACT_CASES,
+    MOTION_CASES,
     PAIR_CASES,
     ROUTE_CASES,
     BundlePose,
@@ -246,9 +248,16 @@ def run(output: Path, *, render: bool = True) -> None:
     report["chain_evidence"] = [asdict(row) for row in chains]
     path.write_text(json.dumps(report, indent=2))
     require_complete(CHAIN_CASES, chains)
+    motion_fixture = MotionFixture((lambda stem: save_preview(output, stem)) if render else None)
+    motions = run_scenarios(MOTION_CASES, motion_fixture.observe, motion_fixture.cleanup)
+    report["motion_cases"] = [asdict(case) for case in MOTION_CASES]
+    report["motion_evidence"] = [asdict(row) for row in motions]
+    path.write_text(json.dumps(report, indent=2))
+    require_complete(MOTION_CASES, motions)
     print(
         f"Shared scenarios: {len(controls)} contact, {len(pairs)} wire-pair, "
-        f"{len(results)} single-route, {len(bundles)} bundle and {len(chains)} full-chain cases passed"
+        f"{len(results)} single-route, {len(bundles)} bundle, {len(chains)} full-chain "
+        f"and {len(motions)} motion cases passed"
     )
 
 
@@ -313,6 +322,13 @@ def run_registered(suite_id: str) -> dict[str, object]:
             results = run_scenarios(CONTACT_CASES, fixture.observe, fixture.cleanup)
             pair_fixture = PairFixture()
             results += run_scenarios(PAIR_CASES, pair_fixture.observe, pair_fixture.cleanup)
+        elif suite_id == "electrode-cable-motion":
+            if "electrode_configuration" not in bpy.context.scene:
+                raise ValueError(
+                    "Open a generated lab-station electrode assembly before running this suite"
+                )
+            motion_fixture = MotionFixture()
+            results = run_scenarios(MOTION_CASES, motion_fixture.observe, motion_fixture.cleanup)
         elif suite_id in ("electrode-head-bundle", "electrode-full-chains"):
             if "electrode_configuration" not in bpy.context.scene:
                 raise ValueError(

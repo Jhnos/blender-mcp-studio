@@ -93,7 +93,9 @@ arbitrary Python.
 
 ### 登錄測試
 
-先呼叫 `list_verification_suites`，再將回傳的 `suite_id` 傳給 `run_verification_suite`。目前有 `cable-contact-controls`（10個實體／自接觸／跨段、7個線對線正反例）、`electrode-head-routes`（4個獨立探頭端走線姿態）、`electrode-head-bundle`（三線共同工作／各自抬高姿態與一個阻擋反例）及 `electrode-full-chains`（三條底座至探頭完整線的工作與各自抬高姿態）。三個探頭套件要求目前開啟已生成的工作站電極臂模型；工具不載入、建立或覆寫使用者模型。測試會暫時建立配件或調整臂姿態，完成後恢復姿態、關節屬性、選取與active object；無法恢復即回報執行錯誤。
+先呼叫 `list_verification_suites`，再將回傳的 `suite_id` 傳給 `run_verification_suite`。目前有 `cable-contact-controls`（10個實體／自接觸／跨段、7個線對線正反例）、`electrode-head-routes`（4個獨立探頭端走線姿態）、`electrode-head-bundle`（三線共同工作／各自抬高姿態與一個阻擋反例）、`electrode-full-chains`（三條底座至探頭完整線的工作與各自抬高姿態），以及 `electrode-cable-motion`（固定曲線分支的22個升降取樣姿態，另驗兩端安全但中途受阻的反例）。四個探頭套件要求目前開啟已生成的工作站電極臂模型；工具不載入、建立或覆寫使用者模型。測試會暫時建立配件或調整臂姿態，完成後恢復姿態、關節屬性、選取與active object；無法恢復即回報執行錯誤。
+
+本工作站走線套件的通過基準使用 `cable-clearance` 配置；可在Blender開啟 `tmp/lab-station-route-engine/motion-pH_temp-000.blend` 後執行。其他配置仍依實際量測回傳結果，不會因同樣是電極臂模型就自動通過。
 
 回傳包含 `suite_id`、`passed`、逐項 `checks`（name／expected／observed／passed／detail）、`scope` 和 `scene_restored`。`passed=false` 表示有測試未通過；未知測試、缺少模型、缺漏證據或Blender不可用則是工具錯誤。測試名稱是封閉登錄集合，不能傳程式碼、檔案路徑或自訂預期值。REST的 `/api/verification/suites` 與 `/api/verification/suites/{suite_id}/run` 使用同一服務。
 

@@ -231,6 +231,36 @@ def pair_hit(
     return None
 
 
+def candidate_hit(
+    candidate: RouteCandidate,
+    sampled: SampledPath,
+    obstacles: RouteObstacles,
+    *,
+    prefix: tuple[RouteCandidate, ...] = (),
+    neighbours: tuple[tuple[RouteCandidate, SampledPath], ...] = (),
+    terminal: str | None = None,
+) -> dict[str, object] | None:
+    """The same hard constraints serve static search and continuation frames."""
+    request = candidate.boundary
+    if (
+        max(
+            abs(sampled.length_lower_mm - request.length_mm),
+            abs(sampled.length_upper_mm - request.length_mm),
+        )
+        > 0.05
+    ):
+        return {"reason": "length_interval"}
+    connected = sample_chain((*prefix, candidate)) if prefix else sampled
+    hit = nonlocal_self_hit(connected, request.cable_radius_mm)
+    if hit is not None:
+        return hit
+    for route, other in neighbours:
+        hit = pair_hit(sampled, request.cable_radius_mm, other, route.boundary.cable_radius_mm)
+        if hit is not None:
+            return {**hit, "other_route": route.boundary.name}
+    return obstacles.first_hit(sampled, request, terminal)
+
+
 def select_route(
     case: RouteCase,
     search: RouteSearchSpec | None = None,
@@ -242,43 +272,18 @@ def select_route(
     search = search or RouteSearchSpec()
     request = measure(case)
     obstacles = obstacles or RouteObstacles()
-    neighbours = [(route, sample_path(route.curves)) for route in occupied]
+    neighbours = tuple((route, sample_path(route.curves)) for route in occupied)
     attempts: list[dict[str, object]] = []
     choices = candidates(request, search)
     for candidate in choices:
         sampled = sample_path(candidate.curves)
-        if (
-            max(
-                abs(sampled.length_lower_mm - request.length_mm),
-                abs(sampled.length_upper_mm - request.length_mm),
-            )
-            > 0.05
-        ):
-            attempts.append({"reason": "length_interval"})
-            continue
-        connected = sample_chain((*prefix, candidate)) if prefix else sampled
-        self_hit = nonlocal_self_hit(connected, request.cable_radius_mm)
-        if self_hit is not None:
-            attempts.append(self_hit)
-            continue
-        wire_hit = next(
-            (
-                {**hit, "other_route": route.boundary.name}
-                for route, other in neighbours
-                if (
-                    hit := pair_hit(
-                        sampled, request.cable_radius_mm, other, route.boundary.cable_radius_mm
-                    )
-                )
-                is not None
-            ),
-            None,
-        )
-        if wire_hit is not None:
-            attempts.append(wire_hit)
-            continue
-        hit = obstacles.first_hit(
-            sampled, request, probe_name(case) if case.segment == "head" else None
+        hit = candidate_hit(
+            candidate,
+            sampled,
+            obstacles,
+            prefix=prefix,
+            neighbours=neighbours,
+            terminal=probe_name(case) if case.segment == "head" else None,
         )
         if hit is None:
             return candidate, {
@@ -311,7 +316,10 @@ def draw_route(candidate: RouteCandidate, color: tuple[float, float, float, floa
     name = "RESEARCH_route_" + candidate.boundary.name.replace("/", "_")
     old = bpy.data.objects.get(name)
     if old is not None:
+        previous = old.data
         bpy.data.objects.remove(old, do_unlink=True)
+        if isinstance(previous, bpy.types.Curve) and previous.users == 0:
+            bpy.data.curves.remove(previous)
     sampled = sample_path(candidate.curves)
     data = bpy.data.curves.new(name, "CURVE")
     data.dimensions = "3D"

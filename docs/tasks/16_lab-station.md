@@ -28,6 +28,35 @@
 
 ### Verified facts
 
+- API52128部署exit0，正式MCP五套30案例讀回通過。
+- V01.0R.029：重用candidates的定長求解為_fit_route，continue_route固定handle family／side且保持線名、長度、線徑和lead；新的單元先缺函式紅→綠，彎曲半徑約束先紅→綠。31focused通過，82599完整CI terminal exit0，ci-motion.log所有hard gates green；正式MCP五套30案例與場景正常／例外恢復、三拒絕控制均通過。
+- 61476原工作位分支延續研究terminal exit0但有幾何失敗：毛細管11姿態通過；pH抬20／30mm異線包絡接近，40–100mm pH跨肘原family無解，continuation-discovery.json保留。不能改寫成通過。
+- 新lab_cable_motion只負責跨姿態選擇，沿用lab_cable_routes.candidate_hit同一碰撞判準；68146共同分支22姿態search成功，89.1秒，motion-search.json含九段各姿態控制點及拒絕原因。還不是連續掃掠或材料證明。
+- 新lab_cable_motion_checks提供資料式MotionFixture，正例與兩端清楚／中段固定方塊阻擋反例；MOTION_CASES與MCP第五套electrode-cable-motion已接線。新增模組前已查GitHub OMPL／PyElastica，無新依賴。55082 terminal exit0，正例22姿態通過，反例只在pH升50mm被方塊拒絕，端點距離35.46mm；217秒低於300秒既有套件期限。
+
+
+
+- 完整CI後fresh開回arm-seated，六承壓鏈與4導線夾讀回通過，motion-restored-formal.json留證；mcp-verification.json重讀30案例。
+- 22張motion-* PNG及blend由選定路徑直接產生，兩頭中間姿態已目視檢查。ffmpeg合成motion-capillary.gif及motion-pH_temp.gif，各800×680、6.1秒、61解碼幀／11不同姿態；52041編碼及獨立framemd5核對通過。沿用系統ffmpeg，沒有安裝Pillow或其他依賴。
+- 5S：motion選擇169／fixture121／主fixture362／靜態走線334／純規劃208／案例271行，均未達380預警；指示75／7及skill150行。GitHub來源、MCP用法、R52與LESSON同步；028交接移入歷史。封存前22項文件／版本／預算守衛通過（30183 exit0）。
+
+### Open failures
+
+- 三條完整線已驗兩頭各11個升降取樣姿態並保持同一曲線分支；取樣之間的連續掃掠、前後伸縮／混合動作、實體接頭、材料／拉力仍未驗。Ø6mm是假設，每條底座200mm／跨肘150mm，加頭段220／170／170mm均僅研究長度。
+- 候選配置雙頭同抬拆蓋仍有碰撞，一次一頭維修研究尚未進入共用情境。底座／LCD、電路、載荷與實體列印待完成。已向使用者詢問幫浦、壓力感測器、pH／供電板型號與線管外徑，未有回覆；可繼續機構驗證。
+
+### Next step
+
+- 82599已terminal exit0，無進行中真機程序。下一工程項目為前後伸縮／混合動作、取樣間隙的保守界限及單頭維修情境；不能只增加端點。部署讀回應為五套30案例。
+- 後續以Scenario資料＋共用執行器＋可清理配件擴充姿態變形與單頭維修；MCP共用同一登錄，不複製逐版測試。走線仍用RouteCase／RouteSearchSpec。
+- 正式場景tmp/lab-station-electrode-guides-aligned/arm-seated.blend，證據tmp/lab-station-route-engine/；完整工作站目標保持ACTIVE。
+
+## 歷史驗證紀錄
+
+以下為逐輪證據與當時的下一步；接手只依上方現行段落與任務索引，不能將歷史下一步重新當成主線。
+
+### V01.0R.028 封存接手
+
 - API44157部署exit0；正式MCP目錄確認四套28案例。86288完整CI terminal exit0，ci-chain.log所有hard gates green；包含四套MCP28案例、正常／例外場景還原及三拒絕控制。
 - V01.0R.028：擴充既有sample_chain／select_route.prefix，同線三段合併查接點、切向、半徑及非局部自碰；BundleFixture改讀配置路徑，異線全段納入occupied。無新模組或依賴；28focused通過，mypy／ruff格式通過（測試import排序曾失敗，已修正）。
 - 研究45614因重載清單漏掉直接引用入口失敗，沒有執行幾何；改從研究入口推導closure，3544 exit0，九段各自淨空且各線串接無自碰。正式共用fixture 50657 exit0，10控制與三個九段姿態通過，chain-focused.json留證。
@@ -38,20 +67,6 @@
 - 完整CI後fresh開回arm-seated並讀回六承壓鏈及4導線夾通過，chain-restored-formal.json留證。正式MCP量測報告重讀共28案例。
 - 5S：走線326／配件346／規劃178／案例250行，指示75／7及skill150行，無新模組或依賴。R51、MCP目錄、走線說明與跨段LESSON同步；R50／R51表格斷行修正，027交接移入歷史保留。
 
-### Open failures
-
-- 三條完整線的跨段銜接與三個離散姿態已驗；姿態之間的連續變形、實體接頭、材料／拉力仍未驗。Ø6mm是假設，每條底座200mm／跨肘150mm，加頭段220／170／170mm均僅研究長度。
-- 候選配置雙頭同抬拆蓋仍有碰撞，一次一頭維修研究尚未進入共用情境。底座／LCD、電路、載荷與實體列印待完成。已向使用者詢問幫浦、壓力感測器、pH／供電板型號與線管外徑，未有回覆；可繼續機構驗證。
-
-### Next step
-
-- 86288已terminal exit0，無進行中真機程序。下一工程項目為同一條線在姿態間的變形及單頭維修情境；不能只重選互不連續的候選。部署讀回應為四套28案例。
-- 後續以Scenario資料＋共用執行器＋可清理配件擴充姿態變形與單頭維修；MCP共用同一登錄，不複製逐版測試。走線仍用RouteCase／RouteSearchSpec。
-- 正式場景tmp/lab-station-electrode-guides-aligned/arm-seated.blend，證據tmp/lab-station-route-engine/；完整工作站目標保持ACTIVE。
-
-## 歷史驗證紀錄
-
-以下為逐輪證據與當時的下一步；接手只依上方現行段落與任務索引，不能將歷史下一步重新當成主線。
 
 ### V01.0R.027 封存接手
 

@@ -120,6 +120,73 @@ def estimated_length(curves: tuple[CubicPath, ...], samples: int) -> float:
     return total
 
 
+def _fit_route(
+    request: RouteBoundary,
+    handles: tuple[float, float, float, float],
+    sign: int,
+    minimum_radius_mm: float = 0,
+) -> RouteCandidate | None:
+    target = request.length_mm - 2 * request.lead_mm
+    lo, hi = 0.0, request.length_mm
+    if estimated_length(loop_curves(request, handles, 0), 32) > target:
+        return None
+    for _ in range(20):
+        mid = (lo + hi) / 2
+        if estimated_length(loop_curves(request, handles, sign * mid), 32) < target:
+            lo = mid
+        else:
+            hi = mid
+    lo, hi = max(0, lo - 2), hi + 2
+    for _ in range(14):
+        mid = (lo + hi) / 2
+        if estimated_length(loop_curves(request, handles, sign * mid), 128) < target:
+            lo = mid
+        else:
+            hi = mid
+    bulge = sign * (lo + hi) / 2
+    curves = loop_curves(request, handles, bulge)
+    length = estimated_length(curves, 256) + 2 * request.lead_mm
+    if abs(length - request.length_mm) > 0.05:
+        return None
+    try:
+        maximum_curvature = max(curve.curvature(i / 128) for curve in curves for i in range(129))
+    except ValueError:
+        return None
+    if maximum_curvature < 1e-12 or 1 / maximum_curvature < max(
+        minimum_radius_mm, request.cable_radius_mm
+    ):
+        return None
+    path = (
+        straight(request.start_mm, curves[0].controls_mm[0]),
+        *curves,
+        straight(curves[-1].controls_mm[-1], request.end_mm),
+    )
+    return RouteCandidate(request, path, (*handles, bulge), length, 1 / maximum_curvature)
+
+
+def continue_route(
+    previous: RouteCandidate, request: RouteBoundary, *, minimum_sampled_radius_mm: float = 0
+) -> RouteCandidate | None:
+    """Refit the same handle family/side at new anchors; this is not collision certification."""
+    before = previous.boundary
+    if not isfinite(minimum_sampled_radius_mm) or minimum_sampled_radius_mm < 0:
+        raise ValueError("Minimum sampled radius must be finite and nonnegative")
+    if (before.name, before.length_mm, before.cable_radius_mm, before.lead_mm) != (
+        request.name,
+        request.length_mm,
+        request.cable_radius_mm,
+        request.lead_mm,
+    ):
+        raise ValueError("Continuation requires the same cable identity, length, radius and lead")
+    first, last, middle, offset, bulge = previous.parameters_mm
+    return _fit_route(
+        request,
+        (first, last, middle, offset),
+        -1 if bulge < 0 else 1,
+        minimum_sampled_radius_mm,
+    )
+
+
 def candidates(
     request: RouteBoundary, search: RouteSearchSpec | None = None
 ) -> tuple[RouteCandidate, ...]:
@@ -127,7 +194,6 @@ def candidates(
     search = search or RouteSearchSpec()
     rng = Random(search.seed)
     result = []
-    target = request.length_mm - 2 * request.lead_mm
     for _ in range(search.candidate_count):
         handles = (
             rng.uniform(*search.handle_range_mm),
@@ -136,43 +202,7 @@ def candidates(
             rng.uniform(*search.middle_range_mm),
         )
         for sign in (-1, 1):
-            lo, hi = 0.0, request.length_mm
-            if estimated_length(loop_curves(request, handles, 0), 32) > target:
-                continue
-            for _ in range(20):
-                mid = (lo + hi) / 2
-                if estimated_length(loop_curves(request, handles, sign * mid), 32) < target:
-                    lo = mid
-                else:
-                    hi = mid
-            lo, hi = max(0, lo - 2), hi + 2
-            for _ in range(14):
-                mid = (lo + hi) / 2
-                if estimated_length(loop_curves(request, handles, sign * mid), 128) < target:
-                    lo = mid
-                else:
-                    hi = mid
-            bulge = sign * (lo + hi) / 2
-            curves = loop_curves(request, handles, bulge)
-            length = estimated_length(curves, 256) + 2 * request.lead_mm
-            if abs(length - request.length_mm) > 0.05:
-                continue
-            try:
-                maximum_curvature = max(
-                    curve.curvature(i / 128) for curve in curves for i in range(129)
-                )
-            except ValueError:
-                continue
-            if maximum_curvature < 1e-12 or 1 / maximum_curvature < max(
-                search.minimum_sampled_radius_mm, request.cable_radius_mm
-            ):
-                continue
-            path = (
-                straight(request.start_mm, curves[0].controls_mm[0]),
-                *curves,
-                straight(curves[-1].controls_mm[-1], request.end_mm),
-            )
-            result.append(
-                RouteCandidate(request, path, (*handles, bulge), length, 1 / maximum_curvature)
-            )
+            candidate = _fit_route(request, handles, sign, search.minimum_sampled_radius_mm)
+            if candidate is not None:
+                result.append(candidate)
     return tuple(sorted(result, key=lambda row: -row.sampled_min_radius_mm))

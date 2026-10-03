@@ -217,9 +217,30 @@ CHAIN_CASES = tuple(
 )
 
 
+@dataclass(frozen=True, slots=True)
+class MotionProbe:
+    lifts_mm: tuple[float, ...] = tuple(range(0, 101, 10))
+    insert_obstacle: bool = False
+    obstacle_route: RoutePose = BUNDLE_ROUTES[1]
+
+
+MOTION_CASES = (
+    Scenario("motion_same_family_clear", MotionProbe(), "clear"),
+    Scenario("motion_middle_obstacle_rejected", MotionProbe(insert_obstacle=True), "blocked"),
+)
+
+
 def registered_suites() -> tuple["VerificationSuite", ...]:
     """Catalog coverage is derived from the exact cases the Blender runner consumes."""
     return (
+        VerificationSuite(
+            "electrode-cable-motion",
+            "Electrode cable motion samples",
+            "One route family across independent 0–100 mm lifts at 10 mm steps, "
+            "with an endpoint-clear intermediate obstruction control. "
+            "No continuous swept-volume or material qualification.",
+            tuple((case.name, case.expected) for case in MOTION_CASES),
+        ),
         VerificationSuite(
             "electrode-full-chains",
             "Electrode full cable chains",

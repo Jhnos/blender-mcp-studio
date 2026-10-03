@@ -55,3 +55,4 @@ Population: R1–R16 為歷史 V10 的 LS_，R17–R24 為 rotary，R25 為 simp
 | R49 | 登錄測試經共享MCP／REST服務執行，逐例證據完整且恢復目前場景；未知名稱／程式碼／缺模型拒絕 | engineering | yes | behavior | artifact:route-engine/mcp-verification.json |
 | R50 | 三條探頭端線路共同避碰，兩條線的半徑及取樣餘量均納入；工作／單頭抬高分開驗證，穿越與故意阻擋線被拒絕 | engineering | yes | behavior | artifact:route-engine/engine-verification.json,route-engine/mcp-verification.json |
 | R51 | 三條線各自串接底座／跨肘／探頭端，同線接點及方向一致並拒絕跨段自碰，異線全部區段共同避碰；三個離散姿態，不含連續變形或接口實體 | engineering | yes | behavior | artifact:route-engine/engine-verification.json,route-engine/mcp-verification.json,route-engine/chain-working.png |
+| R52 | 同一曲線分支於兩頭各11升降姿態維持定長與淨空；兩端淨空的中途方塊反例須拒絕；固定步距不宣稱連續掃掠 | engineering | yes | behavior | artifact:route-engine/engine-verification.json,route-engine/mcp-verification.json,route-engine/motion-pH_temp-050.png |
