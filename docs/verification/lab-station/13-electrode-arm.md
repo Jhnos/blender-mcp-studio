@@ -39,7 +39,17 @@
 - 自適應細分以控制點凸包限制曲線到折線的偏差；探查半徑包含線材半徑、半個最大取樣間距與偏差。閉合實體內起點、鏡射網格、線徑放大與非相鄰線段自接觸另驗。探頭接觸只允許實際朝外端面上的軸向直段，不忽略整支探頭。
 - 毛細管端220mm研究段在工作／抬升端點找到實體淨空候選；四案例分別檢查毛細管兩姿態及pH／溫度各一條工作路徑。報告和圖在 `tmp/lab-station-route-engine/`。這些是分開的單線案例，尚未驗整束線間距、連續變形、基座實際接頭或材料彎曲；研究長度不是裁線規格。
 
-固定真機入口 `scripts/verify/lab_cable_routes_verify_real.py` 已接既有lab_simple gate；直線、圓弧參考、3D長度、取樣細化界限、迴圈、接點連續性和參數錯誤有單元測試，真機正反例與實際頭部案例由同一引擎執行。既有臂件規格與可公開的MCP工具不變。
+固定真機入口 `scripts/verify/lab_cable_routes_verify_real.py` 接既有lab_simple gate，只負責連線、依賴重載、啟動套件與finally還原正式場景。測試本身分成三個可重用責任：
+
+| 模組 | 唯一責任 | 擴充方式 |
+|---|---|---|
+| `src/verification/cable_route_cases.py` | 不依賴Blender的案例輸入、預期結果與穩定名稱 | 新增接觸或姿態資料，不複製流程 |
+| `src/verification/scenario_runner.py` | 執行、量測結果判定、清理、完整涵蓋核對 | 注入其他測試的量測與清理函式；沿用VerificationEvidence／Summary |
+| `scripts/verify/lab_cable_route_checks.py` | 真實Blender配件、姿態設定、幾何量測與選擇性預覽 | 新幾何需求才新增配件，不混入預期結果 |
+
+共用執行器要求非空且唯一的案例名稱；量測例外即失敗，每例無論成功失敗都清理。清理失敗立即停止，避免污染下一例；判定要求完整且順序一致的證據，缺漏、重複、多出案例及錯誤結果均拒絕。JSON保存完整案例與每例expected／observed／detail，不再用手寫True表宣稱通過。六個表面案例逐例建立鏡射實體；自接觸與正常直線另列兩例，四個實際路徑案例另成一組，兩組共用執行器。
+
+`test_scenario_runner.py` 以正反例驗證執行器生命週期與缺漏拒絕；`test_cable_route_cases.py` 用pytest參數化同一批資料，釘住既有頭部／通道／抬升涵蓋及重載閉包。曲線解析的單元測試仍獨立於真機配件。重構前後四案例的完整路徑量測報告逐欄相等，證據 `tmp/lab-station-route-engine/modular-equivalence.json`。此測試模組化沒有擴大幾何或製造資格範圍。
 
 ## 幾何與五金範圍
 

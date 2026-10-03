@@ -28,6 +28,32 @@
 
 ### Verified facts
 
+- 測試已分層：`scenario_runner.py` 共用非空唯一案例／量測／必清理／完整涵蓋判定；`cable_route_cases.py` 8個接觸與4個實際姿態資料；`lab_cable_route_checks.py` Blender配件；原真機入口只保留連線、重載和finally開回正式檔。沿用VerificationEvidence／Summary，不新增測試框架。
+- TDD：新執行器測試先因缺模組紅，再10項綠；案例矩陣與重載守衛後共21項通過。mypy及ruff通過。26793單獨真機terminal exit0，四路徑完整rows與024報告逐欄相等；`modular-equivalence.json`保留相等與8／4案例證據。V01.0R.025完整CI4762 terminal exit0、all hard gates green，日誌 `tmp/lab-station-route-engine/ci-modular-tests.log`。正式場景已fresh核對六承壓鏈與導線夾，`modular-restored.json`留證。
+- 每例保存穩定名稱、expected、observed、detail及量測；量測例外不能被當成預期拒絕，清理失敗立即停，漏跑／重複／順序錯誤不可通過。六個表面案例各自建立並移除鏡射方塊；自接觸與正常直線都具名，不再手寫True表。host用finally還原場景，傳輸逾時仍須先排空。
+- 5S：共用執行器88、案例93、Blender配件118、真機入口29行，均低於380预警；不新增外部依賴或公開工具。先查pytest GitHub／官方參數化文件並重用現有結果格式；13使用方式、R48與09來源同步。
+
+### Open failures
+
+- 模組化不擴大測試資格：四個走線案例仍各自獨立，整束線間距、跨段、中間變形與材料／拉力未驗。Ø6mm是假設；220／150mm不是裁線規格。
+- 候選配置雙頭同抬拆蓋仍有碰撞，一次一頭的維修研究尚未進入共用情境。底座／LCD、電路、載荷與實體列印待完成。
+
+### Next step
+
+- **使用者最新要求：**測試也要模組化，並明確更正為整合到MCP（非MVP）。本輪先封存已驗證的共用測試，再提供固定目錄的list_verification_suites／run_verification_suite，經同一AppRuntime／序列化Blender port執行；不接受任意腳本。預計接觸控制與探頭端走線两套，測試後須恢復目前場景姿態／選取／臨時物件。此為明確授權擴充原九項公開工具契約，需同步schema／契約／真機測試與部署。
+
+- CI4762已terminal exit0，無執行中的驗證。下一步實作上方使用者要求的MCP整合；真機仍串行，逾時先排空同一handle。
+- 後續測試以Scenario資料＋共用執行器＋可清理配件擴充，不複製逐版測試腳本；走線仍走既有RouteCase／RouteSearchSpec。
+- 正式場景 `tmp/lab-station-electrode-guides-aligned/arm-seated.blend`，研究／新證據 `tmp/lab-station-route-engine/`。下一工程項目仍為跨段／線間距與單頭維修情境。
+
+## 歷史驗證紀錄
+
+以下為逐輪證據與當時的下一步；接手只依上方現行段落與任務索引，不能將歷史下一步重新當成主線。
+
+### V01.0R.024 封存接手
+
+### Verified facts
+
 - 共用柔性走線入口已建立：`cable_paths.py` 純毫米曲線與保守細分、`cable_path_plan.py` 不可變邊界／搜尋配置與候選、`lab_cable_routes.py` Blender錨點量測／實體與自接觸檢查／呈現。後續變體只改 `RouteCase`／`RouteSearchSpec`，不複製生成器。
 - V01.0R.024：18項曲線／規劃單元測試通過；單獨真機73888及完整CI28222均terminal exit0，all hard gates green；日誌 `tmp/lab-station-route-engine/ci-route-engine.log`。完整CI再次通過8個控制、4個單線單姿態案例與既有全部回歸。
 - 毛細管頭段220mm研究長度，在工作／單頭抬高100mm的幾何候選分別拒絕39／19個候選後找到淨空線路；取樣最小曲率半徑約12.78／15.96mm。pH與溫度頭段150mm工作位亦找到候選。報告保存配置、錨點、控制點、長度上下界和拒絕原因。
@@ -46,9 +72,6 @@
 - 之後從同一走線入口擴充跨段／線對線與連續姿態檢查，另將單頭維修次序資料化。禁止複製逐版產生器或source字串替換。
 - 正式場景仍為 `tmp/lab-station-electrode-guides-aligned/arm-seated.blend`；路徑研究在 `tmp/lab-station-route-engine/`，配置研究在 `tmp/lab-station-module-configurations/`。
 
-## 歷史驗證紀錄
-
-以下為逐輪證據與當時的下一步；接手只依上方現行段落與任務索引，不能將歷史下一步重新當成主線。
 
 ### V01.0R.023 封存接手
 

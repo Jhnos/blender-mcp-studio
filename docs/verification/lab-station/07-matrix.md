@@ -51,3 +51,4 @@ Population: R1–R16 為歷史 V10 的 LS_，R17–R24 為 rotary，R25 為 simp
 | R45 | 通道同側而桿身中心保留；反轉實際通道網格拒絕，孔壁／止擋／動作與保存檔仍驗；不含線材路徑資格 | engineering | yes | behavior | artifact:electrode-guides-aligned/verification.json,electrode-guides-aligned/guide-controls.json,electrode-guides-aligned/guide-file-check.json,electrode-guides-aligned/guide-detail.png |
 | R46 | 同一產生器讀取不可變配置，夾座／探頭／杯位由資料驅動；重建不累積偏移，腕部接口與另一頭不變 | engineering | yes | behavior | artifact:module-configurations/configuration-readback.json,module-configurations/baseline.blend,module-configurations/cable-clearance.blend |
 | R47 | 共用線路邊界／候選／實體檢查；保守取樣包絡、端面接觸限定、穿入／自接觸／線徑放大拒絕，案例變更只換資料；不含整束線與材料資格 | engineering | yes | behavior | artifact:route-engine/engine-verification.json,route-engine/capillary-0.png,route-engine/capillary-100.png |
+| R48 | 測試以資料＋共用執行器＋獨立配件重用，失敗必清理且完整覆蓋；不擴大資格範圍 | engineering | yes | behavior | artifact:route-engine/engine-verification.json,route-engine/modular-equivalence.json |

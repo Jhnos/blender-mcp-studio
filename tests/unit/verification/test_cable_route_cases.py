@@ -1,0 +1,63 @@
+"""The declared matrix is the coverage contract, independent of Blender execution."""
+
+from pathlib import Path
+
+import pytest
+
+from src.core.domain.cable_paths import sample_path
+from src.verification.cable_route_cases import CONTACT_CASES, ROUTE_CASES, ContactProbe
+from src.verification.generator_imports import reload_modules_for
+from src.verification.scenario_runner import Observation, Scenario, require_complete, run_scenarios
+
+
+@pytest.mark.parametrize("case", CONTACT_CASES, ids=lambda case: case.name)
+def test_contact_fixture_path_matches_declared_terminals(case: Scenario[ContactProbe]) -> None:
+    sampled = sample_path((case.inputs.curve,))
+    assert sampled.points_mm[0] == case.inputs.boundary.start_mm
+    assert sampled.points_mm[-1] == case.inputs.boundary.end_mm
+    assert case.expected in {
+        "clear",
+        "envelope_contact",
+        "start_inside",
+        "terminal_not_on_outward_face",
+        "nonlocal_self_contact",
+    }
+
+
+def test_route_matrix_retains_both_heads_channels_and_lift_endpoints() -> None:
+    assert [
+        (c.inputs.head, c.inputs.channel, c.inputs.length_mm, c.inputs.lift_mm) for c in ROUTE_CASES
+    ] == [
+        ("capillary", 0, 220, 0),
+        ("capillary", 0, 220, 100),
+        ("pH_temp", 0, 150, 0),
+        ("pH_temp", 1, 150, 0),
+    ]
+    assert all(c.expected == "found" for c in ROUTE_CASES)
+    assert len({c.name for c in ROUTE_CASES}) == 4
+
+
+def test_new_contact_case_is_consumed_without_changing_runner() -> None:
+    extra = Scenario("another_clearance", CONTACT_CASES[0].inputs, "clear")
+    cases = (CONTACT_CASES[0], extra)
+    observed: list[ContactProbe] = []
+
+    def measure(probe: ContactProbe) -> Observation:
+        observed.append(probe)
+        return Observation("clear", {})
+
+    rows = run_scenarios(cases, measure, lambda _: None)
+    require_complete(cases, rows)
+    assert len(observed) == 2
+    assert rows[-1].evidence.name == "another_clearance"
+
+
+def test_real_bootstrap_reloads_cases_runner_and_production_measurements() -> None:
+    root = Path(__file__).resolve().parents[3]
+    closure = reload_modules_for(root, root / "scripts/verify/lab_cable_route_checks.py")
+    assert {
+        "src.verification.cable_route_cases",
+        "src.verification.scenario_runner",
+        "scripts.lab_cable_routes",
+        "scripts.model_lab_platform",
+    } <= set(closure)

@@ -4,7 +4,7 @@ Read this file first after a new conversation, compaction, or terminal restart.
 
 ## 接手
 
-- **目前在做（2026-10-03）:** 任務16，V01.0R.024 共用柔性走線模組。純曲線domain、資料化候選planning、Blender量測／碰撞adapter共用入口，禁止複製逐版產生器。完整 `scripts/ci.sh --real` 28222 terminal exit0、all hard gates green，日誌 `tmp/lab-station-route-engine/ci-route-engine.log`。18項單元測試、8控制／4單線姿態案例通過。正式場景已還原並fresh核對六承壓鏈與導線夾。無執行中的CI；接手讀任務16 hand-off。
+- **目前在做（2026-10-03）:** 任務16，V01.0R.025測試模組化已通過完整CI4762 terminal exit0、all hard gates green，日誌 `tmp/lab-station-route-engine/ci-modular-tests.log`。21項針對測試、真機8接觸／4姿態通過，量測與024相等。正式場景還原，六承壓鏈與導線夾重讀通過；無執行中的CI。使用者追加並更正要求：**整合到MCP，非MVP**。下一步登錄測試目錄／執行工具經共享服務暴露，並驗證場景恢復；接手讀任務16 hand-off。
 - **下一步／研究接手:** 由共用走線入口擴充跨段、線對線及連續姿態檢查，並把一次抬一頭維修順序資料化。新報告、兩張毛細管預覽在 `tmp/lab-station-route-engine/`；220mm毛細管頭段工作／抬高100mm已有幾何候選，但不是裁線或材料資格。舊研究 `tmp/lab-station-full-route/README.md` 的114活動／298單頭維修及失敗歷史仍保留；十份舊產生器在archive-generators，不作新入口。全走線、底座／LCD、電路與物理資格仍未完成。
 
 - **等驗收:** 15 場景清單不再只有十個;對話路徑第一次有真機閘門(`--real` 32 條全綠)。下一個是 14 第五個實例。

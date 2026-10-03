@@ -66,3 +66,7 @@ GitHub 查找 `electrode holder 3d print clamp pH probe` 與分片夾座，檢�
 
 - [dhermes/bezier](https://github.com/dhermes/bezier)、[官方Curve文件](https://bezier.readthedocs.io/en/stable/python/reference/bezier.curve.html)：比較既有曲線求值、細分及長度工具。沿用本專案研究中的三次曲線形式，抽成小型純Python領域運算與Blender檢查邊界；未複製第三方程式碼，未加入數值套件或二進位依賴。
 - 搜尋結果只證明有既有工具，不構成此裝置的走線或材料資格；本地直線／圓弧、長度上下界、正反例與實體案例才是實作證據。
+
+### 測試模組化來源
+
+- [pytest-dev/pytest](https://github.com/pytest-dev/pytest)、[pytest參數化](https://docs.pytest.org/en/stable/how-to/parametrize.html)：沿用現有pytest執行純Python案例矩陣；Blender端使用同樣的案例／配件分離方式，重用本專案VerificationEvidence與VerificationSummary。未新增測試框架、第三方程式碼或依賴。
