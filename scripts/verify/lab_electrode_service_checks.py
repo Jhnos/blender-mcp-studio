@@ -1,15 +1,17 @@
 """Single-head maintenance scenarios reuse assembly and cable collision predicates."""
 
+from collections.abc import Callable
 from dataclasses import asdict
 from functools import lru_cache
 
 import bpy
-from mathutils import Vector
+from mathutils import Matrix, Vector
 
 from scripts import lab_cable_routes as routes
 from scripts import model_lab_platform as model
 from scripts.lab_cable_motion import MotionFrame, validate_motion
 from scripts.lab_electrode_check import verify_clamps
+from scripts.lab_station_motion_check import tree
 from scripts.lab_station_rig import set_electrode_service_tilt, set_electrode_wrist_pose
 from src.core.planning.cable_path_plan import fit_family
 from src.verification.cable_route_cases import CHAIN_ROUTES, MOTION_FAMILIES
@@ -18,6 +20,7 @@ from src.verification.electrode_service_cases import (
     WRIST_POINTS,
     ServiceProbe,
     ServiceState,
+    clamp_cycle_steps,
     service_transfer_steps,
 )
 from src.verification.scenario_runner import Observation, ScenarioResult, run_scenarios
@@ -60,9 +63,14 @@ class ServiceFixture:
             model.pose(head, 0, 100 if head == case.head and case.control != "working" else 0)
         if case.operation == "clamp" and case.control != "working":
             set_electrode_service_tilt(case.head)
-        if case.operation == "transfer":
+        if case.operation in ("transfer", "cycle"):
             for head in ("capillary", "pH_temp"):
-                apply_service_state(head, ServiceState(closure=(1, 1, 1)))
+                state = (
+                    service_transfer_steps()[-1].state
+                    if case.operation == "cycle" and head == case.head
+                    else ServiceState(closure=(1, 1, 1))
+                )
+                apply_service_state(head, state)
         neighbour = "pH_temp" if case.head == "capillary" else "capillary"
         fields = ("location", "rotation_euler", "rotation_quaternion", "scale")
 
@@ -78,7 +86,7 @@ class ServiceFixture:
             routes.RouteCase(r.head, r.channel, r.segment, r.length_mm) for r in CHAIN_ROUTES
         )
         rows: list[dict[str, object]] = []
-        geometry: dict[str, int] = {}
+        geometry: dict[str, int] | dict[str, float] = {}
         outcome = "clear"
         reason = ""
         fit = lru_cache(maxsize=512)(fit_family)
@@ -112,6 +120,9 @@ class ServiceFixture:
                     and step == 19
                     and "S_pH_temp_probe_-7" in moving
                     or case.operation == "transfer"
+                    or case.operation == "cycle"
+                    and step == 19
+                    and any("_probe_" in name for name in moving)
                 )
                 if case.control == "obstacle" and target:
                     selected_head = 2 if case.head == "capillary" else 5
@@ -181,6 +192,25 @@ class ServiceFixture:
                         )
                         rows[-1]["stage"] = step.stage
                         rows[-1]["state"] = asdict(state)
+                elif case.operation == "cycle":
+                    state = service_transfer_steps()[-1].state
+                    cycle = iter(clamp_cycle_steps(1 if case.head == "capillary" else 2))
+
+                    def observe_cycle(
+                        head: str, moving: tuple[str, ...], removed: tuple[str, ...], step: int
+                    ) -> None:
+                        observe_step(
+                            head,
+                            moving,
+                            removed,
+                            step,
+                            forward_mm=state.forward_mm,
+                            lift_mm=state.lift_mm,
+                        )
+
+                        rows[-1]["clamp_state"] = asdict(next(cycle))
+
+                    geometry = verify_clamp_cycle(case.head, observe=observe_cycle)
                 else:
                     geometry = verify_clamps(
                         labels=(case.head,),
@@ -202,6 +232,8 @@ class ServiceFixture:
                 if case.operation == "wrist"
                 else 188
                 if case.operation == "transfer"
+                else (208 if case.head == "capillary" else 260)
+                if case.operation == "cycle"
                 else (130 if case.head == "capillary" else 156)
             )
             if len(rows) != expected:
@@ -227,6 +259,7 @@ def verify_service_control_discrimination() -> None:
     for case in (
         ServiceProbe("pH_temp", "wrist", "obstacle"),
         ServiceProbe("pH_temp", "transfer", "obstacle"),
+        ServiceProbe("pH_temp", "cycle", "obstacle"),
     ):
         fixture = ServiceFixture()
         unrelated = (FrameEvidence("pH_temp", 100, ({"object": "unrelated_obstacle"},)),)
@@ -248,3 +281,83 @@ def run_service_cases(suite_id: str) -> tuple[ScenarioResult, ...]:
     verify_service_control_discrimination()
     fixture = ServiceFixture()
     return run_scenarios(SERVICE_CASES[suite_id], fixture.observe, fixture.cleanup)
+
+
+def verify_clamp_cycle(
+    head: str,
+    *,
+    observe: Callable[[str, tuple[str, ...], tuple[str, ...], int], None] | None = None,
+) -> dict[str, float]:
+    """Keep every extracted mesh in the collision scene; restore raw transforms in finally."""
+    if head not in ("capillary", "pH_temp"):
+        raise ValueError("Unknown clamp head")
+    prefix = "S_" + head + "_"
+    count = 1 if head == "capillary" else 2
+    probes = sorted(obj.name for obj in bpy.data.objects if obj.name.startswith(prefix + "probe_"))
+    if len(probes) != count:
+        raise ValueError("Incomplete probe clamp population: " + head)
+    groups: list[tuple[str, ...]] = [(prefix + f"clamp_{i}_bolt",) for i in range(2)]
+    groups.append(
+        tuple(
+            prefix + suffix
+            for suffix in (
+                "clamp_cap",
+                "clamp_0_nut",
+                "clamp_1_nut",
+                *(f"clamp_liner_{i}" for i in range(1, 2 * count, 2)),
+            )
+        )
+    )
+    groups.extend((probe, prefix + f"clamp_liner_{2 * i}") for i, probe in enumerate(probes))
+    names = tuple(name for group in groups for name in group)
+    if any(name not in bpy.data.objects for name in names):
+        raise ValueError("Missing removable probe clamp parts")
+    originals = {name: bpy.data.objects[name].matrix_world.copy() for name in names}
+    fields = ("location", "rotation_euler", "rotation_quaternion", "scale")
+    raw = {
+        name: {field: tuple(getattr(bpy.data.objects[name], field)) for field in fields}
+        for name in names
+    }
+    samples = 0
+    try:
+        for state in clamp_cycle_steps(count):
+            for group, offset in zip(groups, state.offsets_mm, strict=True):
+                for name in group:
+                    bpy.data.objects[name].matrix_world = originals[name] @ Matrix.Translation(
+                        (0, offset / 1000, 0)
+                    )
+            bpy.context.view_layer.update()
+            moving = groups[state.group]
+            obstacles = {
+                obj.name: tree(obj)
+                for obj in bpy.data.objects
+                if obj.type == "MESH"
+                and not obj.hide_render
+                and obj.name.startswith(("S_", "LS_FIT_", "LS_REF_vessel", "LS_ROUTE_"))
+                and obj.name not in moving
+            }
+            for name in moving:
+                moved = tree(bpy.data.objects[name])
+                hits = [other for other, mesh in obstacles.items() if moved.overlap(mesh)]
+                if hits:
+                    raise ValueError(f"Ordered clamp cycle blocked: {name}, {state}, {hits}")
+            if observe is not None:
+                observe(head, moving, (), int(state.offsets_mm[state.group]))
+            samples += 1
+        error_mm = max(
+            (
+                (bpy.data.objects[name].matrix_world @ Vector(corner))
+                - (originals[name] @ Vector(corner))
+            ).length
+            * 1000
+            for name in names
+            for corner in bpy.data.objects[name].bound_box
+        )
+        if error_mm > 0.001:
+            raise ValueError(f"Clamp cycle return displacement exceeds 0.001 mm: {error_mm}")
+        return {"samples": samples, "return_displacement_bound_mm": error_mm}
+    finally:
+        for name, values in raw.items():
+            for field, value in values.items():
+                setattr(bpy.data.objects[name], field, value)
+        bpy.context.view_layer.update()

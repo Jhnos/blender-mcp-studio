@@ -25,7 +25,7 @@ WRIST_POINTS = tuple(WristPoint("rotate", _SERVICE_ANGLE * i / 20, 2) for i in r
 @dataclass(frozen=True, slots=True)
 class ServiceProbe:
     head: Literal["capillary", "pH_temp"]
-    operation: Literal["wrist", "clamp", "transfer"]
+    operation: Literal["wrist", "clamp", "transfer", "cycle"]
     control: Literal["none", "working", "obstacle"] = "none"
 
 
@@ -55,14 +55,18 @@ SERVICE_CASES = {
 }
 
 
-for _probe in (ServiceProbe("capillary", "transfer"), ServiceProbe("pH_temp", "transfer")):
-    _head = _probe.head
-    SERVICE_CASES["electrode-transfer-" + _head] = (
-        Scenario("transfer_" + _head + "_clear", ServiceProbe(_head, "transfer"), "clear"),
+for _probe in (
+    ServiceProbe("capillary", "transfer"),
+    ServiceProbe("pH_temp", "transfer"),
+    ServiceProbe("capillary", "cycle"),
+    ServiceProbe("pH_temp", "cycle"),
+):
+    _head, _operation = _probe.head, _probe.operation
+    _name = _operation + "_" + _head
+    SERVICE_CASES["electrode-" + _operation + "-" + _head] = (
+        Scenario(_name + "_clear", _probe, "clear"),
         Scenario(
-            "transfer_" + _head + "_obstacle_rejected",
-            ServiceProbe(_head, "transfer", "obstacle"),
-            "blocked",
+            _name + "_obstacle_rejected", ServiceProbe(_head, _operation, "obstacle"), "blocked"
         ),
     )
 
@@ -90,6 +94,16 @@ def service_suites() -> tuple[VerificationSuite, ...]:
             "188 working-seat to service-seat samples for one head while its neighbour remains seated; "
             "all nine cable segments and an independent midpoint obstruction control. "
             "No complete disassembly, continuous sweep or physical load qualification.",
+        )
+        for head in ("capillary", "pH_temp")
+    )
+    scopes += tuple(
+        (
+            "electrode-cycle-" + head,
+            "Electrode ordered clamp cycle: " + head,
+            "Ordered extraction and reverse insertion from a seated service pose; all extracted "
+            "parts remain collision obstacles, all nine cable segments and a live obstruction control. "
+            "208 capillary or 260 pH/temperature samples; no thread, tooling, continuous sweep or load qualification.",
         )
         for head in ("capillary", "pH_temp")
     )
@@ -199,3 +213,26 @@ def service_transfer_steps() -> tuple[ServiceStep, ...]:
     for joint in (0, 1, 2):
         joint_stage("seat-" + names[joint], "closure", joint, 1, 14)
     return tuple(steps)
+
+
+@dataclass(frozen=True, slots=True)
+class ClampStep:
+    """Absolute local-Y offsets: two bolts, cap assembly, then each probe assembly."""
+
+    direction: Literal["remove", "insert"]
+    group: int
+    offsets_mm: tuple[float, ...]
+
+
+def clamp_cycle_steps(probe_count: int) -> tuple[ClampStep, ...]:
+    """Keep extracted components in the scene and insert along the reverse path."""
+    if type(probe_count) is not int or probe_count not in (1, 2):
+        raise ValueError("Clamp cycle requires one or two probes")
+    offsets = [0.0] * (probe_count + 3)
+    removal = []
+    for group in range(len(offsets)):
+        sign = -1 if group < 2 else 1
+        for distance in range(26):
+            offsets[group] = sign * distance
+            removal.append(ClampStep("remove", group, tuple(offsets)))
+    return tuple(removal) + tuple(replace(step, direction="insert") for step in reversed(removal))

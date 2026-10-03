@@ -81,3 +81,9 @@ GitHub 查找 `electrode holder 3d print clamp pH probe` 與分片夾座，檢�
 
 - [MoveIt Task Constructor](https://github.com/moveit/moveit_task_constructor)：共用場景介面描述多階段操作。採用明確操作／移動件／已移除件的資料邊界，沿用Scenario與既有幾何檢查，沒有引入ROS或複製其程式。
 - [trimesh caching](https://github.com/mikedh/trimesh/blob/main/trimesh/caching.py)：資料識別改變時使快取失效。本專案以完整不可變曲線、線徑及取樣界限作鍵，每次suite限定生命週期與容量；實體障礙仍逐姿態重建。
+
+## 連續碰撞的運動模型與求解契約
+
+- 2026-10-03查閱 [FCL](https://github.com/flexible-collision-library/fcl)：同一介面族提供網格碰撞、最短距離與連續碰撞；連續呼叫需要初始及目標變換。[ContinuousCollisionRequest原始碼](https://github.com/flexible-collision-library/fcl/blob/master/include/fcl/narrowphase/continuous_collision_request.h)列出平移、線性、螺旋與樣條運動，預設為CCDM_TRANS及CCDC_NAIVE，不能僅憑API名稱把結果當成任意機構路徑保證。
+- [MoveIt Bullet CCD官方示例](https://moveit.picknik.ai/main/doc/examples/bullet_collision_checker/bullet_collision_checker.html)提供兩端離散姿態安全但途中穿過箱子的反例。採納這類辨識控制；實際連桿關節路徑與可變形線路須另證明符合所用運動模型。不能以端點剛體插值替代本案的實際關節／定長線路變化。
+- 適用邊界：此為後續連續間隙方法的來源比較，尚未引入FCL／Bullet依賴，也不改變現有固定取樣的證據範圍。若採用現成求解器，須明確選擇運動及求解方式，驗證薄障礙、擦邊、旋轉與失敗／未收斂狀態，不能把不確定結果當作clear。

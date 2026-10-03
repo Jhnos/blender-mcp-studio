@@ -162,7 +162,7 @@ def test_service_catalog_preserves_wrist_samples_and_independent_head_controls()
     catalog = {s.suite_id: s for s in registered_suites()}
     for suite_id, cases in SERVICE_CASES.items():
         assert catalog[suite_id].cases == tuple((c.name, c.expected) for c in cases)
-        if cases[0].inputs.operation != "transfer":
+        if cases[0].inputs.operation not in ("transfer", "cycle"):
             assert {c.inputs.head for c in cases if c.expected == "clear"} == {
                 "capillary",
                 "pH_temp",
@@ -259,3 +259,60 @@ def test_service_joint_values_are_immutable_three_joint_records() -> None:
     for values in ((0, 0), (0, 0, 0, 0), [0, 0, 0]):
         with pytest.raises(ValueError):
             ServiceState(release_mm=values, closure=values)
+
+
+@pytest.mark.parametrize("probe_count,total", [(1, 208), (2, 260)])
+def test_ordered_clamp_cycle_retains_every_group_and_reverses(probe_count: int, total: int) -> None:
+    from dataclasses import FrozenInstanceError
+
+    from src.verification.electrode_service_cases import clamp_cycle_steps
+
+    steps = clamp_cycle_steps(probe_count)
+    count = probe_count + 3
+    assert len(steps) == total
+    assert steps[0].offsets_mm == steps[-1].offsets_mm == (0,) * count
+    removal = steps[: total // 2]
+    insertion = steps[total // 2 :]
+    assert [s.offsets_mm for s in insertion] == [s.offsets_mm for s in reversed(removal)]
+    assert {s.direction for s in removal} == {"remove"}
+    assert {s.direction for s in insertion} == {"insert"}
+    assert [removal[i * 26].group for i in range(count)] == list(range(count))
+    assert removal[-1].offsets_mm == (-25, -25) + (25,) * (count - 2)
+    for first, second in zip(steps, steps[1:], strict=False):
+        changed = [
+            i
+            for i, (a, b) in enumerate(zip(first.offsets_mm, second.offsets_mm, strict=True))
+            if a != b
+        ]
+        if first.group != second.group or first.direction != second.direction:
+            assert first.offsets_mm == second.offsets_mm
+        else:
+            assert changed == [second.group]
+            assert abs(first.offsets_mm[second.group] - second.offsets_mm[second.group]) == 1
+    with pytest.raises(FrozenInstanceError):
+        steps[0].group = 2
+
+
+@pytest.mark.parametrize("count", [0, 3, -1, 1.5, True])
+def test_ordered_clamp_cycle_rejects_unsupported_population(count: int) -> None:
+    from src.verification.electrode_service_cases import clamp_cycle_steps
+
+    with pytest.raises(ValueError):
+        clamp_cycle_steps(count)
+
+
+def test_ordered_cycle_catalog_has_per_head_positive_and_negative_cases() -> None:
+    from src.verification.cable_route_cases import registered_suites
+    from src.verification.electrode_service_cases import SERVICE_CASES
+
+    catalog = {s.suite_id: s for s in registered_suites()}
+    for head in ("capillary", "pH_temp"):
+        key = "electrode-cycle-" + head
+        cases = SERVICE_CASES[key]
+        assert catalog[key].cases == tuple((c.name, c.expected) for c in cases)
+        assert {c.inputs.head for c in cases} == {head}
+        assert {c.inputs.operation for c in cases} == {"cycle"}
+        assert [(c.inputs.control, c.expected) for c in cases] == [
+            ("none", "clear"),
+            ("obstacle", "blocked"),
+        ]

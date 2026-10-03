@@ -56,6 +56,34 @@ head['verification_state_probe']={'nested':[1,2,3]}
     assert snapshot(oracle) == before, "Oracle control did not restore its own property"
 
 
+def verify_clamp_interrupt_restore(oracle: BlenderSocketOracle) -> None:
+    """Interrupt after actual movement; inspect transforms before outer scene restoration."""
+    before = snapshot(oracle)
+    oracle.execute(f"""import bpy,runpy
+suite=runpy.run_path({str(ROOT / "scripts/verify/lab_cable_route_checks.py")!r})
+service=runpy.run_path({str(ROOT / "scripts/verify/lab_electrode_service_checks.py")!r})
+with suite['preserve_current_scene']():
+    for head in ('capillary','pH_temp'):
+        service['apply_service_state'](head,service['service_transfer_steps']()[-1].state)
+        fields=('location','rotation_euler','rotation_quaternion','scale')
+        def read_raw():
+            return {{obj.name:tuple(tuple(getattr(obj,field)) for field in fields) for obj in bpy.data.objects}}
+        initial=read_raw()
+        def interrupt(label,moving,removed,step):
+            if step == -1:
+                assert read_raw() != initial, 'Interruption must follow actual movement'
+                raise RuntimeError('injected clamp cycle interruption')
+        try:
+            service['verify_clamp_cycle'](head,observe=interrupt)
+        except RuntimeError as error:
+            assert str(error) == 'injected clamp cycle interruption', str(error)
+        else:
+            raise AssertionError('Clamp cycle interruption was not observed')
+        assert read_raw() == initial, 'Clamp cycle failed to restore raw transforms'
+""")
+    assert snapshot(oracle) == before, "Clamp restore control changed its surrounding scene"
+
+
 async def verify() -> None:
     oracle = BlenderSocketOracle("127.0.0.1", 9876, timeout=60)
     source = ROOT / "tmp/lab-station-module-configurations/cable-clearance.blend"
@@ -140,6 +168,8 @@ except RuntimeError as error:
         raise
 """)
         assert snapshot(oracle) == before, "Exception path did not restore scene"
+        verify_clamp_interrupt_restore(oracle)
+        evidence["clamp_interrupt_restores_transforms"] = True
         evidence["scene_preserved"] = True
         evidence["exception_restores_scene"] = True
         evidence["unknown_extra_code_missing_model_rejected"] = True

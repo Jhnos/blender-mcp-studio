@@ -28,6 +28,41 @@
 
 ### Verified facts
 
+- V01.0R.02E封存準備：61711完整 `scripts/ci.sh --real` terminal exit0，`tmp/lab-station-route-engine/ci-cycle-complete.log` 全部hard gates green。離線與正式MCP十一套46案例逐項通過；各套scene_restored及五項全域控制全true。
+- 完整CI後開回正式 `tmp/lab-station-electrode-guides-aligned/arm-seated.blend`，fresh oracle核對六就座鏈與四導線夾，`cycle-restored-formal.json`通過。無執行中的Blender工作。
+- 同一不可變ClampStep資料驅動毛細管208／pH260步依序拆卸與反向重裝；移出件保持原位置並列入障礙，九段線路全程檢查。兩套MCP正式入口192.50／230.00秒；原始變換欄位的正常及callback中斷還原、指定障礙及故意遺留1mm反例均驗證。
+- 兩張cycle-extracted PNG已實際檢視；維修移出件需手持支撐，非正常組裝懸浮。線長及Ø6mm仍為研究假設，不能作製造規格。
+- 5S：研究細節移入歷史，沿用既有純資料／fixture／service邊界；無新增模組、依賴或公開工具。純資料238、維修fixture363、主fixture375行，未達380警戒。既有原始變換還原LESSON適用，不重複新增同義教訓。
+
+### Open failures
+
+- 固定取樣尚非連續掃掠、任意雙頭組合、螺紋／工具／手部空間、移出件支撐或材料／負載資格。
+- 基座／LCD、電路與接口、載荷及實體試印未完成。幫浦／壓力／pH前端／供電板型號及線管外徑已詢問未答，不阻擋機構後續研究。
+- Starlette TestClient偏好httpx2的警告待隔離環境相容性驗證；僅dry-run，尚未修改依賴。
+
+### Next step
+
+- 完成本輪02E提交、checkpoint、push、最終API部署及實際版本／十一套46案例讀回；全工作站保持ACTIVE。
+- 接續連續間隙界限研究；GitHub FCL與MoveIt官方CCD來源已列09-references，需明確運動模型及薄障礙／擦邊／旋轉／不收斂控制，不能僅以API名稱稱連續資格。再推進基座／LCD、真實接口與物理資格。
+- 依使用者持續推進要求，checkpoint後繼續，暫不要求清除對話。
+
+## 歷史驗證紀錄
+
+以下為逐輪證據與當時的下一步；接手只依上方現行段落與任務索引，不能將歷史下一步重新當成主線。
+
+### V01.0R.02E 整合研究交接（封存前）
+
+### Verified facts
+
+- 61711完整 `scripts/ci.sh --real` terminal exit0，ci-cycle-complete.log 全部hard gates green。新正式MCP報告十一套46案例均passed、expected等於observed、每套scene_restored=true，五項全域控制全true；離線46案例此前已核對。完整CI後重新開回arm-seated，fresh oracle量測六就座鏈與四導線夾通過，cycle-restored-formal.json保存。尚未本輪升版／提交／最終部署。
+
+- 55718兩張cycle-extracted預覽terminal exit0，六就座鏈與九段線路通過後出圖；兩張PNG已實際檢視，維修移出件需手持支撐，非正常組裝懸浮。26161完整靜態CI terminal exit0，T1／T2全部hard green，ci-cycle-static.log；T3待下列完整執行。74218 API預檢部署exit0，canonical MCP實讀11工具／11套46案例且health connected，cycle-preflight-catalog.json保存；版本仍02D，尚未本輪封存。5S：純資料238、共用維修fixture363、主fixture375，未達380；新控制加入既有MCP verifier，無新模組／依賴，沿用既有架構邊界。
+- 9487正式登錄入口terminal exit0：毛細管192.50秒／pH230.00秒，各正常＋指定障礙兩案例passed、restored=true，均在300秒内；cycle-registered.json已讀。永久MCP verifier加入移動1mm後callback中斷的raw欄位還原檢查；52542正例通過，34323故意遺留1mm能被拒絕。研究注入初次清理因跨oracle命名空間變數不保留而失敗，60846由被注入函式globals恢復runpy並確認名稱run_path，正常控制重跑通過；cycle-restore-controls.json保存。沒有殘留patch。
+- 78664 ordered-clamp-cables terminal exit0，298.37秒：兩頭208／260合計468列，機構與九段線路零hit，逐列已核對。所有移出實體持續列入障礙，研究結果ordered-clamp-cables.json。
+- 既有純案例檔新增ClampStep／clamp_cycle_steps，完整絕對組位移描述兩螺栓、夾蓋組、各探頭組；反向重播同一資料。7項介面缺失先紅後29案例綠，登錄缺失KeyError紅後30綠；ruff與全mypy通過。新兩套cycle沿ServiceFixture／run_service_cases，來源目錄十一套46案例，公開工具不增；尚未部署。
+- 36846共用拆裝執行器缺介面真機RED；47968GREEN，兩頭208／260樣本，正常／callback中斷都逐物件raw transform還原相等。重裝幾何包絡位移上界毛細管0.0000149012mm／pH0.0000149302mm，小於0.001mm；ordered-fixture-study.json記錄，取代先前無單位matrix殘差。helper不排除已拆件障礙，finally恢復原始欄位，尚需永久化此恢復正反例及正式全CI。
+- 02D封存完成：5809ed4已推送；checkpoint74227、push81767、API部署98575及正式讀回全部exit0。transfer-deployed.json實讀02D、11工具、九套42案例，三服務監聽，工作樹封存後乾淨。
+- 70517順序拆裝機構研究exit0：先兩螺栓−25mm，再夾蓋／螺母／外半襯＋25mm，再各探頭／內半襯＋25mm，隨後反向重裝；所有移出零件保留實際位置，不使用removed豁免。毛細管208、pH260合計468樣本零網格碰撞，ordered-clamp-study.json保存。83827初跑以1e-8矩陣殘差assert退出未產報告；70517用1e-6變換殘差門檻通過，但尚未記錄實測殘差，正式化時需記錄並以尺寸單位判定，不能稱精確還原。
 - V01.0R.02D：完整 `scripts/ci.sh --real` session17505 terminal exit0；`tmp/lab-station-route-engine/ci-transfer-complete.log` 全部hard gates green。離線及正式MCP九套42案例逐項通過；MCP每套scene_restored與四項全域還原／非法輸入控制全true，已重讀新報告。
 - 兩套單頭transfer各188取樣，14階段、13個相鄰邊界狀態一致：工作位鬆鎖、退齒、位移、轉腕、復位、維修位就座；另一頭全程保持鎖定。三關節干涉／已就座面隙與九段線路共用檢查，中途指定障礙反例各一列通過。終點採indexed_target(3,0)，前移4.637651516mm／抬高114.711320431mm。固定取樣不是連續運動資格。
 - ServiceState／ServiceStep加入既有純資料檔，由同一ServiceFixture執行；MCP／離線共用入口，沒有新模組、依賴或公開工具（仍11項）。非有限、矛盾、陣列形狀／可變性、流程分派、障礙辨識均有先紅後綠證據，詳歷史。
@@ -37,18 +72,16 @@
 
 ### Open failures
 
-- 固定取樣不是連續掃掠、任意雙頭組合、材料／拉力或負載資格。個別拆卸路徑以removed前置條件檢查，尚非完整依序拆卸／重裝。
+- 固定取樣不是連續掃掠、任意雙頭組合、材料／拉力或負載資格。新cycle已覆蓋保留移出件的完整依序拆卸／重裝取樣；螺紋、工具／手部空間與移出件支撐尚未資格化。
 - 基座／LCD、電路與接口、載荷及實體試印未完成。幫浦／壓力／pH前端／供電板型號與線管外徑已詢問未答，不阻擋機構後續工作。
 - Starlette TestClient偏好httpx2的警告仍待隔離環境相容性驗證；先前只有dry-run，未安裝或修改依賴。
 
 ### Next step
 
-- 無live Blender工作。02D已升版、完整CI與正式場景讀回通過；文件／架構／預算／版本及案例56測試已通過；接續提交checkpoint／推送／最終API部署與版本讀回，證據存transfer-deployed.json。封存完成後做按真實先後次序的拆卸／重裝，再處理取樣間隙保守界限及真實接口。
+- 完整CI與正式場景讀回已通過，無進行中Blender工作。下一步整理交接／5S、升版／CHANGELOG／提交checkpoint／push／最終API部署及版本讀回；目前版本仍02D。
 - 全工作站保持ACTIVE；延續共用資料／執行器，不重寫逐版測試。依使用者持續推進要求，checkpoint後繼續，暫不要求清除對話。
 
-## 歷史驗證紀錄
 
-以下為逐輪證據與當時的下一步；接手只依上方現行段落與任務索引，不能將歷史下一步重新當成主線。
 
 ### V01.0R.02D 整合研究交接（封存前）
 
