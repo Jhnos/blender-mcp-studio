@@ -114,3 +114,31 @@ def test_continuation_keeps_bend_constraint_and_fails_without_a_length_solution(
     for invalid in (-1, float("nan"), float("inf")):
         with pytest.raises(ValueError, match="radius"):
             continue_route(original, original.boundary, minimum_sampled_radius_mm=invalid)
+
+
+def test_saved_family_refits_live_anchors_without_searching() -> None:
+    from src.core.planning.cable_path_plan import RouteFamily, fit_family
+
+    original = candidates(boundary(), RouteSearchSpec(candidate_count=8))[0]
+    family = RouteFamily.from_candidate(original)
+    assert fit_family(family, original.boundary) == original
+    moved = replace(original.boundary, end_mm=(60, 1, 1))
+    refitted = fit_family(family, moved)
+    assert refitted is not None and refitted.boundary == moved
+    assert fit_family(family, moved, minimum_sampled_radius_mm=1000) is None
+    for changed in (
+        replace(moved, name="other"),
+        replace(moved, length_mm=160),
+        replace(moved, cable_radius_mm=4),
+        replace(moved, lead_mm=7),
+    ):
+        with pytest.raises(ValueError, match="same cable"):
+            fit_family(family, changed)
+    for changes in (
+        dict(side=0),
+        dict(handles_mm=(1, 2, 3)),
+        dict(handles_mm=(1, 2, 3, float("nan"))),
+        dict(length_mm=-1),
+    ):
+        with pytest.raises(ValueError):
+            replace(family, **changes)

@@ -28,6 +28,36 @@
 
 ### Verified facts
 
+- V01.0R.02A：完整scripts/ci.sh --real（37008）terminal exit0，ci-motion-recipes.log所有hard gates green。T1／T2及全部真機回歸通過，包括正式MCP五套30案例、場景正常／例外恢復與非法輸入拒絕。無進行中CI。
+- RouteFamily／fit_family加入既有純規劃模組，continue_route共用定長求解；MotionPoint與九段MOTION_FAMILIES加入既有情境資料。family與動作資料各先紅後綠（family-red.log、motion-points-red.log）；50focused及全專案mypy通過。
+- 真機54828正反例通過但需290.29秒。重用既有「全配對碰撞檢查不等於每配對都要重建幾何」LESSON，96646計數負對照exit1，兩姿態單段取樣72次；區域快取後50962 exit0為18／18。每姿態重建、不跨姿態保留；完整同線自碰與異線配對不減少。計數守衛納入MotionFixture。
+- 80234 terminal exit0，正反例降至208.51秒（motion-recipes-cached.log），原單套300秒期限不變。完整CI的engine-verification.json兩motion案例各62replay／558單段取樣；正例零hit，反例只拒絕pH lift(0,50)與mixed(10,50)。MCP重測新錨點，不讀tmp研究結果或舊通過旗標；family身份／尺寸不符拒絕。
+- 62張motion-{path}-{head}-{forward}-{lift} PNG／blend由共用資料產生；兩頭mixed中間及pH raised-reach−20圖已目視檢查。46346編碼exit0，六组motion-{path}-{head}.gif完成；獨立framemd5核對lift／mixed11、raised-reach9個不同姿態，ffprobe確認800×680，63／51解碼幀，沒有物理補幀。
+- 完整CI後21177 fresh開回arm-seated，再讀六承壓鏈與4導線夾通過，recipes-restored-formal.json保存。版本工具已升02A。
+- 5S：沿用四個模組及兩單元檔，225／132／244／366行，均低於380警戒；無新增模組、公開工具或依賴。規格、MCP用法與R53同步；029與研究交接移下方歷史。生成證據留tmp，封存前22項文件／版本／預算守衛通過（83895 exit0）。
+
+### Open failures
+
+- 62離散姿態的完整三線已通過完整CI與正式MCP。取樣間連續掃掠、任意雙頭組合、實體接頭、材料／拉力未驗。Ø6mm、底座200／跨肘150／頭段220或170mm僅研究假設。
+- 雙頭同抬拆蓋碰撞尚在；一次一頭維修研究需整合共用情境。基座／LCD、電路、載荷、物理試印未完成。已詢問幫浦、壓力感測器、pH／供電板型號及線管外徑，未答；不阻擋機構驗證。
+
+### Next step
+
+- 37008已terminal exit0，無進行中驗證。來源不變不需重跑完整CI；部署讀回的預期為02A、五套30命名案例，motion scope為62姿態。
+- 下一工程項目為取樣間隙保守界限、單頭維修與真實接口；保留全工作站目標。關節退齒／調整／重新鎖定搭配線束亦需完整操作驗證；62線路姿態不代表這些操作已全部取得資格。
+- 正式場景tmp/lab-station-electrode-guides-aligned/arm-seated.blend；重測走線開tmp/lab-station-route-engine/motion-lift-pH_temp-+000-000.blend。證據與六組動畫在tmp/lab-station-route-engine/。
+
+## 歷史驗證紀錄
+
+以下為逐輪證據與當時的下一步；接手只依上方現行段落與任務索引，不能將歷史下一步重新當成主線。
+
+### V01.0R.029與後續研究接手
+
+### Verified facts
+
+- 029後續研究：73058 terminal exit0，兩頭各raised-reach（抬100mm後前後−20到+20mm／5mm步距）及mixed（每步前2mm／升10mm），40姿態找到共用九段family，逐姿態replay零碰撞，mixed-discovery.json。69161 terminal exit0再合併原22純升降姿態，共62姿態搜尋及replay全通過；搜尋199.67秒、含replay311.10秒，combined-discovery.json。此為研究入口，尚未納入公開MCP情境或新完整CI；現有MCP仍029五套30案例。
+- 18535 terminal exit0，用上述同一組控制點輸出combined-reach--20／+00／+20三張PNG與blend，+20圖已目視檢查，正式arm-seated已重新開回。研究無生產／測試來源變更；新資料暫留tmp/lab-station-route-engine。
+
 - API52128部署exit0，正式MCP五套30案例讀回通過。
 - V01.0R.029：重用candidates的定長求解為_fit_route，continue_route固定handle family／side且保持線名、長度、線徑和lead；新的單元先缺函式紅→綠，彎曲半徑約束先紅→綠。31focused通過，82599完整CI terminal exit0，ci-motion.log所有hard gates green；正式MCP五套30案例與場景正常／例外恢復、三拒絕控制均通過。
 - 61476原工作位分支延續研究terminal exit0但有幾何失敗：毛細管11姿態通過；pH抬20／30mm異線包絡接近，40–100mm pH跨肘原family無解，continuation-discovery.json保留。不能改寫成通過。
@@ -47,13 +77,13 @@
 
 ### Next step
 
+- 本輪研究已全部terminal，無進行中Blender程序。將姿態抽象為含forward／lift／path的資料，沿用motion模組；不能只存lift而遺失前後位置。62姿態搜尋＋replay已超過單套300秒，下一步評估把離線選定family作可驗證參數資料，runtime只重驗全部姿態與負控制；不得直接加長期限或拆成各自重選不同family。尚未實作，先以TDD證明資料接線與完整覆蓋，再真機驗證。
+
 - 82599已terminal exit0，無進行中真機程序。下一工程項目為前後伸縮／混合動作、取樣間隙的保守界限及單頭維修情境；不能只增加端點。部署讀回應為五套30案例。
 - 後續以Scenario資料＋共用執行器＋可清理配件擴充姿態變形與單頭維修；MCP共用同一登錄，不複製逐版測試。走線仍用RouteCase／RouteSearchSpec。
 - 正式場景tmp/lab-station-electrode-guides-aligned/arm-seated.blend，證據tmp/lab-station-route-engine/；完整工作站目標保持ACTIVE。
 
-## 歷史驗證紀錄
 
-以下為逐輪證據與當時的下一步；接手只依上方現行段落與任務索引，不能將歷史下一步重新當成主線。
 
 ### V01.0R.028 封存接手
 

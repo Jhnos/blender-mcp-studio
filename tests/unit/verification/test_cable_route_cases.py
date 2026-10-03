@@ -114,8 +114,37 @@ def test_motion_cases_require_middle_samples_and_blocked_control() -> None:
     from src.verification.cable_route_cases import MOTION_CASES, registered_suites
 
     assert [c.expected for c in MOTION_CASES] == ["clear", "blocked"]
-    assert all(c.inputs.lifts_mm == tuple(range(0, 101, 10)) for c in MOTION_CASES)
+    assert all(
+        tuple(p.lift_mm for p in c.inputs.points if p.path == "lift") == tuple(range(0, 101, 10))
+        for c in MOTION_CASES
+    )
     assert [c.inputs.insert_obstacle for c in MOTION_CASES] == [False, True]
     assert next(
         s for s in registered_suites() if s.suite_id == "electrode-cable-motion"
     ).cases == tuple((c.name, c.expected) for c in MOTION_CASES)
+
+
+def test_motion_matrix_preserves_paths_coordinates_and_saved_wire_identity() -> None:
+    from src.verification.cable_route_cases import CHAIN_ROUTES, MOTION_CASES, MotionPoint
+
+    for scenario in MOTION_CASES:
+        points = scenario.inputs.points
+        assert [(p.forward_mm, p.lift_mm) for p in points if p.path == "lift"] == [
+            (0, lift) for lift in range(0, 101, 10)
+        ]
+        assert [(p.forward_mm, p.lift_mm) for p in points if p.path == "raised-reach"] == [
+            (f, 100) for f in range(-20, 21, 5)
+        ]
+        assert [(p.forward_mm, p.lift_mm) for p in points if p.path == "mixed"] == [
+            (2 * i, 10 * i) for i in range(11)
+        ]
+        assert len(scenario.inputs.families) == len(CHAIN_ROUTES)
+        assert len({f.name for f in scenario.inputs.families}) == 9
+        assert [f.length_mm for f in scenario.inputs.families] == [
+            r.length_mm for r in CHAIN_ROUTES
+        ]
+    assert MOTION_CASES[0].inputs.families == MOTION_CASES[1].inputs.families
+    with pytest.raises(ValueError):
+        MotionPoint("mixed", float("nan"), 100)
+    with pytest.raises(ValueError):
+        MotionPoint("", 0, 0)

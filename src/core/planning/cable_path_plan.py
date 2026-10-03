@@ -71,6 +71,38 @@ class RouteCandidate:
     sampled_min_radius_mm: float
 
 
+@dataclass(frozen=True, slots=True)
+class RouteFamily:
+    name: str
+    length_mm: float
+    cable_radius_mm: float
+    lead_mm: float
+    handles_mm: tuple[float, float, float, float]
+    side: int
+
+    def __post_init__(self) -> None:
+        if not self.name or self.side not in (-1, 1) or len(self.handles_mm) != 4:
+            raise ValueError("Family requires identity, four handles and a signed side")
+        if not all(
+            isfinite(v) and v > 0
+            for v in (self.length_mm, self.cable_radius_mm, self.lead_mm, *self.handles_mm)
+        ):
+            raise ValueError("Family dimensions must be finite and positive")
+
+    @classmethod
+    def from_candidate(cls, candidate: RouteCandidate) -> "RouteFamily":
+        b = candidate.boundary
+        first, last, middle, offset, bulge = candidate.parameters_mm
+        return cls(
+            b.name,
+            b.length_mm,
+            b.cable_radius_mm,
+            b.lead_mm,
+            (first, last, middle, offset),
+            -1 if bulge < 0 else 1,
+        )
+
+
 def sample_chain(segments: tuple[RouteCandidate, ...]) -> SampledPath:
     """One wire keeps a uniform radius and connected, co-directed segment joins."""
     if not segments:
@@ -168,23 +200,27 @@ def continue_route(
     previous: RouteCandidate, request: RouteBoundary, *, minimum_sampled_radius_mm: float = 0
 ) -> RouteCandidate | None:
     """Refit the same handle family/side at new anchors; this is not collision certification."""
-    before = previous.boundary
+    return fit_family(
+        RouteFamily.from_candidate(previous),
+        request,
+        minimum_sampled_radius_mm=minimum_sampled_radius_mm,
+    )
+
+
+def fit_family(
+    family: RouteFamily, request: RouteBoundary, *, minimum_sampled_radius_mm: float = 0
+) -> RouteCandidate | None:
+    """Reconstruct a saved recipe at live anchors; all collisions still require verification."""
     if not isfinite(minimum_sampled_radius_mm) or minimum_sampled_radius_mm < 0:
         raise ValueError("Minimum sampled radius must be finite and nonnegative")
-    if (before.name, before.length_mm, before.cable_radius_mm, before.lead_mm) != (
+    if (family.name, family.length_mm, family.cable_radius_mm, family.lead_mm) != (
         request.name,
         request.length_mm,
         request.cable_radius_mm,
         request.lead_mm,
     ):
         raise ValueError("Continuation requires the same cable identity, length, radius and lead")
-    first, last, middle, offset, bulge = previous.parameters_mm
-    return _fit_route(
-        request,
-        (first, last, middle, offset),
-        -1 if bulge < 0 else 1,
-        minimum_sampled_radius_mm,
-    )
+    return _fit_route(request, family.handles_mm, family.side, minimum_sampled_radius_mm)
 
 
 def candidates(

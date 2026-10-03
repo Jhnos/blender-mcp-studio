@@ -10,10 +10,13 @@ from src.core.domain.cable_paths import sample_path
 from src.core.planning.cable_path_plan import (
     RouteBoundary,
     RouteCandidate,
+    RouteFamily,
     RouteSearchSpec,
     candidates,
     continue_route,
+    fit_family,
 )
+from src.verification.cable_route_cases import MotionPoint
 
 
 @dataclass(frozen=True, slots=True)
@@ -22,6 +25,8 @@ class MotionFrame:
     lift_mm: float
     boundaries: tuple[RouteBoundary, ...]
     obstacles: routes.RouteObstacles
+    forward_mm: float = 0
+    path: str = "lift"
 
 
 @dataclass(frozen=True, slots=True)
@@ -29,19 +34,59 @@ class FrameEvidence:
     moving: str
     lift_mm: float
     hits: tuple[dict[str, object], ...]
+    forward_mm: float = 0
+    path: str = "lift"
 
 
 def capture_frames(
-    cases: tuple[routes.RouteCase, ...], lifts_mm: tuple[float, ...]
+    cases: tuple[routes.RouteCase, ...], points: tuple[MotionPoint, ...]
 ) -> tuple[MotionFrame, ...]:
     frames = []
     for moving in ("capillary", "pH_temp"):
-        for lift in lifts_mm:
-            model.pose("capillary", 0, lift if moving == "capillary" else 0)
-            model.pose("pH_temp", 0, lift if moving == "pH_temp" else 0)
+        for point in points:
+            for head in ("capillary", "pH_temp"):
+                model.pose(
+                    head,
+                    point.forward_mm if moving == head else 0,
+                    point.lift_mm if moving == head else 0,
+                )
             boundaries = tuple(routes.measure(case) for case in cases)
-            frames.append(MotionFrame(moving, lift, boundaries, routes.RouteObstacles()))
+            frames.append(
+                MotionFrame(
+                    moving,
+                    point.lift_mm,
+                    boundaries,
+                    routes.RouteObstacles(),
+                    point.forward_mm,
+                    point.path,
+                )
+            )
     return tuple(frames)
+
+
+def refit_motion_routes(
+    frames: tuple[MotionFrame, ...], families: tuple[RouteFamily, ...]
+) -> tuple[tuple[tuple[RouteCandidate, ...], ...] | None, dict[str, object]]:
+    """Fit saved recipes to newly measured anchors without searching or trusting saved geometry."""
+    if not frames or not families or any(len(f.boundaries) != len(families) for f in frames):
+        raise ValueError("Motion recipes must cover every frame and segment")
+    selected = []
+    for frame in frames:
+        row = []
+        for family, boundary in zip(families, frame.boundaries, strict=True):
+            candidate = fit_family(family, boundary)
+            if candidate is None:
+                return None, {
+                    "reason": "family_infeasible",
+                    "route": boundary.name,
+                    "moving": frame.moving,
+                    "path": frame.path,
+                    "forward_mm": frame.forward_mm,
+                    "lift_mm": frame.lift_mm,
+                }
+            row.append(candidate)
+        selected.append(tuple(row))
+    return tuple(selected), {"frame_count": len(frames), "families": [asdict(f) for f in families]}
 
 
 def select_motion_routes(
@@ -92,7 +137,15 @@ def select_motion_routes(
                     )
                 )
                 if hit is not None:
-                    rejected.append({"moving": frame.moving, "lift_mm": frame.lift_mm, **hit})
+                    rejected.append(
+                        {
+                            "moving": frame.moving,
+                            "path": frame.path,
+                            "forward_mm": frame.forward_mm,
+                            "lift_mm": frame.lift_mm,
+                            **hit,
+                        }
+                    )
                     break
                 assert candidate is not None
                 trial.append(candidate)
@@ -108,7 +161,7 @@ def select_motion_routes(
             (
                 dist(a, b)
                 for j in range(1, len(frames))
-                if frames[j].moving == frames[j - 1].moving
+                if frames[j].moving == frames[j - 1].moving and frames[j].path == frames[j - 1].path
                 for old, new in zip(chosen[j - 1].curves, chosen[j].curves, strict=True)
                 for a, b in zip(old.controls_mm, new.controls_mm, strict=True)
             ),
@@ -135,6 +188,7 @@ def validate_motion(
     for frame, row in zip(frames, selected, strict=True):
         if len(row) != len(cases):
             raise ValueError("Motion replay needs every segment")
+        sampled = tuple(sample_path(candidate.curves) for candidate in row)
         hits = []
         for index, (case, candidate) in enumerate(zip(cases, row, strict=True)):
             seed = selected[0][index]
@@ -151,13 +205,13 @@ def validate_motion(
                 if (c.head, c.channel) == key
             )
             neighbours = tuple(
-                (r, sample_path(r.curves))
-                for c, r in zip(cases[:index], row[:index], strict=True)
+                (r, sample)
+                for c, r, sample in zip(cases[:index], row[:index], sampled[:index], strict=True)
                 if (c.head, c.channel) != key
             )
             hit = routes.candidate_hit(
                 candidate,
-                sample_path(candidate.curves),
+                sampled[index],
                 frame.obstacles,
                 prefix=prefix,
                 neighbours=neighbours,
@@ -165,5 +219,7 @@ def validate_motion(
             )
             if hit is not None:
                 hits.append({"route": candidate.boundary.name, **hit})
-        evidence.append(FrameEvidence(frame.moving, frame.lift_mm, tuple(hits)))
+        evidence.append(
+            FrameEvidence(frame.moving, frame.lift_mm, tuple(hits), frame.forward_mm, frame.path)
+        )
     return tuple(evidence)

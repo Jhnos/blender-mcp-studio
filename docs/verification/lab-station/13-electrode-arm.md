@@ -161,19 +161,21 @@ CHAIN_CASES與原三線案例共用BundleFixture；十個接觸控制包含兩�
 
 此檢查只證明三個離散姿態各有完整淨空線路；尚未證明不同姿態的候選能連續變形成彼此，也沒有線材彈性、最小彎曲半徑、保持力或裁線資格。離線整批入口按登錄套件數累加既有等待預算，場景讀取與單一MCP套件的期限不擴大。
 
-## 同一曲線分支的升降取樣
+## 同一曲線分支的升降、伸縮與混合取樣
 
-continue_route與原candidates共用定長求解器；線名、總長、線徑與端部直段不變，四個handle參數及側向分支符號固定，只在新錨點重新求定長偏移。最小取樣彎曲半徑在每個新姿態仍要成立；無解回傳失敗，不偷偷重新選分支。
+RouteFamily保存線名、長度、線徑、端部直段、四個handle與側向符號。fit_family與原candidates共用定長求解器；以目前模型重新量測的錨點求定長偏移，不儲存或信任上次通過結果。continue_route同樣委派此求解。線材識別或尺寸變更被拒絕，無解亦失敗；材料彎曲半徑仍待實測輸入。
 
-lab_cable_motion先量測兩頭各0–100mm、每10mm共22個姿態，每個姿態只建一次障礙快照。每個候選須通過所有姿態才保留，再為下一段或下一條線保留佔用空間。靜態搜尋與跨姿態搜尋都呼叫candidate_hit，使用同一實體、跨段自碰及異線判準；validate_motion再以保存的候選逐姿態重播。
+MotionPoint明確保存path、forward_mm與lift_mm。每頭31位置：純升降0–100mm／10mm步距、抬高100mm後前後−20至+20mm／5mm步距、每步前2mm並升10mm的混合路徑；兩頭獨立共62個取樣姿態。這些是三條操作路徑，不是二維工作區或任意雙頭組合的掃掠證明。
 
-MotionFixture及MOTION_CASES沿用Scenario執行器與MCP登錄。正例要求22姿態全過；反例在中間pH頭段選離四個端點線束超過10mm的位置放置4mm方塊，保留原路徑重播，要求起終點仍安全且中間被這個方塊阻擋。方塊與預覽曲線有明確所有權並清理；曲線重畫會移除無使用者的舊Curve資料，避免每幀堆積。
+離線select_motion_routes在全部姿態尋找共用family，結果作為MOTION_FAMILIES輸入資料。公開MCP與離線驗證的MotionFixture都以refit_motion_routes重新建線，validate_motion逐一檢查62姿態；candidate_hit仍是唯一實體、整線自碰與異線判準。每個姿態只建一次障礙快照。缺少family或身份順序錯誤不能靜默截斷。
 
-舊工作位分支不是合格動作：continuation-discovery.json保留pH抬20／30mm線間過近，以及40mm以上跨肘分支無定長解的量測。motion-search.json是共同分支研究；正式motion_evidence保存選用曲線、每個姿態與反例。motion-capillary-*與motion-pH_temp-*逐10mm預覽對應同一分支。
+MOTION_CASES保留正例與固定4mm方塊反例。反例在純升降中間pH頭段挑選距兩頭四個升降端點線束超過10mm的位置；同一方塊加入所有姿態，要求四個升降端點安全且至少一個中間姿態被此方塊拒絕。方塊與預覽曲線有明確所有權並清理。反例不宣稱其他路徑的端點都安全。
 
-動作預覽 `motion-capillary.gif` 與 `motion-pH_temp.gif` 由各11張驗證畫面往返合成，並非物理模擬補幀；可開 `motion-pH_temp-000.blend` 透過MCP重測本配置。
+原工作位分支的失敗保存於continuation-discovery.json；62姿態離線搜尋與獨立重播保存於combined-discovery.json。正式motion_evidence包含每條線的family、各姿態的前後／升降座標、曲線與反例，重播不重新選不同family。輸出motion-{path}-{head}-{forward}-{lift}圖與blend；可用motion-lift-pH_temp-+000-000.blend經MCP重測該配置。
 
-這是有限步距的幾何延續，不是連續掃掠證明；相鄰取樣間仍有未檢查的時間區間。也沒有材料、內應力、滯後、線管保持或裁線資格；實際線管資料仍待提供。
+六組motion-{path}-{head}.gif由同名已驗證畫面往返合成；升降／混合各11個不同姿態，抬高後伸縮9個，無物理模擬補幀。
+
+此為有限步距幾何檢查，取樣之間仍有未檢查區間。未取得連續掃掠、材料、內應力、滯後、線管保持或裁線資格；實際線管與接頭資料仍待提供。旧motion-capillary.gif／motion-pH_temp.gif是029各11張升降畫面的往返合成，不能當新版三路徑的證據。
 
 ## 腕部整組收隙與三關節同時貼合
 

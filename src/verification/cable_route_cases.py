@@ -1,12 +1,13 @@
 """Cable test inputs and expectations; importing this registry never requires Blender."""
 
 from dataclasses import dataclass, replace
+from math import isfinite
 from typing import Literal
 
 from src.core.domain.cable_paths import CubicPath
 from src.core.domain.lab_station import Point
 from src.core.domain.verification import VerificationSuite
-from src.core.planning.cable_path_plan import RouteBoundary, straight
+from src.core.planning.cable_path_plan import RouteBoundary, RouteFamily, straight
 from src.verification.scenario_runner import Scenario
 
 
@@ -218,8 +219,102 @@ CHAIN_CASES = tuple(
 
 
 @dataclass(frozen=True, slots=True)
+class MotionPoint:
+    path: str
+    forward_mm: float
+    lift_mm: float
+
+    def __post_init__(self) -> None:
+        if not self.path or not all(isfinite(v) for v in (self.forward_mm, self.lift_mm)):
+            raise ValueError("Motion points require a path and finite coordinates")
+
+
+MOTION_POINTS = (
+    tuple(MotionPoint("lift", 0, lift) for lift in range(0, 101, 10))
+    + tuple(MotionPoint("raised-reach", forward, 100) for forward in range(-20, 21, 5))
+    + tuple(MotionPoint("mixed", 2 * step, 10 * step) for step in range(11))
+)
+# Selected across all 62 poses; recipes are inputs, never cached acceptance results.
+MOTION_FAMILIES = (
+    RouteFamily(
+        "capillary/0/base",
+        200,
+        3,
+        6,
+        (33.68419879497225, 53.055719599191264, 32.18009626388633, 50.42180181335584),
+        1,
+    ),
+    RouteFamily(
+        "capillary/0/joint",
+        150,
+        3,
+        6,
+        (23.18909901370578, 59.60869221231924, 24.50377272755685, 17.918116495898936),
+        -1,
+    ),
+    RouteFamily(
+        "capillary/0/head",
+        220,
+        3,
+        6,
+        (48.80469739330329, 86.34138600891905, 74.96649341696295, 38.992054887372696),
+        -1,
+    ),
+    RouteFamily(
+        "pH_temp/0/base",
+        200,
+        3,
+        6,
+        (33.68419879497225, 53.055719599191264, 32.18009626388633, 50.42180181335584),
+        -1,
+    ),
+    RouteFamily(
+        "pH_temp/0/joint",
+        150,
+        3,
+        6,
+        (23.18909901370578, 59.60869221231924, 24.50377272755685, 17.918116495898936),
+        1,
+    ),
+    RouteFamily(
+        "pH_temp/0/head",
+        170,
+        3,
+        6,
+        (43.588038144986726, 33.36289461280078, 41.41049303347333, 40.52982336415924),
+        1,
+    ),
+    RouteFamily(
+        "pH_temp/1/base",
+        200,
+        3,
+        6,
+        (33.68419879497225, 53.055719599191264, 32.18009626388633, 50.42180181335584),
+        -1,
+    ),
+    RouteFamily(
+        "pH_temp/1/joint",
+        150,
+        3,
+        6,
+        (18.18290169426461, 43.00544409524252, 49.179816563266535, 8.271585652114272),
+        1,
+    ),
+    RouteFamily(
+        "pH_temp/1/head",
+        170,
+        3,
+        6,
+        (44.223692514127414, 35.278879837918126, 23.19048945854184, 26.587907609324404),
+        1,
+    ),
+)
+
+
+@dataclass(frozen=True, slots=True)
 class MotionProbe:
-    lifts_mm: tuple[float, ...] = tuple(range(0, 101, 10))
+    points: tuple[MotionPoint, ...] = MOTION_POINTS
+    families: tuple[RouteFamily, ...] = MOTION_FAMILIES
     insert_obstacle: bool = False
     obstacle_route: RoutePose = BUNDLE_ROUTES[1]
 
@@ -236,7 +331,7 @@ def registered_suites() -> tuple["VerificationSuite", ...]:
         VerificationSuite(
             "electrode-cable-motion",
             "Electrode cable motion samples",
-            "One route family across independent 0–100 mm lifts at 10 mm steps, "
+            "One saved route family replayed over 62 independent lift, raised reach and mixed poses, "
             "with an endpoint-clear intermediate obstruction control. "
             "No continuous swept-volume or material qualification.",
             tuple((case.name, case.expected) for case in MOTION_CASES),

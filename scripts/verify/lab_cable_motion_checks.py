@@ -2,14 +2,16 @@
 
 from collections.abc import Callable
 from dataclasses import asdict
+from unittest.mock import patch
 
 import bpy
 from mathutils import Vector
 from mathutils.kdtree import KDTree
 
+from scripts import lab_cable_motion as motion
 from scripts import lab_cable_routes as routes
 from scripts import model_lab_platform as model
-from scripts.lab_cable_motion import capture_frames, select_motion_routes, validate_motion
+from scripts.lab_cable_motion import capture_frames, refit_motion_routes, validate_motion
 from src.core.domain.cable_paths import sample_path
 from src.verification.cable_route_cases import CHAIN_ROUTES, MotionProbe
 from src.verification.scenario_runner import Observation
@@ -44,16 +46,16 @@ class MotionFixture:
         cases = tuple(
             routes.RouteCase(r.head, r.channel, r.segment, r.length_mm) for r in CHAIN_ROUTES
         )
-        frames = capture_frames(cases, case.lifts_mm)
-        selected, report = select_motion_routes(cases, frames)
+        frames = capture_frames(cases, case.points)
+        selected, report = refit_motion_routes(frames, case.families)
         if selected is None:
             return Observation("not_found", report)
+        endpoints = [
+            index
+            for index, frame in enumerate(frames)
+            if frame.path == "lift" and frame.lift_mm in (0, 100)
+        ]
         if case.insert_obstacle:
-            endpoints = [
-                index
-                for index, frame in enumerate(frames)
-                if frame.lift_mm in (case.lifts_mm[0], case.lifts_mm[-1])
-            ]
             points = [
                 p
                 for index in endpoints
@@ -68,7 +70,8 @@ class MotionFixture:
                 index
                 for index, frame in enumerate(frames)
                 if frame.moving == case.obstacle_route.head
-                and frame.lift_mm == case.lifts_mm[len(case.lifts_mm) // 2]
+                and frame.path == "lift"
+                and frame.lift_mm == 50
             )
             route_index = next(
                 index
@@ -95,15 +98,17 @@ class MotionFixture:
                 frame.obstacles.bounds[name] = obstacle.bounds[name]
                 frame.obstacles.closed.add(name)
             report["blocker"] = {"position_mm": point, "endpoint_distance_mm": endpoint_distance}
-        replay = validate_motion(cases, frames, selected)
+        with patch.object(motion, "sample_path", wraps=sample_path) as sampler:
+            replay = validate_motion(cases, frames, selected)
+            if sampler.call_count != len(frames) * len(cases):
+                raise ValueError("Motion must sample each segment once per frame")
+            report["route_sample_calls"] = sampler.call_count
         report["replay"] = [asdict(row) for row in replay]
         report["selected"] = [[asdict(route) for route in row] for row in selected]
         blocked = any(row.hits for row in replay)
         if case.insert_obstacle:
             assert self.blocker is not None
-            if any(
-                row.hits for row in replay if row.lift_mm in (case.lifts_mm[0], case.lifts_mm[-1])
-            ):
+            if any(replay[index].hits for index in endpoints):
                 raise ValueError("Obstruction control must leave both endpoints clear")
             if not any(
                 hit.get("object") == self.blocker.name for row in replay for hit in row.hits
@@ -111,11 +116,17 @@ class MotionFixture:
                 raise ValueError("Intermediate obstacle was not rejected")
         elif not blocked and self.preview is not None:
             for frame, row in zip(frames, selected, strict=True):
-                model.pose("capillary", 0, frame.lift_mm if frame.moving == "capillary" else 0)
-                model.pose("pH_temp", 0, frame.lift_mm if frame.moving == "pH_temp" else 0)
+                for head in ("capillary", "pH_temp"):
+                    model.pose(
+                        head,
+                        frame.forward_mm if frame.moving == head else 0,
+                        frame.lift_mm if frame.moving == head else 0,
+                    )
                 colors = ((0.05, 0.25, 0.85, 1), (0.85, 0.15, 0.05, 1), (0.02, 0.55, 0.25, 1))
                 for index, route in enumerate(row):
                     routes.draw_route(route, colors[index // 3])
                     self.drawn.add("RESEARCH_route_" + route.boundary.name.replace("/", "_"))
-                self.preview(f"motion-{frame.moving}-{frame.lift_mm:03.0f}")
+                self.preview(
+                    f"motion-{frame.path}-{frame.moving}-{frame.forward_mm:+04.0f}-{frame.lift_mm:03.0f}"
+                )
         return Observation("blocked" if blocked else "clear", report)
