@@ -28,13 +28,17 @@
 
 ### Verified facts
 
-- V01.0R.02A：完整scripts/ci.sh --real（37008）terminal exit0，ci-motion-recipes.log所有hard gates green。T1／T2及全部真機回歸通過，包括正式MCP五套30案例、場景正常／例外恢復與非法輸入拒絕。無進行中CI。
-- RouteFamily／fit_family加入既有純規劃模組，continue_route共用定長求解；MotionPoint與九段MOTION_FAMILIES加入既有情境資料。family與動作資料各先紅後綠（family-red.log、motion-points-red.log）；50focused及全專案mypy通過。
-- 真機54828正反例通過但需290.29秒。重用既有「全配對碰撞檢查不等於每配對都要重建幾何」LESSON，96646計數負對照exit1，兩姿態單段取樣72次；區域快取後50962 exit0為18／18。每姿態重建、不跨姿態保留；完整同線自碰與異線配對不減少。計數守衛納入MotionFixture。
-- 80234 terminal exit0，正反例降至208.51秒（motion-recipes-cached.log），原單套300秒期限不變。完整CI的engine-verification.json兩motion案例各62replay／558單段取樣；正例零hit，反例只拒絕pH lift(0,50)與mixed(10,50)。MCP重測新錨點，不讀tmp研究結果或舊通過旗標；family身份／尺寸不符拒絕。
-- 62張motion-{path}-{head}-{forward}-{lift} PNG／blend由共用資料產生；兩頭mixed中間及pH raised-reach−20圖已目視檢查。46346編碼exit0，六组motion-{path}-{head}.gif完成；獨立framemd5核對lift／mixed11、raised-reach9個不同姿態，ffprobe確認800×680，63／51解碼幀，沒有物理補幀。
-- 完整CI後21177 fresh開回arm-seated，再讀六承壓鏈與4導線夾通過，recipes-restored-formal.json保存。版本工具已升02A。
-- 5S：沿用四個模組及兩單元檔，225／132／244／366行，均低於380警戒；無新增模組、公開工具或依賴。規格、MCP用法與R53同步；029與研究交接移下方歷史。生成證據留tmp，封存前22項文件／版本／預算守衛通過（83895 exit0）。
+- 依賴警告只讀盤點：目前FastAPI0.135.3／Starlette1.3.1／httpx0.28.1，httpx2未安裝；官方https://starlette.dev/testclient/與https://github.com/pydantic/httpx2確認新TestClient偏好httpx2。31649 dry-run terminal exit0，httpx2-dry-run.json／log顯示候選2.13.1會安裝httpx2／httpcore2／truststore並更新idna到3.20，未實際安裝或修改pyproject。需本輪封存後在隔離環境驗證相容性，不以隱藏警告代替修復；目前回歸環境保持不變。
+
+- V01.0R.02B：完整CI94709 terminal exit0，ci-wrist-state.log所有hard gates green；正式MCP五套30案例與custom_property_oracle_controls／scene_preserved／exception_restores_scene／三拒絕控制全true，mcp-verification.json已重讀。97012另以fresh命令開回正式arm-seated並讀回六承壓鏈與4導線夾通過，wrist-restored-formal.json留證；無進行中真機程序。
+- 32 focused服務／MCP adapter／HTTP／DCC測試通過（64755）；附Starlette TestClient使用httpx的既有套件棄用警告，功能未失敗，後續相容性盤點仍需留意。97115維修預覽exit0，两頭service-wrist-{head}-final PNG／blend已產出，pH圖已實際檢視，正式arm-seated已重新開回。
+
+- 02A後續維修研究發現既有場景恢復漏掉head.tip_release_mm，且原旁證也採同一窄清單。98487真機負對照exit1：0.321變成2.0，wrist-state-red.json／log；25592旁證敏感度負對照exit1，新增巢狀屬性未被偵測（property-oracle-red.json）。不能把02A舊旁證當完整自訂屬性恢復證據。
+- preserve_current_scene補tip_release_mm；獨立SNAPSHOT改取所有物件自訂屬性，明確轉換群組／陣列，未知型別失敗。MCP驗證入口加入新增／巢狀變動的旁證控制、capillary非預設0.321與pH原本缺該屬性的情境，例外路徑也改腕部狀態。3271 exit0：0.321完整還原且新增／巢狀控制通過；ruff及兩檔mypy通過；完整CI及版本結果見上。
+- 50610維修研究terminal exit0：單頭抬100mm，另一頭留工作位；各21個退齒旋轉位置＋11個軸向復位，共64姿態。沿用02A九段family，verify_pose與走線replay皆零碰撞，service-wrist-study.json／log，145.39秒；已恢復正式arm-seated。此研究尚未進MCP，也不涵蓋拆蓋／取探頭／重新鎖緊或连续掃掠。
+
+
+- 5S：沿用恢復模組362行及獨立MCP檢查器159行，無新生產模組／依賴／公開工具；AGENTS75／CLAUDE7／skill150行。02A封存資料已移至下方歷史，修正現行交接的舊「無CI執行中」敘述；LESSON與MCP契約同步，生成證據留tmp；22140封存前文件／版本／預算22項守衛通過。
 
 ### Open failures
 
@@ -43,13 +47,28 @@
 
 ### Next step
 
-- 37008已terminal exit0，無進行中驗證。來源不變不需重跑完整CI；部署讀回的預期為02A、五套30命名案例，motion scope為62姿態。
+- 新維修模組前已查閱 [MoveIt Task Constructor](https://github.com/moveit/moveit_task_constructor)：共同場景介面串接相依階段。採用其明確階段狀態的思路，沿用本專案Scenario／幾何檢查，不新增ROS依賴。verify_clamps目前298個裝配／止擋取樣是兩頭合計；拆件的moving／removed集合需成為可重用資料，並驗證前置條件、單頭隔離與失敗恢復。此為設計接手，尚未實作或取得完整維修資格。
+
+- 封存後將64個單頭轉腕／復位研究資料化，重用既有clamp驗證加單頭選擇，整合拆蓋／抽探頭與線束；不要再用inspect.getsource改寫函式的舊研究手法。94709／97012均已terminal exit0，不再輪詢或重跑已完成的CI。
+
 - 下一工程項目為取樣間隙保守界限、單頭維修與真實接口；保留全工作站目標。關節退齒／調整／重新鎖定搭配線束亦需完整操作驗證；62線路姿態不代表這些操作已全部取得資格。
 - 正式場景tmp/lab-station-electrode-guides-aligned/arm-seated.blend；重測走線開tmp/lab-station-route-engine/motion-lift-pH_temp-+000-000.blend。證據與六組動畫在tmp/lab-station-route-engine/。
 
 ## 歷史驗證紀錄
 
 以下為逐輪證據與當時的下一步；接手只依上方現行段落與任務索引，不能將歷史下一步重新當成主線。
+
+### V01.0R.02A 封存接手
+
+- V01.0R.02A：完整scripts/ci.sh --real（37008）terminal exit0，ci-motion-recipes.log所有hard gates green。T1／T2及全部真機回歸通過，包括正式MCP五套30案例、場景正常／例外恢復與非法輸入拒絕。無進行中CI。
+- RouteFamily／fit_family加入既有純規劃模組，continue_route共用定長求解；MotionPoint與九段MOTION_FAMILIES加入既有情境資料。family與動作資料各先紅後綠（family-red.log、motion-points-red.log）；50focused及全專案mypy通過。
+- 真機54828正反例通過但需290.29秒。重用既有「全配對碰撞檢查不等於每配對都要重建幾何」LESSON，96646計數負對照exit1，兩姿態單段取樣72次；區域快取後50962 exit0為18／18。每姿態重建、不跨姿態保留；完整同線自碰與異線配對不減少。計數守衛納入MotionFixture。
+- 80234 terminal exit0，正反例降至208.51秒（motion-recipes-cached.log），原單套300秒期限不變。完整CI的engine-verification.json兩motion案例各62replay／558單段取樣；正例零hit，反例只拒絕pH lift(0,50)與mixed(10,50)。MCP重測新錨點，不讀tmp研究結果或舊通過旗標；family身份／尺寸不符拒絕。
+- 62張motion-{path}-{head}-{forward}-{lift} PNG／blend由共用資料產生；兩頭mixed中間及pH raised-reach−20圖已目視檢查。46346編碼exit0，六组motion-{path}-{head}.gif完成；獨立framemd5核對lift／mixed11、raised-reach9個不同姿態，ffprobe確認800×680，63／51解碼幀，沒有物理補幀。
+- 完整CI後21177 fresh開回arm-seated，再讀六承壓鏈與4導線夾通過，recipes-restored-formal.json保存。版本工具已升02A。
+- 5S：沿用四個模組及兩單元檔，225／132／244／366行，均低於380警戒；無新增模組、公開工具或依賴。規格、MCP用法與R53同步；029與研究交接移下方歷史。生成證據留tmp，封存前22項文件／版本／預算守衛通過（83895 exit0）。
+
+- 37008已terminal exit0，無進行中驗證。來源不變不需重跑完整CI；部署讀回的預期為02A、五套30命名案例，motion scope為62姿態。
 
 ### V01.0R.029與後續研究接手
 

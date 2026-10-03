@@ -266,7 +266,7 @@ def preserve_current_scene() -> Iterator[None]:
     """Restore only fields this suite can change; never open or overwrite a user file."""
     if bpy.context.mode != "OBJECT":
         raise ValueError("Switch Blender to Object Mode before running verification")
-    keys = ("shoulder_release_mm", "elbow_release_mm", "wrist_release_mm")
+    keys = ("shoulder_release_mm", "elbow_release_mm", "wrist_release_mm", "tip_release_mm")
     fields = (
         "location",
         "rotation_euler",

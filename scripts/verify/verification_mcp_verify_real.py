@@ -14,12 +14,15 @@ from src.verification.cable_route_cases import registered_suites
 
 ROOT = Path(__file__).resolve().parents[2]
 SNAPSHOT = """import bpy,json,hashlib
-keys=('shoulder_release_mm','elbow_release_mm','wrist_release_mm')
+def property_value(value):
+    if hasattr(value, 'to_dict'): return value.to_dict()
+    if hasattr(value, 'to_list'): return value.to_list()
+    raise TypeError('Unsupported property snapshot: '+type(value).__name__)
 rows={obj.name:{'basis':[[round(v,6) for v in row] for row in obj.matrix_basis],
- 'props':{k:obj[k] for k in keys if k in obj},
+ 'props':dict(obj.items()),
  'selected':obj.select_get()} for obj in bpy.data.objects}
 meshes={m.name:hashlib.sha256(str([(tuple(v.co)) for v in m.vertices]).encode()).hexdigest() for m in bpy.data.meshes}
-print('SCENE_STATE_JSON:'+json.dumps({'objects':rows,'meshes':meshes,'active':bpy.context.view_layer.objects.active.name if bpy.context.view_layer.objects.active else None,'file':bpy.data.filepath,'render':bpy.context.scene.render.filepath}))
+print('SCENE_STATE_JSON:'+json.dumps({'objects':rows,'meshes':meshes,'active':bpy.context.view_layer.objects.active.name if bpy.context.view_layer.objects.active else None,'file':bpy.data.filepath,'render':bpy.context.scene.render.filepath},default=property_value))
 """
 
 
@@ -32,6 +35,25 @@ def snapshot(oracle: BlenderSocketOracle) -> object:
         invalid="Invalid scene evidence",
         error=ValueError,
     )
+
+
+def verify_property_oracle(oracle: BlenderSocketOracle) -> None:
+    """The independent observer must see both added and nested property changes."""
+    before = snapshot(oracle)
+    oracle.execute("""head=bpy.data.objects['S_capillary_head']
+assert 'verification_state_probe' not in head
+head['verification_state_probe']={'nested':[1,2,3]}
+""")
+    try:
+        added = snapshot(oracle)
+        assert added != before, "Oracle missed an added custom property"
+        oracle.execute(
+            "bpy.data.objects['S_capillary_head']['verification_state_probe']['nested'][1]=5"
+        )
+        assert snapshot(oracle) != added, "Oracle missed a nested custom property change"
+    finally:
+        oracle.execute("del bpy.data.objects['S_capillary_head']['verification_state_probe']")
+    assert snapshot(oracle) == before, "Oracle control did not restore its own property"
 
 
 async def verify() -> None:
@@ -47,6 +69,9 @@ marker=bpy.context.object
 marker.name='RESEARCH_route_mcp_preserve'
 marker.hide_set(True)
 head=bpy.data.objects['S_capillary_head']
+head['tip_release_mm']=.321
+other=bpy.data.objects['S_pH_temp_head']
+if 'tip_release_mm' in other: del other['tip_release_mm']
 head.select_set(True)
 bpy.context.view_layer.objects.active=head
 assert marker.hide_get() and head.select_get()
@@ -54,6 +79,8 @@ bpy.data.objects['S_capillary_head'].location.x += .007
 bpy.data.objects['S_capillary_lower']['elbow_release_mm']=.123
 """)
         before = snapshot(oracle)
+        verify_property_oracle(oracle)
+        evidence["custom_property_oracle_controls"] = True
         async with Client(DEFAULT_MCP_URL, timeout=360) as client:
             tools = await client.list_tools()
             assert {"list_verification_suites", "run_verification_suite"} <= {t.name for t in tools}
@@ -106,6 +133,7 @@ suite=runpy.run_path({str(ROOT / "scripts/verify/lab_cable_route_checks.py")!r})
 try:
     with suite['preserve_current_scene']():
         bpy.data.objects['S_capillary_lower'].location.x += .123
+        bpy.data.objects['S_capillary_head']['tip_release_mm']=.875
         raise RuntimeError('injected verification interruption')
 except RuntimeError as error:
     if str(error) != 'injected verification interruption':
