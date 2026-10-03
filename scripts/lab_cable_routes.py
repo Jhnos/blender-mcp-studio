@@ -1,7 +1,11 @@
 """Measure and inspect cable-route data against the current Blender assembly."""
 
 from collections import Counter
+from collections.abc import Iterator
+from contextlib import contextmanager
+from copy import deepcopy
 from dataclasses import asdict, dataclass
+from functools import lru_cache
 from math import dist, isfinite, pi
 from typing import Literal
 
@@ -231,6 +235,29 @@ def pair_hit(
     return None
 
 
+class ReplayCache:
+    """Bounded immutable-input calculations; never retain live scene obstacles."""
+
+    def __init__(self) -> None:
+        self.sample = lru_cache(maxsize=512)(sample_path)
+        self.chain = lru_cache(maxsize=512)(sample_chain)
+        self.self_hit = lru_cache(maxsize=512)(nonlocal_self_hit)
+        self.pair = lru_cache(maxsize=512)(pair_hit)
+
+    def clear(self) -> None:
+        for operation in (self.sample, self.chain, self.self_hit, self.pair):
+            operation.cache_clear()
+
+
+@contextmanager
+def replay_cache() -> Iterator[ReplayCache]:
+    cache = ReplayCache()
+    try:
+        yield cache
+    finally:
+        cache.clear()
+
+
 def candidate_hit(
     candidate: RouteCandidate,
     sampled: SampledPath,
@@ -239,6 +266,7 @@ def candidate_hit(
     prefix: tuple[RouteCandidate, ...] = (),
     neighbours: tuple[tuple[RouteCandidate, SampledPath], ...] = (),
     terminal: str | None = None,
+    cache: ReplayCache | None = None,
 ) -> dict[str, object] | None:
     """The same hard constraints serve static search and continuation frames."""
     request = candidate.boundary
@@ -250,14 +278,17 @@ def candidate_hit(
         > 0.05
     ):
         return {"reason": "length_interval"}
-    connected = sample_chain((*prefix, candidate)) if prefix else sampled
-    hit = nonlocal_self_hit(connected, request.cable_radius_mm)
+    chain = cache.chain if cache else sample_chain
+    self_hit = cache.self_hit if cache else nonlocal_self_hit
+    pair = cache.pair if cache else pair_hit
+    connected = chain((*prefix, candidate)) if prefix else sampled
+    hit = self_hit(connected, request.cable_radius_mm)
     if hit is not None:
-        return hit
+        return deepcopy(hit)
     for route, other in neighbours:
-        hit = pair_hit(sampled, request.cable_radius_mm, other, route.boundary.cable_radius_mm)
+        hit = pair(sampled, request.cable_radius_mm, other, route.boundary.cable_radius_mm)
         if hit is not None:
-            return {**hit, "other_route": route.boundary.name}
+            return {**deepcopy(hit), "other_route": route.boundary.name}
     return obstacles.first_hit(sampled, request, terminal)
 
 

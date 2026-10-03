@@ -28,6 +28,61 @@
 
 ### Verified facts
 
+- V01.0R.02C：完整scripts/ci.sh --real **88702 terminal exit0**，tmp/lab-station-route-engine/ci-service-complete.log所有hard gates green。正式MCP七套38案例、各套scene_restored與custom_property_oracle_controls／scene_preserved／exception_restores_scene／unknown_extra_code_missing_model_rejected全部true；mcp-verification.json已逐項重讀。無進行中程序。
+- 878842 fresh開回arm-seated後，六承壓鏈與四導線夾讀回通過，service-restored-formal.json保存。正式場景仍是tmp/lab-station-electrode-guides-aligned/arm-seated.blend；走線通過配置是tmp/lab-station-module-configurations/cable-clearance.blend。
+- ServiceProbe／WRIST_POINTS純資料與ServiceFixture分開，離線及MCP共用run_service_cases。兩頭腕部各32正常取樣；拆件130／156移動與4／8止擋；工作位兩個機構拒絕、兩個套件的線路障礙反例都通過。正式pH頭段family更新為412列研究通過值，其餘八段不變。
+- ReplayCache僅重用完整不可變曲線／半徑／取樣資料，容量512、finally清理、回傳命中隔離；實體障礙照常重建。47486完整412列與未重用基準逐列相等，726.12→352.43秒；此為研究總耗時，不是单套MCP時間。正常取樣覆蓋未減；工作位反例直接驗機構前置條件。
+- 反例辨識曾接受障礙尚未加入前的無關碰撞，34635真機紅→91886綠；永久守衛要求指定障礙已建立且被命中。31855工作位控制1.30秒，毛細管step12碰distal_pin、pH step21碰杯；service-working-final.json保留原因。案例資料缺模組、未知登錄、cache缺介面等紅綠詳見下方歷史。
+- 可見預覽service-temperature-extracted-25.png／blend由同一通過family產生，另有本輪重建的motion-*圖；溫度探頭移出25mm圖已檢視並展示。線長與Ø6mm仍是研究假設，不能作裁線／製造規格。
+- 5S：新增純案例78行、Blender維修配件182行；走線365、主fixture375、案例367，未達380警戒。AGENTS75／CLAUDE7／skill150。沒有新依賴／公開工具；GitHub MoveIt／trimesh來源、R54、LESSON、MCP與機構文件同步；既有研究交接移入下方歷史，生成證據留tmp。
+
+### Open failures
+
+- 固定取樣不是連續掃掠、任意雙頭組合、材料／拉力或負載資格。当前腕部案例涵蓋退開位置上的旋轉及復位，完整起始軸向退齒路徑仍需補入順序操作驗證。
+- 個別拆卸路徑以removed前置條件檢查，尚非完整依序拆卸／重裝。基座／LCD、電路與接口、載荷及實體試印未完成。幫浦／壓力／pH前端／供電板型號與線管外徑已詢問未答，不阻擋機構後續工作。
+- Starlette TestClient偏好httpx2的警告仍待隔離環境相容性驗證；先前只有dry-run，未安装或修改依賴，不以隱藏警告代替修復。
+
+### Next step
+
+- 本輪機器閘門完成；封存commit後執行checkpoint_check、push、API部署並讀回版本與七套38案例，結果存service-deployed.json。不可重跑已terminal的88702。
+- 保留全工作站目標。下一工程項目是按真實先後次序的拆卸／重裝與初始軸向退齒取樣，再處理取樣間隙的保守界限及真實接口；沿用資料／共用執行器，不重寫逐版測試。
+
+## 歷史驗證紀錄
+
+以下為逐輪證據與當時的下一步；接手只依上方現行段落與任務索引，不能將歷史下一步重新當成主線。
+
+### V01.0R.02C 整合研究交接（封存前）
+
+
+### Verified facts
+
+- **目前live：完整scripts/ci.sh --real session88702**，日誌tmp/lab-station-route-engine/ci-service-complete.log；必須輪詢同handle至terminal。source／環境凍結，不啟動第二個Blender工作。70643 API預檢部署terminal exit0，health connected，正式MCP list_verification_suites已讀回七套38案例。版本仍02B，這是驗證前載入、不是完成封存；下一步待完整CI，若失敗先確認工作排空再修復。
+
+- 新SERVICE_CASES／WRIST_POINTS與ServiceFixture已接共用run_service_cases、離線run及run_registered，目錄成為七套38案例，公開工具仍11項。資料矩陣先因缺模組紅後18綠；登錄先Unknown suite紅。43086兩套首次真機terminal exit0：腕部123.89秒／3案例、拆件274.98秒／5案例，均小於300秒；service-registered.json保存，正式MOTION_FAMILIES已換成完整412研究通過的新pH曲線，其他八段不變。
+- 34635反例辨識先紅：注入障礙前的無關碰撞被誤當blocked通過。要求自己的blocker存在且被命中；91886同反例綠，共用run_service_cases永久先跑辨識守衛。工作位反例改直接verify_clamps機構阻擋，不跑該非法姿態上的額外走線；正常286移動／12止擋覆蓋不減。31855 terminal exit0、1.30秒，兩頭分別step12碰distal_pin、step21碰杯，service-working-final.json；整套最新時間仍待真機CI，不能以274.98秒宣稱最終版本時間。
+- 2189 scripts/ci.sh terminal exit0，ci-service-static.log：T1／T2全部通過；41focused、全mypy與ruff通過。T3尚未跑，不作完整交付證據。新增兩模組依責任分為純案例資料與Blender維修配件，未增加外部依賴；建前重讀MoveIt GitHub，09-references記錄來源。LESSON／13使用規格／R54／11MCP文件同步，正式部署與完整CI待執行。
+
+- 正式ReplayCache加入既有lab_cable_routes（365行），只保存完整不可變輸入的sample／chain／self／pair，有界512、每個context finally清除；candidate_hit回傳命中deepcopy，實體obstacles每姿態照常讀。validate_motion接受可選cache，舊呼叫預設不變。lab_cable_motion_checks共用真機入口新增參數／線徑／誤差敏感度、容量、正常／例外清理、跨context隔離與移動實體clear→blocked→clear控制；cache-controls-red.log先因缺介面紅，3253／31541／44981正反例exit0。55相關單元、全專案mypy、ruff通過，尚未完整CI。
+- 47486正式介面完整重播terminal exit0：service-cable-cached.json的412列與原service-cable-study.json逐列完全相同，62motion／64wrist／286clamp、各頭結果相同；耗時352.43秒對726.12秒，減51.46%。service-cache-equivalence.json保存比較，仍超MCP300秒單套期限。後續須依實際操作邊界（既有motion、腕部調整、單頭拆件）建立可重用Scenario與各套完整負控制，不能減取樣或只增加期限。正式families尚未更換，MCP新增維修尚未接線；host finally已開回arm-seated，無進行中程序。
+
+- 33443直接monotonic計時terminal exit0：8個九段拆蓋樣本11.19秒，sample_path72／sample_chain48／self72／pair216，只有9組boundary。13728同8樣本局部lru重用研究terminal exit0：4.44秒，純曲線取樣9／串接6／self9／pair27；實體first_hit仍72次、障礙重建8次，兩次全零hit。service-replay-timing.json與service-replay-reuse.json保留原始計數。快取僅在研究patch上下文內、有界512、完整參數key、回傳deepcopy；不是正式實作／完整412等價性／負控制證據，不能外推已符合300秒。host finally已開回正式場景，無進行中程序。下一步正式窄介面先驗key變動、負碰撞、作用域與回傳隔離，再重播完整412。
+
+- 39677預覽terminal exit0：由通過的溫度探頭移出25mm資料重建姿態，重新求九段並驗證零hit後產出service-temperature-extracted-25.png／blend；PNG已實際檢視，主場景開回arm-seated。80882短段cProfile量測terminal exit0，8個完整九段樣本，service-replay-profile.prof／txt／log；可見重複sample_path／sample_chain及self／pair查詢，但含socket／thread活動與異常遞迴計數，不拿累積時間當精確耗時占比。後續用直接計數與monotonic計時確認，再做局部重用與等價性反例；無進行中程序。
+
+- 62253九段整合研究terminal exit0，726.12秒：62動作＋64腕部＋286拆裝共412列，九段全經validate_motion，零碰撞／不可求解；service-cable-integrated.log及service-cable-study.json已核對完整數量、分段與四組passed。新pH family保持170mm，其餘八段不變；研究超過MCP300秒期限，不能直接接成一套或加長期限，須量測改善重複計算。正式MOTION_FAMILIES尚未更換。
+
+- 5566細化搜尋terminal exit0，23.08秒：79個可定長候選經8個關鍵場景筛選，78個拒絕、1個保留；仍170mm，handles=(16.735425442991854,36.82519863370539,32.582306825290274,35.333156374931896)，side=1。43705針對變更線完整重播terminal exit0：62動作＋64腕部＋286拆裝共412列，零失敗，229.35秒；service-family-replay.json。這是變更線對完整prefix及所有其他線／實體的檢查，尚須九段整合。
+
+- 57578候選研究terminal exit0：維持pH頭段170mm，搜尋前5個候選有2個端點碰撞、3個在抽出25mm處淨空且對85組既有／拆卸端點可求定長；service-family-discovery-first-rejected.json。這只證明端點碰撞與定長可行，尚非全姿態淨空，不改正式MOTION_FAMILIES。
+- 83945候選重播terminal exit0但三組全被淘汰：候選0／1於pH升40／90mm碰溫度線，候選2通過62動作及64腕部取樣，但溫度探頭側移10mm碰pH線；共319列／201.41秒。service-family-replay-first-rejected.json保留三組完整參數、失敗姿態與距離；碰撞餘量未放寬，正式MOTION_FAMILIES未變。
+
+- 維修觀察介面：verify_clamps增加可選observe(label, moving_names, removed_names, signed_step_mm)，使用不可變名稱tuple且在該步幾何通過後呼叫。79342先因缺observe紅，35473綠；78356永久單頭真機入口綠，核對130／156移動觀察共286，另12個止擋合計298；非法頭部與觀察者在step1拋錯後的完整變換還原均通過。ruff／mypy及21文件／預算守衛綠，check模組378行，後續擴充需按責任拆分，不能壓行。
+- 線束耦合研究29864 terminal exit0但幾何資格未全過：毛細管130移動取樣通過；pH probe_-7側移19mm時pH_temp/0/head既有family不可求定長，總176樣本／288.82秒，service-cable-study-original-failure.json保留。只有退出碼不能作通過證據。每步仍使用同一fit_family／validate_motion與removed障礙排除，沒有放寬碰撞。
+
+- 02B後續單頭維修：verify_clamps新增可選labels，保留無參數雙頭行為，空／重複／未知頭部拒絕。service-clamp-red.log先因缺labels失敗（66bba8）；24031研究綠，88220共用真機入口綠：capillary134、pH164，共298個裝配／止擋樣本，另一頭保持工作位且原始變換最後完全恢復。永久verify_single_head_service加入既有lab_electrode_readback_real，由配置驗證呼叫；沒有新模組／依賴，尚未完整CI／升版／提交或接入MCP維修套件。
+- 研究中直接比較移回後matrix_world暴露至多1.49e-8的浮點差異（78745）；幾何恢復採1e-7矩陣容差，另一頭仍要求完全不變，外層preserve_current_scene後原始變換欄位要求完全相等。兩個正例通過；工作位capillary螺栓在step12撞distal_pin，pH探頭在step21撞杯，不能統稱杯內碰撞。single-head-service.json／single-head-service-gate.log保存實際原因。ruff／mypy及21項文件／預算守衛通過；無進行中程序，正式arm-seated已開回。
+- 02B封存後確認：ecc434b已推送；checkpoint56771 C1–C5通過，API82377部署exit0，wrist-deployed.json確認02B、11工具、五套30案例與62姿態scope。
+
 - 依賴警告只讀盤點：目前FastAPI0.135.3／Starlette1.3.1／httpx0.28.1，httpx2未安裝；官方https://starlette.dev/testclient/與https://github.com/pydantic/httpx2確認新TestClient偏好httpx2。31649 dry-run terminal exit0，httpx2-dry-run.json／log顯示候選2.13.1會安裝httpx2／httpcore2／truststore並更新idna到3.20，未實際安裝或修改pyproject。需本輪封存後在隔離環境驗證相容性，不以隱藏警告代替修復；目前回歸環境保持不變。
 
 - V01.0R.02B：完整CI94709 terminal exit0，ci-wrist-state.log所有hard gates green；正式MCP五套30案例與custom_property_oracle_controls／scene_preserved／exception_restores_scene／三拒絕控制全true，mcp-verification.json已重讀。97012另以fresh命令開回正式arm-seated並讀回六承壓鏈與4導線夾通過，wrist-restored-formal.json留證；無進行中真機程序。
@@ -47,16 +102,16 @@
 
 ### Next step
 
+- 效能前置只讀查找：[trimesh caching.py](https://github.com/mikedh/trimesh/blob/main/trimesh/caching.py)以資料身份變化使快取失效。若412列整合超過既有MCP300秒期限，先量測sample_chain／nonlocal_self_hit／pair_hit的重複運算，評估每次suite限定生命週期、以完整不可變曲線／線徑／取樣資料作key的重用；實體場景碰撞不可只以物件名稱快取。尚未改演算法或引入依賴，須先紅綠敏感度與等價性證據，不能降低取樣或直接加長期限。
+
 - 新維修模組前已查閱 [MoveIt Task Constructor](https://github.com/moveit/moveit_task_constructor)：共同場景介面串接相依階段。採用其明確階段狀態的思路，沿用本專案Scenario／幾何檢查，不新增ROS依賴。verify_clamps目前298個裝配／止擋取樣是兩頭合計；拆件的moving／removed集合需成為可重用資料，並驗證前置條件、單頭隔離與失敗恢復。此為設計接手，尚未實作或取得完整維修資格。
 
-- 封存後將64個單頭轉腕／復位研究資料化，重用既有clamp驗證加單頭選擇，整合拆蓋／抽探頭與線束；不要再用inspect.getsource改寫函式的舊研究手法。94709／97012均已terminal exit0，不再輪詢或重跑已完成的CI。
+- 共用MCP維修登錄已接線；下一步API載入新目錄後完整scripts/ci.sh --real，核對七套38案例、每套300秒與正常／例外還原，接著更新VERSION／CHANGELOG並checkpoint提交部署；幾何單頭選擇、286個觀察及例外還原入口已通過focused。不要再用inspect.getsource改写函式。94709／97012／88220均已terminal，不重跑或輪詢舊handle；新完整CI待本輪功能整合。
 
 - 下一工程項目為取樣間隙保守界限、單頭維修與真實接口；保留全工作站目標。關節退齒／調整／重新鎖定搭配線束亦需完整操作驗證；62線路姿態不代表這些操作已全部取得資格。
 - 正式場景tmp/lab-station-electrode-guides-aligned/arm-seated.blend；重測走線開tmp/lab-station-route-engine/motion-lift-pH_temp-+000-000.blend。證據與六組動畫在tmp/lab-station-route-engine/。
 
-## 歷史驗證紀錄
 
-以下為逐輪證據與當時的下一步；接手只依上方現行段落與任務索引，不能將歷史下一步重新當成主線。
 
 ### V01.0R.02A 封存接手
 

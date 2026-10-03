@@ -180,6 +180,8 @@ def validate_motion(
     cases: tuple[routes.RouteCase, ...],
     frames: tuple[MotionFrame, ...],
     selected: tuple[tuple[RouteCandidate, ...], ...],
+    *,
+    cache: routes.ReplayCache | None = None,
 ) -> tuple[FrameEvidence, ...]:
     """Replay all frames, including middle poses; do not trust the search success flag."""
     if not frames or len(selected) != len(frames):
@@ -188,7 +190,8 @@ def validate_motion(
     for frame, row in zip(frames, selected, strict=True):
         if len(row) != len(cases):
             raise ValueError("Motion replay needs every segment")
-        sampled = tuple(sample_path(candidate.curves) for candidate in row)
+        sampler = cache.sample if cache else sample_path
+        sampled = tuple(sampler(candidate.curves) for candidate in row)
         hits = []
         for index, (case, candidate) in enumerate(zip(cases, row, strict=True)):
             seed = selected[0][index]
@@ -213,6 +216,7 @@ def validate_motion(
                 candidate,
                 sampled[index],
                 frame.obstacles,
+                cache=cache,
                 prefix=prefix,
                 neighbours=neighbours,
                 terminal=routes.probe_name(case) if case.segment == "head" else None,

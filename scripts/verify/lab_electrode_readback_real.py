@@ -171,3 +171,80 @@ print('Shared builder: baseline, variant and repeated variant passed mesh readba
 bpy.ops.wm.open_mainfile(filepath=str(model['OUTPUT'] / 'arm-seated.blend'))
 """
     print(BlenderSocketOracle("127.0.0.1", 9876, timeout=300).execute(code))
+
+    verify_single_head_service(script)
+
+
+def verify_single_head_service(script: Path) -> None:
+    """One raised head is serviced while every part of its neighbour stays in place."""
+    root = script.parents[1]
+    oracle = BlenderSocketOracle("127.0.0.1", 9876, timeout=120)
+    source = root / "tmp/lab-station-module-configurations/cable-clearance.blend"
+    restore = root / "tmp/lab-station-electrode-guides-aligned/arm-seated.blend"
+    oracle.execute(f"import bpy\nbpy.ops.wm.open_mainfile(filepath={str(source)!r})")
+    try:
+        code = f"""import bpy, runpy, json
+from pathlib import Path
+model = runpy.run_path({str(script)!r})
+checks = runpy.run_path({str(root / "scripts/verify/lab_cable_route_checks.py")!r})
+fields = ('location', 'rotation_euler', 'rotation_quaternion', 'rotation_axis_angle', 'scale',
+          'delta_location', 'delta_rotation_euler', 'delta_rotation_quaternion', 'delta_scale')
+def state(prefix=''):
+    return {{o.name: {{f: tuple(getattr(o, f)) for f in fields}}
+            for o in bpy.data.objects if o.name.startswith(prefix)}}
+initial = state()
+rows = {{}}
+with checks['preserve_current_scene']():
+    for head, printed, samples in (('capillary', 4, 134), ('pH_temp', 6, 164)):
+        for name in ('capillary', 'pH_temp'):
+            model['pose'](name, 0, 100 if name == head else 0)
+        model['set_electrode_service_tilt'](head)
+        other = 'pH_temp' if head == 'capillary' else 'capillary'
+        neighbour = state('S_' + other + '_')
+        observations = []
+        def observe(label, moving, removed, step):
+            assert label == head and moving and set(moving).isdisjoint(removed)
+            assert all(name.startswith('S_' + head + '_') for name in (*moving, *removed))
+            observations.append((moving, removed, step))
+        result = model['verify_clamps'](labels=(head,), observe=observe)
+        assert result == {{'closed_printed_parts': printed, 'assembly_and_stop_samples': samples}}
+        assert len(observations) == (130 if head == 'capillary' else 156)
+        assert {{row[2] for row in observations}} == set(range(-25, 26))
+        assert any(row[1] for row in observations), 'Removed parts were not reported'
+        assert state('S_' + other + '_') == neighbour, 'Service moved the other head'
+        original = state()
+        def interrupt(label, moving, removed, step):
+            if step == 1:
+                raise RuntimeError('injected service observer failure')
+        try:
+            with checks['preserve_current_scene']():
+                model['verify_clamps'](labels=(head,), observe=interrupt)
+        except RuntimeError as error:
+            assert str(error) == 'injected service observer failure', str(error)
+        else:
+            raise AssertionError('Service observer failure was swallowed')
+        assert state() == original, 'Service observer failure left changed transforms'
+        result['removal_observations'] = len(observations)
+        model['pose'](head)
+        try:
+            model['verify_clamps'](labels=(head,))
+        except ValueError as error:
+            assert str(error).startswith('Probe clamp removal blocked: S_' + head + '_'), str(error)
+            result['working_pose_rejected'] = str(error)
+        else:
+            raise AssertionError('Working-pose service was accepted: ' + head)
+        rows[head] = result
+    for invalid in ((), ('unknown',), ('capillary', 'capillary')):
+        try:
+            model['verify_clamps'](labels=invalid)
+        except ValueError as error:
+            assert 'nonempty, distinct and known' in str(error), str(error)
+        else:
+            raise AssertionError('Invalid service head selection accepted')
+assert state() == initial, 'Single-head checks did not restore original transforms'
+Path({str(root / "tmp/lab-station-module-configurations/single-head-service.json")!r}).write_text(json.dumps(rows, indent=2))
+print('Independent clamp service: 298 samples, both working-pose controls and restoration passed')
+"""
+        print(oracle.execute(code))
+    finally:
+        oracle.execute(f"import bpy\nbpy.ops.wm.open_mainfile(filepath={str(restore)!r})")

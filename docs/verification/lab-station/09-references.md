@@ -76,3 +76,8 @@ GitHub 查找 `electrode holder 3d print clamp pH probe` 與分片夾座，檢�
 - 線對線擴充前檢索GitHub [trimesh proximity](https://github.com/mikedh/trimesh/blob/main/trimesh/proximity.py)：提供網格與點鄰近查询；本案已有Blender KDTree與保守曲線取樣，沿用既有模組建立線包絡檢查，不新增網格依賴或另一套碰撞框架。
 
 - 跨姿態模組前檢索GitHub [OMPL離散／連續碰撞比較](https://github.com/ompl/omplapp/blob/main/demos/SE3RigidBodyPlanning/CollisionCheckers.cpp) 與 [PyElastica](https://github.com/GazzolaLab/PyElastica)。前者明確分開姿態與動作檢查，後者提供細長柔性體力學模擬。本案先沿用既有定長曲線、Blender BVH/KDTree及Scenario，固定曲線分支並重播中間姿態；不引入缺乏材料輸入的力學模型，不將有限取樣標成連續碰撞證明。新增motion orchestrator／fixture只分離跨姿態選擇和合成反例，沒有複製幾何判準。
+
+## 可重用維修情境與計算重用
+
+- [MoveIt Task Constructor](https://github.com/moveit/moveit_task_constructor)：共用場景介面描述多階段操作。採用明確操作／移動件／已移除件的資料邊界，沿用Scenario與既有幾何檢查，沒有引入ROS或複製其程式。
+- [trimesh caching](https://github.com/mikedh/trimesh/blob/main/trimesh/caching.py)：資料識別改變時使快取失效。本專案以完整不可變曲線、線徑及取樣界限作鍵，每次suite限定生命週期與容量；實體障礙仍逐姿態重建。

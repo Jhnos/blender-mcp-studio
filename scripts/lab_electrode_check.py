@@ -1,6 +1,7 @@
 """World-space interfaces and assembly checks for the compact electrode arms."""
 
 import math
+from collections.abc import Callable
 from itertools import combinations
 
 import bmesh
@@ -258,10 +259,18 @@ def verify_platform_geometry() -> int:
     return 144
 
 
-def verify_clamps() -> dict[str, int]:
-    """Check real meshes and straight removal paths; no elastic force qualification."""
+def verify_clamps(
+    labels: tuple[str, ...] = ("capillary", "pH_temp"),
+    *,
+    observe: Callable[[str, tuple[str, ...], tuple[str, ...], int], None] | None = None,
+) -> dict[str, int]:
+    """Check selected heads against the whole scene; no elastic force qualification."""
+    liner_counts = {"capillary": 2, "pH_temp": 4}
+    if not labels or len(set(labels)) != len(labels) or any(h not in liner_counts for h in labels):
+        raise ValueError("Clamp heads must be nonempty, distinct and known")
     samples, printed = 0, 0
-    for label, liner_count in (("capillary", 2), ("pH_temp", 4)):
+    for label in labels:
+        liner_count = liner_counts[label]
         prefix = "S_" + label + "_"
         suffixes = ["head", "clamp_cap"] + [f"clamp_liner_{i}" for i in range(liner_count)]
         suffixes += [f"clamp_{i}_{kind}" for i in range(2) for kind in ("bolt", "nut")]
@@ -342,6 +351,13 @@ def verify_clamps() -> dict[str, int]:
                             raise ValueError(
                                 f"Probe clamp removal blocked: {obj.name}, step={step}, {hits}"
                             )
+                    if observe is not None:
+                        observe(
+                            label,
+                            tuple(o.name for o in moving),
+                            tuple(o.name for o in removed),
+                            sign * step,
+                        )
                     samples += 1
             finally:
                 for obj in moving:

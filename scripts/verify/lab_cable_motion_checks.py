@@ -43,6 +43,8 @@ class MotionFixture:
 
     def observe(self, case: MotionProbe) -> Observation:
         self.cleanup(case)
+        verify_replay_cache()
+        verify_cached_scene_changes()
         cases = tuple(
             routes.RouteCase(r.head, r.channel, r.segment, r.length_mm) for r in CHAIN_ROUTES
         )
@@ -130,3 +132,96 @@ class MotionFixture:
                     f"motion-{frame.path}-{frame.moving}-{frame.forward_mm:+04.0f}-{frame.lift_mm:03.0f}"
                 )
         return Observation("blocked" if blocked else "clear", report)
+
+
+def verify_replay_cache() -> None:
+    """Changed curve, radius and sampling bounds must not reuse an earlier verdict."""
+    from dataclasses import replace
+
+    from src.core.domain.cable_paths import CubicPath
+
+    first = CubicPath(((0, 0, 0), (10, 0, 0), (20, 0, 0), (30, 0, 0)))
+    near = CubicPath(((0, 3, 0), (10, 3, 0), (20, 3, 0), (30, 3, 0)))
+    far = CubicPath(((0, 30, 0), (10, 30, 0), (20, 30, 0), (30, 30, 0)))
+    with routes.replay_cache() as cache:
+        a, b, c = (cache.sample((curve,)) for curve in (first, near, far))
+        assert cache.sample((first,)) == a
+        assert cache.sample.cache_info().hits == 1
+        finer = cache.sample((first,), step_mm=0.05)
+        assert len(finer.points_mm) > len(a.points_mm)
+        assert cache.sample.cache_info().misses == 4
+        assert cache.pair(a, 1, c, 1) is None
+        assert cache.pair(a, 1, b, 1) is None
+        hit = cache.pair(a, 2, b, 2)
+        assert hit is not None and hit["reason"] == "wire_contact"
+        assert cache.pair(a, 1, replace(b, deviation_mm=2), 1) is not None
+        assert cache.pair.cache_info().misses == 4
+        for i in range(520):
+            cache.self_hit(a, 1 + i / 10000)
+        assert cache.self_hit.cache_info().currsize == 512
+    assert cache.sample.cache_info().currsize == 0
+    assert cache.pair.cache_info().currsize == 0
+    assert cache.self_hit.cache_info().currsize == 0
+    with routes.replay_cache() as fresh:
+        fresh.sample((first,))
+        assert fresh.sample.cache_info().misses == 1
+        assert fresh.sample.cache_info().hits == 0
+    try:
+        with routes.replay_cache() as interrupted:
+            interrupted.sample((first,))
+            raise RuntimeError("cache cleanup control")
+    except RuntimeError:
+        assert interrupted.sample.cache_info().currsize == 0
+
+
+def verify_cached_scene_changes() -> None:
+    """Reusing curve math must still observe a moved obstacle and isolate returned hits."""
+    from src.core.domain.cable_paths import CubicPath
+    from src.core.planning.cable_path_plan import RouteBoundary, RouteCandidate
+
+    curve = CubicPath(((10000, 0, 0), (10010, 5, 0), (10020, 5, 0), (10030, 0, 0)))
+    sampled = sample_path((curve,))
+    boundary = RouteBoundary(
+        "cache-control",
+        curve.controls_mm[0],
+        curve.controls_mm[-1],
+        (1, 0, 0),
+        (1, 0, 0),
+        (sampled.length_lower_mm + sampled.length_upper_mm) / 2,
+        cable_radius_mm=2,
+    )
+    candidate = RouteCandidate(boundary, (curve,), (1, 1, 1, 1, 1), boundary.length_mm, 100)
+    bpy.ops.mesh.primitive_cube_add(size=0.004, location=(20, 0, 0))
+    blocker = bpy.context.object
+    blocker.name = "CACHE_CHECK_moving_blocker"
+    try:
+        with routes.replay_cache() as cache:
+            for blocked in (False, True, False):
+                blocker.location = (
+                    Vector(sampled.points_mm[len(sampled.points_mm) // 2]) / 1000
+                    if blocked
+                    else Vector((20, 0, 0))
+                )
+                obstacles = routes.RouteObstacles()
+                actual = routes.candidate_hit(candidate, sampled, obstacles, cache=cache)
+                expected = routes.candidate_hit(candidate, sampled, obstacles)
+                assert actual == expected
+                assert (actual is not None) == blocked
+                if blocked:
+                    assert actual is not None and actual["object"] == blocker.name
+            assert cache.self_hit.cache_info().hits == 2
+            obstacles = routes.RouteObstacles()
+            hit = routes.candidate_hit(
+                candidate, sampled, obstacles, neighbours=((candidate, sampled),), cache=cache
+            )
+            assert hit is not None and hit["reason"] == "wire_contact"
+            hit["samples"] = [-999, -999]
+            repeated = routes.candidate_hit(
+                candidate, sampled, obstacles, neighbours=((candidate, sampled),), cache=cache
+            )
+            assert repeated is not None and repeated["samples"] != [-999, -999]
+    finally:
+        mesh = blocker.data
+        bpy.data.objects.remove(blocker, do_unlink=True)
+        if mesh.users == 0:
+            bpy.data.meshes.remove(mesh)

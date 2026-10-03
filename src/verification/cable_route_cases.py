@@ -8,6 +8,7 @@ from src.core.domain.cable_paths import CubicPath
 from src.core.domain.lab_station import Point
 from src.core.domain.verification import VerificationSuite
 from src.core.planning.cable_path_plan import RouteBoundary, RouteFamily, straight
+from src.verification.electrode_service_cases import service_suites
 from src.verification.scenario_runner import Scenario
 
 
@@ -281,7 +282,7 @@ MOTION_FAMILIES = (
         170,
         3,
         6,
-        (43.588038144986726, 33.36289461280078, 41.41049303347333, 40.52982336415924),
+        (16.735425442991854, 36.82519863370539, 32.582306825290274, 35.333156374931896),
         1,
     ),
     RouteFamily(
@@ -363,4 +364,4 @@ def registered_suites() -> tuple["VerificationSuite", ...]:
             "Requires the lab-station electrode model. No bundle, continuous motion or material qualification.",
             tuple((case.name, case.expected) for case in ROUTE_CASES),
         ),
-    )
+    ) + service_suites()

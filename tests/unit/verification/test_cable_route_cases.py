@@ -148,3 +148,25 @@ def test_motion_matrix_preserves_paths_coordinates_and_saved_wire_identity() -> 
         MotionPoint("mixed", float("nan"), 100)
     with pytest.raises(ValueError):
         MotionPoint("", 0, 0)
+
+
+def test_service_catalog_preserves_wrist_samples_and_independent_head_controls() -> None:
+    from src.verification.cable_route_cases import registered_suites
+    from src.verification.electrode_service_cases import SERVICE_CASES, WRIST_POINTS
+
+    assert len(WRIST_POINTS) == 32
+    assert [p.release_mm for p in WRIST_POINTS[:21]] == [2] * 21
+    assert [p.release_mm for p in WRIST_POINTS[21:]] == [2 - i / 5 for i in range(11)]
+    assert WRIST_POINTS[0].angle_deg == 0
+    assert WRIST_POINTS[20].angle_deg == WRIST_POINTS[-1].angle_deg
+    catalog = {s.suite_id: s for s in registered_suites()}
+    for suite_id, cases in SERVICE_CASES.items():
+        assert catalog[suite_id].cases == tuple((c.name, c.expected) for c in cases)
+        assert {c.inputs.head for c in cases if c.expected == "clear"} == {"capillary", "pH_temp"}
+        assert any(c.expected == "blocked" for c in cases)
+    clamps = SERVICE_CASES["electrode-clamp-service"]
+    assert {c.inputs.head for c in clamps if c.inputs.control == "working"} == {
+        "capillary",
+        "pH_temp",
+    }
+    assert any(c.inputs.control == "obstacle" for c in clamps)

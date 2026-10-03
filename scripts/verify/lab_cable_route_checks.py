@@ -12,6 +12,7 @@ from scripts import lab_cable_routes as routes
 from scripts import model_lab_platform as model
 from scripts.lab_station_render import configure_electrode_view
 from scripts.verify.lab_cable_motion_checks import MotionFixture
+from scripts.verify.lab_electrode_service_checks import run_service_cases
 from src.core.domain.cable_paths import sample_path
 from src.core.planning.cable_path_plan import RouteCandidate, RouteSearchSpec
 from src.verification.cable_route_cases import (
@@ -27,6 +28,7 @@ from src.verification.cable_route_cases import (
     PairProbe,
     RoutePose,
 )
+from src.verification.electrode_service_cases import SERVICE_CASES
 from src.verification.scenario_runner import Observation, require_complete, run_scenarios
 
 
@@ -254,6 +256,11 @@ def run(output: Path, *, render: bool = True) -> None:
     report["motion_evidence"] = [asdict(row) for row in motions]
     path.write_text(json.dumps(report, indent=2))
     require_complete(MOTION_CASES, motions)
+    for suite_id, service_cases in SERVICE_CASES.items():
+        results = run_service_cases(suite_id)
+        report[suite_id] = [asdict(row) for row in results]
+        path.write_text(json.dumps(report, indent=2))
+        require_complete(service_cases, results)
     print(
         f"Shared scenarios: {len(controls)} contact, {len(pairs)} wire-pair, "
         f"{len(results)} single-route, {len(bundles)} bundle, {len(chains)} full-chain "
@@ -322,6 +329,12 @@ def run_registered(suite_id: str) -> dict[str, object]:
             results = run_scenarios(CONTACT_CASES, fixture.observe, fixture.cleanup)
             pair_fixture = PairFixture()
             results += run_scenarios(PAIR_CASES, pair_fixture.observe, pair_fixture.cleanup)
+        elif suite_id in SERVICE_CASES:
+            if "electrode_configuration" not in bpy.context.scene:
+                raise ValueError(
+                    "Open a generated lab-station electrode assembly before running this suite"
+                )
+            results = run_service_cases(suite_id)
         elif suite_id == "electrode-cable-motion":
             if "electrode_configuration" not in bpy.context.scene:
                 raise ValueError(
