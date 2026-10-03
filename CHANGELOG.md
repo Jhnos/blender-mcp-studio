@@ -5,6 +5,12 @@
 
 ## [Unreleased]
 
+### V01.0R.02H — 明確宣告 TestClient 測試依賴
+
+#### Fixed
+
+- dev依賴加入httpx2>=2.13.1,<3，避免Starlette TestClient回退至已棄用httpx路徑。隔離環境1166項測試及依賴完整性通過；安裝後本機CI靜態、Python與Web測試全通過，TestClient在warnings-as-errors模式下正常載入。此輪未重跑真機機構驗證；模型來源未變。
+
 ### V01.0R.02G — 上臂局部退化面修復與共用驗證擴充
 
 #### Fixed

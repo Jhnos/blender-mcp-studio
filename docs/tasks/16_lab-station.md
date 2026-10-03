@@ -28,6 +28,8 @@
 
 ### Verified facts
 
+- 02G 0260588已推送及部署；61266 checkpoint全綠，46323正式讀回02G／11工具／11套46案例及connected，upper-deployed.json保存。02H補pyproject dev httpx2>=2.13.1,<3；7349安裝2.13.1／httpcore2同版／truststore0.10.4並升idna3.11至3.20。6676d5 pip check及warnings-as-errors載入無警告，3943本機CI exit0、T1/T2全綠；未重跑真機，模型未改。無live工作。
+
 - V01.0R.02G：最終修整邊界擴至兩上臂，沿用共用refine_closed_mesh；永久局部三角守衛由六件擴至八件，各含壓扁負對照。舊上臂先RED，來源修復重建後GREEN，未放寬位移預算。
 - 完整CI27464 exit0，ci-upper-refined.log全hard gates green；本輪MCP十一套46案例、場景還原及五全域控制全通過。正式場景八mesh及反例、六就座鏈／四導線夾fresh readback通過，upper-restored-formal.json保存。
 - 局部守衛先於世界變換的研究匯出，19移動件／141網格／1520配對、無排除；正反向三裕量共9120 clear，六中途薄障礙blocked。僅拆卸純平移研究，非任意動作或負載資格。
@@ -37,11 +39,11 @@
 
 - 固定取樣尚非連續掃掠、任意雙頭組合、螺紋／工具／手部空間、移出件支撐或材料／負載資格。
 - 基座／LCD、電路與接口、載荷及實體試印未完成。幫浦／壓力／pH前端／供電板型號及線管外徑已詢問未答，不阻擋機構後續研究。
-- Starlette TestClient偏好httpx2的警告：隔離71項e2e已通過，完整headless1166項亦通過，依賴宣告尚待；正式依賴未改。
+- TestClient警告已由02H明確dev依賴及實際載入／完整本機CI驗證修復。
 
 ### Next step
 
-- 完成02G提交／checkpoint／部署讀回，再補dev httpx2依賴及連續資格整合。
+- 完成02H checkpoint／部署讀回，接續連續資格整合。
 - 全機基座／LCD、真實電路接口、載荷與實體資格仍未完成；硬體型號已詢問未答，不重問。
 
 ## 歷史驗證紀錄

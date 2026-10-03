@@ -4,9 +4,9 @@ Read this file first after a new conversation, compaction, or terminal restart.
 
 ## 接手
 
-- **目前在做（2026-10-03）:** 任務16，本輪完整CI27464已terminal exit0（3168），ci-upper-refined.log所有hard gates green。MCP11套46案例／各套場景還原／5全域控制皆通過。ac34ff正式arm-seated讀回八mesh及反例、六就座鏈／四導線夾通過；無live工作。
-- **最近機器閘門:** 上臂最終邊界修復＋八件永久守衛已通過完整CI；全1520配對×正反及三裕量9120皆clear，六薄障礙控制皆blocked。隔離httpx2完整headless1166及pip check通過，正式依賴未改。
-- **下一步:** 上臂修復5S／升版／checkpoint／部署；然後補dev httpx2依賴及連續資格整合。全機基座／LCD與硬體資格仍未完。
+- **目前在做（2026-10-03）:** 任務16，02G 0260588已推送／部署，61266 checkpoint及46323正式讀回全通過。現02H補dev httpx2依賴，3943本機CI exit0，TestClient警告視錯誤載入及pip check通過；準備封存。
+- **最近機器閘門:** 上臂修復完整真機CI27464通過，MCP11套46案例全綠。全配對9120 clear及六薄障礙blocked為研究證據，尚未連續資格整合。02H僅依賴宣告，未重跑真機；無live工作。
+- **下一步:** 02H checkpoint／部署讀回，接續連續資格整合；全機基座／LCD與硬體資格仍未完。
 
 - **等驗收:** 15 場景清單不再只有十個;對話路徑第一次有真機閘門(`--real` 32 條全綠)。下一個是 14 第五個實例。
 - 13 已驗收歸檔:對話現在能呼叫本專案自己的產生器。
