@@ -1,7 +1,7 @@
 # 設計：讓 MCP 完整——概念進、合規模型出
 
-**狀態**：草稿（2026-10-21），等重用普查結果與 reviewer 檢查後定稿。
-**對應任務**：`docs/tasks/17_mcp-complete-pipeline.md`（定稿後建立）。
+**狀態**：定稿（2026-10-21）。普查已回填（§5），reviewer 八題處置於 §5.2；使用者裁決：階段 1 第一個實例＝匯入既有交付件（§5.2 第 1 題選 A），切片器裝在這台 Mac、AGPL 以子行程呼叫並在 manifest 明標、不另送法務（§5.2 第 6 題）。
+**對應任務**：`docs/tasks/17_mcp-complete-pipeline.md`。**實作計畫（階段 1）**：[[superpowers/plans/2026-10-21-mcp-complete-phase1]]。
 
 ## 1. 意圖與為什麼
 
