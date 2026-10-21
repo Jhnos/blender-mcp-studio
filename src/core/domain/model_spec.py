@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
+import math
 from collections.abc import Mapping
 from dataclasses import dataclass, field
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 from src.core.domain.exceptions import DomainError
 
@@ -51,15 +52,17 @@ def _section(payload: Mapping[str, object], key: str, *, required: bool) -> Mapp
         if required:
             raise ModelSpecError(f"missing required section: {key}")
         return {}
-    if not isinstance(value, Mapping):  # narrow-ok: keys checked by _reject_unknown
+    if not isinstance(
+        value, Mapping
+    ):  # narrow-ok: values are re-checked per field; keys by _reject_unknown
         raise ModelSpecError(f"{key} must be an object")
     return value
 
 
 def _reject_unknown(section: Mapping[str, object], allowed: set[str], where: str) -> None:
-    unknown = sorted(set(section) - allowed)
+    unknown = sorted((k for k in section if k not in allowed), key=str)
     if unknown:
-        raise ModelSpecError(f"unknown keys in {where}: {', '.join(unknown)}")
+        raise ModelSpecError(f"unknown keys in {where}: {', '.join(map(str, unknown))}")
 
 
 def _str(section: Mapping[str, object], key: str, default: str) -> str:
@@ -83,6 +86,24 @@ def _float(section: Mapping[str, object], key: str, default: float) -> float:
     return float(value)
 
 
+def _physical(section: Mapping[str, object], key: str, default: float, *, positive: bool) -> float:
+    value = _float(section, key, default)
+    if not math.isfinite(value) or (value <= 0 if positive else value < 0):
+        bound = "> 0" if positive else ">= 0"
+        raise ModelSpecError(f"{key} must be finite and {bound}")
+    return value
+
+
+def _contained_relative(value: str, field_name: str, base: Path | None = None) -> str:
+    """Reject empty, absolute, ``..`` and (when ``base`` is given) symlink-escaping paths."""
+    path = PurePosixPath(value)
+    if not value or path.is_absolute() or ".." in path.parts:
+        raise ModelSpecError(f"source.{field_name} must be a relative path inside the artifact")
+    if base is not None and not (base / value).resolve().is_relative_to(base):
+        raise ModelSpecError(f"source.{field_name} resolves outside the artifact root")
+    return value
+
+
 def _resolve_root(root_dir: str, artifact_roots: tuple[Path, ...]) -> str:
     if not root_dir:
         raise ModelSpecError("source.root_dir must not be empty")
@@ -103,10 +124,13 @@ def _parse_source(payload: Mapping[str, object], roots: tuple[Path, ...]) -> Imp
     project = src.get("project_3mf")
     if project is not None and not isinstance(project, str):
         raise ModelSpecError("source.project_3mf must be str")
+    resolved = _resolve_root(root_dir, roots)
     return ImportedArtifact(
-        root_dir=_resolve_root(root_dir, roots),
-        stl_glob=_str(src, "stl_glob", "STL/*.stl"),
-        project_3mf=project,
+        root_dir=resolved,
+        stl_glob=_contained_relative(_str(src, "stl_glob", "STL/*.stl"), "stl_glob"),
+        project_3mf=(
+            None if project is None else _contained_relative(project, "project_3mf", Path(resolved))
+        ),
     )
 
 
@@ -119,9 +143,9 @@ def _parse_print_target(payload: Mapping[str, object]) -> PrintTarget:
     return PrintTarget(
         printer=_str(sec, "printer", d.printer),
         material=_str(sec, "material", d.material),
-        layer_height_mm=_float(sec, "layer_height_mm", d.layer_height_mm),
+        layer_height_mm=_physical(sec, "layer_height_mm", d.layer_height_mm, positive=True),
         support=_bool(sec, "support", d.support),
-        brim_mm=_float(sec, "brim_mm", d.brim_mm),
+        brim_mm=_physical(sec, "brim_mm", d.brim_mm, positive=False),
     )
 
 
@@ -146,6 +170,8 @@ def parse_model_spec(
     _reject_unknown(
         payload, {"spec_version", "name", "source", "print_target", "mechanism"}, "spec"
     )
+    if "spec_version" not in payload:
+        raise ModelSpecError("missing spec_version")
     if payload.get("spec_version") != SUPPORTED_SPEC_VERSION:
         raise ModelSpecError(f"unsupported spec_version: {payload.get('spec_version')!r}")
     name = payload.get("name")

@@ -42,3 +42,14 @@ def test_job_record_fields_and_statuses():
         updated_at=1.0,
     )
     assert job.status == "queued" and job.stage is None
+
+
+def test_stage_report_metrics_round_trip():
+    stage = StageReport(
+        name=StageName.GEOMETRY,
+        outcome=StageOutcome.PASSED,
+        metrics=(("stl_count", "113"),),
+        evidence=("a.stl",),
+        message="ok",
+    )
+    assert dict(stage.metrics)["stl_count"] == "113"
