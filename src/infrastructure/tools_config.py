@@ -19,18 +19,28 @@ class ToolsConfig:
 
 
 def _resolve(base: Path, value: object) -> Path:
-    path = Path(str(value))
+    path = Path(str(value)).expanduser()
     return path if path.is_absolute() else Path(os.path.normpath(base / path))
 
 
 def load_tools_config(
     env: Mapping[str, str] | None = None, config_dir: Path | None = None
 ) -> ToolsConfig:
-    """YAML defaults, overridden by BAMBU_STUDIO_BIN, DESIGN_RUNS_DIR and ARTIFACT_ROOTS."""
+    """YAML defaults, overridden by BAMBU_STUDIO_BIN, DESIGN_RUNS_DIR and ARTIFACT_ROOTS.
+
+    An empty env value falls back to the yaml value. ``~`` is expanded, then relative paths
+    resolve against the repository root. A missing yaml key raises ``ValueError`` naming it.
+    """
     env = os.environ if env is None else env
     raw = load_tools(config_dir)
     base = (config_dir or default_config_dir()).parent
-    roots_raw = as_sequence(raw.get("artifact_roots"))
+
+    def yaml_value(key: str) -> object:
+        if raw.get(key) is None:
+            raise ValueError(f"config/tools.yaml: missing key {key}")
+        return raw[key]
+
+    roots_raw = as_sequence(yaml_value("artifact_roots"))
     if roots_raw is None:
         raise ValueError("config/tools.yaml: artifact_roots must be a list")
     roots_env = env.get("ARTIFACT_ROOTS")
@@ -38,7 +48,9 @@ def load_tools_config(
         [part for part in roots_env.split(os.pathsep) if part] if roots_env else roots_raw
     )
     return ToolsConfig(
-        bambu_studio_bin=_resolve(base, env.get("BAMBU_STUDIO_BIN") or raw["bambu_studio_bin"]),
-        design_runs_dir=_resolve(base, env.get("DESIGN_RUNS_DIR") or raw["design_runs_dir"]),
+        bambu_studio_bin=_resolve(
+            base, env.get("BAMBU_STUDIO_BIN") or yaml_value("bambu_studio_bin")
+        ),
+        design_runs_dir=_resolve(base, env.get("DESIGN_RUNS_DIR") or yaml_value("design_runs_dir")),
         artifact_roots=tuple(_resolve(base, value) for value in root_values),
     )

@@ -97,14 +97,20 @@ class BambuStudioCli:
             return data
 
         process = template("process")
+        # Order: template, then the v80 override data file, then request-derived keys.
+        overrides = as_str_keyed(
+            json.loads((self._profiles_dir / "p2s-pla-overrides.json").read_text("utf-8")),
+            context="p2s-pla-overrides.json",
+        )
+        if overrides is None:
+            raise ToolUnavailableError("p2s-pla-overrides.json is not an object")
+        overrides.pop("_source", None)
+        process.update(overrides)
         process.update(
             layer_height=_fmt_mm(request.layer_height_mm),
-            brim_type="outer_only",
             brim_width=_fmt_mm(request.brim_mm),
             enable_support="1" if request.support else "0",
         )
-        if request.support:
-            process.update(support_type="normal(auto)", support_style="snug")
         for name, data in (
             ("machine", template("machine")),
             ("process", process),
@@ -147,8 +153,6 @@ class BambuStudioCli:
             )
 
     async def slice(self, request: SliceRequest) -> SliceResult:
-        if not self._usable():
-            raise ToolUnavailableError(f"Bambu Studio not found at {self._binary}. {_INSTALL_HINT}")
         out = Path(request.output_dir)
         log_path = out / "slicer.log"
         short = _SUPPORTED_PRINTERS.get(request.printer)
@@ -158,9 +162,15 @@ class BambuStudioCli:
                 f"templates exist for {sorted(_SUPPORTED_PRINTERS)}/{sorted(_SUPPORTED_MATERIALS)}"
             )
             return SliceResult(False, None, None, str(log_path), -1, msg)
+        if not self._usable():
+            raise ToolUnavailableError(f"Bambu Studio not found at {self._binary}. {_INSTALL_HINT}")
         out.mkdir(parents=True, exist_ok=True)
         self._write_profiles(request, out)
+        # Export name is "<input stem>-<printer>-<material>.3mf".
         export_name = f"{Path(request.input_3mf).stem}-{short}-{request.material}.3mf"
+        # A slicer that exits 0 without writing must not pass on a previous run's files.
+        (out / export_name).unlink(missing_ok=True)
+        (out / "effective-settings.json").unlink(missing_ok=True)
         argv = self._argv(request, out, export_name)
         try:
             proc = await asyncio.to_thread(self._run, argv, log_path)

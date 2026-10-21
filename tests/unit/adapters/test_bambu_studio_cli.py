@@ -198,3 +198,51 @@ async def test_slice_rejects_unsupported_printer(tmp_path: Path) -> None:
     result = await _cli(tmp_path, FakeRunner()).slice(req)
     assert result.passed is False
     assert "other" in result.message
+
+
+def _overrides() -> dict[str, object]:
+    data = json.loads((_PROFILES / "p2s-pla-overrides.json").read_text(encoding="utf-8"))
+    data.pop("_source")
+    return data
+
+
+def test_overrides_file_matches_v80_acceptance() -> None:
+    data = _overrides()
+    assert data["wall_loops"] == "3"
+    assert data["sparse_infill_pattern"] == "gyroid"
+    assert data["enable_prime_tower"] == "0"
+    assert data["initial_layer_speed"] == ["20", "20", "20"]
+    assert data["initial_layer_infill_speed"] == ["30", "30", "30"]
+
+
+async def test_process_json_applies_v80_overrides(tmp_path: Path) -> None:
+    req = _request(tmp_path, layer_height_mm=0.16, support=False, brim_mm=4.0)
+    await _cli(tmp_path, FakeRunner()).slice(req)
+    process = json.loads((tmp_path / "out" / "process.json").read_text(encoding="utf-8"))
+    request_keys = {"layer_height", "enable_support", "brim_width"}
+    for key, value in _overrides().items():
+        if key not in request_keys:
+            assert process[key] == value, key
+    assert "_source" not in process
+    assert (process["layer_height"], process["enable_support"], process["brim_width"]) == (
+        "0.16",
+        "0",
+        "4.0",
+    )
+
+
+async def test_stale_output_does_not_pass(tmp_path: Path) -> None:
+    out = tmp_path / "out"
+    out.mkdir()
+    (out / "gate-P2S-PLA.3mf").write_bytes(b"old")
+    result = await _cli(tmp_path, FakeRunner(write_output=False)).slice(_request(tmp_path))
+    assert result.passed is False
+    assert result.output_3mf is None
+
+
+async def test_unsupported_target_reported_before_missing_binary(tmp_path: Path) -> None:
+    cli = BambuStudioCli(tmp_path / "nope", profiles_dir=_PROFILES, runner=FakeRunner())
+    req = SliceRequest.from_target("/a.3mf", str(tmp_path / "out"), PrintTarget(printer="x1c"))
+    result = await cli.slice(req)
+    assert result.passed is False
+    assert "x1c" in result.message

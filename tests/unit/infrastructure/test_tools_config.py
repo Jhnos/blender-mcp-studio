@@ -3,6 +3,8 @@
 import os
 from pathlib import Path
 
+import pytest
+
 from src.infrastructure.tools_config import load_tools_config
 
 _YAML = (
@@ -43,3 +45,20 @@ def test_shipped_tools_yaml_loads() -> None:
     cfg = load_tools_config(env={})
     assert cfg.bambu_studio_bin.name == "BambuStudio"
     assert cfg.design_runs_dir.parts[-2:] == ("data", "runs")
+
+
+def test_missing_yaml_key_names_it(tmp_path: Path) -> None:
+    cfg = tmp_path / "config"
+    cfg.mkdir()
+    (cfg / "tools.yaml").write_text('design_runs_dir: d\nartifact_roots: ["."]\n', encoding="utf-8")
+    with pytest.raises(ValueError, match="bambu_studio_bin"):
+        load_tools_config(env={}, config_dir=cfg)
+
+
+def test_tilde_is_expanded(tmp_path: Path) -> None:
+    env = {"BAMBU_STUDIO_BIN": "~/B", "DESIGN_RUNS_DIR": "~/runs", "ARTIFACT_ROOTS": "~/a"}
+    cfg = load_tools_config(env=env, config_dir=_config_dir(tmp_path))
+    home = Path.home()
+    assert cfg.bambu_studio_bin == home / "B"
+    assert cfg.design_runs_dir == home / "runs"
+    assert cfg.artifact_roots == (home / "a",)

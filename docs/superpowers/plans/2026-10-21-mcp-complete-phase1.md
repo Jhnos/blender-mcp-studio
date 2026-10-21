@@ -153,7 +153,7 @@ Command line is the v80-proven form (`tmp/lab-station-slicing-v80/slice_candidat
 def test_tools_config_env_overrides_yaml(monkeypatch, tmp_path): ...          # BAMBU_STUDIO_BIN, DESIGN_RUNS_DIR, ARTIFACT_ROOTS (os.pathsep-separated)
 async def test_availability_reports_missing_binary(tmp_path): ...             # available False, install_hint mentions "BambuStudio.app"
 async def test_slice_reports_missing_binary(tmp_path): ...                    # raises ToolUnavailableError
-async def test_slice_builds_the_v80_command_line(tmp_path): ...               # argv contains every flag above in order; export name "<spec>-P2S-PLA.3mf"
+async def test_slice_builds_the_v80_command_line(tmp_path): ...               # argv contains every flag above in order; export name "<input stem>-P2S-PLA.3mf"
 async def test_slice_reports_nonzero_exit(tmp_path): ...                      # runner returncode 2 -> passed False, message has last log lines
 async def test_slice_passes_when_output_3mf_exists(tmp_path): ...             # returncode 0 and the 3mf written -> passed True
 ```
