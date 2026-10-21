@@ -474,3 +474,44 @@ async def test_package_excludes_slicer_scratch(tmp_path):
     await _run(rig, _payload(rig))
     files = rig.packaging.calls[0][3]
     assert not any("bambu-data" in f for f in files)
+
+
+async def test_store_get_failure_is_logged_not_left_running(tmp_path, caplog):
+    rig = _rig(tmp_path)
+
+    async def boom(job_id):
+        raise RuntimeError("store down")
+
+    rig.jobs.get = boom
+    await rig.pipeline.submit(_payload(rig))
+    await rig.pipeline.wait_idle()
+    assert "design run task failed" in caplog.text and "store down" in caplog.text
+    assert rig.jobs.history == []  # no job could be read, so there is nothing to update
+
+
+async def test_recover_refuses_while_runs_in_flight(tmp_path):
+    rig = _rig(tmp_path, delay=5)
+    await rig.pipeline.submit(_payload(rig))
+    with pytest.raises(RuntimeError, match="startup-only"):
+        await rig.pipeline.recover_interrupted()
+    for task in list(rig.pipeline._tasks):
+        task.cancel()
+    await asyncio.gather(*list(rig.pipeline._tasks), return_exceptions=True)
+
+
+async def test_recover_continues_past_corrupt_report(tmp_path):
+    rig = _rig(tmp_path)
+    ids = ("a" * 32, "b" * 32)
+    jobs = []
+    for run_id in ids:
+        job = await rig.jobs.create(run_id)
+        await rig.jobs.update(job.job_id, status=JobStatus.RUNNING, stage=StageName.GEOMETRY)
+        (rig.runs / run_id).mkdir(parents=True)
+        jobs.append(job)
+    (rig.runs / ids[0] / "report.json").write_text("{trunc")
+    assert await rig.pipeline.recover_interrupted() == 2
+    for job in jobs:
+        assert (await rig.pipeline.status(job.job_id)).status is JobStatus.FAILED
+    report = await rig.pipeline.report(ids[0])
+    assert report.stages[-1].outcome is StageOutcome.FAILED and not report.passed
+    assert report.stages[-1].message == "interrupted: service restarted"

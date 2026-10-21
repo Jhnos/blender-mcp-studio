@@ -102,23 +102,26 @@ class DesignPipeline:
         return parse_model_spec(raw, artifact_roots=self._roots)
 
     async def run(self, job_id: str) -> DesignRunReport:
-        job = await self._jobs.get(job_id)
-        if job is None:
-            raise KeyError(f"unknown job: {job_id}")
-        run_dir = self._runs_dir / job.run_id
+        job: JobRecord | None = None
+        run_id, run_dir = "", self._runs_dir
         done: list[StageReport] = []
         status = JobStatus.FAILED
         error: str | None = "run interrupted"
         spec_name, current = "", None
 
         def snapshot() -> DesignRunReport:
-            return DesignRunReport(job.run_id, spec_name, tuple(done), str(run_dir))
+            return DesignRunReport(run_id, spec_name, tuple(done), str(run_dir))
 
         try:
+            job = await self._jobs.get(job_id)
+            if job is None:
+                raise KeyError(f"unknown job: {job_id}")
+            run_id = job.run_id
+            run_dir = self._runs_dir / run_id
             spec = self._load_spec(run_dir)
             spec_name = spec.name
             state = stages.RunState()
-            for name, step in self._plan(job.run_id, spec, state, run_dir):
+            for name, step in self._plan(run_id, spec, state, run_dir):
                 current = name
                 await self._jobs.update(job_id, status=JobStatus.RUNNING, stage=name)
                 done.append(await self._execute(name, step))
@@ -141,7 +144,8 @@ class DesignPipeline:
             error = f"{type(exc).__name__}: {exc}"
             raise
         finally:
-            await self._jobs.update(job_id, status=status, stage=current, error=error)
+            if job is not None:  # no job record (store failure / unknown id): nothing to update
+                await self._jobs.update(job_id, status=status, stage=current, error=error)
 
     def _plan(
         self, run_id: str, spec: ModelSpec, state: stages.RunState, run_dir: Path
@@ -169,15 +173,28 @@ class DesignPipeline:
             return stages.failed(name, f"{type(exc).__name__}: {exc}")
 
     async def recover_interrupted(self) -> int:
-        """Fail every QUEUED/RUNNING job left by a dead process; returns how many (startup)."""
+        """Fail every QUEUED/RUNNING job left by a dead process; returns how many.
+
+        Startup only, before any submit: it cannot tell an orphan from a live run.
+        """
+        if self._tasks:
+            raise RuntimeError("recover_interrupted is startup-only: runs are in flight")
         orphans = await self._jobs.list_unfinished()
         for job in orphans:
             await self._jobs.update(
                 job.job_id, status=JobStatus.FAILED, stage=job.stage, error=INTERRUPTED
             )
-            existing = reports.read_report(self._runs_dir / job.run_id)
-            if existing is None or job.stage is None:
+            if job.stage is None:
                 continue
+            run_dir = self._runs_dir / job.run_id
+            try:
+                existing = reports.read_report(run_dir)
+            except (ValueError, KeyError, OSError):
+                # unreadable report == missing: start a fresh one holding only the failure
+                existing = DesignRunReport(job.run_id, "", (), str(run_dir))
+            else:
+                if existing is None:
+                    continue
             if existing.stages and existing.stages[-1].name is job.stage:
                 continue
             failed = stages.failed(job.stage, INTERRUPTED)
