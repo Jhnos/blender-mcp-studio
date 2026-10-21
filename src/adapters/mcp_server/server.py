@@ -7,6 +7,7 @@ from fastmcp.exceptions import ToolError
 from fastmcp.utilities.types import Image
 from mcp.types import ToolAnnotations
 
+from src.adapters.mcp_server.design_tools import register_design_tools
 from src.adapters.mcp_server.schemas import (
     RGBA,
     MaxViewportSize,
@@ -37,9 +38,11 @@ from src.core.domain.scene_operations import (
     Vector3,
 )
 from src.core.domain.verification import VerificationError, VerificationReport, VerificationSuite
+from src.core.ports.mechanical_generation_port import InstanceCatalogPort
 from src.core.ports.print_readiness_port import PrintReadinessQueryPort
 from src.core.ports.scene_operations_port import SceneCommandPort, SceneQueryPort
 from src.core.ports.verification_port import VerificationQueryPort
+from src.core.use_cases.design_pipeline import DesignPipeline
 
 
 def _vec(value: tuple[float, float, float] | None) -> Vector3 | None:
@@ -63,6 +66,9 @@ def create_mcp_server(
     commands: SceneCommandPort,
     print_readiness: PrintReadinessQueryPort,
     verification: VerificationQueryPort,
+    *,
+    design: DesignPipeline | None = None,
+    generation: InstanceCatalogPort | None = None,
 ) -> FastMCP:
     """Create the public MCP registry using only incoming application ports."""
 
@@ -309,4 +315,5 @@ def create_mcp_server(
         except (VerificationError, BlenderConnectionError) as exc:
             raise _tool_error(exc) from exc
 
+    register_design_tools(mcp, design=design, generation=generation)
     return mcp

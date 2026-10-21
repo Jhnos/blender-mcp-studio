@@ -66,6 +66,14 @@ examples, not server requirements.
 | `modify_object` | Destructive write | Change transforms or visibility |
 | `delete_object` | Destructive write | Permanently remove one object |
 | `apply_material` | Destructive write | Create/update and assign a Principled BSDF material |
+| `run_design_pipeline` | Write | Submit a ModelSpec; returns a queued job (import, geometry, mechanism, print, package) |
+| `get_job_status` | Read | Poll a design job by `job_id` |
+| `get_run_report` | Read | Per-stage verdicts, metrics, evidence and the overall `passed` flag of one run |
+| `check_mesh_integrity` | Read | Closed / non-self-intersecting check for STLs under an artifact root |
+| `slice_for_print` | Write | Slice a 3MF with the Bambu Studio CLI into a new run directory |
+| `list_instances` | Read | Registered parametric instances and the part files each build must produce |
+| `build_instance` | Destructive write | Build one registered instance in Blender and overwrite its declared STLs |
+| `tool_status` | Read | Availability and version of the external tools the pipeline needs |
 
 `execute_code` is intentionally not public. The internal Blender adapter may use
 it after translating a curated domain operation, but no MCP client can submit
@@ -86,10 +94,34 @@ arbitrary Python.
 | `modify_object` | no | yes | yes | 30 s |
 | `delete_object` | no | yes | no | 30 s |
 | `apply_material` | no | yes | no | 30 s |
+| `run_design_pipeline` | no | no | no | 30 s |
+| `get_job_status` | yes | no | yes | 10 s |
+| `get_run_report` | yes | no | yes | 10 s |
+| `check_mesh_integrity` | yes | no | yes | 50 s |
+| `slice_for_print` | no | no | no | `SLICE_TIMEOUT_S` + 30 s |
+| `list_instances` | yes | no | yes | 10 s |
+| `build_instance` | no | yes | no | `GENERATOR_TIMEOUT_S` + 30 s |
+| `tool_status` | yes | no | yes | 10 s |
 
 所有工具都設 `openWorldHint=false`。名稱有長度上限，向量恰好三個有限數字，
 顏色是 `[0,1]` 的 RGBA，變異類 schema 拒絕額外屬性。
 **Tool annotation 只是建議性的**——實際邊界由 identity middleware 與 registry 強制。
+
+### 設計管線（ModelSpec → 可列印包）
+
+LLM 供應想法與 ModelSpec，MCP 負責走到可列印包：`run_design_pipeline` 送出（立即回傳
+`job_id`／`run_id`）→ `get_job_status` 輪詢 → `get_run_report` 讀逐階段證據。
+`check_mesh_integrity` 與 `slice_for_print` 可單獨使用，也接受 ModelSpec 以外的檔案。
+
+- **路徑規則**：`stl_paths`、`input_3mf` 一律是允許的 artifact root 底下的**相對路徑**，
+  與 ModelSpec 同一道關卡（無 `..`、無隱藏段、副檔名須為 `.stl`／`.3mf`、符號連結不得逃出 root），
+  並受同一組檔案數與大小上限。任何輸出都不含主機絕對路徑。
+- **證據檔**：`slice_for_print` 的 `output_3mf`／`settings_json`／`log_path` 是
+  `run://{run_id}/print/<name>` 資源 URI；以 MCP 資源 `run://{run_id}/{name}` 讀取
+  （`.json`／`.log` 回文字，其餘回二進位），超出 run 目錄的名稱會被拒絕。
+- **未設定**：伺服器沒有接上對應服務時，工具仍在目錄內，呼叫會得到
+  「not configured on this server」的工具錯誤。
+- 匯入階段忽略的檔案（隱藏路徑段）記在 `skipped` 指標與 `skipped: <相對路徑>` 證據（最多 20 筆）。
 
 ### 登錄測試
 
@@ -176,7 +208,7 @@ because GUI-launched clients do not reliably inherit the shell working directory
 
 ## 接上之後
 
-**安全邊界**（identity、Host/Origin、protocol version、十一項工具相等性、公網散布的
+**安全邊界**（identity、Host/Origin、protocol version、十九項工具相等性、公網散布的
 前提）完整說明見 [[01-architecture]] 的安全邊界一節。這裡只提醒 client 開發者三件事：
 
 - `/mcp` **不是** identity exemption。缺少可信 Tailnet identity 的請求會收到 HTTP 401。

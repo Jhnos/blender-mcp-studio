@@ -27,13 +27,15 @@ from src.core.domain.design_run import (
     StageReport,
 )
 from src.core.domain.import_limits import ImportLimits
-from src.core.domain.model_spec import ModelSpec, parse_model_spec
-from src.core.domain.slicing import ToolAvailability
+from src.core.domain.mesh_integrity import MeshIntegrityReport
+from src.core.domain.model_spec import ModelSpec, PrintTarget, parse_model_spec
+from src.core.domain.slicing import SliceRequest, SliceResult, ToolAvailability
 from src.core.ports.job_store_port import JobStorePort
 from src.core.ports.mechanism_simulation_port import MechanismSimulationPort
 from src.core.ports.mesh_integrity_port import MeshIntegrityPort
 from src.core.ports.packaging_port import PackagingPort
 from src.core.ports.slicing_port import SlicingPort
+from src.core.use_cases import design_files as files
 from src.core.use_cases import design_reports as reports
 from src.core.use_cases import design_stages as stages
 from src.core.use_cases.blender_lease import BlenderLease
@@ -68,6 +70,7 @@ class DesignPipeline:
         self._runs_dir = Path(runs_dir)
         self._roots = artifact_roots
         self._limits = limits
+        self._scrub = files.PathScrubber(artifact_roots, Path(runs_dir))
         self._tasks: set[asyncio.Task[DesignRunReport]] = set()
 
     async def submit(self, payload: Mapping[str, object]) -> JobRecord:
@@ -112,6 +115,44 @@ class DesignPipeline:
     async def tools(self) -> tuple[ToolAvailability, ...]:
         """External tools the pipeline depends on (currently the slicer)."""
         return (await self._slicing.availability(),)
+
+    async def check_meshes(self, paths: tuple[str, ...]) -> MeshIntegrityReport:
+        """Integrity-check STLs named relative to an artifact root (no run, no Blender lease).
+
+        Paths pass the ModelSpec parser's gate and the import caps; verdicts come back relative.
+        """
+        found = await asyncio.to_thread(
+            files.resolve_inputs,
+            tuple(paths),
+            suffix=".stl",
+            roots=self._roots,
+            max_count=self._limits.max_stl_files,
+            max_bytes=self._limits.max_stl_bytes,
+        )
+        report = await self._integrity.check(tuple(str(f.absolute) for f in found))
+        return files.relative_report(report, found, self._scrub)
+
+    async def slice_file(self, input_3mf: str, printer: str) -> SliceResult:
+        """Slice one 3MF under the artifact roots into a fresh run directory.
+
+        Output paths come back relative to the runs dir: ``<run_id>/print/<name>``.
+        """
+        (found,) = await asyncio.to_thread(
+            files.resolve_inputs,
+            (input_3mf,),
+            suffix=".3mf",
+            roots=self._roots,
+            max_count=1,
+            max_bytes=self._limits.max_3mf_bytes,
+        )
+        run_dir = self._runs_dir / uuid.uuid4().hex
+        run_dir.mkdir(parents=True)
+        request = SliceRequest.from_target(
+            str(found.absolute), str(run_dir / "print"), PrintTarget(printer=printer)
+        )
+        async with self._lease.hold(StageName.PRINT):
+            result = await self._slicing.slice(request)
+        return files.relative_slice(result, self._runs_dir, self._scrub)
 
     def _load_spec(self, run_dir: Path) -> ModelSpec:
         raw = reports.read_spec(run_dir)

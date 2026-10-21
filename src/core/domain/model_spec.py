@@ -99,6 +99,17 @@ def _is_hidden(parts: tuple[str, ...]) -> bool:
     return any(part.startswith(".") and part != "." for part in parts)
 
 
+def _check_relative(value: str, label: str, suffix: str) -> None:
+    """The syntactic half of the path gate: relative, no ``..``, not hidden, right suffix."""
+    path = PurePosixPath(value)
+    if not value or path.is_absolute() or ".." in path.parts:
+        raise ModelSpecError(f"{label} must be a relative path inside the artifact")
+    if _is_hidden(path.parts):
+        raise ModelSpecError(f"{label} must not contain hidden path parts")
+    if not value.lower().endswith(suffix):
+        raise ModelSpecError(f"{label} must end in {suffix}")
+
+
 def _contained_relative(
     value: str, field_name: str, base: Path | None = None, *, suffix: str
 ) -> str:
@@ -106,16 +117,35 @@ def _contained_relative(
 
     Only print inputs are readable: ``suffix`` is a literal, case-insensitive end of the value.
     """
-    path = PurePosixPath(value)
-    if not value or path.is_absolute() or ".." in path.parts:
-        raise ModelSpecError(f"source.{field_name} must be a relative path inside the artifact")
-    if _is_hidden(path.parts):
-        raise ModelSpecError(f"source.{field_name} must not contain hidden path parts")
-    if not value.lower().endswith(suffix):
-        raise ModelSpecError(f"source.{field_name} must end in {suffix}")
+    label = f"source.{field_name}"
+    _check_relative(value, label, suffix)
     if base is not None and not (base / value).resolve().is_relative_to(base):
-        raise ModelSpecError(f"source.{field_name} resolves outside the artifact root")
+        raise ModelSpecError(f"{label} resolves outside the artifact root")
     return value
+
+
+def resolve_artifact_file(path: str, *, suffix: str, roots: tuple[Path, ...]) -> Path:
+    """Resolve a caller-supplied ``path`` to an existing file inside one of ``roots``.
+
+    The one gate for paths a remote host hands us (MCP tools): the same syntactic rules as the
+    ModelSpec parser, then ``resolve().is_relative_to(root)`` (symlinks) and no hidden part in
+    the resolved path. Messages never contain a host path.
+    """
+    _check_relative(path, "path", suffix)
+    escaped = False
+    for root in roots:
+        base = root.resolve()
+        candidate = (base / path).resolve()
+        if not candidate.is_relative_to(base):
+            escaped = True
+            continue
+        if _is_hidden(candidate.relative_to(base).parts):
+            raise ModelSpecError("path must not contain hidden path parts")
+        if candidate.is_file():
+            return candidate
+    if escaped:
+        raise ModelSpecError("path resolves outside the artifact root")
+    raise ModelSpecError("path not found in the allowed artifact roots")
 
 
 def _resolve_root(root_dir: str, artifact_roots: tuple[Path, ...]) -> str:

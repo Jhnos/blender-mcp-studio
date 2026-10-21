@@ -21,7 +21,43 @@ async def test_import_skips_hidden_and_non_stl_matches(tmp_path):
     payload = _payload(rig)
     payload["source"]["stl_glob"] = "**/*.stl"
     _, _, report = await _run(rig, payload)
-    assert report.stages[0].evidence == ("STL/a.stl", "STL/b.stl")
+    # ignored files are visible in the evidence (ruling 10), after the imported ones
+    assert report.stages[0].evidence == ("STL/a.stl", "STL/b.stl", "skipped: .hidden/x.stl")
+
+
+async def test_import_reports_skipped_matches(tmp_path):
+    rig = _rig(tmp_path)
+    (rig.root / ".hidden").mkdir()
+    (rig.root / ".hidden" / "x.stl").write_bytes(b"x")
+    (rig.root / "STL" / ".dot.stl").write_bytes(b"x")
+    (rig.root / "dir.stl").mkdir()  # a directory match is not a file: neither imported nor skipped
+    payload = _payload(rig)
+    payload["source"]["stl_glob"] = "**/*.stl"
+    _, _, report = await _run(rig, payload)
+    imp = report.stages[0]
+    assert dict(imp.metrics)["skipped"] == "2"
+    assert "skipped: .hidden/x.stl" in imp.evidence
+    assert "skipped: STL/.dot.stl" in imp.evidence
+    assert "STL/a.stl" in imp.evidence and not any("dir.stl" in e for e in imp.evidence)
+
+
+async def test_import_skipped_evidence_is_capped_at_20(tmp_path):
+    rig = _rig(tmp_path)
+    (rig.root / ".hid").mkdir()
+    for i in range(30):
+        (rig.root / ".hid" / f"n{i:02d}.stl").write_bytes(b"x")
+    payload = _payload(rig)
+    payload["source"]["stl_glob"] = "**/*.stl"
+    _, _, report = await _run(rig, payload)
+    imp = report.stages[0]
+    assert dict(imp.metrics)["skipped"] == "30"
+    assert len([e for e in imp.evidence if e.startswith("skipped: ")]) == 20
+
+
+async def test_import_without_skips_reports_zero(tmp_path):
+    rig = _rig(tmp_path)
+    _, _, report = await _run(rig, _payload(rig))
+    assert dict(report.stages[0].metrics)["skipped"] == "0"
 
 
 async def test_import_rejects_too_many_stls(tmp_path):

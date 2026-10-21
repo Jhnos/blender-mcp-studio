@@ -22,6 +22,7 @@ from src.core.ports.slicing_port import SlicingPort
 from src.core.use_cases.design_reports import REPORT_NAME
 
 SLICER_LICENSE = "AGPL-3.0-only"
+MAX_SKIPPED_EVIDENCE = 20
 
 
 @dataclass(slots=True)
@@ -64,45 +65,59 @@ def _too_big(path: Path, rel: str, limit: int) -> str | None:
     return f"{rel}: {size} bytes exceeds the {limit} byte limit" if size > limit else None
 
 
-def _scan_source(
-    spec: ModelSpec, limits: ImportLimits
-) -> tuple[tuple[Path, ...], Path | None, str | None]:
-    """Blocking: expand the glob, check containment and caps. Returns (stls, project, error).
+@dataclass(frozen=True, slots=True)
+class Scan:
+    """Result of expanding the source glob; ``error`` set means nothing else is usable."""
+
+    stls: tuple[Path, ...] = ()
+    project: Path | None = None
+    error: str | None = None
+    skipped: tuple[str, ...] = ()
+
+
+def _scan_source(spec: ModelSpec, limits: ImportLimits) -> Scan:
+    """Blocking: expand the glob, check containment and caps.
 
     Defence in depth behind the parser: only ``.stl`` files outside hidden path parts count.
+    Matching files that do not are listed in ``skipped`` (relative paths) so the report shows
+    what was ignored; directories are not files and not skips.
     """
     root = Path(spec.source.root_dir).resolve()
     stls: list[Path] = []
+    skipped: list[str] = []
     for match in sorted(root.glob(spec.source.stl_glob)):
         rel = match.relative_to(root)
         if _hidden(rel) or match.suffix.lower() != ".stl":
+            if match.is_file():
+                skipped.append(rel.as_posix())
             continue
         if not match.resolve().is_relative_to(root):
-            return (), None, f"{rel.as_posix()}: resolves outside the artifact root"
+            return Scan(error=f"{rel.as_posix()}: resolves outside the artifact root")
         if match.is_file():
             stls.append(match)
     if len(stls) > limits.max_stl_files:
-        return (), None, f"{len(stls)} STL files exceed the {limits.max_stl_files} file limit"
+        return Scan(error=f"{len(stls)} STL files exceed the {limits.max_stl_files} file limit")
     for stl in stls:
         error = _too_big(stl, stl.relative_to(root).as_posix(), limits.max_stl_bytes)
         if error is not None:
-            return (), None, error
+            return Scan(error=error)
     project = None
     if spec.source.project_3mf is not None:
         candidate = root / spec.source.project_3mf
         if not candidate.resolve().is_relative_to(root):
-            return (), None, f"{spec.source.project_3mf}: resolves outside the artifact root"
+            return Scan(error=f"{spec.source.project_3mf}: resolves outside the artifact root")
         if not candidate.is_file():
-            return (), None, f"{spec.source.project_3mf}: project 3MF not found"
+            return Scan(error=f"{spec.source.project_3mf}: project 3MF not found")
         error = _too_big(candidate, spec.source.project_3mf, limits.max_3mf_bytes)
         if error is not None:
-            return (), None, error
+            return Scan(error=error)
         project = candidate.resolve()
-    return tuple(stls), project, None
+    return Scan(tuple(stls), project, None, tuple(skipped))
 
 
 async def import_stage(spec: ModelSpec, state: RunState, limits: ImportLimits) -> StageReport:
-    stls, project, error = await asyncio.to_thread(_scan_source, spec, limits)
+    scan = await asyncio.to_thread(_scan_source, spec, limits)
+    stls, project, error, skipped = scan.stls, scan.project, scan.error, scan.skipped
     if error is not None:
         return failed(StageName.IMPORT, error)
     if not stls:
@@ -111,8 +126,14 @@ async def import_stage(spec: ModelSpec, state: RunState, limits: ImportLimits) -
     state.root = str(root)
     state.stls = tuple(str(p.resolve()) for p in stls)
     state.project_3mf = None if project is None else str(project)
-    evidence = tuple(_rel(p, root) for p in state.stls)
-    metrics = (("stl_count", str(len(stls))), ("project_3mf", str(project is not None).lower()))
+    evidence = tuple(_rel(p, root) for p in state.stls) + tuple(
+        f"skipped: {rel}" for rel in skipped[:MAX_SKIPPED_EVIDENCE]
+    )
+    metrics = (
+        ("stl_count", str(len(stls))),
+        ("project_3mf", str(project is not None).lower()),
+        ("skipped", str(len(skipped))),
+    )
     return _report(StageName.IMPORT, StageOutcome.PASSED, "", metrics, evidence)
 
 

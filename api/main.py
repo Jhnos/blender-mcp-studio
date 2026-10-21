@@ -200,6 +200,8 @@ def create_app(
         shared_runtime.scene_operations,
         shared_runtime.print_readiness,
         shared_runtime.verification,
+        design=shared_runtime.design_pipeline,
+        generation=shared_runtime.mechanical_generation,
     )
 
     allowed_hosts = {"127.0.0.1", "localhost"}

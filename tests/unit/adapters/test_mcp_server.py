@@ -41,6 +41,14 @@ EXPECTED_TOOLS = {
     "modify_object",
     "list_verification_suites",
     "run_verification_suite",
+    "run_design_pipeline",
+    "get_job_status",
+    "get_run_report",
+    "check_mesh_integrity",
+    "slice_for_print",
+    "list_instances",
+    "build_instance",
+    "tool_status",
 }
 
 POLICY = {
@@ -55,6 +63,14 @@ POLICY = {
     "delete_object": (False, True, False, False),
     "apply_material": (False, True, False, False),
     "check_print_readiness": (True, False, True, False),
+    "run_design_pipeline": (False, False, False, False),
+    "get_job_status": (True, False, True, False),
+    "get_run_report": (True, False, True, False),
+    "check_mesh_integrity": (True, False, True, False),
+    "slice_for_print": (False, False, False, False),
+    "list_instances": (True, False, True, False),
+    "build_instance": (False, True, False, False),
+    "tool_status": (True, False, True, False),
 }
 
 

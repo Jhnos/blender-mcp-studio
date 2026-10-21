@@ -53,7 +53,18 @@ _EXPECTED_TOOLS = {
     "modify_object",
     "list_verification_suites",
     "run_verification_suite",
+    "run_design_pipeline",
+    "get_job_status",
+    "get_run_report",
+    "check_mesh_integrity",
+    "slice_for_print",
+    "list_instances",
+    "build_instance",
+    "tool_status",
 }
+#: The two instance tools are public on purpose (docs/11-mcp-clients.md); no other
+#: conversation-internal generation tool may appear in the public catalogue.
+_PUBLIC_GENERATION_TOOLS = {"list_instances", "build_instance"}
 
 
 class CountingBlender(BlenderPort):
@@ -276,15 +287,15 @@ def test_client_name_does_not_change_capabilities_or_catalog() -> None:
     assert observations[0][1] == _EXPECTED_TOOLS
 
 
-def test_public_catalog_includes_verification_but_not_generation_tools() -> None:
-    """`docs/01-architecture.md` declares eleven curated public tools.
+def test_public_catalog_exposes_only_the_declared_generation_tools() -> None:
+    """`docs/01-architecture.md` declares nineteen curated public tools.
 
-    The conversation inside this process gained `list_instances` and
-    `build_instance`; that list and this catalogue are different surfaces, and
-    the only thing keeping them apart is that nobody added one to the other.
-    This is the check that notices if somebody does.
+    The conversation inside this process has its own generation tool list; that list and
+    this catalogue are different surfaces. Exposing `list_instances` and `build_instance`
+    publicly was an explicit decision (Phase 1 MCP tools); this check notices if anything
+    else from the internal list is added to the public catalogue.
     """
     from src.core.use_cases.conversation_generation import GENERATION_TOOL_NAMES
 
-    assert len(_EXPECTED_TOOLS) == 11
-    assert not (_EXPECTED_TOOLS & GENERATION_TOOL_NAMES)
+    assert len(_EXPECTED_TOOLS) == 19
+    assert _EXPECTED_TOOLS & GENERATION_TOOL_NAMES == _PUBLIC_GENERATION_TOOLS
