@@ -33,11 +33,23 @@
 ### Verified facts
 
 - 2026-10-21：設計定稿（使用者裁決：第一實例＝匯入既有交付件；切片器裝這台 Mac；AGPL 子行程不另送法務）；計畫自檢通過；任務 0 建檔。
+- 2026-10-21：任務 1–3 完成，各自通過審查。每一輪都由指揮官親跑 `scripts/ci.sh`，T1＋T2 全綠。分支是 `worktree-mcp-complete-phase1`；commit 鏈與每條裁決記在 `.superpowers/sdd/mcp-complete-phase1/progress.md`（git 不追蹤的工作區帳本）。
+  - 任務 1（7aacd0d、a4caf53）：`ModelSpec` 解析器把 `root_dir`、`stl_glob`、`project_3mf` 都限制在允許的根目錄內，symlink 也算在內。
+  - 任務 2（9b34fb6、d3cbbe4、950cce1）：`MeshIntegrityPort`。自交與封閉分開評估；沒評估到的回 `None`，不回假的 `False`。共用守衛 `require_triangle_surface` 行為不變。
+  - 任務 3（f533c82、1ef5eeb）：`SlicingPort` 加 Bambu CLI。v80 驗收過的列印覆寫參數改放 `config/slicer-profiles/p2s-pla-overrides.json`，已逐鍵比對，與 v80 相同。切片逾時＝5×171 秒，依據是 v80 實測最慢的一次 170.6 秒。
+- 切片器二進位：`/Applications` 底下沒有，但主 checkout 的 `tmp/lab-station-slicing-v80/mounted/BambuStudio.app` 有一份可執行的 universal 版本，是 v80 從 dmg 抽出來的。任務 9 可以用 `BAMBU_STUDIO_BIN` 指向它。
 
 ### Open failures
 
-- 本機 `/Applications` 尚未安裝 Bambu Studio（普查實測）；任務 9 的真機閘門需要它，`tool_status` 會明確回報缺席。
+- 任務 4（c023cdb、33eacae）已完成，通過範圍複審。改用共用 STL 讀取器後，整合性 adapter 的 7 種測試網格判定與修改前完全相同。manifest 加了 `tools` 清單，用來標示 AGPL 授權。
+- 技術債，任務 10 在 main 上修：conda 環境 `blender-mcp` 的 editable 安裝指向一個已刪除的舊 worktree（`_editable_impl_blender_mcp_studio.pth`），現在只是剛好靠 cwd 才 import 得到 `src`。
+- 留給最終審查：
+  - CGAL 把零面積三角形算成自交。判定仍然失敗、原因也正確，但要補一行說明。
+  - 兩個「未評估」的早退分支沒有各自的測試。
+  - manifest 的 `tools` 只依名稱排序；同名不同版本時，輸出位元組會依呼叫順序而變。排序鍵改成 `(name, version or "", license, invocation)`。
 
 ### Next step
 
-- 任務 1：`src/core/domain/model_spec.py` 與 `src/core/domain/design_run.py`，先寫 `tests/unit/core/test_model_spec.py` 看紅。
+- 任務 4 複審通過後，派任務 5（`DesignPipeline`），帶兩條要求：
+  - 每個讀檔路徑展開時，再用 `resolve().is_relative_to(root)` 檢查一次。
+  - 切片有跑的時候，把 Bambu Studio 以 `ToolUse(license="AGPL-3.0-only", invocation="subprocess")` 傳進 manifest。
