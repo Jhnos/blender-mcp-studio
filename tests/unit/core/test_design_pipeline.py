@@ -269,7 +269,8 @@ async def test_slicer_unavailable_fails_print_stage(tmp_path):
     rig.slicing.error = ToolUnavailableError("Bambu Studio not installed; brew install it")
     _, status, report = await _run(rig, _payload(rig))
     assert report.stages[-1].name is StageName.PRINT
-    assert report.stages[-1].message.startswith("ToolUnavailableError: Bambu Studio not installed")
+    # the print stage reports the tool's own message (no exception-class prefix)
+    assert report.stages[-1].message == "Bambu Studio not installed; brew install it"
     assert status.status is JobStatus.FAILED and rig.lease.holder is None
 
 

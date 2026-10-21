@@ -54,6 +54,30 @@ async def test_import_skipped_evidence_is_capped_at_20(tmp_path):
     assert len([e for e in imp.evidence if e.startswith("skipped: ")]) == 20
 
 
+async def test_import_rejects_symlink_to_hidden_target(tmp_path):
+    rig = _rig(tmp_path)
+    (rig.root / ".git").mkdir()
+    (rig.root / ".git" / "x.stl").write_bytes(b"x")
+    (rig.root / "STL" / "hid.stl").symlink_to(rig.root / ".git" / "x.stl")
+    _, status, report = await _run(rig, _payload(rig))
+    imp = report.stages[0]
+    assert imp.outcome is StageOutcome.FAILED and "STL/hid.stl" in imp.message
+    assert "hidden" in imp.message and len(report.stages) == 1
+    assert rig.integrity.seen == () and status.status is JobStatus.FAILED
+
+
+async def test_import_rejects_project_3mf_symlink_to_hidden_target(tmp_path):
+    rig = _rig(tmp_path)
+    (rig.root / ".git").mkdir()
+    (rig.root / ".git" / "p.3mf").write_bytes(b"x")
+    (rig.root / "p.3mf").unlink()
+    (rig.root / "p.3mf").symlink_to(rig.root / ".git" / "p.3mf")
+    _, _, report = await _run(rig, _payload(rig))
+    imp = report.stages[0]
+    assert imp.outcome is StageOutcome.FAILED and "p.3mf" in imp.message
+    assert "hidden" in imp.message and rig.slicing.requests == []
+
+
 async def test_import_without_skips_reports_zero(tmp_path):
     rig = _rig(tmp_path)
     _, _, report = await _run(rig, _payload(rig))

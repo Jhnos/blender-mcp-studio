@@ -94,7 +94,7 @@ def _physical(section: Mapping[str, object], key: str, default: float, *, positi
     return value
 
 
-def _is_hidden(parts: tuple[str, ...]) -> bool:
+def is_hidden_path(parts: tuple[str, ...]) -> bool:
     """A part starting with ``.`` (.env, .git, .venv, .claude); the bare ``.`` is not hidden."""
     return any(part.startswith(".") and part != "." for part in parts)
 
@@ -104,7 +104,7 @@ def _check_relative(value: str, label: str, suffix: str) -> None:
     path = PurePosixPath(value)
     if not value or path.is_absolute() or ".." in path.parts:
         raise ModelSpecError(f"{label} must be a relative path inside the artifact")
-    if _is_hidden(path.parts):
+    if is_hidden_path(path.parts):
         raise ModelSpecError(f"{label} must not contain hidden path parts")
     if not value.lower().endswith(suffix):
         raise ModelSpecError(f"{label} must end in {suffix}")
@@ -139,7 +139,7 @@ def resolve_artifact_file(path: str, *, suffix: str, roots: tuple[Path, ...]) ->
         if not candidate.is_relative_to(base):
             escaped = True
             continue
-        if _is_hidden(candidate.relative_to(base).parts):
+        if is_hidden_path(candidate.relative_to(base).parts):
             raise ModelSpecError("path must not contain hidden path parts")
         if candidate.is_file():
             return candidate
@@ -155,7 +155,7 @@ def _resolve_root(root_dir: str, artifact_roots: tuple[Path, ...]) -> str:
         base = root.resolve()
         candidate = (base / root_dir).resolve()
         if candidate.is_relative_to(base):
-            if _is_hidden(candidate.relative_to(base).parts):
+            if is_hidden_path(candidate.relative_to(base).parts):
                 raise ModelSpecError("source.root_dir must not contain hidden path parts")
             return str(candidate)
     raise ModelSpecError("source.root_dir is outside the allowed artifact roots")

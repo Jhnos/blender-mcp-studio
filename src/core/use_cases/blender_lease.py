@@ -7,10 +7,13 @@ interleaving inside a stage.
 from __future__ import annotations
 
 import asyncio
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Awaitable
 from contextlib import asynccontextmanager
+from typing import TypeVar
 
 from src.core.domain.design_run import StageName
+
+T = TypeVar("T")
 
 
 class BlenderLease:
@@ -31,3 +34,28 @@ class BlenderLease:
                 yield
             finally:
                 self._holder = None
+
+    @asynccontextmanager
+    async def try_hold(self, stage: StageName) -> AsyncIterator[bool]:
+        """Hold the lease if it is free right now (yields True), else yield False at once."""
+        if self._lock.locked():
+            yield False
+            return
+        async with self.hold(stage):
+            yield True
+
+
+async def run_to_completion(work: Awaitable[T]) -> T:
+    """Await ``work``; if the caller is cancelled, still wait for ``work`` to finish first.
+
+    Used for the slicer inside the lease: cancelling a run must not release the lease while the
+    slicer subprocess is still alive (it is bounded by the adapter's own subprocess timeout).
+    """
+    task = asyncio.ensure_future(work)
+    try:
+        return await asyncio.shield(task)
+    except asyncio.CancelledError:
+        await asyncio.wait([task])
+        if not task.cancelled():
+            task.exception()  # retrieved: the cancellation is what propagates
+        raise

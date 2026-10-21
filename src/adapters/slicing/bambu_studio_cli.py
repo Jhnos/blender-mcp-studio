@@ -165,7 +165,10 @@ class BambuStudioCli:
             )
             return SliceResult(False, None, None, str(log_path), -1, msg)
         if not self._usable():
-            raise ToolUnavailableError(f"Bambu Studio not found at {self._binary}. {_INSTALL_HINT}")
+            # No path: this text reaches remote MCP hosts; availability() reports the path.
+            raise ToolUnavailableError(
+                f"Bambu Studio is not available on this host. {_INSTALL_HINT}"
+            )
         out.mkdir(parents=True, exist_ok=True)
         self._write_profiles(request, out)
         # Export name is "<input stem>-<printer>-<material>.3mf".

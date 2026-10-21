@@ -75,8 +75,14 @@ class PathScrubber:
             reverse=True,
         )
 
-    def text(self, value: str) -> str:
-        for prefix, repl in self._pairs:
+    def text(self, value: str, extra: tuple[str, ...] = ()) -> str:
+        """Strip the known prefixes plus ``extra`` directories (e.g. the slicer's)."""
+        pairs = sorted(
+            [*self._pairs, *((d, "") for d in extra if d not in ("", "/"))],
+            key=lambda pair: len(pair[0]),
+            reverse=True,
+        )
+        for prefix, repl in pairs:
             value = value.replace(prefix + "/", repl)
         return value
 
@@ -102,7 +108,7 @@ def relative_slice(result: SliceResult, runs_dir: Path, scrub: PathScrubber) -> 
     """Output paths relative to the runs dir (``<run_id>/print/<name>``); message scrubbed."""
 
     def rel(path: str | None) -> str | None:
-        if path is None:
+        if not path:
             return None
         try:
             return Path(path).resolve().relative_to(runs_dir.resolve()).as_posix()

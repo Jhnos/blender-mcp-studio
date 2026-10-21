@@ -12,10 +12,12 @@ loads STLs into Blender, Phase 1b must hold a single lease across both stages.
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import logging
 import re
 import uuid
-from collections.abc import Awaitable, Callable, Mapping
+from collections.abc import AsyncIterator, Awaitable, Callable, Mapping
+from dataclasses import replace
 from pathlib import Path
 
 from src.core.domain.design_run import (
@@ -29,7 +31,12 @@ from src.core.domain.design_run import (
 from src.core.domain.import_limits import ImportLimits
 from src.core.domain.mesh_integrity import MeshIntegrityReport
 from src.core.domain.model_spec import ModelSpec, PrintTarget, parse_model_spec
-from src.core.domain.slicing import SliceRequest, SliceResult, ToolAvailability
+from src.core.domain.slicing import (
+    SliceRequest,
+    SliceResult,
+    ToolAvailability,
+    ToolUnavailableError,
+)
 from src.core.ports.job_store_port import JobStorePort
 from src.core.ports.mechanism_simulation_port import MechanismSimulationPort
 from src.core.ports.mesh_integrity_port import MeshIntegrityPort
@@ -38,13 +45,14 @@ from src.core.ports.slicing_port import SlicingPort
 from src.core.use_cases import design_files as files
 from src.core.use_cases import design_reports as reports
 from src.core.use_cases import design_stages as stages
-from src.core.use_cases.blender_lease import BlenderLease
+from src.core.use_cases.blender_lease import BlenderLease, run_to_completion
 
 logger = logging.getLogger(__name__)
 
 _RUN_ID = re.compile(r"[0-9a-f]{32}")
 _LEASED = frozenset({StageName.MECHANISM, StageName.PRINT})
 INTERRUPTED = "interrupted: service restarted"
+SLICER_BUSY = "slicer busy: another print job is running; retry later"
 
 
 class DesignPipeline:
@@ -72,6 +80,10 @@ class DesignPipeline:
         self._limits = limits
         self._scrub = files.PathScrubber(artifact_roots, Path(runs_dir))
         self._tasks: set[asyncio.Task[DesignRunReport]] = set()
+
+    @property
+    def limits(self) -> ImportLimits:
+        return self._limits
 
     async def submit(self, payload: Mapping[str, object]) -> JobRecord:
         """Parse (ModelSpecError, no side effects), create job + run dir + spec.json, schedule."""
@@ -132,10 +144,13 @@ class DesignPipeline:
         report = await self._integrity.check(tuple(str(f.absolute) for f in found))
         return files.relative_report(report, found, self._scrub)
 
-    async def slice_file(self, input_3mf: str, printer: str) -> SliceResult:
+    async def slice_file(self, input_3mf: str, printer: str, *, queue: bool = True) -> SliceResult:
         """Slice one 3MF under the artifact roots into a fresh run directory.
 
-        Output paths come back relative to the runs dir: ``<run_id>/print/<name>``.
+        Output paths come back relative to the runs dir: ``<run_id>/print/<name>``. With
+        ``queue=False`` a held lease returns a "slicer busy" result at once instead of waiting.
+        A missing slicer is a failed result, never an exception; a run directory that ends up
+        empty (busy, failure) is removed.
         """
         (found,) = await asyncio.to_thread(
             files.resolve_inputs,
@@ -146,13 +161,44 @@ class DesignPipeline:
             max_bytes=self._limits.max_3mf_bytes,
         )
         run_dir = self._runs_dir / uuid.uuid4().hex
-        run_dir.mkdir(parents=True)
-        request = SliceRequest.from_target(
-            str(found.absolute), str(run_dir / "print"), PrintTarget(printer=printer)
-        )
-        async with self._lease.hold(StageName.PRINT):
-            result = await self._slicing.slice(request)
+        try:
+            async with self._claim_print(queue) as acquired:
+                if not acquired:
+                    return SliceResult(False, None, None, "", -1, SLICER_BUSY)
+                run_dir.mkdir(parents=True)
+                request = SliceRequest.from_target(
+                    str(found.absolute), str(run_dir / "print"), PrintTarget(printer=printer)
+                )
+                try:
+                    result = await run_to_completion(self._slicing.slice(request))
+                except ToolUnavailableError as exc:
+                    result = SliceResult(False, None, None, "", -1, str(exc))
+        finally:
+            for leftover in (run_dir / "print", run_dir):
+                with contextlib.suppress(OSError):
+                    leftover.rmdir()
+        result = replace(result, message=await self.clean(result.message))
         return files.relative_slice(result, self._runs_dir, self._scrub)
+
+    @contextlib.asynccontextmanager
+    async def _claim_print(self, queue: bool) -> AsyncIterator[bool]:
+        if queue:
+            async with self._lease.hold(StageName.PRINT):
+                yield True
+        else:
+            async with self._lease.try_hold(StageName.PRINT) as acquired:
+                yield acquired
+
+    async def clean(self, text: str) -> str:
+        """Strip host paths from free text, including the slicer binary's directory."""
+        extra: tuple[str, ...] = ()
+        try:
+            tool = await self._slicing.availability()
+        except Exception:  # noqa: BLE001 - scrubbing must never fail a run
+            tool = None
+        if tool is not None and tool.path:
+            extra = (str(Path(tool.path).parent),)
+        return self._scrub.text(text, extra)
 
     def _load_spec(self, run_dir: Path) -> ModelSpec:
         raw = reports.read_spec(run_dir)
@@ -204,6 +250,8 @@ class DesignPipeline:
             raise
         finally:
             if job is not None:  # no job record (store failure / unknown id): nothing to update
+                if error:
+                    error = await self.clean(error)
                 await self._jobs.update(job_id, status=status, stage=current, error=error)
 
     def _plan(
@@ -226,10 +274,14 @@ class DesignPipeline:
         try:
             if name in _LEASED:
                 async with self._lease.hold(name):
-                    return await step()
-            return await step()
+                    report = await step()
+            else:
+                report = await step()
         except Exception as exc:  # noqa: BLE001 - any stage error is a FAILED stage, not a crash
-            return stages.failed(name, f"{type(exc).__name__}: {exc}")
+            report = stages.failed(name, f"{type(exc).__name__}: {exc}")
+        if report.message:  # choke point: no stage message leaves with a host path
+            report = replace(report, message=await self.clean(report.message))
+        return report
 
     async def recover_interrupted(self) -> int:
         """Fail every QUEUED/RUNNING job left by a dead process; returns how many.

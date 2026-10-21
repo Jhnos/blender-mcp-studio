@@ -262,6 +262,6 @@ async def test_tool_timeouts_derive_from_existing_constants(tmp_path):
     assert (await mcp.get_tool("slice_for_print")).timeout == SLICE_TIMEOUT_S + 30
     assert (await mcp.get_tool("build_instance")).timeout == GENERATOR_TIMEOUT_S + 30
     assert (await mcp.get_tool("check_mesh_integrity")).timeout == (
-        design_tools.INTEGRITY_TOOL_TIMEOUT_S
+        design_tools.integrity_timeout_s(rig.pipeline.limits)
     )
     assert (await mcp.get_tool("run_design_pipeline")).timeout == 30

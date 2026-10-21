@@ -21,6 +21,7 @@ from src.adapters.generation.authorized_code import GENERATOR_TIMEOUT_S
 from src.adapters.mcp_server.schemas import Name
 from src.adapters.slicing.bambu_studio_cli import SLICE_TIMEOUT_S
 from src.core.domain.exceptions import DomainError
+from src.core.domain.import_limits import ImportLimits
 from src.core.domain.mechanical_generation import InstanceBuild, InstanceSummary
 from src.core.domain.mesh_integrity import MeshIntegrityReport
 from src.core.domain.slicing import SliceResult
@@ -30,12 +31,27 @@ from src.core.use_cases.design_pipeline import DesignPipeline
 #: Submitting only parses the spec, writes spec.json and schedules the run.
 SUBMIT_TIMEOUT_S = 30.0
 QUERY_TIMEOUT_S = 10.0
-#: Measured 2026-10-21 with TrimeshCgalIntegrity on the 113 v78 STLs: 1.9 s (rounded up to 2).
-#: ``max_stl_files`` (565, config/tools.yaml) is 5 x 113, so the largest admissible request takes
-#: 5 x 2 s; the timeout is 5 x that, because one sample on a shared host is a coin flip.
-INTEGRITY_MEASURED_S = 2
-INTEGRITY_CAP_FACTOR = 5
-INTEGRITY_TOOL_TIMEOUT_S = 5.0 * INTEGRITY_CAP_FACTOR * INTEGRITY_MEASURED_S
+#: Measured 2026-10-21 with the real TrimeshCgalIntegrity on the 113 STLs of the v78 deliverable:
+#: 5,858,592 bytes in total (largest 491,584), integrity check took 1.9 s. Rerun:
+#: ``stat`` the STLs for the bytes, time ``TrimeshCgalIntegrity().check`` for the seconds.
+V78_STL_COUNT = 113
+V78_STL_TOTAL_BYTES = 5_858_592
+V78_CHECK_S = 1.9
+#: One sample on a shared host is a coin flip, so the timeout is 5 x the scaled measurement.
+SAFETY_FACTOR = 5
+
+
+def integrity_timeout_s(limits: ImportLimits) -> float:
+    """Tool timeout for the largest request the caps admit, scaled from the v78 measurement.
+
+    Check time is taken as proportional to bytes: ``max_stl_files * max_stl_bytes`` over the v78
+    total, times 1.9 s, times the safety factor. The check runs in ``to_thread`` and cannot be
+    interrupted, so this timeout bounds the caller's wait, not the CPU the check keeps using.
+    """
+    worst_bytes = limits.max_stl_files * limits.max_stl_bytes
+    return SAFETY_FACTOR * V78_CHECK_S * worst_bytes / V78_STL_TOTAL_BYTES
+
+
 #: Slicing and generation outlive their adapter deadline by the transport overhead.
 SLICE_TOOL_TIMEOUT_S = SLICE_TIMEOUT_S + 30.0
 BUILD_TOOL_TIMEOUT_S = GENERATOR_TIMEOUT_S + 30.0
@@ -81,7 +97,7 @@ def slice_result_dict(result: SliceResult) -> dict[str, object]:
         "passed": result.passed,
         "output_3mf": uri(result.output_3mf),
         "settings_json": uri(result.settings_json),
-        "log_path": uri(result.log_path),
+        "log_path": uri(result.log_path or None),
         "return_code": result.return_code,
         "message": result.message,
     }
@@ -93,7 +109,7 @@ def read_run_resource(design: DesignPipeline, run_id: str, name: str) -> str | b
     if not path.is_file():
         raise ValueError(f"no such file in run: {name}")
     data = path.read_bytes()
-    return data.decode("utf-8") if path.suffix.lower() in _TEXT_SUFFIXES else data
+    return data.decode("utf-8", errors="replace") if path.suffix.lower() in _TEXT_SUFFIXES else data
 
 
 def register_design_tools(
@@ -105,6 +121,15 @@ def register_design_tools(
     """Add the eight design tools and the run resource; unconfigured ones say so when called."""
     # Late import: server.py imports this module, so a top-level import would be circular.
     from src.adapters.mcp_server.server import _tool_error
+
+    integrity_timeout = (
+        SAFETY_FACTOR * V78_CHECK_S if design is None else integrity_timeout_s(design.limits)
+    )
+
+    async def fail(exc: Exception) -> ToolError:
+        """The design tools' error path: ``_tool_error`` text with host paths scrubbed."""
+        error = _tool_error(exc)
+        return error if design is None else ToolError(await design.clean(str(error)))
 
     @mcp.tool(
         timeout=SUBMIT_TIMEOUT_S,
@@ -122,7 +147,7 @@ def register_design_tools(
         try:
             return job_dict(await pipeline.submit(spec))
         except DomainError as exc:
-            raise _tool_error(exc) from exc
+            raise await fail(exc) from exc
 
     @mcp.tool(
         timeout=QUERY_TIMEOUT_S,
@@ -152,7 +177,7 @@ def register_design_tools(
         return report_dict(report)
 
     @mcp.tool(
-        timeout=INTEGRITY_TOOL_TIMEOUT_S,
+        timeout=integrity_timeout,
         annotations=_annotations("Check mesh integrity", read_only=True, idempotent=True),
     )
     async def check_mesh_integrity(stl_paths: list[str]) -> dict[str, object]:
@@ -166,7 +191,7 @@ def register_design_tools(
         try:
             return mesh_report_dict(await pipeline.check_meshes(tuple(stl_paths)))
         except DomainError as exc:
-            raise _tool_error(exc) from exc
+            raise await fail(exc) from exc
 
     @mcp.tool(
         timeout=SLICE_TOOL_TIMEOUT_S,
@@ -177,13 +202,14 @@ def register_design_tools(
 
         input_3mf is relative to an allowed artifact root and ends in .3mf. Output files come
         back as run://{run_id}/print/<name> resource URIs, readable with the run resource. A
-        missing slicer or a non-zero exit is a result with passed=false and the log tail.
+        missing slicer, a non-zero exit, or another print job holding the slicer ("slicer busy",
+        retry later; this tool never queues) is a result with passed=false and a message.
         """
         pipeline = _configured(design, "design pipeline")
         try:
-            return slice_result_dict(await pipeline.slice_file(input_3mf, printer))
+            return slice_result_dict(await pipeline.slice_file(input_3mf, printer, queue=False))
         except DomainError as exc:
-            raise _tool_error(exc) from exc
+            raise await fail(exc) from exc
 
     @mcp.tool(
         timeout=QUERY_TIMEOUT_S,
@@ -210,7 +236,7 @@ def register_design_tools(
         try:
             return await catalog.build(slug)
         except DomainError as exc:
-            raise _tool_error(exc) from exc
+            raise await fail(exc) from exc
 
     @mcp.tool(
         timeout=QUERY_TIMEOUT_S,

@@ -12,13 +12,19 @@ from pathlib import Path
 
 from src.core.domain.design_run import StageName, StageOutcome, StageReport
 from src.core.domain.import_limits import ImportLimits
-from src.core.domain.model_spec import ModelSpec
+from src.core.domain.model_spec import (
+    ModelSpec,
+    ModelSpecError,
+    is_hidden_path,
+    resolve_artifact_file,
+)
 from src.core.domain.packaging import ToolUse
-from src.core.domain.slicing import SliceRequest
+from src.core.domain.slicing import SliceRequest, ToolUnavailableError
 from src.core.ports.mechanism_simulation_port import MechanismSimulationPort
 from src.core.ports.mesh_integrity_port import MeshIntegrityPort
 from src.core.ports.packaging_port import PackagingPort
 from src.core.ports.slicing_port import SlicingPort
+from src.core.use_cases.blender_lease import run_to_completion
 from src.core.use_cases.design_reports import REPORT_NAME
 
 SLICER_LICENSE = "AGPL-3.0-only"
@@ -56,10 +62,6 @@ def _rel(path: str, base: Path) -> str:
         return path
 
 
-def _hidden(rel: Path) -> bool:
-    return any(part.startswith(".") for part in rel.parts)
-
-
 def _too_big(path: Path, rel: str, limit: int) -> str | None:
     size = path.stat().st_size
     return f"{rel}: {size} bytes exceeds the {limit} byte limit" if size > limit else None
@@ -76,43 +78,46 @@ class Scan:
 
 
 def _scan_source(spec: ModelSpec, limits: ImportLimits) -> Scan:
-    """Blocking: expand the glob, check containment and caps.
+    """Blocking: expand the glob, gate every file, check caps.
 
-    Defence in depth behind the parser: only ``.stl`` files outside hidden path parts count.
-    Matching files that do not are listed in ``skipped`` (relative paths) so the report shows
-    what was ignored; directories are not files and not skips.
+    A lexical skip (hidden relative part, non-``.stl`` suffix) keeps ignored files visible in
+    ``skipped``; directories are not files and not skips. Every other match, and the project
+    3MF, goes through ``resolve_artifact_file`` - the one path gate - so a symlink into a hidden
+    or foreign target fails the stage instead of being read.
     """
     root = Path(spec.source.root_dir).resolve()
-    stls: list[Path] = []
+    roots = (root,)
+    stls: list[tuple[str, Path]] = []
     skipped: list[str] = []
     for match in sorted(root.glob(spec.source.stl_glob)):
-        rel = match.relative_to(root)
-        if _hidden(rel) or match.suffix.lower() != ".stl":
+        rel = match.relative_to(root).as_posix()
+        if is_hidden_path(match.relative_to(root).parts) or match.suffix.lower() != ".stl":
             if match.is_file():
-                skipped.append(rel.as_posix())
+                skipped.append(rel)
             continue
-        if not match.resolve().is_relative_to(root):
-            return Scan(error=f"{rel.as_posix()}: resolves outside the artifact root")
-        if match.is_file():
-            stls.append(match)
+        if not (match.is_file() or match.is_symlink()):
+            continue
+        try:
+            stls.append((rel, resolve_artifact_file(rel, suffix=".stl", roots=roots)))
+        except ModelSpecError as exc:
+            return Scan(error=f"{rel}: {exc}")
     if len(stls) > limits.max_stl_files:
         return Scan(error=f"{len(stls)} STL files exceed the {limits.max_stl_files} file limit")
-    for stl in stls:
-        error = _too_big(stl, stl.relative_to(root).as_posix(), limits.max_stl_bytes)
+    for rel, resolved in stls:
+        error = _too_big(resolved, rel, limits.max_stl_bytes)
         if error is not None:
             return Scan(error=error)
     project = None
     if spec.source.project_3mf is not None:
-        candidate = root / spec.source.project_3mf
-        if not candidate.resolve().is_relative_to(root):
-            return Scan(error=f"{spec.source.project_3mf}: resolves outside the artifact root")
-        if not candidate.is_file():
-            return Scan(error=f"{spec.source.project_3mf}: project 3MF not found")
-        error = _too_big(candidate, spec.source.project_3mf, limits.max_3mf_bytes)
+        name = spec.source.project_3mf
+        try:
+            project = resolve_artifact_file(name, suffix=".3mf", roots=roots)
+        except ModelSpecError as exc:
+            return Scan(error=f"{name}: {exc}")
+        error = _too_big(project, name, limits.max_3mf_bytes)
         if error is not None:
             return Scan(error=error)
-        project = candidate.resolve()
-    return Scan(tuple(stls), project, None, tuple(skipped))
+    return Scan(tuple(resolved for _, resolved in stls), project, None, tuple(skipped))
 
 
 async def import_stage(spec: ModelSpec, state: RunState, limits: ImportLimits) -> StageReport:
@@ -184,7 +189,10 @@ async def print_stage(
     if state.project_3mf is None:
         return failed(StageName.PRINT, "no project 3MF to slice")
     request = SliceRequest.from_target(state.project_3mf, str(run_dir / "print"), spec.print_target)
-    result = await slicing.slice(request)
+    try:
+        result = await run_to_completion(slicing.slice(request))
+    except ToolUnavailableError as exc:
+        return failed(StageName.PRINT, str(exc))
     evidence = tuple(
         _rel(p, run_dir) for p in (result.output_3mf, result.settings_json, result.log_path) if p
     )
