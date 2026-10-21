@@ -1,0 +1,5 @@
+# External tools and artifact locations. Environment variables override (see docs/10-runtime-ssot.md).
+# Relative paths resolve against the repository root.
+bambu_studio_bin: /Applications/BambuStudio.app/Contents/MacOS/BambuStudio
+design_runs_dir: data/runs
+artifact_roots: [".", "models"]

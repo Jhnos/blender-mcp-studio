@@ -13,11 +13,19 @@ def load_yaml(path: str | Path) -> dict[str, object]:
         return yaml.safe_load(f) or {}
 
 
+def default_config_dir() -> Path:
+    return Path(__file__).parent.parent.parent / "config"
+
+
+def load_tools(config_dir: Path | None = None) -> dict[str, object]:
+    return load_yaml((config_dir or default_config_dir()) / "tools.yaml")
+
+
 def load_llm_providers(config_dir: Path | None = None) -> dict[str, object]:
-    base = config_dir or Path(__file__).parent.parent.parent / "config"
+    base = config_dir or default_config_dir()
     return load_yaml(base / "llm_providers.yaml")
 
 
 def load_mcp_servers(config_dir: Path | None = None) -> dict[str, object]:
-    base = config_dir or Path(__file__).parent.parent.parent / "config"
+    base = config_dir or default_config_dir()
     return load_yaml(base / "mcp_servers.yaml")
