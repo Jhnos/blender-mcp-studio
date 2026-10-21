@@ -21,9 +21,12 @@ def _report(*outcomes: StageOutcome) -> DesignRunReport:
 
 
 def test_report_passed_only_when_every_stage_passed_or_not_applicable():
-    ok = _report(StageOutcome.PASSED, StageOutcome.NOT_APPLICABLE, StageOutcome.PASSED)
+    ok = _report(
+        *[StageOutcome.PASSED, StageOutcome.PASSED, StageOutcome.NOT_APPLICABLE]
+        + [StageOutcome.PASSED] * 2
+    )
     assert ok.passed is True
-    bad = _report(StageOutcome.PASSED, StageOutcome.FAILED, StageOutcome.PASSED)
+    bad = _report(*[StageOutcome.PASSED, StageOutcome.FAILED] + [StageOutcome.PASSED] * 3)
     assert bad.passed is False
 
 
@@ -53,3 +56,21 @@ def test_stage_report_metrics_round_trip():
         message="ok",
     )
     assert dict(stage.metrics)["stl_count"] == "113"
+
+
+def test_partial_report_is_not_passed():
+    # Every present stage passed, but the run stopped early: it must not read as passed.
+    assert _report(StageOutcome.PASSED, StageOutcome.PASSED).passed is False
+    full = [StageOutcome.PASSED] * 5
+    assert _report(*full).passed is True
+    out_of_order = DesignRunReport(
+        "r",
+        "n",
+        tuple(_stage(n, StageOutcome.PASSED) for n in reversed(list(StageName))),
+        "/x",
+    )
+    assert out_of_order.passed is False
+    dup = DesignRunReport(
+        "r", "n", tuple(_stage(StageName.IMPORT, StageOutcome.PASSED) for _ in range(5)), "/x"
+    )
+    assert dup.passed is False

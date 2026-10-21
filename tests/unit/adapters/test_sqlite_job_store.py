@@ -19,7 +19,7 @@ async def test_create_update_get_round_trip(tmp_path):
     assert running.updated_at >= created.updated_at
 
     failed = await store.update(created.job_id, status=JobStatus.FAILED, error="boom")
-    assert failed.error == "boom" and failed.stage is None
+    assert failed.error == "boom" and failed.stage is StageName.GEOMETRY  # last stage is kept
 
     again = await SQLiteJobStore(tmp_path / "jobs.db").get(created.job_id)  # survives a new store
     assert again == failed
@@ -29,3 +29,14 @@ async def test_create_update_get_round_trip(tmp_path):
 async def test_update_unknown_job_raises(tmp_path):
     with pytest.raises(KeyError):
         await SQLiteJobStore(tmp_path / "jobs.db").update("nope", status=JobStatus.DONE)
+
+
+async def test_list_unfinished_returns_queued_and_running(tmp_path):
+    store = SQLiteJobStore(tmp_path / "jobs.db")
+    queued = await store.create("a" * 32)
+    running = await store.create("b" * 32)
+    await store.update(running.job_id, status=JobStatus.RUNNING, stage=StageName.PRINT)
+    done = await store.create("c" * 32)
+    await store.update(done.job_id, status=JobStatus.DONE)
+    ids = {j.job_id for j in await store.list_unfinished()}
+    assert ids == {queued.job_id, running.job_id}

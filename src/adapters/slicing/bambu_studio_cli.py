@@ -2,8 +2,9 @@
 
 The command line is the v80-proven form (``tmp/lab-station-slicing-v80/slice_candidate.py``).
 Profiles are the P2S/PLA templates in ``config/slicer-profiles`` with per-request overrides
-written into ``output_dir``; the slicer's own ``--datadir`` also lives under ``output_dir`` so
-the user's real Bambu profile is never read or modified.
+written into ``output_dir`` (they are reproduction inputs). The slicer's own ``--datadir`` is a
+``tempfile.TemporaryDirectory`` outside ``output_dir``, removed after each run, so the user's
+real Bambu profile is never read or modified and scratch state never reaches a package.
 
 Timeout derivation: the slowest measured slice is the v80 69-part plate,
 ``tmp/lab-station-slicing-v80/first-pass/slicer.log``, first to last log timestamp
@@ -17,6 +18,7 @@ import asyncio
 import json
 import plistlib
 import subprocess
+import tempfile
 from collections.abc import Callable
 from pathlib import Path
 
@@ -118,11 +120,11 @@ class BambuStudioCli:
         ):
             (out / f"{name}.json").write_text(json.dumps(data, indent=2), encoding="utf-8")
 
-    def _argv(self, request: SliceRequest, out: Path, export_name: str) -> list[str]:
+    def _argv(self, request: SliceRequest, out: Path, export_name: str, datadir: str) -> list[str]:
         return [
             str(self._binary),
             "--datadir",
-            str(out / "bambu-data"),
+            datadir,
             "--debug",
             "2",
             "--load-settings",
@@ -171,9 +173,10 @@ class BambuStudioCli:
         # A slicer that exits 0 without writing must not pass on a previous run's files.
         (out / export_name).unlink(missing_ok=True)
         (out / "effective-settings.json").unlink(missing_ok=True)
-        argv = self._argv(request, out, export_name)
         try:
-            proc = await asyncio.to_thread(self._run, argv, log_path)
+            with tempfile.TemporaryDirectory(prefix="bambu-data-") as datadir:
+                argv = self._argv(request, out, export_name, datadir)
+                proc = await asyncio.to_thread(self._run, argv, log_path)
         except subprocess.TimeoutExpired:
             msg = f"slicer did not finish within {self._timeout_s:g}s; log tail:\n{_log_tail(log_path)}"
             return SliceResult(False, None, None, str(log_path), -1, msg)

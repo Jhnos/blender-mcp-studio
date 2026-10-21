@@ -134,7 +134,9 @@ async def test_slice_builds_the_v80_command_line(tmp_path: Path) -> None:
     assert after("--export-3mf") == "gate-P2S-PLA.3mf"
     assert after("--export-settings") == f"{out}/effective-settings.json"
     assert argv[-1] == req.input_3mf
-    assert out in Path(after("--datadir")).parents
+    datadir = Path(after("--datadir"))
+    assert out not in datadir.parents  # scratch must never end up in a packaged run dir
+    assert not datadir.exists()  # removed once slice() returns
 
 
 async def test_slice_writes_profiles_with_request_overrides(tmp_path: Path) -> None:

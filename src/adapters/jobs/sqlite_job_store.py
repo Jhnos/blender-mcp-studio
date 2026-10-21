@@ -77,7 +77,7 @@ class SQLiteJobStore(JobStorePort):
         await self._ensure_db()
         async with aiosqlite.connect(self._db) as conn:
             cursor = await conn.execute(
-                "UPDATE jobs SET status = ?, stage = ?, error = ?, updated_at = ? WHERE job_id = ?",
+                "UPDATE jobs SET status = ?, stage = COALESCE(?, stage), error = ?, updated_at = ? WHERE job_id = ?",
                 (status.value, None if stage is None else stage.value, error, time.time(), job_id),
             )
             await conn.commit()
@@ -86,6 +86,18 @@ class SQLiteJobStore(JobStorePort):
         record = await self.get(job_id)
         assert record is not None  # row was just updated
         return record
+
+    async def list_unfinished(self) -> tuple[JobRecord, ...]:
+        await self._ensure_db()
+        live = (JobStatus.QUEUED.value, JobStatus.RUNNING.value)
+        async with (
+            aiosqlite.connect(self._db) as conn,
+            conn.execute(
+                f"SELECT {_COLUMNS} FROM jobs WHERE status IN (?, ?) ORDER BY created_at", live
+            ) as cursor,
+        ):
+            rows = await cursor.fetchall()
+        return tuple(_record(tuple(row)) for row in rows)
 
     async def get(self, job_id: str) -> JobRecord | None:
         await self._ensure_db()

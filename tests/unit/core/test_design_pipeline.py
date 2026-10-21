@@ -37,6 +37,10 @@ class FakeJobs:
     async def get(self, job_id):
         return self.records.get(job_id)
 
+    async def list_unfinished(self):
+        live = (JobStatus.QUEUED, JobStatus.RUNNING)
+        return tuple(r for r in self.records.values() if r.status in live)
+
 
 class FakeIntegrity:
     def __init__(self, ok: bool = True) -> None:
@@ -273,8 +277,8 @@ async def test_import_rejects_symlink_escaping_root(tmp_path):
 
 
 async def test_import_rejects_project_3mf_symlink_escape(tmp_path):
-    # The parser rejects a symlinked 3MF at submit; the import stage re-checks because the
-    # link can be swapped in between parse and run (no await between submit() and the swap).
+    # The parser rejects a symlinked 3MF at submit. A link swapped in between submit and run
+    # is caught by the run-time re-parse of spec.json: the job FAILS and nothing is sliced.
     rig = _rig(tmp_path)
     outside = tmp_path / "outside.3mf"
     outside.write_bytes(b"x")
@@ -282,10 +286,18 @@ async def test_import_rejects_project_3mf_symlink_escape(tmp_path):
     (rig.root / "p.3mf").unlink()
     (rig.root / "p.3mf").symlink_to(outside)
     await rig.pipeline.wait_idle()
-    report = await rig.pipeline.report(job.run_id)
-    assert report.stages[0].outcome is StageOutcome.FAILED
-    assert "p.3mf" in report.stages[0].message
+    status = await rig.pipeline.status(job.job_id)
+    assert status.status is JobStatus.FAILED and "project_3mf" in status.error
     assert rig.slicing.requests == []
+
+
+async def test_import_escape_message_is_root_relative(tmp_path):
+    rig = _rig(tmp_path)
+    outside = tmp_path / "outside.stl"
+    outside.write_bytes(b"secret")
+    (rig.root / "STL" / "evil.stl").symlink_to(outside)
+    _, _, report = await _run(rig, _payload(rig))
+    assert report.stages[0].message.startswith("STL/evil.stl:")
 
 
 async def test_submit_rejects_symlinked_project_3mf_at_parse(tmp_path):
@@ -366,3 +378,99 @@ async def test_report_and_status_for_missing_ids_are_none(tmp_path):
     assert await rig.pipeline.report("c" * 32) is None
     assert await rig.pipeline.report("../bad") is None
     assert await rig.pipeline.status("nope") is None
+
+
+async def test_submit_writes_spec_json(tmp_path):
+    rig = _rig(tmp_path)
+    payload = _payload(rig)
+    job = await rig.pipeline.submit(payload)
+    await rig.pipeline.wait_idle()
+    spec_file = rig.runs / job.run_id / "spec.json"
+    assert json.loads(spec_file.read_text()) == payload
+    assert "spec.json" in rig.packaging.calls[0][3]  # reproduction input stays in the package
+
+
+async def test_missing_spec_file_fails_job(tmp_path):
+    rig = _rig(tmp_path)
+    job = await rig.pipeline.submit(_payload(rig))
+    (rig.runs / job.run_id / "spec.json").unlink()  # no await since submit: run has not started
+    await rig.pipeline.wait_idle()
+    status = await rig.pipeline.status(job.job_id)
+    assert status.status is JobStatus.FAILED and "spec" in status.error
+
+
+async def test_corrupt_spec_file_fails_job(tmp_path):
+    rig = _rig(tmp_path)
+    job = await rig.pipeline.submit(_payload(rig))
+    (rig.runs / job.run_id / "spec.json").write_text("{not json")
+    await rig.pipeline.wait_idle()
+    status = await rig.pipeline.status(job.job_id)
+    assert status.status is JobStatus.FAILED and status.error
+
+
+async def test_recover_interrupted_marks_queued_and_running(tmp_path):
+    rig = _rig(tmp_path)
+    queued = await rig.jobs.create("d" * 32)
+    running = await rig.jobs.create("e" * 32)
+    await rig.jobs.update(running.job_id, status=JobStatus.RUNNING, stage=StageName.GEOMETRY)
+    done = await rig.jobs.create("f" * 32)
+    await rig.jobs.update(done.job_id, status=JobStatus.DONE)
+    assert await rig.pipeline.recover_interrupted() == 2
+    for job_id in (queued.job_id, running.job_id):
+        rec = await rig.pipeline.status(job_id)
+        assert rec.status is JobStatus.FAILED and rec.error == "interrupted: service restarted"
+    assert (await rig.pipeline.status(running.job_id)).stage is StageName.GEOMETRY
+    assert (await rig.pipeline.status(done.job_id)).status is JobStatus.DONE
+    assert await rig.pipeline.recover_interrupted() == 0
+
+
+async def test_recover_rewrites_report_as_failed(tmp_path):
+    rig = _rig(tmp_path, delay=5)
+    job = await rig.pipeline.submit(_payload(rig))
+    for _ in range(100):
+        await asyncio.sleep(0.01)
+        if rig.lease.holder is StageName.PRINT:
+            break
+    # Simulate a crash: the in-memory task dies without running its handlers' bookkeeping.
+    for task in list(rig.pipeline._tasks):
+        task.cancel()
+    await asyncio.gather(*list(rig.pipeline._tasks), return_exceptions=True)
+    await rig.jobs.update(job.job_id, status=JobStatus.RUNNING, stage=StageName.PRINT)
+    path = rig.runs / job.run_id / "report.json"
+    data = json.loads(path.read_text())
+    data["stages"] = data["stages"][:3]  # as if the crash left only import..mechanism on disk
+    path.write_text(json.dumps(data))
+    assert await rig.pipeline.recover_interrupted() == 1
+    report = await rig.pipeline.report(job.run_id)
+    assert [s.name for s in report.stages][-1] is StageName.PRINT
+    assert report.stages[-1].outcome is StageOutcome.FAILED
+    assert report.stages[-1].message == "interrupted: service restarted"
+    assert not report.passed
+
+
+async def test_cancel_mid_print_marks_cancelled_and_report_failed(tmp_path):
+    rig = _rig(tmp_path, delay=5)
+    job = await rig.pipeline.submit(_payload(rig))
+    for _ in range(100):
+        await asyncio.sleep(0.01)
+        if rig.lease.holder is StageName.PRINT:
+            break
+    tasks = list(rig.pipeline._tasks)
+    for task in tasks:
+        task.cancel()
+    await asyncio.gather(*tasks, return_exceptions=True)
+    assert (await rig.pipeline.status(job.job_id)).status is JobStatus.CANCELLED
+    on_disk = json.loads((rig.runs / job.run_id / "report.json").read_text())
+    assert on_disk["passed"] is False
+    assert (on_disk["stages"][-1]["name"], on_disk["stages"][-1]["outcome"]) == ("print", "failed")
+    assert on_disk["stages"][-1]["message"] == "cancelled"
+    assert rig.lease.holder is None
+
+
+async def test_package_excludes_slicer_scratch(tmp_path):
+    # The real guarantee is the adapter's temp datadir (test_bambu_studio_cli); this pins
+    # that nothing named bambu-data is handed to the packager.
+    rig = _rig(tmp_path)
+    await _run(rig, _payload(rig))
+    files = rig.packaging.calls[0][3]
+    assert not any("bambu-data" in f for f in files)

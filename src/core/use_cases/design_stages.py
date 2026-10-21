@@ -18,8 +18,8 @@ from src.core.ports.mechanism_simulation_port import MechanismSimulationPort
 from src.core.ports.mesh_integrity_port import MeshIntegrityPort
 from src.core.ports.packaging_port import PackagingPort
 from src.core.ports.slicing_port import SlicingPort
+from src.core.use_cases.design_reports import REPORT_NAME
 
-REPORT_NAME = "report.json"
 SLICER_LICENSE = "AGPL-3.0-only"
 
 
@@ -59,7 +59,11 @@ def _scan_source(spec: ModelSpec) -> tuple[tuple[Path, ...], Path | None, str | 
     stls: list[Path] = []
     for match in sorted(root.glob(spec.source.stl_glob)):
         if not match.resolve().is_relative_to(root):
-            return (), None, f"{match.name}: resolves outside the artifact root"
+            return (
+                (),
+                None,
+                f"{match.relative_to(root).as_posix()}: resolves outside the artifact root",
+            )
         if match.is_file():
             stls.append(match)
     project = None

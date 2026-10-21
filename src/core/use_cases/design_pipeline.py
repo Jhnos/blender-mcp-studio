@@ -1,15 +1,18 @@
 """DesignPipeline - import -> geometry -> mechanism -> print -> package for one ModelSpec.
 
-REST and MCP both call this one service. Every run owns ``runs_dir/<run_id>/`` and
-``report.json`` is rewritten atomically after each stage. Mechanism and print stages hold
-the shared ``BlenderLease`` so concurrent runs queue instead of interleaving.
+REST and MCP both call this one service. Every run owns ``runs_dir/<run_id>/``; ``spec.json``
+(the raw payload, a reproduction input) is written at submit and re-parsed at run time, and
+``report.json`` is rewritten atomically after each stage. A job never stays QUEUED/RUNNING
+after ``run()`` ends (finally), and ``recover_interrupted`` fails orphans after a restart.
+
+Lease note (Phase 1b): mechanism and print take the Blender lease separately. Once print
+loads STLs into Blender, Phase 1b must hold a single lease across both stages.
 """
 
 from __future__ import annotations
 
 import asyncio
-import json
-import os
+import logging
 import re
 import uuid
 from collections.abc import Awaitable, Callable, Mapping
@@ -29,46 +32,15 @@ from src.core.ports.mechanism_simulation_port import MechanismSimulationPort
 from src.core.ports.mesh_integrity_port import MeshIntegrityPort
 from src.core.ports.packaging_port import PackagingPort
 from src.core.ports.slicing_port import SlicingPort
+from src.core.use_cases import design_reports as reports
 from src.core.use_cases import design_stages as stages
 from src.core.use_cases.blender_lease import BlenderLease
 
+logger = logging.getLogger(__name__)
+
 _RUN_ID = re.compile(r"[0-9a-f]{32}")
 _LEASED = frozenset({StageName.MECHANISM, StageName.PRINT})
-
-
-def _to_json(report: DesignRunReport) -> str:
-    data = {
-        "run_id": report.run_id,
-        "spec_name": report.spec_name,
-        "run_dir": report.run_dir,
-        "passed": report.passed,
-        "stages": [
-            {
-                "name": s.name.value,
-                "outcome": s.outcome.value,
-                "metrics": [list(pair) for pair in s.metrics],
-                "evidence": list(s.evidence),
-                "message": s.message,
-            }
-            for s in report.stages
-        ],
-    }
-    return json.dumps(data, sort_keys=True, indent=2) + "\n"
-
-
-def _from_json(text: str) -> DesignRunReport:
-    data = json.loads(text)
-    parsed = tuple(
-        StageReport(
-            StageName(s["name"]),
-            StageOutcome(s["outcome"]),
-            tuple((k, v) for k, v in s["metrics"]),
-            tuple(s["evidence"]),
-            s["message"],
-        )
-        for s in data["stages"]
-    )
-    return DesignRunReport(data["run_id"], data["spec_name"], parsed, data["run_dir"])
+INTERRUPTED = "interrupted: service restarted"
 
 
 class DesignPipeline:
@@ -92,16 +64,22 @@ class DesignPipeline:
         self._lease = lease
         self._runs_dir = Path(runs_dir)
         self._roots = artifact_roots
-        self._specs: dict[str, ModelSpec] = {}
         self._tasks: set[asyncio.Task[DesignRunReport]] = set()
 
     async def submit(self, payload: Mapping[str, object]) -> JobRecord:
-        """Parse the spec (ModelSpecError before any side effect), then schedule the run."""
-        spec = parse_model_spec(payload, artifact_roots=self._roots)
+        """Parse (ModelSpecError, no side effects), create job + run dir + spec.json, schedule."""
+        parse_model_spec(payload, artifact_roots=self._roots)
         run_id = uuid.uuid4().hex
-        (self._runs_dir / run_id).mkdir(parents=True)
         job = await self._jobs.create(run_id)
-        self._specs[job.job_id] = spec
+        try:
+            run_dir = self._runs_dir / run_id
+            run_dir.mkdir(parents=True)
+            reports.write_spec(run_dir, payload)
+        except Exception as exc:
+            await self._jobs.update(
+                job.job_id, status=JobStatus.FAILED, error=f"{type(exc).__name__}: {exc}"
+            )
+            raise
         task = asyncio.create_task(self.run(job.job_id))
         self._tasks.add(task)
         task.add_done_callback(self._finished)
@@ -109,39 +87,61 @@ class DesignPipeline:
 
     def _finished(self, task: asyncio.Task[DesignRunReport]) -> None:
         self._tasks.discard(task)
-        if not task.cancelled():
-            task.exception()  # retrieved: run() already recorded the failure on the job
+        if not task.cancelled() and task.exception() is not None:
+            logger.error("design run task failed", exc_info=task.exception())
 
     async def wait_idle(self) -> None:
         """Wait for every scheduled run to finish (tests, graceful shutdown)."""
         while self._tasks:
             await asyncio.gather(*list(self._tasks), return_exceptions=True)
 
+    def _load_spec(self, run_dir: Path) -> ModelSpec:
+        raw = reports.read_spec(run_dir)
+        if not isinstance(raw, Mapping):  # narrow-ok: spec.json is untrusted disk input
+            raise ValueError("spec.json is not an object")
+        return parse_model_spec(raw, artifact_roots=self._roots)
+
     async def run(self, job_id: str) -> DesignRunReport:
         job = await self._jobs.get(job_id)
-        spec = self._specs.pop(job_id, None)
-        if job is None or spec is None:
-            raise KeyError(f"no queued job: {job_id}")
+        if job is None:
+            raise KeyError(f"unknown job: {job_id}")
         run_dir = self._runs_dir / job.run_id
         done: list[StageReport] = []
         status = JobStatus.FAILED
         error: str | None = "run interrupted"
+        spec_name, current = "", None
+
+        def snapshot() -> DesignRunReport:
+            return DesignRunReport(job.run_id, spec_name, tuple(done), str(run_dir))
+
         try:
+            spec = self._load_spec(run_dir)
+            spec_name = spec.name
             state = stages.RunState()
             for name, step in self._plan(job.run_id, spec, state, run_dir):
+                current = name
                 await self._jobs.update(job_id, status=JobStatus.RUNNING, stage=name)
                 done.append(await self._execute(name, step))
-                self._write(DesignRunReport(job.run_id, spec.name, tuple(done), str(run_dir)))
+                reports.write_report(snapshot())
                 if done[-1].outcome is StageOutcome.FAILED:
                     break
-            report = DesignRunReport(job.run_id, spec.name, tuple(done), str(run_dir))
+            report = snapshot()
             if report.passed:
                 status, error = JobStatus.DONE, None
             else:
                 error = f"{done[-1].name.value}: {done[-1].message}"
             return report
+        except asyncio.CancelledError:
+            status, error = JobStatus.CANCELLED, "cancelled"
+            if current is not None and (not done or done[-1].name is not current):
+                done.append(stages.failed(current, "cancelled"))
+                reports.write_report(snapshot())
+            raise
+        except Exception as exc:
+            error = f"{type(exc).__name__}: {exc}"
+            raise
         finally:
-            await self._jobs.update(job_id, status=status, error=error)
+            await self._jobs.update(job_id, status=status, stage=current, error=error)
 
     def _plan(
         self, run_id: str, spec: ModelSpec, state: stages.RunState, run_dir: Path
@@ -168,11 +168,28 @@ class DesignPipeline:
         except Exception as exc:  # noqa: BLE001 - any stage error is a FAILED stage, not a crash
             return stages.failed(name, f"{type(exc).__name__}: {exc}")
 
-    def _write(self, report: DesignRunReport) -> None:
-        run_dir = Path(report.run_dir)
-        tmp = run_dir / (stages.REPORT_NAME + ".tmp")
-        tmp.write_text(_to_json(report), encoding="utf-8")
-        os.replace(tmp, run_dir / stages.REPORT_NAME)
+    async def recover_interrupted(self) -> int:
+        """Fail every QUEUED/RUNNING job left by a dead process; returns how many (startup)."""
+        orphans = await self._jobs.list_unfinished()
+        for job in orphans:
+            await self._jobs.update(
+                job.job_id, status=JobStatus.FAILED, stage=job.stage, error=INTERRUPTED
+            )
+            existing = reports.read_report(self._runs_dir / job.run_id)
+            if existing is None or job.stage is None:
+                continue
+            if existing.stages and existing.stages[-1].name is job.stage:
+                continue
+            failed = stages.failed(job.stage, INTERRUPTED)
+            reports.write_report(
+                DesignRunReport(
+                    existing.run_id,
+                    existing.spec_name,
+                    (*existing.stages, failed),
+                    existing.run_dir,
+                )
+            )
+        return len(orphans)
 
     async def status(self, job_id: str) -> JobRecord | None:
         return await self._jobs.get(job_id)
@@ -180,10 +197,7 @@ class DesignPipeline:
     async def report(self, run_id: str) -> DesignRunReport | None:
         if not _RUN_ID.fullmatch(run_id):
             return None
-        path = self._runs_dir / run_id / stages.REPORT_NAME
-        if not path.is_file():
-            return None
-        return _from_json(path.read_text(encoding="utf-8"))
+        return reports.read_report(self._runs_dir / run_id)
 
     def run_file(self, run_id: str, name: str) -> Path:
         """Resolve a file inside one run directory; anything escaping it raises ValueError."""

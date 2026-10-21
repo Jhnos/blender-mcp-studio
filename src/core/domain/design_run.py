@@ -38,8 +38,8 @@ class DesignRunReport:
 
     @property
     def passed(self) -> bool:
-        """True only for a non-empty run where no stage failed."""
-        return bool(self.stages) and all(
+        """True only for a complete run: every stage once, in order, none FAILED."""
+        return tuple(stage.name for stage in self.stages) == tuple(StageName) and all(
             stage.outcome in (StageOutcome.PASSED, StageOutcome.NOT_APPLICABLE)
             for stage in self.stages
         )
