@@ -281,6 +281,10 @@ def test_real_ci_runs_every_contract() -> None:
         index, line = next(
             (i, text) for i, text in enumerate(lines) if f"contracts/{contract.name}" in text
         )
+        if contract.name.startswith("design_pipeline_"):
+            # Spec payloads for the MCP design pipeline gate, not generator contracts.
+            assert "design_pipeline_verify_real.py" in line, line.strip()
+            continue
         probe = contract.name.endswith("_probe.json")
         runner = "mesh_probe_verify_real.py" if probe else "generated_artifact_verify_real.py"
         assert runner in line, f"{contract.name} runs through the wrong checker: {line.strip()}"
