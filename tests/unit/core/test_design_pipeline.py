@@ -10,8 +10,14 @@ import pytest
 
 from src.core.domain.design_run import JobStatus, StageName, StageOutcome
 from src.core.domain.import_limits import ImportLimits
-from src.core.domain.model_spec import ModelSpecError
+from src.core.domain.model_spec import (
+    ImportedArtifact,
+    MechanismChecks,
+    ModelSpec,
+    ModelSpecError,
+)
 from src.core.domain.slicing import ToolUnavailableError
+from src.core.use_cases import design_stages as stages
 from src.core.use_cases.blender_lease import BlenderLease
 from src.core.use_cases.design_pipeline import DesignPipeline
 from tests.fakes.design_ports import (
@@ -61,7 +67,8 @@ def _rig(tmp_path, *, geometry_ok=True, sim_ok=True, delay=0.0, pack_error=None)
     return Rig(pipeline, jobs, integrity, simulation, slicing, packaging, lease, root, runs, log)
 
 
-def _payload(rig: Rig, *, suites=("s1",), project="p.3mf") -> dict:
+# A5: spec v1 rejects mechanism suites, so the default payload declares none.
+def _payload(rig: Rig, *, suites=(), project="p.3mf") -> dict:
     source: dict = {"root_dir": str(rig.root)}
     if project:
         source["project_3mf"] = project
@@ -90,7 +97,8 @@ async def test_run_writes_report_after_each_stage(tmp_path):
     assert [s for r, s in rig.jobs.history if r is JobStatus.RUNNING] == list(StageName)
     assert rig.jobs.history[-1][0] is JobStatus.DONE
     imp = report.stages[0]
-    assert dict(imp.metrics)["stl_count"] == "2" and imp.evidence == ("STL/a.stl", "STL/b.stl")
+    # A3: import evidence is the run-relative import.json (it lists the STLs with checksums)
+    assert dict(imp.metrics)["stl_count"] == "2" and imp.evidence == ("import.json",)
     on_disk = json.loads((rig.runs / job.run_id / "report.json").read_text())
     assert [s["name"] for s in on_disk["stages"]] == [s.value for s in StageName]
 
@@ -126,9 +134,13 @@ async def test_mechanism_not_applicable_when_no_suites(tmp_path):
 
 
 async def test_mechanism_failure_fails_run(tmp_path):
+    # A5: spec v1 cannot declare suites, so the stage is driven directly with a built spec.
     rig = _rig(tmp_path, sim_ok=False)
-    _, _, report = await _run(rig, _payload(rig))
-    assert report.stages[-1].name is StageName.MECHANISM and not report.passed
+    spec = ModelSpec(
+        "1", "demo", ImportedArtifact(str(rig.root)), mechanism=MechanismChecks(("s1",))
+    )
+    report = await stages.mechanism_stage(spec, rig.simulation)
+    assert report.name is StageName.MECHANISM and report.outcome is StageOutcome.FAILED
 
 
 async def test_print_fails_without_project_3mf(tmp_path):

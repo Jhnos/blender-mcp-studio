@@ -47,6 +47,14 @@ class SliceResult:
 
 
 @dataclass(frozen=True, slots=True)
+class SupportedTargets:
+    """Printer ids and materials the slicer has profiles for (checked at spec submit)."""
+
+    printers: tuple[str, ...]
+    materials: tuple[str, ...]
+
+
+@dataclass(frozen=True, slots=True)
 class ToolAvailability:
     name: str
     available: bool

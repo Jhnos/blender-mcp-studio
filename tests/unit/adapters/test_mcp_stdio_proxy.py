@@ -14,12 +14,14 @@ def test_stdio_proxy_uses_canonical_url_and_stdio_transport(monkeypatch) -> None
     proxy = MagicMock()
     create_proxy = MagicMock(return_value=proxy)
     monkeypatch.delenv("BLENDER_MCP_URL", raising=False)
+    # B1: hermetic; the public base URL is pinned, so `tailscale` is never run.
+    monkeypatch.setenv("BLENDER_MCP_PUBLIC_BASE_URL", "https://studio.tail0000.ts.net/blender")
     monkeypatch.setattr(stdio_proxy, "create_proxy", create_proxy)
 
     stdio_proxy.main()
 
     create_proxy.assert_called_once_with(
-        "https://bearmacminimac-mini.tail56c751.ts.net/blender/mcp",
+        "https://studio.tail0000.ts.net/blender/mcp",
         name="blender-mcp-studio-stdio",
     )
     proxy.run.assert_called_once_with(transport="stdio")

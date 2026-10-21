@@ -49,6 +49,8 @@ EXPECTED_TOOLS = {
     "list_instances",
     "build_instance",
     "tool_status",
+    "describe_model_spec",
+    "list_artifacts",
 }
 
 POLICY = {
@@ -71,6 +73,8 @@ POLICY = {
     "list_instances": (True, False, True, False),
     "build_instance": (False, True, False, False),
     "tool_status": (True, False, True, False),
+    "describe_model_spec": (True, False, True, False),
+    "list_artifacts": (True, False, True, False),
 }
 
 

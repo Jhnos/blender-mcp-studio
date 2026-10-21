@@ -46,10 +46,10 @@ def test_unknown_keys_are_rejected(tmp_path):
 def test_print_target_and_mechanism_overrides_are_parsed(tmp_path):
     payload = _payload()
     payload["print_target"] = {"material": "PETG", "support": False}
-    payload["mechanism"] = {"suites": ["hand"]}
+    payload["mechanism"] = {"suites": []}  # A5: v1 rejects non-empty suites
     spec = parse_model_spec(payload, artifact_roots=(tmp_path,))
     assert spec.print_target.material == "PETG" and spec.print_target.support is False
-    assert spec.mechanism.suites == ("hand",)
+    assert spec.mechanism.suites == ()
     bad = _payload()
     bad["print_target"] = {"nozzle": 1}
     with pytest.raises(ModelSpecError):

@@ -27,6 +27,7 @@ from src.adapters.slicing.bundle_profiles import app_bundle, bundle_profiles
 from src.core.domain.slicing import (
     SliceRequest,
     SliceResult,
+    SupportedTargets,
     ToolAvailability,
     ToolUnavailableError,
 )
@@ -84,6 +85,11 @@ class BambuStudioCli:
     def timeout_s(self) -> float:
         """The subprocess deadline; delivery adapters derive their own timeouts from it."""
         return self._timeout_s
+
+    def supported(self) -> SupportedTargets:
+        return SupportedTargets(
+            tuple(sorted(_SUPPORTED_PRINTERS)), tuple(sorted(_SUPPORTED_MATERIALS))
+        )
 
     def _usable(self) -> bool:
         return self._binary.is_file()

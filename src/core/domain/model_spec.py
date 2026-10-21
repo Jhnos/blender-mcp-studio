@@ -10,6 +10,14 @@ from pathlib import Path, PurePosixPath
 from src.core.domain.exceptions import DomainError
 
 SUPPORTED_SPEC_VERSION = "1"
+SPEC_KEYS = ("spec_version", "name", "source", "print_target", "mechanism")
+SOURCE_KEYS = ("root_dir", "stl_glob", "project_3mf")
+PRINT_TARGET_KEYS = ("printer", "material", "layer_height_mm", "support", "brim_mm")
+MECHANISM_KEYS = ("suites",)
+MECHANISM_V1_UNSUPPORTED = (
+    "mechanism suites are not supported in spec v1: Phase 1 verifies imported artifacts "
+    "only; suites run against the open Blender scene, not this model"
+)
 
 
 class ModelSpecError(DomainError):
@@ -59,10 +67,13 @@ def _section(payload: Mapping[str, object], key: str, *, required: bool) -> Mapp
     return value
 
 
-def _reject_unknown(section: Mapping[str, object], allowed: set[str], where: str) -> None:
+def _reject_unknown(section: Mapping[str, object], allowed: tuple[str, ...], where: str) -> None:
     unknown = sorted((k for k in section if k not in allowed), key=str)
     if unknown:
-        raise ModelSpecError(f"unknown keys in {where}: {', '.join(map(str, unknown))}")
+        raise ModelSpecError(
+            f"unknown keys in {where}: {', '.join(map(str, unknown))} "
+            f"(allowed: {', '.join(allowed)})"
+        )
 
 
 def _str(section: Mapping[str, object], key: str, default: str) -> str:
@@ -163,7 +174,7 @@ def _resolve_root(root_dir: str, artifact_roots: tuple[Path, ...]) -> str:
 
 def _parse_source(payload: Mapping[str, object], roots: tuple[Path, ...]) -> ImportedArtifact:
     src = _section(payload, "source", required=True)
-    _reject_unknown(src, {"root_dir", "stl_glob", "project_3mf"}, "source")
+    _reject_unknown(src, SOURCE_KEYS, "source")
     root_dir = src.get("root_dir")
     if not isinstance(root_dir, str):
         raise ModelSpecError("source.root_dir must be str")
@@ -184,9 +195,7 @@ def _parse_source(payload: Mapping[str, object], roots: tuple[Path, ...]) -> Imp
 
 def _parse_print_target(payload: Mapping[str, object]) -> PrintTarget:
     sec = _section(payload, "print_target", required=False)
-    _reject_unknown(
-        sec, {"printer", "material", "layer_height_mm", "support", "brim_mm"}, "print_target"
-    )
+    _reject_unknown(sec, PRINT_TARGET_KEYS, "print_target")
     d = PrintTarget()
     return PrintTarget(
         printer=_str(sec, "printer", d.printer),
@@ -199,7 +208,7 @@ def _parse_print_target(payload: Mapping[str, object]) -> PrintTarget:
 
 def _parse_mechanism(payload: Mapping[str, object]) -> MechanismChecks:
     sec = _section(payload, "mechanism", required=False)
-    _reject_unknown(sec, {"suites"}, "mechanism")
+    _reject_unknown(sec, MECHANISM_KEYS, "mechanism")
     suites = sec.get("suites", ())
     if isinstance(suites, str) or not isinstance(
         suites, (list, tuple)
@@ -208,6 +217,8 @@ def _parse_mechanism(payload: Mapping[str, object]) -> MechanismChecks:
     checked = tuple(s for s in suites if isinstance(s, str) and s)
     if len(checked) != len(suites):
         raise ModelSpecError("mechanism.suites must be a list of strings")
+    if checked:
+        raise ModelSpecError(MECHANISM_V1_UNSUPPORTED)
     return MechanismChecks(suites=checked)
 
 
@@ -215,9 +226,7 @@ def parse_model_spec(
     payload: Mapping[str, object], *, artifact_roots: tuple[Path, ...]
 ) -> ModelSpec:
     """Validate ``payload`` and resolve its artifact root inside ``artifact_roots``."""
-    _reject_unknown(
-        payload, {"spec_version", "name", "source", "print_target", "mechanism"}, "spec"
-    )
+    _reject_unknown(payload, SPEC_KEYS, "spec")
     if "spec_version" not in payload:
         raise ModelSpecError("missing spec_version")
     if payload.get("spec_version") != SUPPORTED_SPEC_VERSION:

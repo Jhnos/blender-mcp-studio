@@ -22,12 +22,17 @@ class ResolvedFile:
     display: str  # relative to the artifact root the file was found in
 
 
-def _display(path: Path, roots: tuple[Path, ...]) -> str:
-    for root in roots:
-        base = root.resolve()
-        if path.is_relative_to(base):
-            return path.relative_to(base).as_posix()
-    return path.name
+def relative_path(path: str | Path, bases: tuple[Path, ...]) -> str:
+    """The one relativiser: ``path`` relative to the first base holding it, else its name.
+
+    Never returns a host path: anything outside every base is reduced to its file name.
+    """
+    resolved = Path(path).resolve()
+    for base in bases:
+        anchor = base.resolve()
+        if resolved.is_relative_to(anchor):
+            return resolved.relative_to(anchor).as_posix()
+    return Path(path).name
 
 
 def resolve_inputs(
@@ -51,7 +56,7 @@ def resolve_inputs(
             absolute = resolve_artifact_file(raw, suffix=suffix, roots=roots)
         except ModelSpecError as exc:
             raise ModelSpecError(f"{raw}: {exc}") from exc
-        display = _display(absolute, roots)
+        display = relative_path(absolute, roots)
         size = absolute.stat().st_size
         if size > max_bytes:
             raise ModelSpecError(f"{display}: {size} bytes exceeds the {max_bytes} byte limit")
@@ -115,12 +120,7 @@ def relative_slice(result: SliceResult, runs_dir: Path, scrub: PathScrubber) -> 
     """Output paths relative to the runs dir (``<run_id>/print/<name>``); message scrubbed."""
 
     def rel(path: str | None) -> str | None:
-        if not path:
-            return None
-        try:
-            return Path(path).resolve().relative_to(runs_dir.resolve()).as_posix()
-        except ValueError:
-            return Path(path).name
+        return relative_path(path, (runs_dir,)) if path else None
 
     return replace(
         result,

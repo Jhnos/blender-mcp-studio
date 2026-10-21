@@ -44,4 +44,7 @@ def report_dict(report: DesignRunReport) -> dict[str, object]:
 
 
 def tool_dict(tool: ToolAvailability) -> dict[str, object]:
-    return asdict(tool)
+    """Availability without the binary ``path``: a host path never leaves the process."""
+    row = asdict(tool)
+    row.pop("path")
+    return row

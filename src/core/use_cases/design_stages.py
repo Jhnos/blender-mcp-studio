@@ -7,6 +7,7 @@ caller. Stages never touch jobs or report.json.
 from __future__ import annotations
 
 import asyncio
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -24,11 +25,14 @@ from src.core.ports.mechanism_simulation_port import MechanismSimulationPort
 from src.core.ports.mesh_integrity_port import MeshIntegrityPort
 from src.core.ports.packaging_port import PackagingPort
 from src.core.ports.slicing_port import SlicingPort
+from src.core.use_cases import design_evidence as evidence_docs
 from src.core.use_cases.blender_lease import run_to_completion
-from src.core.use_cases.design_reports import REPORT_NAME
+from src.core.use_cases.design_files import relative_path
+from src.core.use_cases.design_reports import REPORT_NAME, write_evidence
 
 SLICER_LICENSE = "AGPL-3.0-only"
-MAX_SKIPPED_EVIDENCE = 20
+MECHANISM_NOT_EVALUATED = "mechanism not evaluated in Phase 1 (import path)"
+MAX_SKIPPED_EVIDENCE = 20  # import.json lists at most this many skips; the metric counts all
 
 
 @dataclass(slots=True)
@@ -53,13 +57,6 @@ def _report(
 
 def failed(name: StageName, message: str) -> StageReport:
     return _report(name, StageOutcome.FAILED, message)
-
-
-def _rel(path: str, base: Path) -> str:
-    try:
-        return Path(path).resolve().relative_to(base.resolve()).as_posix()
-    except ValueError:
-        return path
 
 
 def _too_big(path: Path, rel: str, limit: int) -> str | None:
@@ -126,7 +123,10 @@ def _scan_source(spec: ModelSpec, limits: ImportLimits) -> Scan:
     return Scan(tuple(resolved for _, resolved in stls), project, None, tuple(skipped))
 
 
-async def import_stage(spec: ModelSpec, state: RunState, limits: ImportLimits) -> StageReport:
+async def import_stage(
+    spec: ModelSpec, state: RunState, limits: ImportLimits, run_dir: Path
+) -> StageReport:
+    """Gate and cap the sources, then write ``import.json`` (paths, sha256, bytes, skips)."""
     scan = await asyncio.to_thread(_scan_source, spec, limits)
     stls, project, error, skipped = scan.stls, scan.project, scan.error, scan.skipped
     if error is not None:
@@ -137,46 +137,52 @@ async def import_stage(spec: ModelSpec, state: RunState, limits: ImportLimits) -
     state.root = str(root)
     state.stls = tuple(str(p.resolve()) for p in stls)
     state.project_3mf = None if project is None else str(project)
-    evidence = tuple(_rel(p, root) for p in state.stls) + tuple(
-        f"skipped: {rel}" for rel in skipped[:MAX_SKIPPED_EVIDENCE]
+    doc = await asyncio.to_thread(
+        evidence_docs.import_document,
+        root,
+        tuple(Path(p) for p in state.stls),
+        project,
+        skipped[:MAX_SKIPPED_EVIDENCE],
     )
+    await asyncio.to_thread(write_evidence, run_dir, evidence_docs.IMPORT_EVIDENCE, doc)
     metrics = (
         ("stl_count", str(len(stls))),
         ("project_3mf", str(project is not None).lower()),
         ("skipped", str(len(skipped))),
     )
-    return _report(StageName.IMPORT, StageOutcome.PASSED, "", metrics, evidence)
+    return _report(
+        StageName.IMPORT, StageOutcome.PASSED, "", metrics, (evidence_docs.IMPORT_EVIDENCE,)
+    )
 
 
-def _no_host_path(text: str, root: str) -> str:
-    """Strip the artifact root from an adapter message so reports carry no host paths."""
-    return text.replace(root + "/", "") if root else text
+async def geometry_stage(
+    integrity: MeshIntegrityPort,
+    state: RunState,
+    run_dir: Path,
+    scrub: Callable[[str], str] = str,
+) -> StageReport:
+    """Check every imported STL and write ``geometry.json``; the message names each failure once.
 
-
-async def geometry_stage(integrity: MeshIntegrityPort, state: RunState) -> StageReport:
+    The message is scrubbed by the pipeline's ``_execute`` choke point; ``scrub`` is that same
+    scrubber for the reasons written into ``geometry.json``.
+    """
     result = await integrity.check(state.stls)
+    root = Path(state.root)
+    doc = evidence_docs.geometry_document(result, root, scrub)
+    await asyncio.to_thread(write_evidence, run_dir, evidence_docs.GEOMETRY_EVIDENCE, doc)
     bad = [v for v in result.verdicts if not v.passed]
     metrics = (("checked", str(len(result.verdicts))), ("failing", str(len(bad))))
+    proof = (evidence_docs.GEOMETRY_EVIDENCE,)
     if result.passed:
-        return _report(StageName.GEOMETRY, StageOutcome.PASSED, "", metrics)
-    root = Path(state.root) if state.root else None
-    detail = "; ".join(
-        _no_host_path(
-            f"{_rel(v.path, root) if root else v.path}: "
-            f"{v.error or 'not a closed, non-self-intersecting mesh'}",
-            state.root,
-        )
-        for v in bad
-    )
-    return _report(StageName.GEOMETRY, StageOutcome.FAILED, detail, metrics)
+        return _report(StageName.GEOMETRY, StageOutcome.PASSED, "", metrics, proof)
+    detail = "; ".join(evidence_docs.verdict_reason(v, relative_path(v.path, (root,))) for v in bad)
+    return _report(StageName.GEOMETRY, StageOutcome.FAILED, detail, metrics, proof)
 
 
 async def mechanism_stage(spec: ModelSpec, simulation: MechanismSimulationPort) -> StageReport:
     suites = spec.mechanism.suites
     if not suites:
-        return _report(
-            StageName.MECHANISM, StageOutcome.NOT_APPLICABLE, "no mechanism suites declared"
-        )
+        return _report(StageName.MECHANISM, StageOutcome.NOT_APPLICABLE, MECHANISM_NOT_EVALUATED)
     reports = await simulation.run(suites)
     if len(reports) != len(suites):
         return failed(
@@ -186,7 +192,7 @@ async def mechanism_stage(spec: ModelSpec, simulation: MechanismSimulationPort) 
     bad = [r.suite_id for r in reports if not r.passed]
     outcome = StageOutcome.FAILED if bad else StageOutcome.PASSED
     message = f"suites failed: {', '.join(bad)}" if bad else ""
-    return _report(StageName.MECHANISM, outcome, message, metrics, tuple(suites))
+    return _report(StageName.MECHANISM, outcome, message, metrics)  # no run-dir evidence
 
 
 async def print_stage(
@@ -200,7 +206,9 @@ async def print_stage(
     except ToolUnavailableError as exc:
         return failed(StageName.PRINT, str(exc))
     evidence = tuple(
-        _rel(p, run_dir) for p in (result.output_3mf, result.settings_json, result.log_path) if p
+        relative_path(p, (run_dir,))
+        for p in (result.output_3mf, result.settings_json, result.log_path)
+        if p
     )
     metrics = (("return_code", str(result.return_code)),)
     if not result.passed:
@@ -227,5 +235,5 @@ async def package_stage(
         StageOutcome.PASSED,
         "",
         metrics,
-        (_rel(manifest.manifest_path, run_dir),),
+        (relative_path(manifest.manifest_path, (run_dir,)),),
     )

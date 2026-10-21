@@ -67,6 +67,8 @@ examples, not server requirements.
 | `delete_object` | Destructive write | Permanently remove one object |
 | `apply_material` | Destructive write | Create/update and assign a Principled BSDF material |
 | `run_design_pipeline` | Write | Submit a ModelSpec; returns a queued job (import, geometry, mechanism, print, package) |
+| `describe_model_spec` | Read | ModelSpec v1 JSON Schema, defaults, supported printers/materials and a worked example |
+| `list_artifacts` | Read | Deliverable directories usable as `source.root_dir` (STL count per subdirectory, 3MF names) |
 | `get_job_status` | Read | Poll a design job by `job_id` |
 | `get_run_report` | Read | Per-stage verdicts, metrics, evidence and the overall `passed` flag of one run |
 | `check_mesh_integrity` | Read | Closed / non-self-intersecting check for STLs under an artifact root |
@@ -95,10 +97,12 @@ arbitrary Python.
 | `delete_object` | no | yes | no | 30 s |
 | `apply_material` | no | yes | no | 30 s |
 | `run_design_pipeline` | no | no | no | 30 s |
+| `describe_model_spec` | yes | no | yes | 10 s |
+| `list_artifacts` | yes | no | yes | 10 s |
 | `get_job_status` | yes | no | yes | 10 s |
 | `get_run_report` | yes | no | yes | 10 s |
-| `check_mesh_integrity` | yes | no | yes | 50 s |
-| `slice_for_print` | no | no | no | `SLICE_TIMEOUT_S` + 30 s |
+| `check_mesh_integrity` | yes | no | yes | 47.5 s（由 `max_total_stl_bytes` 推導） |
+| `slice_for_print` | no | no | no | 切片埠的 `timeout_s`（Bambu：`SLICE_TIMEOUT_S`）+ 30 s |
 | `list_instances` | yes | no | yes | 10 s |
 | `build_instance` | no | yes | no | `GENERATOR_TIMEOUT_S` + 30 s |
 | `tool_status` | yes | no | yes | 10 s |
@@ -109,7 +113,8 @@ arbitrary Python.
 
 ### 設計管線（ModelSpec → 可列印包）
 
-LLM 供應想法與 ModelSpec，MCP 負責走到可列印包：`run_design_pipeline` 送出（立即回傳
+LLM 供應想法與 ModelSpec，MCP 負責走到可列印包：先用 `describe_model_spec` 取得 schema 與範例、
+`list_artifacts` 找可用的 `source.root_dir`，再以 `run_design_pipeline` 送出（立即回傳
 `job_id`／`run_id`）→ `get_job_status` 輪詢 → `get_run_report` 讀逐階段證據。
 `check_mesh_integrity` 與 `slice_for_print` 可單獨使用，也接受 ModelSpec 以外的檔案。
 
@@ -121,7 +126,18 @@ LLM 供應想法與 ModelSpec，MCP 負責走到可列印包：`run_design_pipel
   （`.json`／`.log` 回文字，其餘回二進位），超出 run 目錄的名稱會被拒絕。
 - **未設定**：伺服器沒有接上對應服務時，工具仍在目錄內，呼叫會得到
   「not configured on this server」的工具錯誤。
-- 匯入階段忽略的檔案（隱藏路徑段）記在 `skipped` 指標與 `skipped: <相對路徑>` 證據（最多 20 筆）。
+- 匯入階段忽略的檔案（隱藏路徑段**或**副檔名不是 `.stl` 的符合項）記在 `skipped` 指標，
+  名單（最多 20 筆）在該 run 的 `import.json`。
+- **每個 PASSED 階段都有可開的證據**：`evidence` 只放相對 run 目錄的路徑，都能用
+  `run://{run_id}/{name}` 讀取。`import.json` 列出每個 STL 與專案 3MF 的相對路徑、sha256 與位元組數；
+  `geometry.json` 列出逐檔判定。兩者都進 manifest，所以來源檔也被 checksum 釘住。
+- **規格 v1 的限制**：`mechanism.suites` 必須為空（非空會在送出時被拒）；mechanism 階段固定為
+  `not_applicable`，訊息「mechanism not evaluated in Phase 1 (import path)」。不支援的印表機或材料
+  在送出時就被拒絕，不會建立工作。未知鍵的錯誤會列出允許的鍵。
+- **Blender 忙碌**：設計 run 的階段持有 Blender lease 時，`create_object`、`modify_object`、
+  `delete_object`、`apply_material`、`check_print_readiness`、`run_verification_suite`、
+  `build_instance` 立即回工具錯誤「Blender is busy with design run stage <stage>; retry later」，
+  不排隊；`run_verification_suite` 與 `build_instance` 執行時也持有 lease，之後到的 run 會等它。
 
 ### 登錄測試
 
@@ -208,7 +224,7 @@ because GUI-launched clients do not reliably inherit the shell working directory
 
 ## 接上之後
 
-**安全邊界**（identity、Host/Origin、protocol version、十九項工具相等性、公網散布的
+**安全邊界**（identity、Host/Origin、protocol version、二十一項工具相等性、公網散布的
 前提）完整說明見 [[01-architecture]] 的安全邊界一節。這裡只提醒 client 開發者三件事：
 
 - `/mcp` **不是** identity exemption。缺少可信 Tailnet identity 的請求會收到 HTTP 401。

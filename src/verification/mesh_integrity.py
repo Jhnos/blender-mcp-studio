@@ -122,6 +122,8 @@ def cgal_self_intersects(points: list[Point], faces: list[Triangle]) -> bool:
 
     Independent of closedness: an open surface still gets a real answer. Raises
     ValueError when the conversion changes the face count or triangle coordinates.
+    CGAL counts degenerate (zero-area) faces as self-intersecting; such a mesh still fails
+    through ``error`` (``parse_closed_surface`` rejects degenerate faces), not only here.
     """
     converted = Polyhedron_3()
     polygon_soup_to_polygon_mesh([Point_3(*point) for point in points], faces, converted)

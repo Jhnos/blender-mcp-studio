@@ -2,8 +2,7 @@
 
 The service must be movable to other hardware: the public base URL is resolved at run
 or install time (``src/infrastructure/public_base_url.py``). ``docs/`` and ``tests/`` are
-documentation and fixtures and are not scanned; neither is retired ``scripts/archive/``
-or the vendored ``config/slicer-profiles/``.
+documentation and fixtures and are not scanned; neither is retired ``scripts/archive/``.
 """
 
 from __future__ import annotations
@@ -13,7 +12,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
 SCAN_DIRS = ("api", "src", "scripts", "config", "deploy")
-SKIP_PARTS = ("scripts/archive/", "config/slicer-profiles/")
+SKIP_PARTS = ("scripts/archive/",)  # vendor profiles are read from the app (A1), not vendored
 SELF = Path(__file__).resolve()
 
 PATTERNS = (

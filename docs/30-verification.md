@@ -34,6 +34,7 @@ scripts/ci.sh --real   # T3 REST/MCP/readiness/batch + hand-v3 契約與重現�
 | octopus hand V2 ×2 | 生成、同場景 tips | 26 |
 | generation delivery path | **清空** `tmp/hand-compact/`，走公開 REST endpoint 重建，比 API 回報的數字與磁碟上的位元組，再對 `models/hand-compact/manifest.json` 走同一份碎片預算 | 10 |
 | build determinism within budget | 同一零件在常駐 Blender 重建 3 次，判準是**完成品的面數差不超過碎片預算**——頂點順序幾乎每一步都不同，那是 exact solver 的性質不是缺陷，拿它當紅燈的閘門會永遠紅 | 18 |
+| design pipeline (v78) | `scripts/verify/design_pipeline_verify_real.py scripts/verify/contracts/design_pipeline_v78.json`：經公開 MCP URL 送 v78 交付物的 ModelSpec，輪詢到終態（預算＝切片逾時＋300 s），逐階段驗證據：import 69 件且 `import.json` 列 69 個 STL＋1 個 3MF（含 sha256）、geometry 69 件 0 失敗、mechanism `not_applicable`、print 1 盤、manifest 含合約列出的檔案與 AGPL 切片器條目、所有文件無主機路徑；再以截斷表頭的 STL 副本做反例，geometry 必須 FAILED 並點名該檔。交付物根目錄取 `config/tools.yaml` 的 `artifact_roots[0]`（`--artifact-root` 可覆寫）。前置（交付物、切片器、端點）缺一即 FAIL 附原因，不 SKIP；要在部署後跑 | 真切片約 3 分鐘 |
 
 順序是硬的：手指契約重用手契約生成的場景；差分讀那次生成匯出的 STL；
 交付路徑閘門**最後**跑，因為它會清空 `tmp/hand-compact/` 再自己重建——排在前面就會抽掉別人的輸入。三條由

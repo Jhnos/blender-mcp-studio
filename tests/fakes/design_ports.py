@@ -3,11 +3,12 @@
 from __future__ import annotations
 
 import asyncio
+from pathlib import Path
 
 from src.core.domain.design_run import JobRecord, JobStatus, StageName
 from src.core.domain.mesh_integrity import MeshIntegrityReport, MeshVerdict
 from src.core.domain.packaging import PackagedFile, PackageManifest
-from src.core.domain.slicing import SliceResult, ToolAvailability
+from src.core.domain.slicing import SliceResult, SupportedTargets, ToolAvailability
 from src.core.domain.verification import VerificationReport
 from src.core.use_cases.blender_lease import BlenderLease
 
@@ -68,6 +69,9 @@ class FakeSlicing:
         self.error: Exception | None = None
         self.timeout_s = 123.0  # not the real slicer value: MCP must read it from the port
 
+    def supported(self):
+        return SupportedTargets(("bambu-p2s",), ("PLA",))
+
     async def availability(self):
         return ToolAvailability("Bambu Studio", True, "/x/bs", "02.06.00.51", "hint")
 
@@ -78,7 +82,10 @@ class FakeSlicing:
             raise self.error
         await asyncio.sleep(self.delay)
         self.log.append(("slice-end", self.lease.holder))
-        out = request.output_dir
+        out = Path(request.output_dir)
+        out.mkdir(parents=True, exist_ok=True)  # like the real adapter: evidence is openable
+        (out / "out.3mf").write_bytes(b"3mf")
+        (out / "log.txt").write_text("ok", encoding="utf-8")
         return SliceResult(True, f"{out}/out.3mf", None, f"{out}/log.txt", 0, "ok")
 
 
@@ -92,4 +99,5 @@ class FakePackaging:
         if self.error:
             raise self.error
         packed = (PackagedFile(files[0], "0" * 64, 1, None),) if files else ()
+        Path(run_dir, "manifest.json").write_text("{}", encoding="utf-8")
         return PackageManifest(run_id, spec_name, packed, f"{run_dir}/manifest.json", tools)

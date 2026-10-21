@@ -14,15 +14,21 @@ def _tight(rig, **kw):
     rig.pipeline._limits = replace(rig.pipeline._limits, **kw)
 
 
+def _import_json(rig, job) -> dict:
+    return json.loads((rig.runs / job.run_id / "import.json").read_text(encoding="utf-8"))
+
+
 async def test_import_skips_hidden_and_non_stl_matches(tmp_path):
     rig = _rig(tmp_path)
     (rig.root / ".hidden").mkdir()
     (rig.root / ".hidden" / "x.stl").write_bytes(b"x")
     payload = _payload(rig)
     payload["source"]["stl_glob"] = "**/*.stl"
-    _, _, report = await _run(rig, payload)
-    # ignored files are visible in the evidence (ruling 10), after the imported ones
-    assert report.stages[0].evidence == ("STL/a.stl", "STL/b.stl", "skipped: .hidden/x.stl")
+    job, _, report = await _run(rig, payload)
+    # ignored files are visible in the evidence (ruling 10); A3 moved the list into import.json
+    doc = _import_json(rig, job)
+    assert [r["path"] for r in doc["stls"]] == ["STL/a.stl", "STL/b.stl"]
+    assert doc["skipped"] == [".hidden/x.stl"]
 
 
 async def test_import_reports_skipped_matches(tmp_path):
@@ -33,12 +39,13 @@ async def test_import_reports_skipped_matches(tmp_path):
     (rig.root / "dir.stl").mkdir()  # a directory match is not a file: neither imported nor skipped
     payload = _payload(rig)
     payload["source"]["stl_glob"] = "**/*.stl"
-    _, _, report = await _run(rig, payload)
+    job, _, report = await _run(rig, payload)
     imp = report.stages[0]
     assert dict(imp.metrics)["skipped"] == "2"
-    assert "skipped: .hidden/x.stl" in imp.evidence
-    assert "skipped: STL/.dot.stl" in imp.evidence
-    assert "STL/a.stl" in imp.evidence and not any("dir.stl" in e for e in imp.evidence)
+    doc = _import_json(rig, job)  # A3: skips and imports are listed in import.json
+    assert ".hidden/x.stl" in doc["skipped"] and "STL/.dot.stl" in doc["skipped"]
+    listed = [r["path"] for r in doc["stls"]] + doc["skipped"]
+    assert "STL/a.stl" in listed and not any("dir.stl" in e for e in listed)
 
 
 async def test_import_skipped_evidence_is_capped_at_20(tmp_path):
@@ -48,10 +55,10 @@ async def test_import_skipped_evidence_is_capped_at_20(tmp_path):
         (rig.root / ".hid" / f"n{i:02d}.stl").write_bytes(b"x")
     payload = _payload(rig)
     payload["source"]["stl_glob"] = "**/*.stl"
-    _, _, report = await _run(rig, payload)
+    job, _, report = await _run(rig, payload)
     imp = report.stages[0]
     assert dict(imp.metrics)["skipped"] == "30"
-    assert len([e for e in imp.evidence if e.startswith("skipped: ")]) == 20
+    assert len(_import_json(rig, job)["skipped"]) == 20  # A3: the capped list is in import.json
 
 
 async def test_import_rejects_symlink_to_hidden_target(tmp_path):

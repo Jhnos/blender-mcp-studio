@@ -35,9 +35,14 @@ def good_report() -> dict:
         "spec_name": "lab-station-v78",
         "passed": True,
         "stages": [
-            stage("import", "passed", [("stl_count", "69"), ("skipped", "0")], ["a.stl"]),
-            stage("geometry", "passed", [("checked", "69"), ("failing", "0")]),
-            stage("mechanism", "not_applicable", message="no mechanism suites declared"),
+            # A3: import and geometry evidence are their run-relative documents
+            stage("import", "passed", [("stl_count", "69"), ("skipped", "0")], ["import.json"]),
+            stage("geometry", "passed", [("checked", "69"), ("failing", "0")], ["geometry.json"]),
+            stage(
+                "mechanism",
+                "not_applicable",
+                message="mechanism not evaluated in Phase 1 (import path)",
+            ),
             stage("print", "passed", [("return_code", "0")], [OUT_3MF, "print/slicer.log"]),
             stage("package", "passed", [("files", "9")], ["manifest.json"]),
         ],

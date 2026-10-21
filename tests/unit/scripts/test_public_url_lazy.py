@@ -37,6 +37,16 @@ def test_verify_scripts_import_without_tailscale(monkeypatch: pytest.MonkeyPatch
     _load(rel, "lazy_" + Path(rel).stem)
 
 
+def test_verify_script_urls_come_from_public_base_url(monkeypatch: pytest.MonkeyPatch) -> None:
+    # B9: a non-Tailscale proxy with its own mount path must be used verbatim.
+    monkeypatch.setenv(pbu.ENV_VAR, "https://proxy.example.test/studio")
+    rest = _load("scripts/verify/mcp_verify_rest.py", "url_mcp_verify_rest")
+    chat = _load("scripts/verify/mcp_verify_chat.py", "url_mcp_verify_chat")
+    assert rest._base() == "https://proxy.example.test/studio"
+    assert chat._base() == "https://proxy.example.test/studio"
+    assert chat._ws_url() == "wss://proxy.example.test/studio/ws/chat"
+
+
 def test_stdio_proxy_without_tailscale_exits_cleanly(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:

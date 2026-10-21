@@ -176,13 +176,13 @@ FastAPI 的 lifespan 擁有 Blender 的 connect/disconnect；組合後的 FastMC
 | Tailnet identity | 除 `/api/health` 外的所有 HTTP；`/mcp` 缺 identity → 401 |
 | Host/Origin guard | 由 loopback 與 `CORS_ORIGINS` 推導的嚴格 allowlist |
 | Protocol version | 不支援的 `MCP-Protocol-Version` → HTTP 400 |
-| Tool surface | 恰好十九項工具的相等性檢查；`execute_code` 不存在 |
+| Tool surface | 恰好二十一項工具的相等性檢查；`execute_code` 不存在 |
 | Error mapping | 可復原的 domain error 轉成可行動的 `ToolError`／HTTP 422 |
 | Error masking | 非預期的 MCP 內部錯誤不把 traceback 洩漏給 client |
 | Socket serialization | `BlenderSocketClient` 內的單一 `asyncio.Lock` |
 
 - `/api/health` 是**唯一**的 identity exemption，存在理由是讓 watchdog 探測 process。
-- MCP public catalog 固定十九項 curated tools（原十一項加設計管線八項，見 [[11-mcp-clients]]），刻意不含 `execute_code`；第九項
+- MCP public catalog 固定二十一項 curated tools（原十一項加設計管線十項，見 [[11-mcp-clients]]），刻意不含 `execute_code`；第九項
   `check_print_readiness` 是唯讀、冪等且 30 秒 timeout。
 - `POST /api/instances/{slug}/build` 會在 Blender 裡跑 Python，所以它**沒有 request body**：
   輸入只有 slug，而 slug 只能索引 `HAND_INSTANCES` 這個封閉集合。程式碼字串由登錄表條目

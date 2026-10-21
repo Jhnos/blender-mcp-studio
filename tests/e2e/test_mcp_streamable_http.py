@@ -61,6 +61,8 @@ _EXPECTED_TOOLS = {
     "list_instances",
     "build_instance",
     "tool_status",
+    "describe_model_spec",
+    "list_artifacts",
 }
 #: The two instance tools are public on purpose (docs/11-mcp-clients.md); no other
 #: conversation-internal generation tool may appear in the public catalogue.
@@ -294,7 +296,7 @@ def test_client_name_does_not_change_capabilities_or_catalog() -> None:
 
 
 def test_public_catalog_exposes_only_the_declared_generation_tools() -> None:
-    """`docs/01-architecture.md` declares nineteen curated public tools.
+    """`docs/01-architecture.md` declares twenty-one curated public tools.
 
     The conversation inside this process has its own generation tool list; that list and
     this catalogue are different surfaces. Exposing `list_instances` and `build_instance`
@@ -303,5 +305,5 @@ def test_public_catalog_exposes_only_the_declared_generation_tools() -> None:
     """
     from src.core.use_cases.conversation_generation import GENERATION_TOOL_NAMES
 
-    assert len(_EXPECTED_TOOLS) == 19
+    assert len(_EXPECTED_TOOLS) == 21
     assert _EXPECTED_TOOLS & GENERATION_TOOL_NAMES == _PUBLIC_GENERATION_TOOLS

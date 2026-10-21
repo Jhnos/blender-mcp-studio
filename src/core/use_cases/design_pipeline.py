@@ -30,7 +30,8 @@ from src.core.domain.design_run import (
 )
 from src.core.domain.import_limits import ImportLimits
 from src.core.domain.mesh_integrity import MeshIntegrityReport
-from src.core.domain.model_spec import ModelSpec, PrintTarget, parse_model_spec
+from src.core.domain.model_spec import ModelSpec, ModelSpecError, PrintTarget, parse_model_spec
+from src.core.domain.model_spec_schema import describe_model_spec
 from src.core.domain.slicing import (
     SliceRequest,
     SliceResult,
@@ -42,6 +43,7 @@ from src.core.ports.mechanism_simulation_port import MechanismSimulationPort
 from src.core.ports.mesh_integrity_port import MeshIntegrityPort
 from src.core.ports.packaging_port import PackagingPort
 from src.core.ports.slicing_port import SlicingPort
+from src.core.use_cases import artifact_catalog
 from src.core.use_cases import design_files as files
 from src.core.use_cases import design_reports as reports
 from src.core.use_cases import design_stages as stages
@@ -96,8 +98,11 @@ class DesignPipeline:
         return self._slicing.timeout_s
 
     async def submit(self, payload: Mapping[str, object]) -> JobRecord:
-        """Parse (ModelSpecError, no side effects), create job + run dir + spec.json, schedule."""
-        parse_model_spec(payload, artifact_roots=self._roots)
+        """Parse (ModelSpecError, no side effects), create job + run dir + spec.json, schedule.
+
+        An unsupported printer or material is rejected here, before any job exists.
+        """
+        self._check_target(parse_model_spec(payload, artifact_roots=self._roots).print_target)
         run_id = uuid.uuid4().hex
         job = await self._jobs.create(run_id)
         try:
@@ -105,14 +110,37 @@ class DesignPipeline:
             run_dir.mkdir(parents=True)
             reports.write_spec(run_dir, payload)
         except Exception as exc:
-            await self._jobs.update(
-                job.job_id, status=JobStatus.FAILED, error=f"{type(exc).__name__}: {exc}"
-            )
+            error = await self.clean(f"{type(exc).__name__}: {exc}")
+            await self._jobs.update(job.job_id, status=JobStatus.FAILED, error=error)
             raise
         task = asyncio.create_task(self.run(job.job_id))
         self._tasks.add(task)
         task.add_done_callback(self._finished)
         return job
+
+    def _check_target(self, target: PrintTarget) -> None:
+        supported = self._slicing.supported()
+        for label, value, allowed in (
+            ("printer", target.printer, supported.printers),
+            ("material", target.material, supported.materials),
+        ):
+            if value not in allowed:
+                raise ModelSpecError(
+                    f"unsupported print_target.{label} {value!r}; supported: {', '.join(allowed)}"
+                )
+
+    def describe_spec(self) -> dict[str, object]:
+        """Spec v1 as JSON Schema with this host's supported printers and materials."""
+        supported = self._slicing.supported()
+        return describe_model_spec(supported.printers, supported.materials)
+
+    async def list_artifacts(self) -> dict[str, object]:
+        """Candidate ``source.root_dir`` values under the artifact roots (relative only)."""
+        return await asyncio.to_thread(
+            artifact_catalog.list_artifacts,
+            self._roots,
+            max_stl_files=self._limits.max_stl_files,
+        )
 
     def _finished(self, task: asyncio.Task[DesignRunReport]) -> None:
         self._tasks.discard(task)
@@ -269,8 +297,11 @@ class DesignPipeline:
         self, run_id: str, spec: ModelSpec, state: stages.RunState, run_dir: Path
     ) -> list[tuple[StageName, Callable[[], Awaitable[StageReport]]]]:
         return [
-            (StageName.IMPORT, lambda: stages.import_stage(spec, state, self._limits)),
-            (StageName.GEOMETRY, lambda: stages.geometry_stage(self._integrity, state)),
+            (StageName.IMPORT, lambda: stages.import_stage(spec, state, self._limits, run_dir)),
+            (
+                StageName.GEOMETRY,
+                lambda: stages.geometry_stage(self._integrity, state, run_dir, self._scrub.text),
+            ),
             (StageName.MECHANISM, lambda: stages.mechanism_stage(spec, self._simulation)),
             (StageName.PRINT, lambda: stages.print_stage(spec, self._slicing, state, run_dir)),
             (

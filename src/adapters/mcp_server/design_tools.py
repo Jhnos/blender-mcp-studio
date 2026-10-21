@@ -140,16 +140,37 @@ def register_design_tools(
     async def run_design_pipeline(spec: dict[str, object]) -> dict[str, object]:
         """Submit a ModelSpec (spec_version 1) and return its queued job; poll get_job_status.
 
-        The run imports the STLs under source.root_dir, checks geometry, runs the declared
-        mechanism suites, slices the project 3MF and packages the evidence. The call returns at
-        once; read the verdict with get_run_report. A malformed or out-of-root spec is an error
-        and creates no job. Files that were ignored are listed in the import stage evidence.
+        Minimal spec: {"spec_version": "1", "name": ..., "source": {"root_dir": ...,
+        "project_3mf": ...}}. Call describe_model_spec for the full schema, defaults and a worked
+        example, and list_artifacts for valid root_dir values. The run imports the STLs under
+        source.root_dir, checks geometry, slices the project 3MF and packages the evidence
+        (mechanism is not evaluated in Phase 1). The call returns at once; read the verdict with
+        get_run_report. A malformed, out-of-root or unsupported-printer spec is an error and
+        creates no job. Ignored files are listed in the run's import.json.
         """
         pipeline = _configured(design, "design pipeline")
         try:
             return job_dict(await pipeline.submit(spec))
         except DomainError as exc:
             raise await fail(exc) from exc
+
+    @mcp.tool(
+        timeout=QUERY_TIMEOUT_S,
+        annotations=_annotations("Describe model spec", read_only=True, idempotent=True),
+    )
+    async def describe_model_spec() -> dict[str, object]:
+        """Return the ModelSpec v1 JSON Schema (fields, types, defaults, supported printers and
+        materials) and a complete worked example for run_design_pipeline."""
+        return _configured(design, "design pipeline").describe_spec()
+
+    @mcp.tool(
+        timeout=QUERY_TIMEOUT_S,
+        annotations=_annotations("List artifacts", read_only=True, idempotent=True),
+    )
+    async def list_artifacts() -> dict[str, object]:
+        """List deliverable directories usable as source.root_dir: each root-relative root_dir
+        with its STL count per subdirectory and its 3MF names (at most 200, no hidden dirs)."""
+        return await _configured(design, "design pipeline").list_artifacts()
 
     @mcp.tool(
         timeout=QUERY_TIMEOUT_S,
@@ -248,12 +269,7 @@ def register_design_tools(
     async def tool_status() -> list[dict[str, object]]:
         """Report which external tools the pipeline needs (the slicer), with an install hint."""
         pipeline = _configured(design, "design pipeline")
-        rows = []
-        for tool in await pipeline.tools():
-            row = tool_dict(tool)
-            row.pop("path")  # a host path; availability and version are the contract
-            rows.append(row)
-        return rows
+        return [tool_dict(tool) for tool in await pipeline.tools()]
 
     @mcp.resource("run://{run_id}/{name*}", name="run_file")
     async def run_file(run_id: str, name: str) -> str | bytes:

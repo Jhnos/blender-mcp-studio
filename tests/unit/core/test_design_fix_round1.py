@@ -10,7 +10,7 @@ import pytest
 
 from src.adapters.slicing.bambu_studio_cli import BambuStudioCli
 from src.core.domain.design_run import JobStatus, StageName, StageOutcome
-from src.core.domain.slicing import SliceResult
+from src.core.domain.slicing import SliceResult, SupportedTargets
 from tests.unit.core.test_design_pipeline import _payload, _rig, _run
 
 
@@ -74,6 +74,9 @@ class BlockingSlicing:
         return SliceResult(
             True, f"{request.output_dir}/o.3mf", None, f"{request.output_dir}/l", 0, "ok"
         )
+
+    def supported(self):  # A4: submit checks the slicer's supported targets
+        return SupportedTargets(("bambu-p2s",), ("PLA",))
 
     async def availability(self):
         raise AssertionError("not used")

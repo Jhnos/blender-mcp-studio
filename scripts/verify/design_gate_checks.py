@@ -108,11 +108,25 @@ def check_report(report: Mapping[str, object], expect: Mapping[str, object]) -> 
         failures += _expect_outcome(name, stages[name], outcome)
         for key, want in metrics.items():
             failures += _expect_metric(name, stages[name], key, want)
-    for name in ("print", "package"):
+    for name in ("import", "geometry", "print", "package"):
         if name in stages and not _evidence(stages[name]):
             failures.append(f"{name} stage lists no evidence paths")
     if "print" in stages and _evidence(stages["print"]) and output_3mf(report) is None:
         failures.append("print stage evidence names no .3mf output")
+    return failures
+
+
+def check_import_json(doc: Mapping[str, object], expect: Mapping[str, object]) -> list[str]:
+    """import.json checksums every source: the contract's STL count plus the project 3MF."""
+    stls = len(_rows(doc.get("stls")))
+    projects = 0 if as_mapping(doc.get("project_3mf")) is None else 1
+    failures = []
+    if stls != expect["stl_count"]:
+        failures.append(f"import.json lists {stls} STL(s), expected {expect['stl_count']}")
+    if projects != expect["import_3mf"]:
+        failures.append(
+            f"import.json lists {projects} project 3MF(s), expected {expect['import_3mf']}"
+        )
     return failures
 
 
@@ -212,8 +226,8 @@ def poll_job(
         sleep(pause_s)
 
 
-def check_deliverable(project_root: Path, root_dir: str) -> list[str]:
-    if (project_root / root_dir).is_dir():
+def check_deliverable(artifact_root: Path, root_dir: str) -> list[str]:
+    if (artifact_root / root_dir).is_dir():
         return []
     return [f"deliverable not present on this host: {root_dir}"]
 

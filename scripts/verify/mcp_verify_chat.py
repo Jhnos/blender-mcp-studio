@@ -34,7 +34,7 @@ from src.infrastructure.narrowing import (  # noqa: E402
     as_str_keyed_exact,
     dig,
 )
-from src.infrastructure.public_base_url import public_host  # noqa: E402
+from src.infrastructure.public_base_url import public_base_url  # noqa: E402
 from src.verification.generated_artifact_verdict import (  # noqa: E402
     VerificationEvidence,
     VerificationSummary,
@@ -45,11 +45,13 @@ ORACLE = ("127.0.0.1", 9876)
 
 def _base() -> str:
     """Public base URL, resolved on first use so import and --help need no tailscale."""
-    return f"https://{public_host()}/blender"
+    return public_base_url()
 
 
 def _ws_url() -> str:
-    return f"wss://{public_host()}/blender/ws/chat"
+    base = public_base_url()
+    scheme, rest = base.split("://", 1)
+    return f"{'wss' if scheme == 'https' else 'ws'}://{rest}/ws/chat"
 
 
 def oracle(code: str, timeout: float = 60) -> dict[str, object] | None:

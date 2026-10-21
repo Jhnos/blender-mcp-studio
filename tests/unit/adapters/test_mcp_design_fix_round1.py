@@ -57,7 +57,9 @@ async def test_slice_for_print_returns_busy_when_lease_held(tmp_path):
     )
     assert len(rig.slicing.requests) == 1  # only the call after the lease was free
     assert later.structured_content["passed"] is True
-    assert not rig.runs.exists() or list(rig.runs.iterdir()) == []  # busy call: no run dir
+    # busy call: no run dir; only the later call's run dir exists (the fake slicer now
+    # writes its outputs, A3 openable evidence)
+    assert len(list(rig.runs.iterdir())) == 1
 
 
 async def test_check_mesh_integrity_rejects_total_bytes_over_cap(tmp_path):

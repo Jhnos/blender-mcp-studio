@@ -26,7 +26,7 @@ def _artifact(tmp_path: Path) -> dict[str, object]:
         "spec_version": "1",
         "name": "demo",
         "source": {"root_dir": str(root), "project_3mf": "p.3mf"},
-        "mechanism": {"suites": ["s1"]},
+        "mechanism": {"suites": []},  # A5: v1 rejects suites
     }
 
 
@@ -103,11 +103,17 @@ def test_tools_endpoint_lists_slicer_availability(tmp_path: Path) -> None:
             {
                 "name": "Bambu Studio",
                 "available": True,
-                "path": "/x/bs",
                 "version": "02.06.00.51",
                 "install_hint": "hint",
             }
         ]
+
+
+def test_tools_endpoint_body_has_no_absolute_path(tmp_path: Path) -> None:
+    # B2: REST and MCP share tool_dict, which drops the binary path once.
+    with _client(tmp_path) as client:
+        body = client.get("/api/design/tools").text
+    assert '"/' not in body and "path" not in json.loads(body)[0]
 
 
 def test_invalid_spec_is_422(tmp_path: Path) -> None:

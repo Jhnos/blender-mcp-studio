@@ -38,9 +38,15 @@ if str(PROJECT_ROOT) not in sys.path:
 from scripts.verify import design_gate_checks as checks  # noqa: E402
 from scripts.verify.mcp_verify_real import TRANSPORT_ERRORS, default_mcp_url  # noqa: E402
 from src.infrastructure.narrowing import as_mapping  # noqa: E402
+from src.infrastructure.tools_config import load_tools_config  # noqa: E402
 
 POLL_PAUSE_S = 10.0
-NEGATIVE_DIR = "tmp"  # git-ignored, and inside the deployed API's artifact root "."
+NEGATIVE_DIR = "tmp"  # git-ignored, under the artifact root the deployed API reads
+
+
+def artifact_root(override: Path | None) -> Path:
+    """The root the spec's root_dir is relative to: config/tools.yaml artifact_roots[0]."""
+    return override if override is not None else load_tools_config().artifact_roots[0]
 
 
 def _payload(result: Any) -> Any:
@@ -116,18 +122,25 @@ def _positive_failures(
     report: Mapping[str, object],
     manifest: Mapping[str, object],
     report_json: Mapping[str, object],
+    import_json: Mapping[str, object],
     plates: list[str] | None,
     expect: Mapping[str, object],
 ) -> list[str]:
     failures = checks.check_report(report, expect)
     failures += checks.check_manifest(manifest, report, expect)
+    failures += checks.check_import_json(import_json, expect)
     if report_json.get("stages") != report.get("stages"):
         failures.append("report.json resource disagrees with get_run_report stages")
     if plates is None:
         failures.append("print output 3MF could not be read from the run")
     else:
         failures += checks.check_plates(plates, int(expect["plates"]))  # type: ignore[call-overload]
-    docs = {"report": report, "manifest": manifest, "report.json": report_json}
+    docs = {
+        "report": report,
+        "manifest": manifest,
+        "report.json": report_json,
+        "import.json": import_json,
+    }
     failures += checks.find_path_leaks(docs, home=str(Path.home()))
     return failures
 
@@ -140,6 +153,7 @@ async def _positive(client: Client[Any], contract: Mapping[str, Any]) -> list[st
     try:
         manifest = await _resource_json(client, run_id, "manifest.json")
         report_json = await _resource_json(client, run_id, "report.json")
+        import_json = await _resource_json(client, run_id, "import.json")
         plates: list[str] | None = None
         out = checks.output_3mf(report)
         if out is not None:
@@ -149,17 +163,19 @@ async def _positive(client: Client[Any], contract: Mapping[str, Any]) -> list[st
     except (ValueError, zipfile.BadZipFile, ToolError, McpError) as exc:
         detail = f"{type(exc).__name__}: {exc}"
         return [*early, f"evidence files unreadable from run {run_id}: {detail}"]
-    return _positive_failures(report, manifest, report_json, plates, contract["expect"])
+    return _positive_failures(
+        report, manifest, report_json, import_json, plates, contract["expect"]
+    )
 
 
-async def _negative(client: Client[Any], contract: Mapping[str, Any]) -> list[str]:
+async def _negative(client: Client[Any], contract: Mapping[str, Any], root: Path) -> list[str]:
     spec = json.loads(json.dumps(contract["spec"]))
     source = spec["source"]
     keep = int(contract["negative_control"]["keep_header_bytes"])
-    work = PROJECT_ROOT / NEGATIVE_DIR / f"design-gate-negative-{secrets.token_hex(4)}"
+    work = root / NEGATIVE_DIR / f"design-gate-negative-{secrets.token_hex(4)}"
     copy_root = work / "artifact"
     try:
-        original = PROJECT_ROOT / source["root_dir"]
+        original = root / source["root_dir"]
         stls = sorted(original.glob(source["stl_glob"]))
         if not stls:
             return [f"negative control: no STL matches {source['stl_glob']} in the deliverable"]
@@ -168,7 +184,7 @@ async def _negative(client: Client[Any], contract: Mapping[str, Any]) -> list[st
         for stl in stls:
             shutil.copy2(stl, copy_root / stl.relative_to(original))
         checks.truncate_header(copy_root / target, keep)
-        source["root_dir"] = copy_root.relative_to(PROJECT_ROOT).as_posix()
+        source["root_dir"] = copy_root.relative_to(root).as_posix()
         source.pop("project_3mf", None)
         spec["name"] = "negative-control-truncated-header"
         _, report = await _run_spec(client, spec, "negative")
@@ -177,7 +193,7 @@ async def _negative(client: Client[Any], contract: Mapping[str, Any]) -> list[st
         shutil.rmtree(work, ignore_errors=True)
 
 
-async def _session(contract: Mapping[str, Any], url: str) -> list[str]:
+async def _session(contract: Mapping[str, Any], url: str, root: Path) -> list[str]:
     failures: list[str] = []
     for attempt in (1, 2):
         try:
@@ -187,7 +203,7 @@ async def _session(contract: Mapping[str, Any], url: str) -> list[str]:
                 if failures:
                     return failures
                 failures += await _positive(client, contract)
-                failures += await _negative(client, contract)
+                failures += await _negative(client, contract, root)
             return failures
         except TRANSPORT_ERRORS as exc:
             if attempt == 1 and not failures:
@@ -204,8 +220,16 @@ def main() -> int:
     parser.add_argument(
         "contract", type=Path, help="scripts/verify/contracts/design_pipeline_*.json"
     )
-    contract = json.loads(parser.parse_args().contract.read_text(encoding="utf-8"))
-    failures = checks.check_deliverable(PROJECT_ROOT, contract["spec"]["source"]["root_dir"])
+    parser.add_argument(
+        "--artifact-root",
+        type=Path,
+        default=None,
+        help="directory root_dir is relative to (default: config/tools.yaml artifact_roots[0])",
+    )
+    args = parser.parse_args()
+    contract = json.loads(args.contract.read_text(encoding="utf-8"))
+    root = artifact_root(args.artifact_root)
+    failures = checks.check_deliverable(root, contract["spec"]["source"]["root_dir"])
     if not failures:
         try:
             url = os.environ.get("BLENDER_MCP_URL") or default_mcp_url()
@@ -214,7 +238,7 @@ def main() -> int:
         else:
             print(f"design pipeline gate via {url}", flush=True)
             started = time.monotonic()
-            failures = asyncio.run(_session(contract, url))
+            failures = asyncio.run(_session(contract, url, root))
             print(f"elapsed {time.monotonic() - started:.0f}s")
     print("\n=== DESIGN PIPELINE GATE ===")
     for failure in failures:

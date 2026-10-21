@@ -4,7 +4,12 @@ from __future__ import annotations
 
 from typing import Protocol
 
-from src.core.domain.slicing import SliceRequest, SliceResult, ToolAvailability
+from src.core.domain.slicing import (
+    SliceRequest,
+    SliceResult,
+    SupportedTargets,
+    ToolAvailability,
+)
 
 
 class SlicingPort(Protocol):
@@ -12,6 +17,8 @@ class SlicingPort(Protocol):
     def timeout_s(self) -> float:
         """How long one slice may run before the adapter gives up (seconds)."""
         ...
+
+    def supported(self) -> SupportedTargets: ...
 
     async def availability(self) -> ToolAvailability: ...
 

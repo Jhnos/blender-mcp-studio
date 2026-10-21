@@ -12,6 +12,7 @@
   },
   "expect": {
     "stl_count": 69,
+    "import_3mf": 1,
     "skipped": 0,
     "geometry_checked": 69,
     "geometry_failing": 0,
@@ -20,6 +21,8 @@
     "slicer_license": "AGPL-3.0-only",
     "manifest_files": [
       "spec.json",
+      "import.json",
+      "geometry.json",
       "print/effective-settings.json",
       "print/slicer.log",
       "print/machine.json",

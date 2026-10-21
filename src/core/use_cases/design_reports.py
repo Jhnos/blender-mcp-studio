@@ -68,6 +68,11 @@ def read_report(run_dir: Path) -> DesignRunReport | None:
     return from_json(path.read_text(encoding="utf-8"), str(run_dir))
 
 
+def write_evidence(run_dir: Path, name: str, data: Mapping[str, object]) -> None:
+    """One stage evidence document (``import.json``, ``geometry.json``), atomic and sorted."""
+    _write_atomic(run_dir / name, json.dumps(data, sort_keys=True, indent=2) + "\n")
+
+
 def write_spec(run_dir: Path, payload: Mapping[str, object]) -> None:
     _write_atomic(run_dir / SPEC_NAME, json.dumps(payload, sort_keys=True, indent=2) + "\n")
 
