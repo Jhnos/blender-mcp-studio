@@ -70,3 +70,6 @@ data/
 /整機單盤-*
 /模型預覽-*
 /雙上臂四點梯形-*
+
+# SDD per-plan scratch (ledger, briefs, reports); the git history is the record
+/.superpowers/
