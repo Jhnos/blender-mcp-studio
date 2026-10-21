@@ -34,12 +34,13 @@ from src.infrastructure.narrowing import (  # noqa: E402
     as_str_keyed_exact,
     dig,
 )
+from src.infrastructure.public_base_url import public_host  # noqa: E402
 from src.verification.generated_artifact_verdict import (  # noqa: E402
     VerificationEvidence,
     VerificationSummary,
 )
 
-TS = "bearmacminimac-mini.tail56c751.ts.net"
+TS = public_host()
 BASE = f"https://{TS}/blender"
 WS_URL = f"wss://{TS}/blender/ws/chat"
 ORACLE = ("127.0.0.1", 9876)

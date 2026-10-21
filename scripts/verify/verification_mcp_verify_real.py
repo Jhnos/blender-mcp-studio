@@ -8,7 +8,7 @@ from pathlib import Path
 from fastmcp import Client
 
 from scripts.verify.generated_artifact_verify_real import BlenderSocketOracle
-from scripts.verify.mcp_verify_real import DEFAULT_MCP_URL
+from scripts.verify.mcp_verify_real import default_mcp_url
 from src.adapters.blender_response import decode_marked_json, execute_code_output, sequence
 from src.adapters.mcp_server.server import VERIFICATION_TOOL_TIMEOUT_S
 from src.infrastructure.narrowing import as_str_keyed_exact, required
@@ -114,7 +114,7 @@ bpy.data.objects['S_capillary_lower']['elbow_release_mm']=.123
         verify_property_oracle(oracle)
         evidence["custom_property_oracle_controls"] = True
         elapsed: dict[str, float] = {}
-        async with Client(DEFAULT_MCP_URL, timeout=VERIFICATION_CLIENT_TIMEOUT_S) as client:
+        async with Client(default_mcp_url(), timeout=VERIFICATION_CLIENT_TIMEOUT_S) as client:
             tools = await client.list_tools()
             assert {"list_verification_suites", "run_verification_suite"} <= {t.name for t in tools}
             catalog = await client.call_tool("list_verification_suites", {})

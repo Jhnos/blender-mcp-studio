@@ -88,7 +88,12 @@ BLENDER_MCP_PUBLIC_BASE_URL=
 `BAMBU_STUDIO_BIN`、`DESIGN_RUNS_DIR`、`ARTIFACT_ROOTS`（以 `os.pathsep` 分隔）覆寫
 `config/tools.yaml` 的預設值；相對路徑以 repo 根目錄解析。
 `BLENDER_MCP_PUBLIC_BASE_URL` 是設計管線對外下載連結的公開基底網址（留空則由
-`tailscale status --self --json` 取得）。
+`tailscale status --self --json` 取得）。同一個解析器（`src/infrastructure/public_base_url.py`）
+供 API 的 CORS 預設（`CORS_ORIGINS` 未設時）、驗證腳本、stdio proxy、`tailscale-serve-register.sh`
+與 `deploy/launchd/install.sh`（填 api plist 的 `__PUBLIC_ORIGIN__`，可用
+`BLENDER_MCP_PUBLIC_ORIGIN` 覆寫）使用；程式碼與部署來源不得寫死主機名或家目錄
+（`tests/unit/core/test_no_hardcoded_hosts.py` 擋）。`BLENDER_BIN` 指定 Blender 執行檔
+（`scripts/run_blender.sh`、`install.sh`）。
 
 `BLENDER_MCP_URL` **只**設定選用的 stdio proxy 的上游；它不會改變 API runtime 的
 Blender adapter 或 socket 端點。

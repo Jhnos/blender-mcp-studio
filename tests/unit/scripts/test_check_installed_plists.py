@@ -183,3 +183,12 @@ def test_absent_launch_agents_report_skip_not_success() -> None:
 def test_gate_runs_in_the_real_tier() -> None:
     ci = (PROJECT_ROOT / "scripts" / "ci.sh").read_text(encoding="utf-8")
     assert "check_installed_plists.py" in ci, "the gate exists but nothing runs it"
+
+
+def test_a_rendered_public_origin_is_not_a_path(tmp_path: Path) -> None:
+    """install.sh substitutes __PUBLIC_ORIGIN__ with a URL; the gate must stay quiet."""
+    plist = tmp_path / "com.blender-mcp.api.plist"
+    plist.write_bytes(
+        plistlib.dumps({"EnvironmentVariables": {"CORS_ORIGINS": "https://box.example.ts.net"}})
+    )
+    assert gate.check_plist(plist, PROJECT_ROOT) == []

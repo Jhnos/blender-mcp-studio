@@ -25,8 +25,9 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from src.adapters.blender_response import decode_marked_json, sequence, text  # noqa: E402
 from src.infrastructure.narrowing import as_str, as_str_keyed_exact, dig  # noqa: E402
+from src.infrastructure.public_base_url import public_host  # noqa: E402
 
-TS = "bearmacminimac-mini.tail56c751.ts.net"
+TS = public_host()
 BASE = f"https://{TS}/blender"
 
 

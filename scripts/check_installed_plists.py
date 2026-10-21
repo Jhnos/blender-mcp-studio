@@ -46,7 +46,7 @@ DEFAULT_LABELS = (
 #: A filesystem path embedded inside a longer string (e.g. a command line).
 #:
 #: Anchored on real filesystem roots rather than a bare leading slash. A looser
-#: pattern matched the host part of ``https://bearmacminimac-mini…`` and the
+#: pattern matched the host part of ``https://<tailnet-host>…`` and the
 #: ``/.bin/vite`` tail of a relative ``node_modules/.bin/vite`` — two findings
 #: nobody could act on, which is how a gate teaches people to ignore it.
 EMBEDDED_PATH = re.compile(r"(?:/Users|/opt|/Applications|/Library|/usr|/tmp)(?:/[\w.@+-]+)+")

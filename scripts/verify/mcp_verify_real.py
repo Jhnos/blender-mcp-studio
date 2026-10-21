@@ -35,8 +35,14 @@ from src.infrastructure.narrowing import (  # noqa: E402
     dig,
     required,
 )
+from src.infrastructure.public_base_url import public_base_url  # noqa: E402
 
-DEFAULT_MCP_URL = "https://bearmacminimac-mini.tail56c751.ts.net/blender/mcp"
+
+def default_mcp_url() -> str:
+    """Canonical MCP endpoint, resolved at call time (never at import)."""
+    return public_base_url() + "/mcp"
+
+
 ORACLE_ADDRESS = ("127.0.0.1", 9876)
 
 
@@ -193,7 +199,7 @@ async def _verify() -> int:
         print("SKIP: Blender addon is not listening on 127.0.0.1:9876")
         return 0
 
-    endpoint = os.environ.get("BLENDER_MCP_URL", DEFAULT_MCP_URL)
+    endpoint = os.environ.get("BLENDER_MCP_URL") or default_mcp_url()
     nonce = f"verify_mcp_{secrets.token_hex(4)}"
     quoted_name = json.dumps(nonce)
     evidence: list[Evidence] = []

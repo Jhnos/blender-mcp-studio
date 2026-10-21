@@ -4,9 +4,11 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 AUTOSTART="$SCRIPT_DIR/blender_autostart.py"
+# Same override as deploy/launchd/install.sh; set BLENDER_BIN on other hardware.
+BLENDER_BIN="${BLENDER_BIN:-/Applications/Blender.app/Contents/MacOS/Blender}"
 
 echo "🦊 啟動 Blender 5.1 + BlenderMCP addon..."
-/Applications/Blender.app/Contents/MacOS/Blender --python "$AUTOSTART" &
+"$BLENDER_BIN" --python "$AUTOSTART" &
 BLENDER_PID=$!
 
 echo "   Blender PID: $BLENDER_PID"

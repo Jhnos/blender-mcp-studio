@@ -3,7 +3,7 @@ blender_autostart.py
 Blender 啟動腳本：自動啟用 blender_mcp addon 並啟動 socket server（port 9876）。
 
 使用方式（由 run_blender.sh 呼叫）：
-  /Applications/Blender.app/Contents/MacOS/Blender --python scripts/blender_autostart.py
+  "$BLENDER_BIN" --python scripts/blender_autostart.py
 """
 
 import bpy

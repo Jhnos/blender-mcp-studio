@@ -92,7 +92,7 @@ Streamable HTTP internally at `http://127.0.0.1:19505/mcp`. Vite forwards the
 Tailnet sub-path without buffering or rewriting MCP headers:
 
 ```text
-https://bearmacminimac-mini.tail56c751.ts.net/blender/mcp
+https://<your-tailnet-host>/blender/mcp
 ```
 
 The external endpoint is protected by the same Tailnet identity gate as the
@@ -139,19 +139,20 @@ one rollback step is always available.
 ## Why a template instead of committing the rendered file?
 
 The plist must reference absolute paths (launchd doesn't expand `$HOME`
-or `~`). Hard-coding `/Users/bearmacmini/...` into the repo makes the
+or `~`). Hard-coding `/Users/<you>/...` into the repo makes the
 file user-specific and prevents anyone else from cloning it cleanly.
 The template + `install.sh` pattern keeps the repo portable while
 preserving SSOT — same approach used by sibling projects (whisper-api-server,
 MHH, LIG).
 
-## Known non-portable values still in the templates
+## Public origin (`__PUBLIC_ORIGIN__`)
 
-The api plist hard-codes a Tailscale hostname in `CORS_ORIGINS`:
+The api plist's `CORS_ORIGINS` is the placeholder `__PUBLIC_ORIGIN__`. `install.sh`
+fills it from `BLENDER_MCP_PUBLIC_ORIGIN` (e.g. `https://<your-tailnet-host>`), else
+from `tailscale status --self --json` through `src/infrastructure/public_base_url.py`.
+If neither resolves, the install fails rather than writing an empty origin. Find your
+host with:
 
 ```
-https://bearmacminimac-mini.tail56c751.ts.net
+tailscale status --self --json | jq -r .Self.DNSName
 ```
-
-This is deployment-specific config rather than a path. Edit the template
-directly if your Tailscale hostname differs, then re-run `install.sh`.

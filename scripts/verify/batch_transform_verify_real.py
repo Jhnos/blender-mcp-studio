@@ -27,8 +27,8 @@ from src.infrastructure.narrowing import (  # noqa: E402
     dig,
     required,
 )
+from src.infrastructure.public_base_url import public_base_url  # noqa: E402
 
-DEFAULT_BASE_URL = "https://bearmacminimac-mini.tail56c751.ts.net/blender"
 ORACLE_ADDRESS = ("127.0.0.1", 9876)
 TOLERANCE = 1e-6
 
@@ -254,7 +254,7 @@ def _record(
 
 
 def main() -> int:
-    base_url = os.environ.get("BLENDER_BASE_URL", DEFAULT_BASE_URL).rstrip("/")
+    base_url = (os.environ.get("BLENDER_BASE_URL") or public_base_url()).rstrip("/")
     prefix = f"verify_batch_{secrets.token_hex(4)}_"
     evidence: list[Evidence] = []
     try:

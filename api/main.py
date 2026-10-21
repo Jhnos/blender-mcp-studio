@@ -44,6 +44,7 @@ from src.core.domain.exceptions import (
     LLMConnectionError,
     UnknownInstanceError,
 )
+from src.infrastructure.public_base_url import public_origin
 
 logger = logging.getLogger(__name__)
 PROJECT_VERSION = (Path(__file__).parents[1] / "VERSION").read_text().strip()
@@ -95,14 +96,16 @@ async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
 def _origins(cors_origins: list[str] | None) -> list[str]:
     if cors_origins is not None:
         return cors_origins
-    return [
-        origin.strip()
-        for origin in os.environ.get(
-            "CORS_ORIGINS",
-            "https://bearmacminimac-mini.tail56c751.ts.net",
-        ).split(",")
-        if origin.strip()
-    ]
+    configured = os.environ.get("CORS_ORIGINS")
+    if configured is not None:
+        return [origin.strip() for origin in configured.split(",") if origin.strip()]
+    try:
+        return [public_origin()]
+    except ValueError as exc:
+        logging.getLogger(__name__).warning(
+            "CORS allow-list is empty: %s (set CORS_ORIGINS to override)", exc
+        )
+        return []
 
 
 def _identity_required(require_identity: bool | None) -> bool:

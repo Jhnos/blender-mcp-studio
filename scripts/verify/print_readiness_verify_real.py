@@ -34,8 +34,8 @@ from src.infrastructure.narrowing import (  # noqa: E402
     dig,
     required,
 )
+from src.infrastructure.public_base_url import public_base_url  # noqa: E402
 
-DEFAULT_BASE_URL = "https://bearmacminimac-mini.tail56c751.ts.net/blender"
 ORACLE_ADDRESS = ("127.0.0.1", 9876)
 
 
@@ -189,7 +189,7 @@ async def _mcp_report(endpoint: str) -> dict[str, object]:
 
 
 async def _verify() -> int:
-    base_url = os.environ.get("BLENDER_BASE_URL", DEFAULT_BASE_URL).rstrip("/")
+    base_url = (os.environ.get("BLENDER_BASE_URL") or public_base_url()).rstrip("/")
     endpoint = os.environ.get("BLENDER_MCP_URL", f"{base_url}/mcp")
     prefix = f"verify_print_{secrets.token_hex(4)}_"
     evidence: list[Evidence] = []
