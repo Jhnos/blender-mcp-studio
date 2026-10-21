@@ -5,6 +5,40 @@
 
 ## [Unreleased]
 
+### V01.0S.000 — MCP 完整管線階段 1：送一份 ModelSpec，拿回可列印包與機器驗證證據
+
+#### Added
+
+- 設計管線 `DesignPipeline`，依序跑 import → geometry → mechanism → print → package 五個階段。
+  - 每個 job 寫出 `spec.json`、`report.json`，以及每個階段可開啟的證據檔：`import.json`（來源檔 sha256）、`geometry.json`、切片輸出、`manifest.json`（標明 AGPL 工具）。
+  - 只有五個階段都完成，`passed` 才會成立；中途 cancel 或程序重啟留下的報告一律記為失敗。
+- MCP 工具從 11 項增為 21 項：
+  - `describe_model_spec`、`list_artifacts`：讓 LLM 不讀原始碼就能組出 spec。
+  - `run_design_pipeline`、`get_job_status`、`get_run_report`
+  - `check_mesh_integrity`、`slice_for_print`、`tool_status`
+  - `list_instances`、`build_instance`
+  - 另有 `run://{run_id}/{name}` 資源。REST 對應路由在 `/api/design/*`。
+- Bambu Studio CLI 切片 adapter：
+  - P2S 設定檔執行時從已安裝的 app 讀取並展開繼承鏈，不再放進 repo。
+  - v80 驗收過的覆寫參數以資料檔保存。
+  - 逾時＝5 × 實測最慢 171 秒。
+- 以 trimesh＋CGAL 檢查網格的 `MeshIntegrityPort`：封閉與自交分開評估，沒評估到的回 `None`，不回假的 `False`。
+- 真機閘門「design pipeline on the v78 deliverable」：69 個列印件 → 1 盤切片 → 11 檔 manifest，並附負向對照（截斷一個 STL 必須在 geometry 失敗且點名該檔）。
+- `config/tools.yaml` 集中管理工具與匯入上限，數值皆為 2026-10-21 實測的 5 倍：565 檔、單檔 2457920 B、總量 29292960 B、3MF 7036310 B。
+
+#### Changed
+
+- 主機解耦：程式、腳本、設定與部署來源裡不再寫死 tailnet 主機名或家目錄。
+  - 公開網址的來源依序是 `BLENDER_MCP_PUBLIC_BASE_URL`，其次是 `tailscale status --self --json`。
+  - launchd plist 改用 `__PUBLIC_ORIGIN__` 佔位，由 `install.sh` 安裝時填入，解析不到就停止安裝。
+  - 守衛測試會擋任何 tailnet FQDN 與 `/Users/<名稱>`、`/home/<名稱>`。
+- 設計管線佔用 Blender 期間，其他會改場景的工具直接回 busy，不排隊、不交錯；`build_instance` 與 `run_verification_suite` 執行時也會持有同一個租約。
+
+#### Security
+
+- 遠端呼叫者只能讀取允許根目錄內、非隱藏路徑的 `.stl`／`.3mf`；symlink 的實際指向也會檢查。路徑規則只有一份閘門。
+- 所有對外輸出（成功結果、錯誤、job 紀錄、報告、REST、MCP）都不含主機絕對路徑。
+
 ### V01.0R.02I — V10 手臂根因修復、永久 CGAL 閘門與真機 CI 誤報修正
 
 #### Fixed

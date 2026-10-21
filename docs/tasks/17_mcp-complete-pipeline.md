@@ -39,17 +39,43 @@
   - 任務 3（f533c82、1ef5eeb）：`SlicingPort` 加 Bambu CLI。v80 驗收過的列印覆寫參數改放 `config/slicer-profiles/p2s-pla-overrides.json`，已逐鍵比對，與 v80 相同。切片逾時＝5×171 秒，依據是 v80 實測最慢的一次 170.6 秒。
 - 切片器二進位：`/Applications` 底下沒有，但主 checkout 的 `tmp/lab-station-slicing-v80/mounted/BambuStudio.app` 有一份可執行的 universal 版本，是 v80 從 dmg 抽出來的。任務 9 可以用 `BAMBU_STUDIO_BIN` 指向它。
 
+- 2026-10-22：任務 4–9 與最終修正輪完成；全分支 opus 審查無 Critical，四個規格缺口已修（設定檔改從 app 讀取、場景工具 busy 防護、可開啟且有 sha256 的證據檔、LLM 用的 spec 說明工具）。最後 commit：`cbd9213`；版本 V01.0S.000。
+- 合併前乾跑（分支碼、臨時 uvicorn 127.0.0.1:19599，`BLENDER_PORT=1`、`ARTIFACT_ROOTS`=主 checkout、`BAMBU_STUDIO_BIN`=v80 抽出的 app、runs 與 jobs.db 放 scratchpad），v78 閘門 PASS，41 秒。指揮官逐檔讀過 run 目錄：
+  - import：69 個 STL，0 個略過
+  - geometry：69 個全過
+  - mechanism：標「階段 1 未評估」
+  - print：rc 0，3MF 內恰有 `Metadata/plate_1.gcode`
+  - package：11 個檔，AGPL ToolUse 為 bambu-studio 02.08.02.61
+  - 負向對照：geometry FAILED，點名 `STL/列印零件/LS_FIT_chassis.stl`
+  - 報告、manifest、`import.json` 裡都沒有絕對路徑。
+- 切片器：v80 從 dmg 抽出的 app 已確認是 Bambu Lab 的 Developer ID 簽章、Apple 公證，Gatekeeper 接受，版本 02.08.02.61。
+
 ### Open failures
 
-- 任務 4（c023cdb、33eacae）已完成，通過範圍複審。改用共用 STL 讀取器後，整合性 adapter 的 7 種測試網格判定與修改前完全相同。manifest 加了 `tools` 清單，用來標示 AGPL 授權。
-- 技術債，任務 10 在 main 上修：conda 環境 `blender-mcp` 的 editable 安裝指向一個已刪除的舊 worktree（`_editable_impl_blender_mcp_studio.pth`），現在只是剛好靠 cwd 才 import 得到 `src`。
-- 留給最終審查：
-  - CGAL 把零面積三角形算成自交。判定仍然失敗、原因也正確，但要補一行說明。
-  - 兩個「未評估」的早退分支沒有各自的測試。
-  - manifest 的 `tools` 只依名稱排序；同名不同版本時，輸出位元組會依呼叫順序而變。排序鍵改成 `(name, version or "", license, invocation)`。
+- 尚未在 main 上做真機驗收。部署中的 API 還是舊碼（11 項工具），合併、部署之後才算數。
+- 技術債（在 main 上修）：conda 環境 `blender-mcp` 的 editable 安裝指向已刪除的舊 worktree（`_editable_impl_blender_mcp_studio.pth`），目前只是靠 cwd 剛好 import 得到 `src`。
+- 已評估、刻意延後的項目（各附理由）：
+  - manifest 的 `tools` 只依名稱排序：目前只有一個工具，等第二個工具出現再改排序鍵。
+  - PathScrubber 只比對「前綴＋/」：已實測家目錄與暫存目錄都會被清掉。
+  - 從沒啟動過的切片沒有 log。
+  - 兩個原子寫入函式、兩份 stage 序列化，以及三處安全係數 5：之後在共用模組收斂。
+  - 安裝提示只寫 Mac。
+  - `print_readiness_verify_real.py` 371 行、`design_pipeline.py` 380 行，都已到預算上限：下次加東西前先拆檔。
+  - `parse_model_spec` 的 `root_dir` 只對 `artifact_roots[0]` 解析：出貨的 `.`／`models` 根不受影響。
+- 後續任務（不在本計畫內）：
+  - 把交付件搬到專屬的上層目錄，之後才能把 artifact root `.` 收窄。
+  - 階段 1b：參數範圍、把 V10 登錄為實例、build123d-mcp。
+  - 容器化軌：無視窗執行器 dummy run、compose。
+  - 階段 2：虛擬世界匯出。
+  - 階段 3：MuJoCo；機構套件要綁定 spec 的模型。
 
 ### Next step
 
-- 任務 4 複審通過後，派任務 5（`DesignPipeline`），帶兩條要求：
-  - 每個讀檔路徑展開時，再用 `resolve().is_relative_to(root)` 檢查一次。
-  - 切片有跑的時候，把 Bambu Studio 以 `ToolUse(license="AGPL-3.0-only", invocation="subprocess")` 傳進 manifest。
+- 在 main 上依序做：
+  1. 合併 `worktree-mcp-complete-phase1`。
+  2. 修 conda 的 `.pth` 指向。
+  3. 把 `tmp/lab-station-slicing-v80/mounted/BambuStudio.app` 複製到 `/Applications`。回退指令：`rm -rf /Applications/BambuStudio.app`。
+  4. 執行 `bash deploy/launchd/install.sh all`。
+  5. 經動態 FQDN 確認 21 項工具、`tool_status` 與 v78 閘門。
+  6. 不中斷地跑完 `scripts/ci.sh --real`。
+  7. checkpoint，清理 worktree。
