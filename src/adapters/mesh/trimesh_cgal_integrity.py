@@ -3,38 +3,56 @@
 from __future__ import annotations
 
 import asyncio
+import os
+import struct
 
 import trimesh
 
 from src.core.domain.mesh_integrity import MeshIntegrityReport, MeshVerdict
-from src.verification.mesh_integrity import require_triangle_surface
+from src.verification.mesh_integrity import (
+    cgal_self_intersects,
+    parse_closed_surface,
+)
 
-_SELF_INTERSECTION_MARKER = "Self-intersecting"
+# trimesh 5.1.1 defines no load-specific exception type; STL parsing surfaces these.
+_LOAD_ERRORS = (OSError, ValueError, EOFError, struct.error)
+
+
+def _intersects(
+    points: list[tuple[float, float, float]], faces: list[tuple[int, int, int]]
+) -> bool | None:
+    """True/False from CGAL, or None when the conversion could not be evaluated."""
+    try:
+        return cgal_self_intersects(points, faces)
+    except ValueError:
+        return None
 
 
 def _check_one(path: str) -> MeshVerdict:
+    if not os.path.isfile(path):
+        return MeshVerdict(path, 0, 0, False, False, f"{path}: file not found")
     try:
         mesh = trimesh.load(path, file_type="stl", force="mesh")
-        if not isinstance(mesh, trimesh.Trimesh):
-            raise TypeError(f"loaded {type(mesh).__name__}, expected a triangle mesh")
-        vertices = len(mesh.vertices)
-        triangles = len(mesh.faces)
-        watertight = bool(mesh.is_watertight)
-        soup = {"vertices": mesh.vertices.tolist(), "faces": mesh.faces.tolist()}
-    except Exception as exc:  # unreadable input is a verdict, never a crash
+    except _LOAD_ERRORS as exc:
         return MeshVerdict(path, 0, 0, False, False, f"{path}: cannot read STL: {exc}")
+    if not isinstance(mesh, trimesh.Trimesh):
+        reason = f"loaded {type(mesh).__name__}, expected a triangle mesh"
+        return MeshVerdict(path, 0, 0, False, False, f"{path}: {reason}")
+    vertices, triangles = len(mesh.vertices), len(mesh.faces)
     if triangles == 0:
         return MeshVerdict(path, vertices, 0, False, False, f"{path}: STL has no triangles")
+    watertight = bool(mesh.is_watertight)
+    soup = {"vertices": mesh.vertices.tolist(), "faces": mesh.faces.tolist()}
+    error: str | None = None
     try:
-        require_triangle_surface(soup)
+        points, faces = parse_closed_surface(soup)
     except ValueError as exc:
-        message = str(exc)
-        if _SELF_INTERSECTION_MARKER in message:
-            return MeshVerdict(path, vertices, triangles, watertight, True, None)
-        if not watertight:
-            return MeshVerdict(path, vertices, triangles, False, False, None)
-        return MeshVerdict(path, vertices, triangles, watertight, False, f"{path}: {message}")
-    return MeshVerdict(path, vertices, triangles, watertight, False, None)
+        error = f"{path}: {exc}"
+        points = [(float(x), float(y), float(z)) for x, y, z in mesh.vertices]
+        faces = [(int(a), int(b), int(c)) for a, b, c in mesh.faces]
+    # Self-intersection is evaluated independently of closedness.
+    self_intersecting = _intersects(points, faces)
+    return MeshVerdict(path, vertices, triangles, watertight, self_intersecting, error)
 
 
 class TrimeshCgalIntegrity:

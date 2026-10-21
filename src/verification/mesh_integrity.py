@@ -20,6 +20,11 @@ from src.infrastructure.narrowing import (
     required,
 )
 
+
+class SelfIntersectionError(ValueError):
+    """The triangle surface intersects itself (still a ValueError for existing callers)."""
+
+
 Point = tuple[float, float, float]
 Triangle = tuple[int, int, int]
 
@@ -92,15 +97,32 @@ def _topology(points: list[Point], faces: list[Triangle]) -> None:
             raise ValueError("Disconnected vertex link")
 
 
+def parse_closed_surface(mesh: Mapping[str, object]) -> tuple[list[Point], list[Triangle]]:
+    """Parse the soup and reject malformed, open, pinched or degenerate topology."""
+    points = [_point(value) for value in _array(mesh.get("vertices"))]
+    faces = [_face(value, len(points)) for value in _array(mesh.get("faces"))]
+    _topology(points, faces)
+    return points, faces
+
+
 def require_triangle_surface(mesh: Mapping[str, object]) -> dict[str, int]:
     """Reject malformed, open, pinched or self-intersecting triangle surfaces.
 
     Multiple disjoint shells are permitted. This does not certify solid nesting,
     dimensions, assembly clearance, load capacity or print settings.
     """
-    points = [_point(value) for value in _array(mesh.get("vertices"))]
-    faces = [_face(value, len(points)) for value in _array(mesh.get("faces"))]
-    _topology(points, faces)
+    points, faces = parse_closed_surface(mesh)
+    if cgal_self_intersects(points, faces):
+        raise SelfIntersectionError("Self-intersecting triangle surface")
+    return {"vertices": len(points), "triangles": len(faces)}
+
+
+def cgal_self_intersects(points: list[Point], faces: list[Triangle]) -> bool:
+    """Convert the soup to a CGAL polyhedron (round-trip checked) and test self-intersection.
+
+    Independent of closedness: an open surface still gets a real answer. Raises
+    ValueError when the conversion changes the face count or triangle coordinates.
+    """
     converted = Polyhedron_3()
     polygon_soup_to_polygon_mesh([Point_3(*point) for point in points], faces, converted)
     if converted.size_of_facets() != len(faces):
@@ -117,6 +139,4 @@ def require_triangle_surface(mesh: Mapping[str, object]) -> dict[str, int]:
     expected = Counter(tuple(sorted(points[index] for index in face)) for face in faces)
     if actual != expected:
         raise ValueError("CGAL conversion changed triangle coordinates")
-    if does_self_intersect(converted):
-        raise ValueError("Self-intersecting triangle surface")
-    return {"vertices": len(points), "triangles": len(faces)}
+    return bool(does_self_intersect(converted))

@@ -11,7 +11,10 @@ class MeshVerdict:
     vertices: int
     triangles: int
     watertight: bool
-    self_intersecting: bool
+    # None means "not evaluated" (the CGAL conversion failed); that never passes.
+    self_intersecting: bool | None
+    # The path-prefixed reason for any failure other than self-intersection (unreadable,
+    # open, nonmanifold, zero-area ...). None means exactly "nothing failed".
     error: str | None
 
     @property
@@ -19,7 +22,7 @@ class MeshVerdict:
         return (
             self.error is None
             and self.watertight
-            and not self.self_intersecting
+            and self.self_intersecting is False
             and self.triangles > 0
         )
 
