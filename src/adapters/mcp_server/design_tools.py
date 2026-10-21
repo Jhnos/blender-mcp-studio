@@ -44,12 +44,12 @@ SAFETY_FACTOR = 5
 def integrity_timeout_s(limits: ImportLimits) -> float:
     """Tool timeout for the largest request the caps admit, scaled from the v78 measurement.
 
-    Check time is taken as proportional to bytes: ``max_stl_files * max_stl_bytes`` over the v78
-    total, times 1.9 s, times the safety factor. The check runs in ``to_thread`` and cannot be
+    Check time is taken as proportional to bytes: the ``max_total_stl_bytes`` cap (the most one
+    request or run may load, 5 x the v78 total) over the v78 total, times 1.9 s, times the
+    safety factor. The check runs in ``to_thread`` and cannot be
     interrupted, so this timeout bounds the caller's wait, not the CPU the check keeps using.
     """
-    worst_bytes = limits.max_stl_files * limits.max_stl_bytes
-    return SAFETY_FACTOR * V78_CHECK_S * worst_bytes / V78_STL_TOTAL_BYTES
+    return SAFETY_FACTOR * V78_CHECK_S * limits.max_total_stl_bytes / V78_STL_TOTAL_BYTES
 
 
 #: Slicing and generation outlive their adapter deadline by the transport overhead.

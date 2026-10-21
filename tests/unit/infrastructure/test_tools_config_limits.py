@@ -13,6 +13,7 @@ _LINES = [
     "max_stl_files: 565",
     "max_stl_bytes: 2457920",
     "max_3mf_bytes: 7036310",
+    "max_total_stl_bytes: 29292960",
 ]
 
 
@@ -37,7 +38,9 @@ def test_shipped_yaml_carries_the_measured_limits() -> None:
     assert limits.max_stl_files == 565 and limits.max_3mf_bytes == 7036310
 
 
-@pytest.mark.parametrize("key", ["max_stl_files", "max_stl_bytes", "max_3mf_bytes"])
+@pytest.mark.parametrize(
+    "key", ["max_stl_files", "max_stl_bytes", "max_3mf_bytes", "max_total_stl_bytes"]
+)
 def test_missing_limit_key_names_it(tmp_path: Path, key: str) -> None:
     kept = [line for line in _LINES if not line.startswith(key)]
     with pytest.raises(ValueError, match=key):

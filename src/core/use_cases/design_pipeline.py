@@ -140,6 +140,7 @@ class DesignPipeline:
             roots=self._roots,
             max_count=self._limits.max_stl_files,
             max_bytes=self._limits.max_stl_bytes,
+            max_total_bytes=self._limits.max_total_stl_bytes,
         )
         report = await self._integrity.check(tuple(str(f.absolute) for f in found))
         return files.relative_report(report, found, self._scrub)

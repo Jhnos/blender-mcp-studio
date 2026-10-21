@@ -14,6 +14,7 @@ _YAML = (
     "max_stl_files: 565\n"
     "max_stl_bytes: 2457920\n"
     "max_3mf_bytes: 7036310\n"
+    "max_total_stl_bytes: 29292960\n"
 )
 
 
@@ -54,7 +55,7 @@ def test_missing_yaml_key_names_it(tmp_path: Path) -> None:
     cfg = tmp_path / "config"
     cfg.mkdir()
     (cfg / "tools.yaml").write_text(
-        'design_runs_dir: d\nartifact_roots: ["."]\nmax_stl_files: 1\nmax_stl_bytes: 1\nmax_3mf_bytes: 1\n',
+        'design_runs_dir: d\nartifact_roots: ["."]\nmax_stl_files: 1\nmax_stl_bytes: 1\nmax_3mf_bytes: 1\nmax_total_stl_bytes: 1\n',
         encoding="utf-8",
     )
     with pytest.raises(ValueError, match="bambu_studio_bin"):

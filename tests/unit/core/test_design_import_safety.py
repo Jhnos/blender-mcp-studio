@@ -103,6 +103,15 @@ async def test_import_rejects_oversized_stl(tmp_path):
     assert rig.integrity.seen == ()
 
 
+async def test_import_rejects_total_bytes_over_cap(tmp_path):
+    rig = _rig(tmp_path)  # two 1-byte STLs
+    _tight(rig, max_total_stl_bytes=1)
+    _, status, report = await _run(rig, _payload(rig))
+    assert len(report.stages) == 1 and report.stages[0].outcome is StageOutcome.FAILED
+    assert "total" in report.stages[0].message and "1" in report.stages[0].message
+    assert rig.integrity.seen == () and status.status is JobStatus.FAILED
+
+
 async def test_import_rejects_oversized_3mf(tmp_path):
     rig = _rig(tmp_path)
     (rig.root / "p.3mf").write_bytes(b"x" * 50)
@@ -144,5 +153,5 @@ async def test_report_json_has_no_absolute_paths(tmp_path):
 
 
 def test_import_limits_is_frozen_data():
-    limits = ImportLimits(1, 2, 3)
+    limits = ImportLimits(1, 2, 3, 4)
     assert (limits.max_stl_files, limits.max_stl_bytes, limits.max_3mf_bytes) == (1, 2, 3)

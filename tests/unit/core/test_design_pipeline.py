@@ -56,7 +56,7 @@ def _rig(tmp_path, *, geometry_ok=True, sim_ok=True, delay=0.0, pack_error=None)
         lease=lease,
         runs_dir=runs,
         artifact_roots=(tmp_path,),
-        limits=ImportLimits(565, 2457920, 7036310),
+        limits=ImportLimits(565, 2457920, 7036310, 29292960),
     )
     return Rig(pipeline, jobs, integrity, simulation, slicing, packaging, lease, root, runs, log)
 

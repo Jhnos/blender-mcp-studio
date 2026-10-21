@@ -103,10 +103,16 @@ def _scan_source(spec: ModelSpec, limits: ImportLimits) -> Scan:
             return Scan(error=f"{rel}: {exc}")
     if len(stls) > limits.max_stl_files:
         return Scan(error=f"{len(stls)} STL files exceed the {limits.max_stl_files} file limit")
+    total = 0
     for rel, resolved in stls:
         error = _too_big(resolved, rel, limits.max_stl_bytes)
         if error is not None:
             return Scan(error=error)
+        total += resolved.stat().st_size
+    if total > limits.max_total_stl_bytes:
+        return Scan(
+            error=f"{total} STL bytes in total exceed the {limits.max_total_stl_bytes} byte total limit"
+        )
     project = None
     if spec.source.project_3mf is not None:
         name = spec.source.project_3mf

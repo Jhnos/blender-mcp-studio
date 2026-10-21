@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
@@ -12,7 +13,6 @@ from src.adapters.mcp_server import design_tools
 from src.adapters.slicing.bambu_studio_cli import BambuStudioCli
 from src.core.domain.design_run import StageName
 from src.core.domain.exceptions import DomainError
-from src.core.domain.import_limits import ImportLimits
 from src.infrastructure.tools_config import load_tools_config
 from tests.unit.adapters.test_mcp_design_tools import _server, _strings, _text
 from tests.unit.core.test_design_pipeline import _payload, _rig
@@ -60,16 +60,30 @@ async def test_slice_for_print_returns_busy_when_lease_held(tmp_path):
     assert not rig.runs.exists() or list(rig.runs.iterdir()) == []  # busy call: no run dir
 
 
-def test_integrity_timeout_derives_from_caps_and_measurement():
+async def test_check_mesh_integrity_rejects_total_bytes_over_cap(tmp_path):
+    rig = _rig(tmp_path)  # two 1-byte STLs
+    server = _server(rig)  # tool timeout is derived at build time from the real caps
+    rig.pipeline._limits = replace(rig.pipeline._limits, max_total_stl_bytes=1)
+    async with Client(server) as client:
+        res = await client.call_tool(
+            "check_mesh_integrity",
+            {"stl_paths": ["artifact/STL/a.stl", "artifact/STL/b.stl"]},
+            raise_on_error=False,
+        )
+    assert res.is_error and "total" in _text(res)
+    assert rig.integrity.seen == ()
+
+
+def test_integrity_timeout_derives_from_total_bytes_cap_and_measurement():
     limits = load_tools_config().import_limits
-    expected = (
-        design_tools.SAFETY_FACTOR
-        * design_tools.V78_CHECK_S
-        * (limits.max_stl_files * limits.max_stl_bytes)
-        / design_tools.V78_STL_TOTAL_BYTES
-    )
+    assert limits.max_total_stl_bytes == 5 * design_tools.V78_STL_TOTAL_BYTES == 29292960
+    expected = 5 * 1.9 * limits.max_total_stl_bytes / 5858592
     assert design_tools.integrity_timeout_s(limits) == pytest.approx(expected)
-    assert design_tools.integrity_timeout_s(ImportLimits(1, 1, 1)) < expected
+    assert design_tools.integrity_timeout_s(limits) == pytest.approx(47.5)
+    # depends only on the total-bytes cap
+    other = replace(limits, max_stl_files=1, max_stl_bytes=1)
+    assert design_tools.integrity_timeout_s(other) == design_tools.integrity_timeout_s(limits)
+    assert design_tools.integrity_timeout_s(replace(limits, max_total_stl_bytes=1)) < 1
 
 
 async def test_integrity_tool_timeout_uses_the_servers_limits(tmp_path):

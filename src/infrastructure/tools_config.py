@@ -59,6 +59,7 @@ def load_tools_config(
         max_stl_files=_positive_int(yaml_value("max_stl_files"), "max_stl_files"),
         max_stl_bytes=_positive_int(yaml_value("max_stl_bytes"), "max_stl_bytes"),
         max_3mf_bytes=_positive_int(yaml_value("max_3mf_bytes"), "max_3mf_bytes"),
+        max_total_stl_bytes=_positive_int(yaml_value("max_total_stl_bytes"), "max_total_stl_bytes"),
     )
     return ToolsConfig(
         bambu_studio_bin=_resolve(

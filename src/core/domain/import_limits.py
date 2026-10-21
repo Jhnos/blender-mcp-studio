@@ -10,3 +10,4 @@ class ImportLimits:
     max_stl_files: int
     max_stl_bytes: int
     max_3mf_bytes: int
+    max_total_stl_bytes: int

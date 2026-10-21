@@ -37,6 +37,7 @@ def resolve_inputs(
     roots: tuple[Path, ...],
     max_count: int,
     max_bytes: int,
+    max_total_bytes: int | None = None,
 ) -> tuple[ResolvedFile, ...]:
     """Blocking: gate every path, then enforce the file-count and byte-size caps."""
     if not paths:
@@ -44,6 +45,7 @@ def resolve_inputs(
     if len(paths) > max_count:
         raise ModelSpecError(f"{len(paths)} files exceed the {max_count} file limit")
     found: list[ResolvedFile] = []
+    total = 0
     for raw in paths:
         try:
             absolute = resolve_artifact_file(raw, suffix=suffix, roots=roots)
@@ -53,7 +55,12 @@ def resolve_inputs(
         size = absolute.stat().st_size
         if size > max_bytes:
             raise ModelSpecError(f"{display}: {size} bytes exceeds the {max_bytes} byte limit")
+        total += size
         found.append(ResolvedFile(absolute, display))
+    if max_total_bytes is not None and total > max_total_bytes:
+        raise ModelSpecError(
+            f"{total} bytes in total exceed the {max_total_bytes} byte total limit"
+        )
     return tuple(found)
 
 
