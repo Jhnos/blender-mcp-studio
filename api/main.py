@@ -69,19 +69,26 @@ async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
         await runtime.blender.connect()
     except BlenderConnectionError as exc:
         logger.warning("Blender unavailable at API startup: %s", exc)
-    recovered = await runtime.design_pipeline.recover_interrupted()
-    logger.info("design pipeline: %s interrupted job(s) marked failed", recovered)
-
-    push_interval = float(os.environ.get("VIEWPORT_PUSH_INTERVAL", "3"))
-    broadcast_task = asyncio.create_task(viewport_broadcast_loop(app.state, interval=push_interval))
     try:
-        yield
+        try:
+            recovered = await runtime.design_pipeline.recover_interrupted()
+            logger.info("design pipeline: %s interrupted job(s) marked failed", recovered)
+        except Exception:  # noqa: BLE001 - a degraded job store must not become a crash loop
+            logger.exception("design pipeline recovery failed; serving without it")
+
+        push_interval = float(os.environ.get("VIEWPORT_PUSH_INTERVAL", "3"))
+        broadcast_task = asyncio.create_task(
+            viewport_broadcast_loop(app.state, interval=push_interval)
+        )
+        try:
+            yield
+        finally:
+            broadcast_task.cancel()
+            with contextlib.suppress(asyncio.CancelledError):
+                await broadcast_task
+            # cancel, never wait: a slice can run for minutes and shutdown must not hang
+            await runtime.design_pipeline.cancel_all()
     finally:
-        broadcast_task.cancel()
-        with contextlib.suppress(asyncio.CancelledError):
-            await broadcast_task
-        # cancel, never wait: a slice can run for minutes and shutdown must not hang
-        await runtime.design_pipeline.cancel_all()
         await runtime.blender.disconnect()
 
 

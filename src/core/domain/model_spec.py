@@ -94,11 +94,25 @@ def _physical(section: Mapping[str, object], key: str, default: float, *, positi
     return value
 
 
-def _contained_relative(value: str, field_name: str, base: Path | None = None) -> str:
-    """Reject empty, absolute, ``..`` and (when ``base`` is given) symlink-escaping paths."""
+def _is_hidden(parts: tuple[str, ...]) -> bool:
+    """A part starting with ``.`` (.env, .git, .venv, .claude); the bare ``.`` is not hidden."""
+    return any(part.startswith(".") and part != "." for part in parts)
+
+
+def _contained_relative(
+    value: str, field_name: str, base: Path | None = None, *, suffix: str
+) -> str:
+    """Reject empty, absolute, ``..``, hidden, wrong-suffix and symlink-escaping paths.
+
+    Only print inputs are readable: ``suffix`` is a literal, case-insensitive end of the value.
+    """
     path = PurePosixPath(value)
     if not value or path.is_absolute() or ".." in path.parts:
         raise ModelSpecError(f"source.{field_name} must be a relative path inside the artifact")
+    if _is_hidden(path.parts):
+        raise ModelSpecError(f"source.{field_name} must not contain hidden path parts")
+    if not value.lower().endswith(suffix):
+        raise ModelSpecError(f"source.{field_name} must end in {suffix}")
     if base is not None and not (base / value).resolve().is_relative_to(base):
         raise ModelSpecError(f"source.{field_name} resolves outside the artifact root")
     return value
@@ -111,6 +125,8 @@ def _resolve_root(root_dir: str, artifact_roots: tuple[Path, ...]) -> str:
         base = root.resolve()
         candidate = (base / root_dir).resolve()
         if candidate.is_relative_to(base):
+            if _is_hidden(candidate.relative_to(base).parts):
+                raise ModelSpecError("source.root_dir must not contain hidden path parts")
             return str(candidate)
     raise ModelSpecError("source.root_dir is outside the allowed artifact roots")
 
@@ -127,9 +143,11 @@ def _parse_source(payload: Mapping[str, object], roots: tuple[Path, ...]) -> Imp
     resolved = _resolve_root(root_dir, roots)
     return ImportedArtifact(
         root_dir=resolved,
-        stl_glob=_contained_relative(_str(src, "stl_glob", "STL/*.stl"), "stl_glob"),
+        stl_glob=_contained_relative(_str(src, "stl_glob", "STL/*.stl"), "stl_glob", suffix=".stl"),
         project_3mf=(
-            None if project is None else _contained_relative(project, "project_3mf", Path(resolved))
+            None
+            if project is None
+            else _contained_relative(project, "project_3mf", Path(resolved), suffix=".3mf")
         ),
     )
 

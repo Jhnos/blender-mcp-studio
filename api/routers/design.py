@@ -2,14 +2,11 @@
 
 from __future__ import annotations
 
-from dataclasses import asdict
-
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import FileResponse
 
 from api.schemas import DesignRunRequest
-from src.core.domain.design_run import DesignRunReport, JobRecord, StageReport
-from src.core.domain.slicing import ToolAvailability
+from src.adapters.design_payloads import job_dict, report_dict, tool_dict
 from src.core.use_cases.design_pipeline import DesignPipeline
 
 router = APIRouter(prefix="/api/design")
@@ -20,43 +17,6 @@ _MEDIA_TYPES = {".3mf": "model/3mf", ".json": "application/json"}
 def _pipeline(request: Request) -> DesignPipeline:
     pipeline: DesignPipeline = request.app.state.design_pipeline
     return pipeline
-
-
-def job_dict(job: JobRecord) -> dict[str, object]:
-    return {
-        "job_id": job.job_id,
-        "run_id": job.run_id,
-        "status": job.status.value,
-        "stage": None if job.stage is None else job.stage.value,
-        "error": job.error,
-        "created_at": job.created_at,
-        "updated_at": job.updated_at,
-    }
-
-
-def _stage_dict(stage: StageReport) -> dict[str, object]:
-    return {
-        "name": stage.name.value,
-        "outcome": stage.outcome.value,
-        "metrics": [list(pair) for pair in stage.metrics],
-        "evidence": list(stage.evidence),
-        "message": stage.message,
-    }
-
-
-def report_dict(report: DesignRunReport) -> dict[str, object]:
-    # ``passed`` is a property, so it must be added by hand.
-    return {
-        "run_id": report.run_id,
-        "spec_name": report.spec_name,
-        "passed": report.passed,
-        "stages": [_stage_dict(stage) for stage in report.stages],
-        "run_dir": report.run_dir,
-    }
-
-
-def tool_dict(tool: ToolAvailability) -> dict[str, object]:
-    return asdict(tool)
 
 
 @router.post("/runs", status_code=202)

@@ -130,6 +130,7 @@ def build_runtime(env_file: Path | None = None) -> AppRuntime:
         lease=BlenderLease(),
         runs_dir=tools.design_runs_dir,
         artifact_roots=tools.artifact_roots,
+        limits=tools.import_limits,
     )
     return AppRuntime(
         blender=blender,

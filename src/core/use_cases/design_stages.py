@@ -11,6 +11,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from src.core.domain.design_run import StageName, StageOutcome, StageReport
+from src.core.domain.import_limits import ImportLimits
 from src.core.domain.model_spec import ModelSpec
 from src.core.domain.packaging import ToolUse
 from src.core.domain.slicing import SliceRequest
@@ -27,6 +28,7 @@ SLICER_LICENSE = "AGPL-3.0-only"
 class RunState:
     """What later stages need from earlier ones."""
 
+    root: str = ""
     stls: tuple[str, ...] = ()
     project_3mf: str | None = None
     tools: tuple[ToolUse, ...] = field(default_factory=tuple)
@@ -53,19 +55,38 @@ def _rel(path: str, base: Path) -> str:
         return path
 
 
-def _scan_source(spec: ModelSpec) -> tuple[tuple[Path, ...], Path | None, str | None]:
-    """Blocking: expand the glob and check containment. Returns (stls, project, error)."""
+def _hidden(rel: Path) -> bool:
+    return any(part.startswith(".") for part in rel.parts)
+
+
+def _too_big(path: Path, rel: str, limit: int) -> str | None:
+    size = path.stat().st_size
+    return f"{rel}: {size} bytes exceeds the {limit} byte limit" if size > limit else None
+
+
+def _scan_source(
+    spec: ModelSpec, limits: ImportLimits
+) -> tuple[tuple[Path, ...], Path | None, str | None]:
+    """Blocking: expand the glob, check containment and caps. Returns (stls, project, error).
+
+    Defence in depth behind the parser: only ``.stl`` files outside hidden path parts count.
+    """
     root = Path(spec.source.root_dir).resolve()
     stls: list[Path] = []
     for match in sorted(root.glob(spec.source.stl_glob)):
+        rel = match.relative_to(root)
+        if _hidden(rel) or match.suffix.lower() != ".stl":
+            continue
         if not match.resolve().is_relative_to(root):
-            return (
-                (),
-                None,
-                f"{match.relative_to(root).as_posix()}: resolves outside the artifact root",
-            )
+            return (), None, f"{rel.as_posix()}: resolves outside the artifact root"
         if match.is_file():
             stls.append(match)
+    if len(stls) > limits.max_stl_files:
+        return (), None, f"{len(stls)} STL files exceed the {limits.max_stl_files} file limit"
+    for stl in stls:
+        error = _too_big(stl, stl.relative_to(root).as_posix(), limits.max_stl_bytes)
+        if error is not None:
+            return (), None, error
     project = None
     if spec.source.project_3mf is not None:
         candidate = root / spec.source.project_3mf
@@ -73,22 +94,31 @@ def _scan_source(spec: ModelSpec) -> tuple[tuple[Path, ...], Path | None, str | 
             return (), None, f"{spec.source.project_3mf}: resolves outside the artifact root"
         if not candidate.is_file():
             return (), None, f"{spec.source.project_3mf}: project 3MF not found"
+        error = _too_big(candidate, spec.source.project_3mf, limits.max_3mf_bytes)
+        if error is not None:
+            return (), None, error
         project = candidate.resolve()
     return tuple(stls), project, None
 
 
-async def import_stage(spec: ModelSpec, state: RunState) -> StageReport:
-    stls, project, error = await asyncio.to_thread(_scan_source, spec)
+async def import_stage(spec: ModelSpec, state: RunState, limits: ImportLimits) -> StageReport:
+    stls, project, error = await asyncio.to_thread(_scan_source, spec, limits)
     if error is not None:
         return failed(StageName.IMPORT, error)
     if not stls:
         return failed(StageName.IMPORT, f"no STL matches {spec.source.stl_glob!r}")
     root = Path(spec.source.root_dir).resolve()
+    state.root = str(root)
     state.stls = tuple(str(p.resolve()) for p in stls)
     state.project_3mf = None if project is None else str(project)
     evidence = tuple(_rel(p, root) for p in state.stls)
     metrics = (("stl_count", str(len(stls))), ("project_3mf", str(project is not None).lower()))
     return _report(StageName.IMPORT, StageOutcome.PASSED, "", metrics, evidence)
+
+
+def _no_host_path(text: str, root: str) -> str:
+    """Strip the artifact root from an adapter message so reports carry no host paths."""
+    return text.replace(root + "/", "") if root else text
 
 
 async def geometry_stage(integrity: MeshIntegrityPort, state: RunState) -> StageReport:
@@ -97,8 +127,14 @@ async def geometry_stage(integrity: MeshIntegrityPort, state: RunState) -> Stage
     metrics = (("checked", str(len(result.verdicts))), ("failing", str(len(bad))))
     if result.passed:
         return _report(StageName.GEOMETRY, StageOutcome.PASSED, "", metrics)
+    root = Path(state.root) if state.root else None
     detail = "; ".join(
-        f"{v.path}: {v.error or 'not a closed, non-self-intersecting mesh'}" for v in bad
+        _no_host_path(
+            f"{_rel(v.path, root) if root else v.path}: "
+            f"{v.error or 'not a closed, non-self-intersecting mesh'}",
+            state.root,
+        )
+        for v in bad
     )
     return _report(StageName.GEOMETRY, StageOutcome.FAILED, detail, metrics)
 

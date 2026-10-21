@@ -9,6 +9,7 @@ from dataclasses import dataclass, field
 import pytest
 
 from src.core.domain.design_run import JobStatus, StageName, StageOutcome
+from src.core.domain.import_limits import ImportLimits
 from src.core.domain.model_spec import ModelSpecError
 from src.core.domain.slicing import ToolUnavailableError
 from src.core.use_cases.blender_lease import BlenderLease
@@ -55,6 +56,7 @@ def _rig(tmp_path, *, geometry_ok=True, sim_ok=True, delay=0.0, pack_error=None)
         lease=lease,
         runs_dir=runs,
         artifact_roots=(tmp_path,),
+        limits=ImportLimits(565, 2457920, 7036310),
     )
     return Rig(pipeline, jobs, integrity, simulation, slicing, packaging, lease, root, runs, log)
 

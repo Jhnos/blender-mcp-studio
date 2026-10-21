@@ -11,6 +11,9 @@ _YAML = (
     "bambu_studio_bin: /opt/bambu/BambuStudio\n"
     "design_runs_dir: data/runs\n"
     'artifact_roots: [".", "models"]\n'
+    "max_stl_files: 565\n"
+    "max_stl_bytes: 2457920\n"
+    "max_3mf_bytes: 7036310\n"
 )
 
 
@@ -50,7 +53,10 @@ def test_shipped_tools_yaml_loads() -> None:
 def test_missing_yaml_key_names_it(tmp_path: Path) -> None:
     cfg = tmp_path / "config"
     cfg.mkdir()
-    (cfg / "tools.yaml").write_text('design_runs_dir: d\nartifact_roots: ["."]\n', encoding="utf-8")
+    (cfg / "tools.yaml").write_text(
+        'design_runs_dir: d\nartifact_roots: ["."]\nmax_stl_files: 1\nmax_stl_bytes: 1\nmax_3mf_bytes: 1\n',
+        encoding="utf-8",
+    )
     with pytest.raises(ValueError, match="bambu_studio_bin"):
         load_tools_config(env={}, config_dir=cfg)
 

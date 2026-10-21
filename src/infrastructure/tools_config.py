@@ -7,6 +7,7 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
+from src.core.domain.import_limits import ImportLimits
 from src.infrastructure.config_loader import default_config_dir, load_tools
 from src.infrastructure.narrowing import as_sequence
 
@@ -16,11 +17,18 @@ class ToolsConfig:
     bambu_studio_bin: Path
     design_runs_dir: Path
     artifact_roots: tuple[Path, ...]
+    import_limits: ImportLimits
 
 
 def _resolve(base: Path, value: object) -> Path:
     path = Path(str(value)).expanduser()
     return path if path.is_absolute() else Path(os.path.normpath(base / path))
+
+
+def _positive_int(value: object, key: str) -> int:
+    if isinstance(value, bool) or not isinstance(value, int) or value <= 0:
+        raise ValueError(f"config/tools.yaml: {key} must be a positive integer")
+    return value
 
 
 def load_tools_config(
@@ -47,10 +55,16 @@ def load_tools_config(
     root_values: Sequence[object] = (
         [part for part in roots_env.split(os.pathsep) if part] if roots_env else roots_raw
     )
+    limits = ImportLimits(
+        max_stl_files=_positive_int(yaml_value("max_stl_files"), "max_stl_files"),
+        max_stl_bytes=_positive_int(yaml_value("max_stl_bytes"), "max_stl_bytes"),
+        max_3mf_bytes=_positive_int(yaml_value("max_3mf_bytes"), "max_3mf_bytes"),
+    )
     return ToolsConfig(
         bambu_studio_bin=_resolve(
             base, env.get("BAMBU_STUDIO_BIN") or yaml_value("bambu_studio_bin")
         ),
         design_runs_dir=_resolve(base, env.get("DESIGN_RUNS_DIR") or yaml_value("design_runs_dir")),
         artifact_roots=tuple(_resolve(base, value) for value in root_values),
+        import_limits=limits,
     )

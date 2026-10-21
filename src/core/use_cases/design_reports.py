@@ -1,4 +1,8 @@
-"""report.json and spec.json persistence for a design run (atomic, sorted keys)."""
+"""report.json and spec.json persistence for a design run (atomic, sorted keys).
+
+``run_dir`` is never serialised (no host path in evidence); reads rebuild it from the
+directory the report was read from.
+"""
 
 from __future__ import annotations
 
@@ -17,7 +21,6 @@ def to_json(report: DesignRunReport) -> str:
     data = {
         "run_id": report.run_id,
         "spec_name": report.spec_name,
-        "run_dir": report.run_dir,
         "passed": report.passed,
         "stages": [
             {
@@ -33,7 +36,7 @@ def to_json(report: DesignRunReport) -> str:
     return json.dumps(data, sort_keys=True, indent=2) + "\n"
 
 
-def from_json(text: str) -> DesignRunReport:
+def from_json(text: str, run_dir: str) -> DesignRunReport:
     data = json.loads(text)
     parsed = tuple(
         StageReport(
@@ -45,7 +48,7 @@ def from_json(text: str) -> DesignRunReport:
         )
         for s in data["stages"]
     )
-    return DesignRunReport(data["run_id"], data["spec_name"], parsed, data["run_dir"])
+    return DesignRunReport(data["run_id"], data["spec_name"], parsed, run_dir)
 
 
 def _write_atomic(path: Path, text: str) -> None:
@@ -62,7 +65,7 @@ def read_report(run_dir: Path) -> DesignRunReport | None:
     path = run_dir / REPORT_NAME
     if not path.is_file():
         return None
-    return from_json(path.read_text(encoding="utf-8"))
+    return from_json(path.read_text(encoding="utf-8"), str(run_dir))
 
 
 def write_spec(run_dir: Path, payload: Mapping[str, object]) -> None:

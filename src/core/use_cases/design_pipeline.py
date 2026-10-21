@@ -26,6 +26,7 @@ from src.core.domain.design_run import (
     StageOutcome,
     StageReport,
 )
+from src.core.domain.import_limits import ImportLimits
 from src.core.domain.model_spec import ModelSpec, parse_model_spec
 from src.core.domain.slicing import ToolAvailability
 from src.core.ports.job_store_port import JobStorePort
@@ -56,6 +57,7 @@ class DesignPipeline:
         lease: BlenderLease,
         runs_dir: Path,
         artifact_roots: tuple[Path, ...],
+        limits: ImportLimits,
     ) -> None:
         self._integrity = integrity
         self._simulation = simulation
@@ -65,6 +67,7 @@ class DesignPipeline:
         self._lease = lease
         self._runs_dir = Path(runs_dir)
         self._roots = artifact_roots
+        self._limits = limits
         self._tasks: set[asyncio.Task[DesignRunReport]] = set()
 
     async def submit(self, payload: Mapping[str, object]) -> JobRecord:
@@ -166,7 +169,7 @@ class DesignPipeline:
         self, run_id: str, spec: ModelSpec, state: stages.RunState, run_dir: Path
     ) -> list[tuple[StageName, Callable[[], Awaitable[StageReport]]]]:
         return [
-            (StageName.IMPORT, lambda: stages.import_stage(spec, state)),
+            (StageName.IMPORT, lambda: stages.import_stage(spec, state, self._limits)),
             (StageName.GEOMETRY, lambda: stages.geometry_stage(self._integrity, state)),
             (StageName.MECHANISM, lambda: stages.mechanism_stage(spec, self._simulation)),
             (StageName.PRINT, lambda: stages.print_stage(spec, self._slicing, state, run_dir)),

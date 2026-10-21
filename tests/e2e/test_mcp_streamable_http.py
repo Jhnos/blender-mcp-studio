@@ -12,6 +12,7 @@ from fastapi.testclient import TestClient
 from api.main import create_app
 from api.runtime import AppRuntime
 from src.core.domain.command import Command
+from src.core.domain.import_limits import ImportLimits
 from src.core.domain.scene_operations import ObjectDetails, SceneSummary, ViewportImage
 from src.core.ports.blender_port import BlenderPort
 from src.core.ports.mcp_port import ToolResult
@@ -95,14 +96,16 @@ class CountingBlender(BlenderPort):
         return ToolResult(success=False, output=None, error="unused by assembly tests")
 
 
-def make_fake_runtime(design_dir: Path | None = None) -> AppRuntime:
+def make_fake_runtime(
+    design_dir: Path | None = None, *, integrity: FakeIntegrity | None = None
+) -> AppRuntime:
     """Use real application services and replace only the outer ports.
 
     ``design_dir`` is both the artifact root and the parent of the runs directory.
     """
     blender = CountingBlender()
     base = design_dir or Path(tempfile.mkdtemp(prefix="design-fake-"))
-    tools = ToolsConfig(Path("/x/bs"), base / "runs", (base,))
+    tools = ToolsConfig(Path("/x/bs"), base / "runs", (base,), ImportLimits(565, 2457920, 7036310))
     lease = BlenderLease()
     marker = MagicMock()
     return AppRuntime(
@@ -127,7 +130,7 @@ def make_fake_runtime(design_dir: Path | None = None) -> AppRuntime:
         modeling_pipeline=marker,
         iterative_refinement=None,
         design_pipeline=DesignPipeline(
-            integrity=FakeIntegrity(),
+            integrity=integrity or FakeIntegrity(),
             simulation=FakeSimulation(),
             slicing=FakeSlicing(lease),
             packaging=FakePackaging(),
@@ -135,6 +138,7 @@ def make_fake_runtime(design_dir: Path | None = None) -> AppRuntime:
             lease=lease,
             runs_dir=tools.design_runs_dir,
             artifact_roots=tools.artifact_roots,
+            limits=tools.import_limits,
         ),
         tools=tools,
     )

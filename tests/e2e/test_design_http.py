@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import time
 from dataclasses import replace
 from pathlib import Path
@@ -11,6 +12,7 @@ from fastapi.testclient import TestClient
 
 from api.main import create_app
 from tests.e2e.test_mcp_streamable_http import make_fake_runtime
+from tests.fakes.design_ports import FakeIntegrity
 
 _IDENTITY = {"x-mes-identity": "tester@example.com"}
 
@@ -132,3 +134,33 @@ def test_lifespan_recovers_interrupted_jobs_and_cancels_on_shutdown(tmp_path: Pa
         pipeline.cancel_all.assert_not_awaited()
     pipeline.cancel_all.assert_awaited_once()
     pipeline.wait_idle.assert_not_awaited()
+
+
+def test_startup_survives_recovery_failure(tmp_path: Path) -> None:
+    pipeline = AsyncMock()
+    pipeline.recover_interrupted.side_effect = RuntimeError("job store down")
+    runtime = replace(make_fake_runtime(tmp_path), design_pipeline=pipeline)
+    app = create_app(runtime=runtime, require_identity=False)
+    with TestClient(app) as client:
+        assert client.get("/api/health").status_code == 200
+    pipeline.cancel_all.assert_awaited_once()
+    assert runtime.blender.disconnect_calls == 1
+
+
+def test_rest_report_has_no_absolute_paths(tmp_path: Path) -> None:
+    class Leaky(FakeIntegrity):
+        async def check(self, stl_paths):
+            report = await super().check(stl_paths)
+            return replace(
+                report,
+                verdicts=tuple(replace(v, error=f"{v.path}: open") for v in report.verdicts),
+            )
+
+    runtime = make_fake_runtime(tmp_path, integrity=Leaky(ok=False))
+    with TestClient(create_app(runtime=runtime, require_identity=False)) as client:
+        job = client.post("/api/design/runs", json={"spec": _artifact(tmp_path)}).json()
+        _wait_done(client, job["job_id"])
+        text = client.get(f"/api/design/runs/{job['run_id']}/report").text
+    assert "STL/a.stl: open" in text
+    assert str(tmp_path) not in text and str(Path.home()) not in text
+    assert "run_dir" not in json.loads(text)
