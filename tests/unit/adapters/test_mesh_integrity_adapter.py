@@ -123,3 +123,14 @@ async def test_unexpected_error_propagates(tmp_path: Path, monkeypatch: pytest.M
     path = _export(trimesh.creation.box(extents=(1, 1, 1)), tmp_path / "box.stl")
     with pytest.raises(AttributeError):
         await TrimeshCgalIntegrity().check((path,))
+
+
+@pytest.mark.parametrize("case", ["missing", "unreadable"])
+async def test_unevaluated_paths_report_none(tmp_path: Path, case: str) -> None:
+    path = tmp_path / "x.stl"
+    if case == "unreadable":
+        path.write_bytes(b"solid x" + bytes([10]))
+    verdict = (await TrimeshCgalIntegrity().check((str(path),))).verdicts[0]
+    assert verdict.error is not None
+    assert verdict.self_intersecting is None
+    assert verdict.passed is False

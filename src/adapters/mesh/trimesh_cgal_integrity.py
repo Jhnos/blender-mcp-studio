@@ -30,17 +30,17 @@ def _intersects(
 
 def _check_one(path: str) -> MeshVerdict:
     if not os.path.isfile(path):
-        return MeshVerdict(path, 0, 0, False, False, f"{path}: file not found")
+        return MeshVerdict(path, 0, 0, False, None, f"{path}: file not found")
     try:
         mesh = trimesh.load(path, file_type="stl", force="mesh")
     except _LOAD_ERRORS as exc:
-        return MeshVerdict(path, 0, 0, False, False, f"{path}: cannot read STL: {exc}")
+        return MeshVerdict(path, 0, 0, False, None, f"{path}: cannot read STL: {exc}")
     if not isinstance(mesh, trimesh.Trimesh):
         reason = f"loaded {type(mesh).__name__}, expected a triangle mesh"
-        return MeshVerdict(path, 0, 0, False, False, f"{path}: {reason}")
+        return MeshVerdict(path, 0, 0, False, None, f"{path}: {reason}")
     vertices, triangles = len(mesh.vertices), len(mesh.faces)
     if triangles == 0:
-        return MeshVerdict(path, vertices, 0, False, False, f"{path}: STL has no triangles")
+        return MeshVerdict(path, vertices, 0, False, None, f"{path}: STL has no triangles")
     watertight = bool(mesh.is_watertight)
     soup = {"vertices": mesh.vertices.tolist(), "faces": mesh.faces.tolist()}
     error: str | None = None
