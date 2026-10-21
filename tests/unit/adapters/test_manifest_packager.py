@@ -11,6 +11,7 @@ import pytest
 import trimesh
 
 from src.adapters.packaging.manifest_packager import ManifestPackager
+from src.core.domain.packaging import ToolUse
 
 
 def _stl(path: Path) -> None:
@@ -80,9 +81,76 @@ async def test_manifest_excludes_itself_and_duplicates(tmp_path: Path) -> None:
     await _package(tmp_path, (str(tmp_path / "b.txt"),))
     manifest = await _package(
         tmp_path,
-        (str(tmp_path / "b.txt"), str(tmp_path / "b.txt"), str(tmp_path / "manifest.json")),
+        (
+            str(tmp_path / "b.txt"),
+            str(tmp_path / "b.txt"),
+            str(tmp_path / "manifest.json"),
+            "./manifest.json",
+            "manifest.json.tmp",
+        ),
     )
     assert [f.path for f in manifest.files] == ["b.txt"]
+
+
+@pytest.mark.asyncio
+async def test_relative_input_resolves_against_run_dir(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    run_dir = tmp_path / "run"
+    run_dir.mkdir()
+    _stl(run_dir / "out.stl")
+    elsewhere = tmp_path / "elsewhere"
+    elsewhere.mkdir()
+    monkeypatch.chdir(elsewhere)
+    manifest = await _package(run_dir, ("out.stl",))
+    assert [f.path for f in manifest.files] == ["out.stl"]
+
+
+@pytest.mark.asyncio
+async def test_manifest_write_is_atomic(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    (tmp_path / "b.txt").write_text("hello")
+    await _package(tmp_path, (str(tmp_path / "b.txt"),))
+    assert not (tmp_path / "manifest.json.tmp").exists()
+    before = (tmp_path / "manifest.json").read_bytes()
+    (tmp_path / "c.txt").write_text("more")
+
+    def boom(*_args: object, **_kwargs: object) -> None:
+        raise OSError("replace failed")
+
+    monkeypatch.setattr(os, "replace", boom)
+    with pytest.raises(OSError, match="replace failed"):
+        await _package(tmp_path, (str(tmp_path / "b.txt"), str(tmp_path / "c.txt")))
+    assert (tmp_path / "manifest.json").read_bytes() == before
+
+
+@pytest.mark.asyncio
+async def test_manifest_records_tool_licenses(tmp_path: Path) -> None:
+    (tmp_path / "b.txt").write_text("hello")
+    tools = (
+        ToolUse("trimesh", "5.1.1", "MIT", "library"),
+        ToolUse("Bambu Studio", "2.x", "AGPL-3.0-only", "subprocess"),
+    )
+    manifest = await ManifestPackager().package(
+        "run1", "spec", str(tmp_path), (str(tmp_path / "b.txt"),), tools=tools
+    )
+    data = json.loads((tmp_path / "manifest.json").read_text())
+    assert data["tools"] == [
+        {
+            "name": "Bambu Studio",
+            "version": "2.x",
+            "license": "AGPL-3.0-only",
+            "invocation": "subprocess",
+        },
+        {"name": "trimesh", "version": "5.1.1", "license": "MIT", "invocation": "library"},
+    ]
+    assert manifest.tools == tuple(reversed(tools))
+
+
+@pytest.mark.asyncio
+async def test_missing_run_dir_is_named(tmp_path: Path) -> None:
+    missing = tmp_path / "nope"
+    with pytest.raises(ValueError, match="nope.*run directory not found"):
+        await _package(missing, ())
 
 
 @pytest.mark.asyncio

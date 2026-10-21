@@ -4,18 +4,13 @@ from __future__ import annotations
 
 import asyncio
 import os
-import struct
 
-import trimesh
-
+from src.adapters.mesh.stl_loader import load_stl
 from src.core.domain.mesh_integrity import MeshIntegrityReport, MeshVerdict
 from src.verification.mesh_integrity import (
     cgal_self_intersects,
     parse_closed_surface,
 )
-
-# trimesh 5.1.1 defines no load-specific exception type; STL parsing surfaces these.
-_LOAD_ERRORS = (OSError, ValueError, EOFError, struct.error)
 
 
 def _intersects(
@@ -32,15 +27,10 @@ def _check_one(path: str) -> MeshVerdict:
     if not os.path.isfile(path):
         return MeshVerdict(path, 0, 0, False, None, f"{path}: file not found")
     try:
-        mesh = trimesh.load(path, file_type="stl", force="mesh")
-    except _LOAD_ERRORS as exc:
-        return MeshVerdict(path, 0, 0, False, None, f"{path}: cannot read STL: {exc}")
-    if not isinstance(mesh, trimesh.Trimesh):
-        reason = f"loaded {type(mesh).__name__}, expected a triangle mesh"
-        return MeshVerdict(path, 0, 0, False, None, f"{path}: {reason}")
+        mesh = load_stl(path)
+    except ValueError as exc:
+        return MeshVerdict(path, 0, 0, False, None, f"{path}: {exc}")
     vertices, triangles = len(mesh.vertices), len(mesh.faces)
-    if triangles == 0:
-        return MeshVerdict(path, vertices, 0, False, None, f"{path}: STL has no triangles")
     watertight = bool(mesh.is_watertight)
     soup = {"vertices": mesh.vertices.tolist(), "faces": mesh.faces.tolist()}
     error: str | None = None

@@ -16,9 +16,21 @@ class PackagedFile:
 
 
 @dataclass(frozen=True, slots=True)
+class ToolUse:
+    """An external tool the run used, with the licence under which it was used."""
+
+    name: str
+    version: str | None
+    license: str
+    # How it was run, e.g. "subprocess" (black box) or "library".
+    invocation: str
+
+
+@dataclass(frozen=True, slots=True)
 class PackageManifest:
     run_id: str
     spec_name: str
     files: tuple[PackagedFile, ...]
     # Absolute path of the written manifest.json (a return value, not file content).
     manifest_path: str
+    tools: tuple[ToolUse, ...] = ()

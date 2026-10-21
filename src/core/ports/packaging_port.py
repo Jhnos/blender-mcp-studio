@@ -4,10 +4,16 @@ from __future__ import annotations
 
 from typing import Protocol
 
-from src.core.domain.packaging import PackageManifest
+from src.core.domain.packaging import PackageManifest, ToolUse
 
 
 class PackagingPort(Protocol):
     async def package(
-        self, run_id: str, spec_name: str, run_dir: str, files: tuple[str, ...]
+        self,
+        run_id: str,
+        spec_name: str,
+        run_dir: str,
+        files: tuple[str, ...],
+        *,
+        tools: tuple[ToolUse, ...] = (),
     ) -> PackageManifest: ...
