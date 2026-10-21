@@ -81,14 +81,27 @@ REQUIRE_TAILNET_IDENTITY=1
 BLENDER_MCP_URL=https://bearmacminimac-mini.tail56c751.ts.net/blender/mcp
 BAMBU_STUDIO_BIN=/Applications/BambuStudio.app/Contents/MacOS/BambuStudio
 DESIGN_RUNS_DIR=data/runs
+DESIGN_JOBS_DB=data/jobs.db
 ARTIFACT_ROOTS=.:models
 BLENDER_MCP_PUBLIC_BASE_URL=
 ```
 
-`BAMBU_STUDIO_BIN`、`DESIGN_RUNS_DIR`、`ARTIFACT_ROOTS`（以 `os.pathsep` 分隔）覆寫
-`config/tools.yaml` 的預設值；相對路徑以 repo 根目錄解析。
-`BLENDER_MCP_PUBLIC_BASE_URL` 是設計管線對外下載連結的公開基底網址（留空則由
-`tailscale status --self --json` 取得）。同一個解析器（`src/infrastructure/public_base_url.py`）
+`BAMBU_STUDIO_BIN`、`DESIGN_RUNS_DIR`、`DESIGN_JOBS_DB`（設計管線工作紀錄的 SQLite 檔）、
+`ARTIFACT_ROOTS`（以 `os.pathsep` 分隔）覆寫 `config/tools.yaml` 的預設值
+（`bambu_studio_bin`、`design_runs_dir`、`design_jobs_db`、`artifact_roots`）；相對路徑以 repo 根目錄解析。
+
+**切片設定檔**：P2S／PLA 的廠商設定檔不放在 repo，而是每次切片時從已安裝的 app 讀取：
+`<App>.app/Contents/Resources/profiles/`，其中 `<App>.app` 由 `BAMBU_STUDIO_BIN` 往上找到的
+`.app` 推得（與讀 `Info.plist` 版本同一方法）。要讀哪三個葉設定檔寫在
+`config/slicer-profiles/p2s-pla-profiles.json`；`inherits` 鏈先父後子攤平（子鍵覆蓋，`include`
+依序併入、移除，`inherits` 清空），語意同 v80 的 `prepare_profiles.py`
+（`src/adapters/slicing/bundle_profiles.py`）。之後套 `p2s-pla-overrides.json`（我們自己的資料）
+與請求參數。app 內沒有 profiles 目錄時，切片結果是 failed，訊息與「切片器不可用」同一類。
+
+`BLENDER_MCP_PUBLIC_BASE_URL` 是這個部署對外的公開基底網址（例如 `https://<host>/blender`；
+留空則由 `tailscale status --self --json` 取得）。它不改變 API 自己監聽的位址，只用來推導：
+API 的 CORS 預設 origin（`CORS_ORIGINS` 未設時）、驗證腳本與 stdio proxy 連線的 MCP／REST URL、
+Tailscale Serve 註冊的主機名，以及 api plist 的 `__PUBLIC_ORIGIN__`。同一個解析器（`src/infrastructure/public_base_url.py`）
 供 API 的 CORS 預設（`CORS_ORIGINS` 未設時）、驗證腳本、stdio proxy、`tailscale-serve-register.sh`
 與 `deploy/launchd/install.sh`（填 api plist 的 `__PUBLIC_ORIGIN__`，由
 `BLENDER_MCP_PUBLIC_BASE_URL` 或 tailscale 推導）使用；程式碼與部署來源不得寫死主機名或家目錄

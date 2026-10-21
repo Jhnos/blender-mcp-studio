@@ -18,14 +18,15 @@ from mcp.types import ToolAnnotations
 
 from src.adapters.design_payloads import job_dict, report_dict, tool_dict
 from src.adapters.generation.authorized_code import GENERATOR_TIMEOUT_S
+from src.adapters.mcp_server.errors import exclusive, tool_error
 from src.adapters.mcp_server.schemas import Name
-from src.adapters.slicing.bambu_studio_cli import SLICE_TIMEOUT_S
 from src.core.domain.exceptions import DomainError
 from src.core.domain.import_limits import ImportLimits
 from src.core.domain.mechanical_generation import InstanceBuild, InstanceSummary
 from src.core.domain.mesh_integrity import MeshIntegrityReport
 from src.core.domain.slicing import SliceResult
 from src.core.ports.mechanical_generation_port import InstanceCatalogPort
+from src.core.use_cases.blender_lease import BlenderLease
 from src.core.use_cases.design_pipeline import DesignPipeline
 
 #: Submitting only parses the spec, writes spec.json and schedules the run.
@@ -34,7 +35,6 @@ QUERY_TIMEOUT_S = 10.0
 #: Measured 2026-10-21 with the real TrimeshCgalIntegrity on the 113 STLs of the v78 deliverable:
 #: 5,858,592 bytes in total (largest 491,584), integrity check took 1.9 s. Rerun:
 #: ``stat`` the STLs for the bytes, time ``TrimeshCgalIntegrity().check`` for the seconds.
-V78_STL_COUNT = 113
 V78_STL_TOTAL_BYTES = 5_858_592
 V78_CHECK_S = 1.9
 #: One sample on a shared host is a coin flip, so the timeout is 5 x the scaled measurement.
@@ -52,9 +52,10 @@ def integrity_timeout_s(limits: ImportLimits) -> float:
     return SAFETY_FACTOR * V78_CHECK_S * limits.max_total_stl_bytes / V78_STL_TOTAL_BYTES
 
 
-#: Slicing and generation outlive their adapter deadline by the transport overhead.
-SLICE_TOOL_TIMEOUT_S = SLICE_TIMEOUT_S + 30.0
-BUILD_TOOL_TIMEOUT_S = GENERATOR_TIMEOUT_S + 30.0
+#: Slicing and generation outlive their adapter deadline by the transport overhead. The slice
+#: deadline comes from the slicing port (``DesignPipeline.slice_timeout_s``), not a concrete slicer.
+TRANSPORT_MARGIN_S = 30.0
+BUILD_TOOL_TIMEOUT_S = GENERATOR_TIMEOUT_S + TRANSPORT_MARGIN_S
 
 RUN_URI_PREFIX = "run://"
 _TEXT_SUFFIXES = frozenset({".json", ".log"})
@@ -117,18 +118,19 @@ def register_design_tools(
     *,
     design: DesignPipeline | None,
     generation: InstanceCatalogPort | None,
+    lease: BlenderLease,
 ) -> None:
-    """Add the eight design tools and the run resource; unconfigured ones say so when called."""
-    # Late import: server.py imports this module, so a top-level import would be circular.
-    from src.adapters.mcp_server.server import _tool_error
-
+    """Add the design tools and the run resource; unconfigured ones say so when called."""
     integrity_timeout = (
         SAFETY_FACTOR * V78_CHECK_S if design is None else integrity_timeout_s(design.limits)
     )
+    slice_timeout = (
+        QUERY_TIMEOUT_S if design is None else design.slice_timeout_s + TRANSPORT_MARGIN_S
+    )
 
     async def fail(exc: Exception) -> ToolError:
-        """The design tools' error path: ``_tool_error`` text with host paths scrubbed."""
-        error = _tool_error(exc)
+        """The design tools' error path: ``tool_error`` text with host paths scrubbed."""
+        error = tool_error(exc)
         return error if design is None else ToolError(await design.clean(str(error)))
 
     @mcp.tool(
@@ -194,7 +196,7 @@ def register_design_tools(
             raise await fail(exc) from exc
 
     @mcp.tool(
-        timeout=SLICE_TOOL_TIMEOUT_S,
+        timeout=slice_timeout,
         annotations=_annotations("Slice for print", read_only=False, idempotent=False),
     )
     async def slice_for_print(input_3mf: str, printer: Name = "bambu-p2s") -> dict[str, object]:
@@ -233,10 +235,11 @@ def register_design_tools(
         against the instance's declared parts and reports face counts and dimensions.
         """
         catalog = _configured(generation, "instance catalog")
-        try:
-            return await catalog.build(slug)
-        except DomainError as exc:
-            raise await fail(exc) from exc
+        async with exclusive(lease, "build_instance"):
+            try:
+                return await catalog.build(slug)
+            except DomainError as exc:
+                raise await fail(exc) from exc
 
     @mcp.tool(
         timeout=QUERY_TIMEOUT_S,

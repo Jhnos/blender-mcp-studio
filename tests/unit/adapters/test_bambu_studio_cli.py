@@ -15,6 +15,7 @@ from src.adapters.slicing.bambu_studio_cli import (
 )
 from src.core.domain.model_spec import PrintTarget
 from src.core.domain.slicing import SliceRequest, ToolUnavailableError
+from tests.fakes.bambu_bundle import make_bundle
 
 _PROFILES = Path(cli_module.__file__).resolve().parents[3] / "config" / "slicer-profiles"
 
@@ -38,10 +39,8 @@ class FakeRunner:
 
 
 def _binary(tmp_path: Path) -> Path:
-    binary = tmp_path / "Fake.app" / "Contents" / "MacOS" / "BambuStudio"
-    binary.parent.mkdir(parents=True)
-    binary.write_text("#!/bin/sh\n", encoding="utf-8")
-    return binary
+    # A1: vendor profiles are read from the app bundle, so the fake .app carries a tiny tree.
+    return make_bundle(tmp_path)
 
 
 def _request(tmp_path: Path, **over: object) -> SliceRequest:

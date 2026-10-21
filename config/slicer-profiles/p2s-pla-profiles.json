@@ -1,0 +1,6 @@
+{
+  "_source": "Leaf profiles inside <BambuStudio.app>/Contents/Resources/profiles/, flattened at slice time like tmp/lab-station-slicing-v80/prepare_profiles.py",
+  "machine": "BBL/machine/Bambu Lab P2S 0.4 nozzle.json",
+  "process": "BBL/process/0.20mm Standard @BBL P2S.json",
+  "filament": "BBL/filament/Generic PLA @BBL P2S.json"
+}

@@ -205,6 +205,7 @@ def create_app(
         shared_runtime.verification,
         design=shared_runtime.design_pipeline,
         generation=shared_runtime.mechanical_generation,
+        lease=shared_runtime.design_pipeline.lease,
     )
 
     allowed_hosts = {"127.0.0.1", "localhost"}

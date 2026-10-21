@@ -18,6 +18,7 @@ class ToolsConfig:
     design_runs_dir: Path
     artifact_roots: tuple[Path, ...]
     import_limits: ImportLimits
+    design_jobs_db: Path
 
 
 def _resolve(base: Path, value: object) -> Path:
@@ -34,7 +35,8 @@ def _positive_int(value: object, key: str) -> int:
 def load_tools_config(
     env: Mapping[str, str] | None = None, config_dir: Path | None = None
 ) -> ToolsConfig:
-    """YAML defaults, overridden by BAMBU_STUDIO_BIN, DESIGN_RUNS_DIR and ARTIFACT_ROOTS.
+    """YAML defaults, overridden by BAMBU_STUDIO_BIN, DESIGN_RUNS_DIR, DESIGN_JOBS_DB and
+    ARTIFACT_ROOTS.
 
     An empty env value falls back to the yaml value. ``~`` is expanded, then relative paths
     resolve against the repository root. A missing yaml key raises ``ValueError`` naming it.
@@ -68,4 +70,5 @@ def load_tools_config(
         design_runs_dir=_resolve(base, env.get("DESIGN_RUNS_DIR") or yaml_value("design_runs_dir")),
         artifact_roots=tuple(_resolve(base, value) for value in root_values),
         import_limits=limits,
+        design_jobs_db=_resolve(base, env.get("DESIGN_JOBS_DB") or yaml_value("design_jobs_db")),
     )

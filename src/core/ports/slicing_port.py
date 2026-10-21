@@ -8,6 +8,11 @@ from src.core.domain.slicing import SliceRequest, SliceResult, ToolAvailability
 
 
 class SlicingPort(Protocol):
+    @property
+    def timeout_s(self) -> float:
+        """How long one slice may run before the adapter gives up (seconds)."""
+        ...
+
     async def availability(self) -> ToolAvailability: ...
 
     async def slice(self, request: SliceRequest) -> SliceResult: ...

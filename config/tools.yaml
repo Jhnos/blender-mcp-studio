@@ -2,6 +2,7 @@
 # Relative paths resolve against the repository root.
 bambu_studio_bin: /Applications/BambuStudio.app/Contents/MacOS/BambuStudio
 design_runs_dir: data/runs
+design_jobs_db: data/jobs.db
 artifact_roots: [".", "models"]
 # 5 x the largest measured value on 2026-10-21 deliverables: 113 STLs (v78), 491584 B largest STL (v78/v79), 1407262 B largest 3MF (v79 print layout). Recompute when a larger deliverable ships.
 # max_total_stl_bytes: 5 x the measured v78 total of 5858592 B across 113 STLs (2026-10-21).

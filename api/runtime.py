@@ -126,7 +126,7 @@ def build_runtime(env_file: Path | None = None) -> AppRuntime:
             tools.bambu_studio_bin, profiles_dir=default_config_dir() / "slicer-profiles"
         ),
         packaging=ManifestPackager(),
-        jobs=SQLiteJobStore(),
+        jobs=SQLiteJobStore(tools.design_jobs_db),
         lease=BlenderLease(),
         runs_dir=tools.design_runs_dir,
         artifact_roots=tools.artifact_roots,

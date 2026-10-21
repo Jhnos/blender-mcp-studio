@@ -117,7 +117,11 @@ def make_fake_runtime(
     blender = CountingBlender()
     base = design_dir or Path(tempfile.mkdtemp(prefix="design-fake-"))
     tools = ToolsConfig(
-        Path("/x/bs"), base / "runs", (base,), ImportLimits(565, 2457920, 7036310, 29292960)
+        Path("/x/bs"),
+        base / "runs",
+        (base,),
+        ImportLimits(565, 2457920, 7036310, 29292960),
+        base / "jobs.db",
     )
     lease = BlenderLease()
     marker = MagicMock()

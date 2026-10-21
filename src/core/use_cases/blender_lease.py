@@ -1,7 +1,8 @@
 """One-at-a-time lease over the shared Blender scene and the slicer.
 
 Stages that drive Blender or the slicer hold it, so two concurrent runs queue instead of
-interleaving inside a stage.
+interleaving inside a stage. MCP tools that change the scene hold it by tool name (a ``str``
+holder) through ``try_hold``; a pipeline stage holder is a ``StageName``.
 """
 
 from __future__ import annotations
@@ -14,31 +15,43 @@ from typing import TypeVar
 from src.core.domain.design_run import StageName
 
 T = TypeVar("T")
+Holder = StageName | str
 
 
 class BlenderLease:
     def __init__(self) -> None:
         self._lock = asyncio.Lock()
-        self._holder: StageName | None = None
+        self._holder: Holder | None = None
+        self._waiting = 0
 
     @property
-    def holder(self) -> StageName | None:
-        """The stage currently holding the lease; None when it is free."""
+    def holder(self) -> Holder | None:
+        """The stage (or MCP tool name) currently holding the lease; None when it is free."""
         return self._holder
 
-    @asynccontextmanager
-    async def hold(self, stage: StageName) -> AsyncIterator[None]:
-        async with self._lock:
-            self._holder = stage
-            try:
-                yield
-            finally:
-                self._holder = None
+    @property
+    def busy(self) -> bool:
+        """Held, or free with a queued waiter about to take it."""
+        return self._lock.locked() or self._waiting > 0
 
     @asynccontextmanager
-    async def try_hold(self, stage: StageName) -> AsyncIterator[bool]:
-        """Hold the lease if it is free right now (yields True), else yield False at once."""
-        if self._lock.locked():
+    async def hold(self, stage: Holder) -> AsyncIterator[None]:
+        self._waiting += 1
+        try:
+            await self._lock.acquire()
+        finally:
+            self._waiting -= 1
+        self._holder = stage
+        try:
+            yield
+        finally:
+            self._holder = None
+            self._lock.release()
+
+    @asynccontextmanager
+    async def try_hold(self, stage: Holder) -> AsyncIterator[bool]:
+        """Hold the lease if nobody holds or awaits it right now (yields True), else False."""
+        if self.busy:
             yield False
             return
         async with self.hold(stage):

@@ -66,6 +66,7 @@ class FakeSlicing:
         self.lease, self.delay, self.log = lease, delay, log if log is not None else []
         self.requests: list = []
         self.error: Exception | None = None
+        self.timeout_s = 123.0  # not the real slicer value: MCP must read it from the port
 
     async def availability(self):
         return ToolAvailability("Bambu Studio", True, "/x/bs", "02.06.00.51", "hint")

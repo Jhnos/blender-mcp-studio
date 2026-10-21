@@ -9,6 +9,7 @@ from src.infrastructure.tools_config import load_tools_config
 _LINES = [
     "bambu_studio_bin: /opt/bambu/BambuStudio",
     "design_runs_dir: data/runs",
+    "design_jobs_db: data/jobs.db",
     'artifact_roots: ["."]',
     "max_stl_files: 565",
     "max_stl_bytes: 2457920",

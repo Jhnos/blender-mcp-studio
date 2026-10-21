@@ -3,11 +3,11 @@
 from __future__ import annotations
 
 from fastmcp import FastMCP
-from fastmcp.exceptions import ToolError
 from fastmcp.utilities.types import Image
 from mcp.types import ToolAnnotations
 
 from src.adapters.mcp_server.design_tools import register_design_tools
+from src.adapters.mcp_server.errors import exclusive, refuse_during_design_stage, tool_error
 from src.adapters.mcp_server.schemas import (
     RGBA,
     MaxViewportSize,
@@ -42,6 +42,7 @@ from src.core.ports.mechanical_generation_port import InstanceCatalogPort
 from src.core.ports.print_readiness_port import PrintReadinessQueryPort
 from src.core.ports.scene_operations_port import SceneCommandPort, SceneQueryPort
 from src.core.ports.verification_port import VerificationQueryPort
+from src.core.use_cases.blender_lease import BlenderLease
 from src.core.use_cases.design_pipeline import DesignPipeline
 
 
@@ -55,12 +56,6 @@ def _vec(value: tuple[float, float, float] | None) -> Vector3 | None:
 VERIFICATION_TOOL_TIMEOUT_S = VERIFICATION_TIMEOUT_S + 30.0
 
 
-def _tool_error(exc: Exception) -> ToolError:
-    if isinstance(exc, BlenderConnectionError):
-        return ToolError("Blender is unavailable. Start Blender and enable the addon on port 9876.")
-    return ToolError(str(exc))
-
-
 def create_mcp_server(
     queries: SceneQueryPort,
     commands: SceneCommandPort,
@@ -69,8 +64,14 @@ def create_mcp_server(
     *,
     design: DesignPipeline | None = None,
     generation: InstanceCatalogPort | None = None,
+    lease: BlenderLease | None = None,
 ) -> FastMCP:
-    """Create the public MCP registry using only incoming application ports."""
+    """Create the public MCP registry using only incoming application ports.
+
+    ``lease`` is the runtime's one Blender lease (the design pipeline's): scene-changing tools
+    answer busy while a design run stage holds it, and long Blender tools hold it themselves.
+    """
+    shared = lease or (design.lease if design is not None else BlenderLease())
 
     mcp = FastMCP(
         "blender-mcp-studio",
@@ -96,7 +97,7 @@ def create_mcp_server(
         try:
             return await queries.status()
         except (SceneOperationError, BlenderConnectionError) as exc:
-            raise _tool_error(exc) from exc
+            raise tool_error(exc) from exc
 
     @mcp.tool(
         timeout=10.0,
@@ -113,7 +114,7 @@ def create_mcp_server(
         try:
             return await queries.get_scene_info()
         except (SceneOperationError, BlenderConnectionError) as exc:
-            raise _tool_error(exc) from exc
+            raise tool_error(exc) from exc
 
     @mcp.tool(
         timeout=10.0,
@@ -130,7 +131,7 @@ def create_mcp_server(
         try:
             return await queries.get_object_info(name)
         except (SceneOperationError, BlenderConnectionError) as exc:
-            raise _tool_error(exc) from exc
+            raise tool_error(exc) from exc
 
     @mcp.tool(
         timeout=30.0,
@@ -148,7 +149,7 @@ def create_mcp_server(
             shot = await queries.get_viewport_screenshot(max_size)
             return Image(data=shot.png_bytes, format="png")
         except (SceneOperationError, BlenderConnectionError) as exc:
-            raise _tool_error(exc) from exc
+            raise tool_error(exc) from exc
 
     @mcp.tool(
         timeout=30.0,
@@ -167,6 +168,7 @@ def create_mcp_server(
         overhang_angle_deg: OverhangAngle = 45.0,
     ) -> PrintReadinessReport:
         """Inspect visible meshes for common slicing risks without changing the scene."""
+        refuse_during_design_stage(shared)
         try:
             return await print_readiness.check(
                 PrintReadinessSpec(
@@ -177,7 +179,7 @@ def create_mcp_server(
                 )
             )
         except (PrintReadinessError, BlenderConnectionError) as exc:
-            raise _tool_error(exc) from exc
+            raise tool_error(exc) from exc
 
     @mcp.tool(
         timeout=30.0,
@@ -196,6 +198,7 @@ def create_mcp_server(
         scale: Vec3 = (1.0, 1.0, 1.0),
     ) -> OperationReceipt:
         """Create one cube mesh, Bezier curve, light, or camera with a transform."""
+        refuse_during_design_stage(shared)
         try:
             spec = CreateObjectSpec(
                 object_type=ObjectType(object_type),
@@ -205,7 +208,7 @@ def create_mcp_server(
             )
             return await commands.create_object(spec)
         except (SceneOperationError, BlenderConnectionError) as exc:
-            raise _tool_error(exc) from exc
+            raise tool_error(exc) from exc
 
     @mcp.tool(
         timeout=30.0,
@@ -225,6 +228,7 @@ def create_mcp_server(
         visible: bool | None = None,
     ) -> OperationReceipt:
         """Set selected transforms or visibility; omitted fields remain unchanged."""
+        refuse_during_design_stage(shared)
         try:
             spec = ModifyObjectSpec(
                 name=name,
@@ -235,7 +239,7 @@ def create_mcp_server(
             )
             return await commands.modify_object(spec)
         except (SceneOperationError, BlenderConnectionError) as exc:
-            raise _tool_error(exc) from exc
+            raise tool_error(exc) from exc
 
     @mcp.tool(
         timeout=30.0,
@@ -249,10 +253,11 @@ def create_mcp_server(
     )
     async def delete_object(name: Name) -> OperationReceipt:
         """Permanently remove one Blender object by exact name."""
+        refuse_during_design_stage(shared)
         try:
             return await commands.delete_object(name)
         except (SceneOperationError, BlenderConnectionError) as exc:
-            raise _tool_error(exc) from exc
+            raise tool_error(exc) from exc
 
     @mcp.tool(
         timeout=30.0,
@@ -272,12 +277,13 @@ def create_mcp_server(
         roughness: UnitFloat | None = None,
     ) -> OperationReceipt:
         """Create or update a Principled BSDF material and apply it to one object."""
+        refuse_during_design_stage(shared)
         try:
             rgba = None if color is None else ColorRGBA(*color)
             spec = MaterialSpec(object_name, material_name, rgba, metallic, roughness)
             return await commands.apply_material(spec)
         except (SceneOperationError, BlenderConnectionError) as exc:
-            raise _tool_error(exc) from exc
+            raise tool_error(exc) from exc
 
     @mcp.tool(
         timeout=5.0,
@@ -310,10 +316,11 @@ def create_mcp_server(
         or moves electrode poses during checks. Returns individual measured verdicts;
         a failed check is a report, not an execution error. Does not build or load models.
         """
-        try:
-            return await verification.run(suite_id)
-        except (VerificationError, BlenderConnectionError) as exc:
-            raise _tool_error(exc) from exc
+        async with exclusive(shared, "run_verification_suite"):
+            try:
+                return await verification.run(suite_id)
+            except (VerificationError, BlenderConnectionError) as exc:
+                raise tool_error(exc) from exc
 
-    register_design_tools(mcp, design=design, generation=generation)
+    register_design_tools(mcp, design=design, generation=generation, lease=shared)
     return mcp

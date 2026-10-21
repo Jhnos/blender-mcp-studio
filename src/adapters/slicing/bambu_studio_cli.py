@@ -1,8 +1,9 @@
 """Bambu Studio command-line slicer (AGPL-3.0, subprocess only, never linked).
 
 The command line is the v80-proven form (``tmp/lab-station-slicing-v80/slice_candidate.py``).
-Profiles are the P2S/PLA templates in ``config/slicer-profiles`` with per-request overrides
-written into ``output_dir`` (they are reproduction inputs). The slicer's own ``--datadir`` is a
+Profiles are read from the installed app bundle at slice time (``bundle_profiles``: the leaf
+names live in ``config/slicer-profiles/p2s-pla-profiles.json``) and written, with the v80
+override data file and per-request keys applied, into ``output_dir`` (reproduction inputs). The slicer's own ``--datadir`` is a
 ``tempfile.TemporaryDirectory`` outside ``output_dir``, removed after each run, so the user's
 real Bambu profile is never read or modified and scratch state never reaches a package.
 
@@ -22,6 +23,7 @@ import tempfile
 from collections.abc import Callable
 from pathlib import Path
 
+from src.adapters.slicing.bundle_profiles import app_bundle, bundle_profiles
 from src.core.domain.slicing import (
     SliceRequest,
     SliceResult,
@@ -46,15 +48,13 @@ Runner = Callable[..., "subprocess.CompletedProcess[str]"]
 
 def _bundle_version(binary: Path) -> str | None:
     """CFBundleShortVersionString of the enclosing .app (the CLI rejects --version)."""
-    for parent in binary.parents:
-        if parent.suffix == ".app":
-            plist = parent / "Contents" / "Info.plist"
-            if not plist.is_file():
-                return None
-            with plist.open("rb") as handle:
-                value = plistlib.load(handle).get("CFBundleShortVersionString")
-            return value if isinstance(value, str) else None
-    return None
+    bundle = app_bundle(binary)
+    plist = None if bundle is None else bundle / "Contents" / "Info.plist"
+    if plist is None or not plist.is_file():
+        return None
+    with plist.open("rb") as handle:
+        value = plistlib.load(handle).get("CFBundleShortVersionString")
+    return value if isinstance(value, str) else None
 
 
 def _log_tail(log_path: Path) -> str:
@@ -80,6 +80,11 @@ class BambuStudioCli:
         self._timeout_s = timeout_s
         self._runner = runner
 
+    @property
+    def timeout_s(self) -> float:
+        """The subprocess deadline; delivery adapters derive their own timeouts from it."""
+        return self._timeout_s
+
     def _usable(self) -> bool:
         return self._binary.is_file()
 
@@ -91,15 +96,9 @@ class BambuStudioCli:
         )
 
     def _write_profiles(self, request: SliceRequest, out: Path) -> None:
-        def template(kind: str) -> dict[str, object]:
-            path = self._profiles_dir / f"{kind}-full.json"
-            data = as_str_keyed(json.loads(path.read_text(encoding="utf-8")), context=str(path))
-            if data is None:
-                raise ToolUnavailableError(f"slicer profile template is not an object: {path}")
-            return data
-
-        process = template("process")
-        # Order: template, then the v80 override data file, then request-derived keys.
+        profiles = bundle_profiles(self._binary, self._profiles_dir)
+        process = profiles["process"]
+        # Order: bundle profile, then the v80 override data file, then request-derived keys.
         overrides = as_str_keyed(
             json.loads((self._profiles_dir / "p2s-pla-overrides.json").read_text("utf-8")),
             context="p2s-pla-overrides.json",
@@ -114,9 +113,9 @@ class BambuStudioCli:
             enable_support="1" if request.support else "0",
         )
         for name, data in (
-            ("machine", template("machine")),
+            ("machine", profiles["machine"]),
             ("process", process),
-            ("filament", template("filament")),
+            ("filament", profiles["filament"]),
         ):
             (out / f"{name}.json").write_text(json.dumps(data, indent=2), encoding="utf-8")
 
@@ -170,7 +169,7 @@ class BambuStudioCli:
                 f"Bambu Studio is not available on this host. {_INSTALL_HINT}"
             )
         out.mkdir(parents=True, exist_ok=True)
-        self._write_profiles(request, out)
+        self._write_profiles(request, out)  # ToolUnavailableError when the bundle has none
         # Export name is "<input stem>-<printer>-<material>.3mf".
         export_name = f"{Path(request.input_3mf).stem}-{short}-{request.material}.3mf"
         # A slicer that exits 0 without writing must not pass on a previous run's files.

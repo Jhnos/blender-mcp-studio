@@ -1,6 +1,7 @@
 """SQLiteJobStore - design-run job records in SQLite (same shape as SQLiteSessionStore).
 
-Database file path: data/jobs.db (configurable via constructor). Each call opens a
+Database file path: config/tools.yaml design_jobs_db (DESIGN_JOBS_DB overrides), passed in by
+the runtime; the constructor default is for tests and scripts. Each call opens a
 short-lived aiosqlite connection.
 """
 

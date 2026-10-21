@@ -10,6 +10,7 @@ from src.infrastructure.tools_config import load_tools_config
 _YAML = (
     "bambu_studio_bin: /opt/bambu/BambuStudio\n"
     "design_runs_dir: data/runs\n"
+    "design_jobs_db: data/jobs.db\n"
     'artifact_roots: [".", "models"]\n'
     "max_stl_files: 565\n"
     "max_stl_bytes: 2457920\n"
@@ -69,3 +70,18 @@ def test_tilde_is_expanded(tmp_path: Path) -> None:
     assert cfg.bambu_studio_bin == home / "B"
     assert cfg.design_runs_dir == home / "runs"
     assert cfg.artifact_roots == (home / "a",)
+
+
+def test_jobs_db_comes_from_yaml_with_env_override(tmp_path: Path) -> None:
+    cfg_dir = _config_dir(tmp_path)
+    assert load_tools_config(env={}, config_dir=cfg_dir).design_jobs_db == (
+        tmp_path / "data" / "jobs.db"
+    )
+    env = {"DESIGN_JOBS_DB": str(tmp_path / "other" / "j.db")}
+    assert load_tools_config(env=env, config_dir=cfg_dir).design_jobs_db == (
+        tmp_path / "other" / "j.db"
+    )
+
+
+def test_shipped_tools_yaml_names_the_jobs_db() -> None:
+    assert load_tools_config(env={}).design_jobs_db.parts[-2:] == ("data", "jobs.db")

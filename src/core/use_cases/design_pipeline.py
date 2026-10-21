@@ -85,6 +85,16 @@ class DesignPipeline:
     def limits(self) -> ImportLimits:
         return self._limits
 
+    @property
+    def lease(self) -> BlenderLease:
+        """The one Blender lease; delivery adapters guard scene tools with this instance."""
+        return self._lease
+
+    @property
+    def slice_timeout_s(self) -> float:
+        """The slicing port's own deadline (delivery adapters add their transport margin)."""
+        return self._slicing.timeout_s
+
     async def submit(self, payload: Mapping[str, object]) -> JobRecord:
         """Parse (ModelSpecError, no side effects), create job + run dir + spec.json, schedule."""
         parse_model_spec(payload, artifact_roots=self._roots)

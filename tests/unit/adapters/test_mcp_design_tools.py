@@ -13,7 +13,6 @@ from mcp.shared.exceptions import McpError
 
 from src.adapters.generation.authorized_code import GENERATOR_TIMEOUT_S
 from src.adapters.mcp_server import create_mcp_server, design_tools
-from src.adapters.slicing.bambu_studio_cli import SLICE_TIMEOUT_S
 from src.core.domain.exceptions import UnknownInstanceError
 from src.core.domain.mechanical_generation import BuiltPart, InstanceBuild, InstanceSummary
 from tests.unit.core.test_design_pipeline import _payload, _rig
@@ -259,7 +258,7 @@ async def test_run_resource_template_is_listed(tmp_path):
 async def test_tool_timeouts_derive_from_existing_constants(tmp_path):
     rig = _rig(tmp_path)
     mcp = _server(rig)
-    assert (await mcp.get_tool("slice_for_print")).timeout == SLICE_TIMEOUT_S + 30
+    assert (await mcp.get_tool("slice_for_print")).timeout == rig.slicing.timeout_s + 30
     assert (await mcp.get_tool("build_instance")).timeout == GENERATOR_TIMEOUT_S + 30
     assert (await mcp.get_tool("check_mesh_integrity")).timeout == (
         design_tools.integrity_timeout_s(rig.pipeline.limits)
