@@ -18,6 +18,7 @@ from src.core.ports.text3d_port import Text3DGenerationPort
 from src.core.ports.vision_port import VisionPort
 from src.core.use_cases.batch_transform import BatchTransformService
 from src.core.use_cases.conversational_modeling import ConversationalModelingUseCase
+from src.core.use_cases.design_pipeline import DesignPipeline
 from src.core.use_cases.iterative_refinement import IterativeRefinementUseCase
 from src.core.use_cases.mechanical_generation import MechanicalGenerationService
 from src.core.use_cases.modeling_pipeline import ModelingPipelineUseCase
@@ -25,6 +26,7 @@ from src.core.use_cases.print_readiness import PrintReadinessService
 from src.core.use_cases.scene_export import SceneExportService
 from src.core.use_cases.scene_operations import SceneOperationsService
 from src.core.use_cases.verification import VerificationService
+from src.infrastructure.tools_config import ToolsConfig
 
 
 @dataclass(frozen=True, slots=True)
@@ -57,6 +59,10 @@ class AppRuntime:
     #: ``None`` when no vision provider is configured; the endpoint reports 503.
     iterative_refinement: IterativeRefinementUseCase | None
 
+    #: Shared by REST and MCP: one pipeline, one Blender lease, one job store.
+    design_pipeline: DesignPipeline
+    tools: ToolsConfig
+
 
 def build_runtime(env_file: Path | None = None) -> AppRuntime:
     """Build concrete outer adapters at the application's only composition root."""
@@ -69,13 +75,18 @@ def build_runtime(env_file: Path | None = None) -> AppRuntime:
         authorized_generator_code,
     )
     from src.adapters.generation.blender_instance_builder import BlenderInstanceBuilder
+    from src.adapters.jobs.sqlite_job_store import SQLiteJobStore
     from src.adapters.mcp.factory import build_blender_adapter
+    from src.adapters.mesh.trimesh_cgal_integrity import TrimeshCgalIntegrity
+    from src.adapters.packaging.manifest_packager import ManifestPackager
     from src.adapters.polyhaven.polyhaven_adapter import PolyHavenAdapter
     from src.adapters.print_readiness.blender_print_readiness import BlenderPrintReadinessAdapter
     from src.adapters.prompt.blender_context_prompt_builder import BlenderContextPromptBuilder
     from src.adapters.security.blender_code_sandbox import BlenderCodeSandbox
     from src.adapters.security.prompt_injection_sanitizer import PromptInjectionSanitizer
     from src.adapters.session.sqlite_session_store import SQLiteSessionStore
+    from src.adapters.simulation.registered_suites_simulation import RegisteredSuitesSimulation
+    from src.adapters.slicing.bambu_studio_cli import BambuStudioCli
     from src.adapters.snapshot.sqlite_snapshot_store import SQLiteSnapshotStore
     from src.adapters.text3d.hunyuan3d_adapter import build_text3d_adapter
     from src.adapters.verification.authorized_code import (
@@ -84,7 +95,10 @@ def build_runtime(env_file: Path | None = None) -> AppRuntime:
     )
     from src.adapters.verification.blender_verification import BlenderVerificationAdapter
     from src.adapters.vision.factory import build_vision_adapter
+    from src.core.use_cases.blender_lease import BlenderLease
+    from src.infrastructure.config_loader import default_config_dir
     from src.infrastructure.env_loader import load_env
+    from src.infrastructure.tools_config import load_tools_config
     from src.verification.cable_route_cases import registered_suites
 
     load_env(env_file)
@@ -103,6 +117,20 @@ def build_runtime(env_file: Path | None = None) -> AppRuntime:
     prompt_builder = BlenderContextPromptBuilder()
     vision = build_vision_adapter()
     generation = MechanicalGenerationService(BlenderInstanceBuilder(blender))
+    verification = VerificationService(BlenderVerificationAdapter(blender), registered_suites())
+    tools = load_tools_config()
+    design_pipeline = DesignPipeline(
+        integrity=TrimeshCgalIntegrity(),
+        simulation=RegisteredSuitesSimulation(verification),
+        slicing=BambuStudioCli(
+            tools.bambu_studio_bin, profiles_dir=default_config_dir() / "slicer-profiles"
+        ),
+        packaging=ManifestPackager(),
+        jobs=SQLiteJobStore(),
+        lease=BlenderLease(),
+        runs_dir=tools.design_runs_dir,
+        artifact_roots=tools.artifact_roots,
+    )
     return AppRuntime(
         blender=blender,
         scene_operations=SceneOperationsService(blender),
@@ -120,7 +148,7 @@ def build_runtime(env_file: Path | None = None) -> AppRuntime:
         polyhaven=PolyHavenAdapter(),
         text3d=build_text3d_adapter(),
         mechanical_generation=generation,
-        verification=VerificationService(BlenderVerificationAdapter(blender), registered_suites()),
+        verification=verification,
         conversational_modeling=ConversationalModelingUseCase(
             llm=llm,
             blender=blender,
@@ -134,4 +162,6 @@ def build_runtime(env_file: Path | None = None) -> AppRuntime:
             if vision is None
             else IterativeRefinementUseCase(llm=llm, blender=blender, vision=vision)
         ),
+        design_pipeline=design_pipeline,
+        tools=tools,
     )

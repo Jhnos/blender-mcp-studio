@@ -50,3 +50,9 @@ class UndoRedoResponse(BaseModel):
     success: bool
     action: Literal["undo", "redo"]
     message: str
+
+
+class DesignRunRequest(BaseModel):
+    """A ModelSpec payload; the use case parses it and raises ModelSpecError (-> 422)."""
+
+    spec: dict[str, object]

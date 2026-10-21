@@ -15,7 +15,7 @@ a gate, so `status` is derived from the dependency here rather than asserted bes
 
 from __future__ import annotations
 
-from unittest.mock import MagicMock
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from fastapi.testclient import TestClient
@@ -117,6 +117,8 @@ def _runtime(blender: BlenderPort) -> AppRuntime:
         conversational_modeling=marker,
         modeling_pipeline=marker,
         iterative_refinement=None,
+        design_pipeline=AsyncMock(),
+        tools=marker,
     )
 
 

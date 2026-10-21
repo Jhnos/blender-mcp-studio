@@ -20,6 +20,7 @@ from starlette.types import ASGIApp, Receive, Scope, Send
 from api.routers import (
     batch_transform,
     chat,
+    design,
     generate3d,
     generation,
     history,
@@ -68,6 +69,8 @@ async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
         await runtime.blender.connect()
     except BlenderConnectionError as exc:
         logger.warning("Blender unavailable at API startup: %s", exc)
+    recovered = await runtime.design_pipeline.recover_interrupted()
+    logger.info("design pipeline: %s interrupted job(s) marked failed", recovered)
 
     push_interval = float(os.environ.get("VIEWPORT_PUSH_INTERVAL", "3"))
     broadcast_task = asyncio.create_task(viewport_broadcast_loop(app.state, interval=push_interval))
@@ -77,6 +80,8 @@ async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
         broadcast_task.cancel()
         with contextlib.suppress(asyncio.CancelledError):
             await broadcast_task
+        # cancel, never wait: a slice can run for minutes and shutdown must not hang
+        await runtime.design_pipeline.cancel_all()
         await runtime.blender.disconnect()
 
 
@@ -126,6 +131,8 @@ def _publish_runtime_state(app: FastAPI, runtime: AppRuntime) -> None:
     app.state.conversational_modeling = runtime.conversational_modeling
     app.state.modeling_pipeline = runtime.modeling_pipeline
     app.state.iterative_refinement = runtime.iterative_refinement
+    app.state.design_pipeline = runtime.design_pipeline
+    app.state.tools = runtime.tools
     app.state.ws_manager = ConnectionManager()
 
 
@@ -240,6 +247,7 @@ def create_app(
     app.include_router(print_readiness.router)
     app.include_router(generation.router)
     app.include_router(verification.router)
+    app.include_router(design.router)
 
     @app.get("/api/health")
     async def health() -> dict[str, str]:

@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import json
+import tempfile
+from pathlib import Path
 from unittest.mock import MagicMock
 
 from fastapi.testclient import TestClient
@@ -14,7 +16,17 @@ from src.core.domain.scene_operations import ObjectDetails, SceneSummary, Viewpo
 from src.core.ports.blender_port import BlenderPort
 from src.core.ports.mcp_port import ToolResult
 from src.core.use_cases.batch_transform import BatchTransformService
+from src.core.use_cases.blender_lease import BlenderLease
+from src.core.use_cases.design_pipeline import DesignPipeline
 from src.core.use_cases.scene_operations import SceneOperationsService
+from src.infrastructure.tools_config import ToolsConfig
+from tests.fakes.design_ports import (
+    FakeIntegrity,
+    FakeJobs,
+    FakePackaging,
+    FakeSimulation,
+    FakeSlicing,
+)
 
 _IDENTITY = {"x-mes-identity": "tester@example.com"}
 _MCP_HEADERS = {"accept": "application/json, text/event-stream"}
@@ -83,9 +95,15 @@ class CountingBlender(BlenderPort):
         return ToolResult(success=False, output=None, error="unused by assembly tests")
 
 
-def make_fake_runtime() -> AppRuntime:
-    """Use a real application service and replace only unrelated outer ports."""
+def make_fake_runtime(design_dir: Path | None = None) -> AppRuntime:
+    """Use real application services and replace only the outer ports.
+
+    ``design_dir`` is both the artifact root and the parent of the runs directory.
+    """
     blender = CountingBlender()
+    base = design_dir or Path(tempfile.mkdtemp(prefix="design-fake-"))
+    tools = ToolsConfig(Path("/x/bs"), base / "runs", (base,))
+    lease = BlenderLease()
     marker = MagicMock()
     return AppRuntime(
         blender=blender,
@@ -108,6 +126,17 @@ def make_fake_runtime() -> AppRuntime:
         conversational_modeling=marker,
         modeling_pipeline=marker,
         iterative_refinement=None,
+        design_pipeline=DesignPipeline(
+            integrity=FakeIntegrity(),
+            simulation=FakeSimulation(),
+            slicing=FakeSlicing(lease),
+            packaging=FakePackaging(),
+            jobs=FakeJobs(),
+            lease=lease,
+            runs_dir=tools.design_runs_dir,
+            artifact_roots=tools.artifact_roots,
+        ),
+        tools=tools,
     )
 
 

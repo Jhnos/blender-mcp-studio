@@ -27,6 +27,7 @@ from src.core.domain.design_run import (
     StageReport,
 )
 from src.core.domain.model_spec import ModelSpec, parse_model_spec
+from src.core.domain.slicing import ToolAvailability
 from src.core.ports.job_store_port import JobStorePort
 from src.core.ports.mechanism_simulation_port import MechanismSimulationPort
 from src.core.ports.mesh_integrity_port import MeshIntegrityPort
@@ -94,6 +95,20 @@ class DesignPipeline:
         """Wait for every scheduled run to finish (tests, graceful shutdown)."""
         while self._tasks:
             await asyncio.gather(*list(self._tasks), return_exceptions=True)
+
+    async def cancel_all(self) -> None:
+        """Cancel every in-flight run and wait for each to record CANCELLED (shutdown).
+
+        Not ``wait_idle``: a slice can run for minutes and shutdown must not hang.
+        """
+        tasks = list(self._tasks)
+        for task in tasks:
+            task.cancel()
+        await asyncio.gather(*tasks, return_exceptions=True)
+
+    async def tools(self) -> tuple[ToolAvailability, ...]:
+        """External tools the pipeline depends on (currently the slicer)."""
+        return (await self._slicing.availability(),)
 
     def _load_spec(self, run_dir: Path) -> ModelSpec:
         raw = reports.read_spec(run_dir)

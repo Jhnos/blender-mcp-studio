@@ -46,6 +46,10 @@ DOMAIN_EXCEPTIONS = frozenset(
 #: silence the gate.
 FROZEN_EXPLICIT_GUARDS = frozenset(
     {
+        ("design.py", "download_design_file", 400),
+        ("design.py", "download_design_file", 404),
+        ("design.py", "get_design_job", 404),
+        ("design.py", "get_design_report", 404),
         ("generate3d.py", "generate_3d", 503),
         ("materials.py", "apply_material", 400),
         ("materials.py", "apply_material", 404),
