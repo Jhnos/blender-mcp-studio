@@ -27,8 +27,10 @@ from src.adapters.blender_response import decode_marked_json, sequence, text  # 
 from src.infrastructure.narrowing import as_str, as_str_keyed_exact, dig  # noqa: E402
 from src.infrastructure.public_base_url import public_host  # noqa: E402
 
-TS = public_host()
-BASE = f"https://{TS}/blender"
+
+def _base() -> str:
+    """Public base URL, resolved on first use so import and --help need no tailscale."""
+    return f"https://{public_host()}/blender"
 
 
 def oracle(code: str, timeout: float = 10) -> dict[str, object] | None:
@@ -81,7 +83,7 @@ def o_names() -> list[str]:
 def rest(method: str, path: str, body: dict[str, object] | None = None) -> tuple[int, object]:
     data = json.dumps(body).encode() if body is not None else None
     req = urllib.request.Request(
-        f"{BASE}{path}",
+        f"{_base()}{path}",
         data=data,
         method=method,
         headers={"Content-Type": "application/json"} if data else {},

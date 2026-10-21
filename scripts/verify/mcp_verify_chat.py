@@ -40,10 +40,16 @@ from src.verification.generated_artifact_verdict import (  # noqa: E402
     VerificationSummary,
 )
 
-TS = public_host()
-BASE = f"https://{TS}/blender"
-WS_URL = f"wss://{TS}/blender/ws/chat"
 ORACLE = ("127.0.0.1", 9876)
+
+
+def _base() -> str:
+    """Public base URL, resolved on first use so import and --help need no tailscale."""
+    return f"https://{public_host()}/blender"
+
+
+def _ws_url() -> str:
+    return f"wss://{public_host()}/blender/ws/chat"
 
 
 def oracle(code: str, timeout: float = 60) -> dict[str, object] | None:
@@ -94,7 +100,7 @@ def o_names() -> list[str]:
 
 
 def rest(method: str, path: str, body: dict[str, object] | None = None) -> tuple[int, object]:
-    url = f"{BASE}{path}"
+    url = f"{_base()}{path}"
     data = json.dumps(body).encode() if body is not None else None
     req = urllib.request.Request(
         url, data=data, method=method, headers={"Content-Type": "application/json"} if data else {}
@@ -110,7 +116,9 @@ def ws_chat(text: str, timeout: float = 360) -> tuple[str, str | None, str | Non
     """Drive the real WS chat path; return (final_content, blender_output, session_id)."""
     import websocket  # websocket-client
 
-    ws = websocket.create_connection(WS_URL, timeout=timeout, sslopt={"cert_reqs": ssl.CERT_NONE})
+    ws = websocket.create_connection(
+        _ws_url(), timeout=timeout, sslopt={"cert_reqs": ssl.CERT_NONE}
+    )
     ws.send(json.dumps({"type": "chat", "content": text, "session_id": None}))
     final, bout, sid = "", None, None
     t0 = time.time()

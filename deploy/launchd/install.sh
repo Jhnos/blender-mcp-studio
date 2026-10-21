@@ -14,8 +14,8 @@
 # Override interpreter paths with env vars (defaults shown):
 #   CONDA_PYTHON="${HOME}/miniconda3/envs/blender-mcp/bin/python"
 #   NODE_BIN="/opt/homebrew/opt/node/bin/node"
-#   BLENDER_MCP_PUBLIC_ORIGIN="https://<host>"  (default: resolved from
-#   `tailscale status --self --json`; the api install fails if neither works)
+#   BLENDER_MCP_PUBLIC_BASE_URL="https://<host>/blender"  (exported; default: resolved
+#   from `tailscale status --self --json`; the api install fails if neither works)
 #
 set -euo pipefail
 
@@ -30,16 +30,13 @@ NODE_BIN="${NODE_BIN:-/opt/homebrew/opt/node/bin/node}"
 NPM_BIN="${NPM_BIN:-$(dirname "${NODE_BIN}")/npm}"
 BLENDER_BIN="${BLENDER_BIN:-/Applications/Blender.app/Contents/MacOS/Blender}"
 
-# CORS origin for the api plist: env override, else the same helper the runtime uses.
+# CORS origin for the api plist: the same helper the runtime uses
+# (BLENDER_MCP_PUBLIC_BASE_URL, else tailscale).
 _resolve_public_origin() {
-  if [[ -n "${BLENDER_MCP_PUBLIC_ORIGIN:-}" ]]; then
-    printf '%s' "${BLENDER_MCP_PUBLIC_ORIGIN}"
-    return 0
-  fi
   local origin
   origin="$(cd "${PROJECT_ROOT}" && "${CONDA_PYTHON}" -c 'from src.infrastructure.public_base_url import public_origin; print(public_origin())' 2>/dev/null)" || origin=""
   if [[ -z "${origin}" ]]; then
-    echo "error: cannot resolve the public origin; set BLENDER_MCP_PUBLIC_ORIGIN=https://<host> or make 'tailscale status --self --json' work" >&2
+    echo "error: cannot resolve the public origin; export BLENDER_MCP_PUBLIC_BASE_URL=https://<host>/blender or make 'tailscale status --self --json' work" >&2
     return 1
   fi
   printf '%s' "${origin}"
@@ -146,7 +143,7 @@ _install_one() {
     -e "s|__CONDA_PYTHON__|${CONDA_PYTHON}|g" \
     -e "s|__NODE_BIN__|${NODE_BIN}|g" \
     -e "s|__BLENDER_BIN__|${BLENDER_BIN}|g" \
-    -e "s|__PUBLIC_ORIGIN__|${public_origin}|g" \
+    -e "s#__PUBLIC_ORIGIN__#${public_origin}#g" \
     "${template}" > "${tmp}"
 
   if ! plutil -lint "${tmp}" >/dev/null; then

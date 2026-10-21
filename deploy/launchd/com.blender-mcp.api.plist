@@ -5,7 +5,7 @@
   Placeholders are substituted by deploy/launchd/install.sh:
     __PROJECT_ROOT__   → repo root (e.g. /Users/<you>/Blender_MCP_drawer)
     __CONDA_PYTHON__   → conda env python (e.g. $HOME/miniconda3/envs/blender-mcp/bin/python)
-    __PUBLIC_ORIGIN__  → https://<tailnet-host> (BLENDER_MCP_PUBLIC_ORIGIN, else tailscale)
+    __PUBLIC_ORIGIN__  → https://<tailnet-host> (BLENDER_MCP_PUBLIC_BASE_URL, else tailscale)
   Do NOT install this file directly with `cp`; use install.sh.
 -->
 <plist version="1.0">

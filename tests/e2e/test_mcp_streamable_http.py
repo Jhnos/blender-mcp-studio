@@ -161,7 +161,7 @@ def _client(runtime: AppRuntime, *, require_identity: bool = False) -> TestClien
     app = create_app(
         runtime=runtime,
         require_identity=require_identity,
-        cors_origins=["https://bearmacminimac-mini.tail56c751.ts.net"],
+        cors_origins=["https://studio.tail0000.ts.net"],
     )
     return TestClient(app, base_url="http://localhost")
 
@@ -203,7 +203,7 @@ def test_mcp_endpoint_without_trailing_slash_does_not_redirect() -> None:
     app = create_app(
         runtime=make_fake_runtime(),
         require_identity=False,
-        cors_origins=["https://bearmacminimac-mini.tail56c751.ts.net"],
+        cors_origins=["https://studio.tail0000.ts.net"],
     )
 
     with TestClient(app, base_url="http://localhost", follow_redirects=False) as client:

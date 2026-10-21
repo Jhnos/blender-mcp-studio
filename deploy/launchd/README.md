@@ -148,8 +148,10 @@ MHH, LIG).
 ## Public origin (`__PUBLIC_ORIGIN__`)
 
 The api plist's `CORS_ORIGINS` is the placeholder `__PUBLIC_ORIGIN__`. `install.sh`
-fills it from `BLENDER_MCP_PUBLIC_ORIGIN` (e.g. `https://<your-tailnet-host>`), else
-from `tailscale status --self --json` through `src/infrastructure/public_base_url.py`.
+fills it, through `src/infrastructure/public_base_url.py`, from the exported
+`BLENDER_MCP_PUBLIC_BASE_URL` (e.g. `https://<your-tailnet-host>/blender`), else from
+`tailscale status --self --json`. launchd's PATH is minimal, so the runtime tailscale
+fallback does not run under launchd; the plist's rendered `CORS_ORIGINS` is the source there.
 If neither resolves, the install fails rather than writing an empty origin. Find your
 host with:
 

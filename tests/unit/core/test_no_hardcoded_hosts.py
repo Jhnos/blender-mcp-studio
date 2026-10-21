@@ -17,9 +17,9 @@ SKIP_PARTS = ("scripts/archive/", "config/slicer-profiles/")
 SELF = Path(__file__).resolve()
 
 PATTERNS = (
-    re.compile(r"[A-Za-z0-9-]+\.tail[0-9a-f]+\.ts\.net"),
-    re.compile(r"/Users/[a-z][A-Za-z0-9._-]*/"),
-    re.compile(r"/home/[a-z][A-Za-z0-9._-]*/"),
+    re.compile(r"[a-z0-9-]+\.tail[0-9a-f]+\.ts\.net", re.IGNORECASE),
+    re.compile(r"/Users/[a-z][a-z0-9._-]*(?=/|$|[^a-z0-9._-])", re.IGNORECASE),
+    re.compile(r"/home/[a-z][a-z0-9._-]*(?=/|$|[^a-z0-9._-])", re.IGNORECASE),
 )
 
 #: file:line -> reason. Empty on purpose; reword instead of allowing.
@@ -34,6 +34,10 @@ def test_guard_fires_on_hosts_and_home_paths() -> None:
     assert find_hits("https://box-1.tail1a2b3c.ts.net/blender")
     assert find_hits("PATH=/Users/someone/miniconda3/bin")
     assert find_hits("cd /home/ubuntu/app")
+    assert find_hits("/Users/Alice/x")
+    assert find_hits("root=/Users/alice")
+    assert find_hits("root=/home/bob")
+    assert find_hits("HOST.TAIL1.TS.NET")
 
 
 def test_guard_passes_on_placeholders_and_neutral_text() -> None:
