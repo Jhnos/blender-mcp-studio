@@ -16,6 +16,7 @@ from scripts.lab_station_arm import (
     build_shoulder,
     connect_serrated_joint,
     finish_arm,
+    finish_link,
     joint_hardware,
     rotary_pivot_hardware,
 )
@@ -162,7 +163,10 @@ def build_head(label: str, side: int, mat: bpy.types.Material, metal: bpy.types.
     for obj in shoulder_hardware:
         obj.name = "LR_" + obj.name.removeprefix("LS_HW_")
     for member in (upper, lower):
-        finish_arm(member)
+        # Serrated-joint members carry the same collinear-chain ngons as the V10 arms;
+        # the stock triangulation leaves nanometre slivers that the export turns into
+        # zero-area faces, so they get the chain-safe finish, not the plain one.
+        finish_link(member)
     hardware = joint_hardware(middle, label, metal)
     boolean(
         hardware[0],

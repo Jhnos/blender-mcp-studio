@@ -6,9 +6,9 @@ from scripts.verify.generated_artifact_verify_real import BlenderSocketOracle
 from scripts.verify.lab_cable_routes_verify_real import verify_cable_routes
 from scripts.verify.lab_electrode_readback_real import (
     verify_electrode_configurations,
-    verify_mesh_refinement,
     verify_saved_electrode,
 )
+from scripts.verify.mesh_refinement_verify_real import verify_mesh_refinement
 from src.verification.generator_imports import reload_modules_for
 
 

@@ -135,6 +135,41 @@ def test_finds_a_path_embedded_in_a_longer_command_string(tmp_path: Path) -> Non
 
 
 # --------------------------------------------------------------------------
+# launchd log sinks: created by launchd at job start, reaped by macOS when idle
+# --------------------------------------------------------------------------
+
+
+def test_a_missing_log_sink_in_an_existing_directory_is_not_drift(tmp_path: Path) -> None:
+    """macOS reaps idle files under /tmp while the job keeps writing to the
+    unlinked inode. Observed 2026-10-20: api/web logs gone, services healthy,
+    plists identical to the templates, and the gate still called it drift."""
+    logs = tmp_path / "logs"
+    logs.mkdir()
+    plist = _write_plist(
+        tmp_path,
+        "svc.plist",
+        {
+            "StandardOutPath": str(logs / "svc.log"),
+            "StandardErrorPath": str(logs / "svc.err"),
+        },
+    )
+    assert gate.check_plist(plist, tmp_path) == []
+
+
+def test_a_log_sink_whose_directory_is_gone_still_fires(tmp_path: Path) -> None:
+    """Relaxing the sink check must not also hide a sink under a moved tree."""
+    plist = _write_plist(
+        tmp_path,
+        "svc.plist",
+        {"StandardErrorPath": str(tmp_path / "vanished-dir" / "svc.err")},
+    )
+    problems = gate.check_plist(plist, tmp_path)
+    assert len(problems) == 1
+    assert "vanished-dir" in problems[0]
+    assert "directory" in problems[0]
+
+
+# --------------------------------------------------------------------------
 # wiring
 # --------------------------------------------------------------------------
 

@@ -2,6 +2,7 @@
 
 import asyncio
 import json
+import time
 from pathlib import Path
 
 from fastmcp import Client
@@ -9,10 +10,13 @@ from fastmcp import Client
 from scripts.verify.generated_artifact_verify_real import BlenderSocketOracle
 from scripts.verify.mcp_verify_real import DEFAULT_MCP_URL
 from src.adapters.blender_response import decode_marked_json, execute_code_output, sequence
+from src.adapters.mcp_server.server import VERIFICATION_TOOL_TIMEOUT_S
 from src.infrastructure.narrowing import as_str_keyed_exact, required
 from src.verification.cable_route_cases import registered_suites
 
 ROOT = Path(__file__).resolve().parents[2]
+#: Outermost of the three nested deadlines (script < tool < this client).
+VERIFICATION_CLIENT_TIMEOUT_S = VERIFICATION_TOOL_TIMEOUT_S + 30.0
 SNAPSHOT = """import bpy,json,hashlib
 def property_value(value):
     if hasattr(value, 'to_dict'): return value.to_dict()
@@ -109,14 +113,20 @@ bpy.data.objects['S_capillary_lower']['elbow_release_mm']=.123
         before = snapshot(oracle)
         verify_property_oracle(oracle)
         evidence["custom_property_oracle_controls"] = True
-        async with Client(DEFAULT_MCP_URL, timeout=360) as client:
+        elapsed: dict[str, float] = {}
+        async with Client(DEFAULT_MCP_URL, timeout=VERIFICATION_CLIENT_TIMEOUT_S) as client:
             tools = await client.list_tools()
             assert {"list_verification_suites", "run_verification_suite"} <= {t.name for t in tools}
             catalog = await client.call_tool("list_verification_suites", {})
             assert not catalog.is_error
             for suite in registered_suites():
                 suite_id, count = suite.suite_id, len(suite.cases)
+                started = time.monotonic()
                 result = await client.call_tool("run_verification_suite", {"suite_id": suite_id})
+                elapsed[suite_id] = round(time.monotonic() - started, 1)
+                # Measured, not assumed: the script deadline is derived from the slowest
+                # suite, so every run leaves the numbers that would justify changing it.
+                print(f"  suite {suite_id}: {elapsed[suite_id]}s", flush=True)
                 data = required(
                     result.structured_content,
                     as_str_keyed_exact,
@@ -173,6 +183,7 @@ except RuntimeError as error:
         evidence["scene_preserved"] = True
         evidence["exception_restores_scene"] = True
         evidence["unknown_extra_code_missing_model_rejected"] = True
+        evidence["suite_elapsed_s"] = elapsed
         (ROOT / "tmp/lab-station-route-engine/mcp-verification.json").write_text(
             json.dumps(evidence, indent=2)
         )

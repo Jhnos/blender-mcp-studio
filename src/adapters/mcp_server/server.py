@@ -17,6 +17,7 @@ from src.adapters.mcp_server.schemas import (
     Vec3,
     WallThickness,
 )
+from src.adapters.verification.authorized_code import VERIFICATION_TIMEOUT_S
 from src.core.domain.exceptions import (
     BlenderConnectionError,
     PrintReadinessError,
@@ -43,6 +44,12 @@ from src.core.ports.verification_port import VerificationQueryPort
 
 def _vec(value: tuple[float, float, float] | None) -> Vector3 | None:
     return None if value is None else Vector3(*value)
+
+
+#: The tool call wraps one Blender script; it must outlive the script's own deadline
+#: by the transport and decoding overhead, or the client sees a cancelled call
+#: instead of the adapter's honest "did not answer within N s".
+VERIFICATION_TOOL_TIMEOUT_S = VERIFICATION_TIMEOUT_S + 30.0
 
 
 def _tool_error(exc: Exception) -> ToolError:
@@ -281,7 +288,7 @@ def create_mcp_server(
         return await verification.list_suites()
 
     @mcp.tool(
-        timeout=330.0,
+        timeout=VERIFICATION_TOOL_TIMEOUT_S,
         annotations=ToolAnnotations(
             title="Run verification suite",
             readOnlyHint=False,

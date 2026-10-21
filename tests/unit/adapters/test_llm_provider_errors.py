@@ -55,6 +55,21 @@ async def test_ollama_unreachable_is_a_connection_error(respx_mock) -> None:
 
 
 @pytest.mark.asyncio
+async def test_ollama_timeout_says_it_waited_not_that_it_was_unreachable(respx_mock) -> None:
+    """Observed 2026-10-20: the shared Ollama queued /api/chat for the full 300 s
+    behind another client's multi-minute completions. httpx raises ReadTimeout
+    with an empty message, so the gate printed "Ollama unreachable at ...: " and
+    sent the reader looking for a dead service that was alive and busy."""
+    respx_mock.post(f"{OLLAMA}/api/chat").mock(side_effect=httpx.ReadTimeout(""))
+    adapter = OllamaAdapter(base_url=OLLAMA, model="x", timeout=7)
+
+    with pytest.raises(LLMConnectionError, match="did not answer within 7s") as caught:
+        await adapter.chat(MESSAGES)
+    assert "unreachable" not in str(caught.value)
+    assert isinstance(caught.value.__cause__, httpx.TimeoutException)
+
+
+@pytest.mark.asyncio
 async def test_ollama_stream_and_tool_paths_translate_too(respx_mock) -> None:
     respx_mock.post(f"{OLLAMA}/api/chat").mock(return_value=httpx.Response(503, text="busy"))
     adapter = OllamaAdapter(base_url=OLLAMA, model="x")

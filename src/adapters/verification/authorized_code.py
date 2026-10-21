@@ -9,7 +9,15 @@ from src.verification.generator_imports import reload_modules_for
 
 ROOT = Path(__file__).resolve().parents[3]
 MARKER = "VERIFICATION_JSON:"
-VERIFICATION_TIMEOUT_S = 300.0
+#: Slowest registered suite as measured on the real machine: 274.98 s for the five
+#: seated-transfer cases (task 16 hand-off, 2026-09). Raise it only from a fresh
+#: measurement, never to make a gate pass.
+SLOWEST_SUITE_MEASURED_S = 275.0
+#: A deadline is the last resort, not the expected duration: five times the slowest
+#: measurement. The previous 300 s sat at 1.09x and tripped on 2026-10-21 when the
+#: shared host's load average reached 15 on 10 cores; the adapter then reported a
+#: live, busy Blender as unavailable and the real tier stopped.
+VERIFICATION_TIMEOUT_S = 5 * SLOWEST_SUITE_MEASURED_S
 
 
 def verification_code(suite: VerificationSuite) -> str:

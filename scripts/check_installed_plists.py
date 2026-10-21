@@ -15,6 +15,10 @@ everywhere or, worse, "pass" by finding nothing.
 Two checks per installed plist:
 
 1. **Every absolute path it names exists.** This is what catches a moved tree.
+   The one exception is ``StandardOutPath``/``StandardErrorPath``: launchd
+   creates those files at job start and macOS reaps idle files under ``/tmp``
+   while the job keeps writing to the unlinked inode, so only their directory
+   has to exist.
 2. **Every path under a project root points at this checkout.** A plist that
    resolves to *some other* copy of the repository is drift that check 1 misses,
    because that other copy may well exist.
@@ -89,6 +93,7 @@ def check_plist(path: Path, project_root: Path) -> list[str]:
     with path.open("rb") as handle:
         plist = plistlib.load(handle)
 
+    sinks = log_sinks(plist)
     for candidate in candidate_paths(plist):
         target = Path(candidate)
         if PROJECT_MARKER in target.parts:
@@ -99,9 +104,27 @@ def check_plist(path: Path, project_root: Path) -> list[str]:
                     f"{path.name}: points at {root} but this checkout is {project_root}"
                 )
                 continue
+        if candidate in sinks:
+            # launchd creates the sink when the job starts and macOS reaps idle
+            # files under /tmp while the job keeps writing to the unlinked inode.
+            # The file's absence says nothing about drift; a vanished directory does.
+            if not target.parent.is_dir():
+                problems.append(f"{path.name}: log directory {target.parent} does not exist")
+            continue
         if not target.exists():
             problems.append(f"{path.name}: {candidate} does not exist")
     return problems
+
+
+def log_sinks(plist: object) -> set[str]:
+    """Paths launchd itself writes to; their existence is runtime state, not install state."""
+    if not isinstance(plist, dict):  # narrow-ok: plistlib returns a plain dict at the top level
+        return set()
+    return {
+        value
+        for key in ("StandardOutPath", "StandardErrorPath")
+        for value in _strings(plist.get(key))
+    }
 
 
 def main(argv: list[str]) -> int:

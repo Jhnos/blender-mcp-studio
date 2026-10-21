@@ -1,5 +1,7 @@
 """Rotary base retention and chassis load path; nominal hardware, not load qualification."""
 
+import math
+
 import bpy
 from mathutils import Vector
 
@@ -79,6 +81,21 @@ def verify_base_mounts() -> list[dict[str, object]]:
     return rows
 
 
+#: Half a 48-gon step about Z. At phase zero one bore edge lies in the rotor's y-plane
+#: and pierced the shoulder tooth plate exactly on a wall diagonal's midpoint
+#: (plate offset 4.7 minus bore radius 2.7 is half the plate base), so the solver
+#: emitted coincident vertices there.
+YAW_BORE_PHASE_RAD = math.pi / 48
+
+
+def yaw_spigot(rotor: bpy.types.Object, x: float, y: float) -> None:
+    """Add the floor spigot under a shoulder rotor and drill the yaw bolt bore through both."""
+    boolean(rotor, add_cylinder("LR_TOOL_spigot", 6, 20.4, (x, y, 70)), "UNION")
+    bore = add_cylinder("LR_TOOL_bore", 2.7, 40, (x, y, 75))
+    bore.rotation_euler.z = YAW_BORE_PHASE_RAD
+    boolean(rotor, bore, "DIFFERENCE")
+
+
 def build_base_mounts(metal: bpy.types.Material) -> None:
     """Integrate floor-supported sleeves and through-bolt retention under each yaw foot."""
     chassis = bpy.data.objects["LS_FIT_chassis"]
@@ -87,8 +104,7 @@ def build_base_mounts(metal: bpy.types.Material) -> None:
     for label, side in (("capillary", -1), ("pH_temp", 1)):
         x, y, _ = LabStationSpec().arm_points(side)[0]
         rotor = bpy.data.objects[f"LR_{label}_mount_envelope"]
-        boolean(rotor, add_cylinder("LR_TOOL_spigot", 6, 20.4, (x, y, 70)), "UNION")
-        boolean(rotor, add_cylinder("LR_TOOL_bore", 2.7, 40, (x, y, 75)), "DIFFERENCE")
+        yaw_spigot(rotor, x, y)
         boolean(chassis, add_cylinder("LR_TOOL_tower", 11.5, 70.1, (x, y, 40.85)), "UNION")
         boolean(
             chassis, block("LR_TOOL_gusset", (17, 8, 70.1), (side * 105.5, y, 40.85), mat), "UNION"

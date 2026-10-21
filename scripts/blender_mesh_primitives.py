@@ -58,12 +58,30 @@ def add_cylinder(
     location_mm: tuple[float, float, float],
     axis: str = "Z",
     vertices: int = 48,
+    exact_axes: bool = True,
 ) -> bpy.types.Object:
-    rotation = {
-        "X": (0.0, math.pi / 2.0, 0.0),
-        "Y": (math.pi / 2.0, 0.0, 0.0),
-        "Z": (0.0, 0.0, 0.0),
-    }[axis]
+    """A cylinder about `axis`, turned exactly or by the float rotation it used to get.
+
+    Exact quarter turns (a coordinate permutation) keep cap planes coplanar through
+    later Boolean operations; the lab-station joints need that. The float rotation
+    is what the shipped hand packages were published from, and their manifests pin
+    the triangle counts, so a generator whose output is frozen by a published
+    manifest passes `exact_axes=False` until that package is deliberately republished.
+    """
+    if exact_axes:
+        indices, signs = {
+            "X": ((2, 1, 0), (1, 1, -1)),
+            "Y": ((0, 2, 1), (1, -1, 1)),
+            "Z": ((0, 1, 2), (1, 1, 1)),
+        }[axis]
+        rotation = (0.0, 0.0, 0.0)
+    else:
+        indices, signs = (0, 1, 2), (1, 1, 1)
+        rotation = {
+            "X": (0.0, math.pi / 2.0, 0.0),
+            "Y": (math.pi / 2.0, 0.0, 0.0),
+            "Z": (0.0, 0.0, 0.0),
+        }[axis]
     bpy.ops.mesh.primitive_cylinder_add(
         vertices=vertices,
         radius=m(radius_mm),
@@ -73,6 +91,9 @@ def add_cylinder(
     )
     obj = bpy.context.object
     obj.name = name
+    for vertex in obj.data.vertices:
+        point = tuple(vertex.co)
+        vertex.co = tuple(point[index] * sign for index, sign in zip(indices, signs, strict=True))
     apply_transform(obj)
     return obj
 
@@ -195,6 +216,30 @@ def cleanup_mesh(obj: bpy.types.Object) -> None:
     obj.data.update()
 
 
+def zero_area_triangle(face: bmesh.types.BMFace) -> bool:
+    a, b, c = [tuple(vertex.co) for vertex in face.verts]
+    u = [b[i] - a[i] for i in range(3)]
+    v = [c[i] - a[i] for i in range(3)]
+    return (
+        math.hypot(
+            u[1] * v[2] - u[2] * v[1],
+            u[2] * v[0] - u[0] * v[2],
+            u[0] * v[1] - u[1] * v[0],
+        )
+        == 0
+    )
+
+
+def closed_nondegenerate_triangles(mesh: bmesh.types.BMesh) -> bool:
+    """Check preservation eligibility; this does not certify absence of self-intersections."""
+    return bool(mesh.faces) and (
+        all(math.isfinite(value) for vertex in mesh.verts for value in vertex.co)
+        and all(edge.is_manifold for edge in mesh.edges)
+        and all(vertex.is_manifold for vertex in mesh.verts)
+        and all(len(face.verts) == 3 and not zero_area_triangle(face) for face in mesh.faces)
+    )
+
+
 def refine_closed_mesh(obj: bpy.types.Object) -> None:
     """Repair coincident/collinear triangles atomically within a 1e-8 m vertex budget."""
     from mathutils.kdtree import KDTree
@@ -203,19 +248,6 @@ def refine_closed_mesh(obj: bpy.types.Object) -> None:
     mesh.from_mesh(obj.data)
     originals = [tuple(vertex.co) for vertex in mesh.verts]
     limit = 1e-8
-
-    def zero_area(face: bmesh.types.BMFace) -> bool:
-        a, b, c = [tuple(vertex.co) for vertex in face.verts]
-        u = [b[i] - a[i] for i in range(3)]
-        v = [c[i] - a[i] for i in range(3)]
-        return (
-            math.hypot(
-                u[1] * v[2] - u[2] * v[1],
-                u[2] * v[0] - u[0] * v[2],
-                u[0] * v[1] - u[1] * v[0],
-            )
-            == 0
-        )
 
     try:
         if (
@@ -227,7 +259,7 @@ def refine_closed_mesh(obj: bpy.types.Object) -> None:
         bmesh.ops.triangulate(
             mesh, faces=list(mesh.faces), quad_method="BEAUTY", ngon_method="BEAUTY"
         )
-        if any(zero_area(face) for face in mesh.faces):
+        if any(zero_area_triangle(face) for face in mesh.faces):
             bmesh.ops.remove_doubles(mesh, verts=list(mesh.verts), dist=limit)
             bmesh.ops.triangulate(
                 mesh, faces=list(mesh.faces), quad_method="BEAUTY", ngon_method="BEAUTY"
@@ -235,7 +267,7 @@ def refine_closed_mesh(obj: bpy.types.Object) -> None:
         # A collinear face and the triangle across its longest edge share one
         # planar surface. Flip that diagonal without moving any vertex.
         for face in list(mesh.faces):
-            if not face.is_valid or not zero_area(face):
+            if not face.is_valid or not zero_area_triangle(face):
                 continue
             edge = max(
                 face.edges,
@@ -246,7 +278,7 @@ def refine_closed_mesh(obj: bpy.types.Object) -> None:
         if (
             not mesh.faces
             or any(not edge.is_manifold for edge in mesh.edges)
-            or any(zero_area(face) for face in mesh.faces)
+            or any(zero_area_triangle(face) for face in mesh.faces)
         ):
             raise ValueError(f"Refinement cannot preserve a closed nondegenerate mesh: {obj.name}")
         points = [tuple(vertex.co) for vertex in mesh.verts]
@@ -264,3 +296,34 @@ def refine_closed_mesh(obj: bpy.types.Object) -> None:
         obj.data.update()
     finally:
         mesh.free()
+
+
+def finish_arm(obj: bpy.types.Object) -> None:
+    """Preserve closed nondegenerate triangles; only clean inputs needing repair."""
+    mesh = bmesh.new()
+    mesh.from_mesh(obj.data)
+    bmesh.ops.triangulate(mesh, faces=list(mesh.faces))
+    if closed_nondegenerate_triangles(mesh):
+        bmesh.ops.recalc_face_normals(mesh, faces=list(mesh.faces))
+        mesh.to_mesh(obj.data)
+        mesh.free()
+        obj.data.update()
+        return
+    original = mesh.copy()
+    bmesh.ops.remove_doubles(mesh, verts=list(mesh.verts), dist=0.00001)
+    bmesh.ops.dissolve_degenerate(mesh, edges=list(mesh.edges), dist=0.000005)
+    mesh.to_mesh(obj.data)
+    mesh.free()
+    cleanup_mesh(obj)
+    cleaned = bmesh.new()
+    cleaned.from_mesh(obj.data)
+    if all(edge.is_manifold for edge in original.edges) and any(
+        not edge.is_manifold for edge in cleaned.edges
+    ):
+        # A distance weld may merge nearby, distinct corrugation/pocket surfaces.
+        # Keep the valid triangulation instead of trading detail for open seams.
+        bmesh.ops.recalc_face_normals(original, faces=list(original.faces))
+        original.to_mesh(obj.data)
+        obj.data.update()
+    cleaned.free()
+    original.free()

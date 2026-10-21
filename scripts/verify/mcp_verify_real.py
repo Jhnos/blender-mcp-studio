@@ -16,7 +16,9 @@ import socket
 import sys
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
+import httpx
 from fastmcp import Client
 
 # ci.sh runs this as a subprocess, not through pytest, so nothing else puts the
@@ -128,6 +130,64 @@ def _tool_detail(result: object) -> str:
     return str(content)[:240]
 
 
+#: Errors raised by the transport itself, before or between MCP messages.
+TRANSPORT_ERRORS: tuple[type[BaseException], ...] = (ConnectionError, OSError, httpx.TransportError)
+
+
+async def _scenario(
+    client: Client[Any], nonce: str, quoted_name: str, evidence: list[Evidence]
+) -> None:
+    created = await client.call_tool(
+        "create_object",
+        {"object_type": "MESH", "name": nonce},
+        raise_on_error=False,
+    )
+    create_ok = not created.is_error
+    _record(evidence, "MCP create", create_ok, _tool_detail(created))
+
+    if create_ok:
+        geometry = _oracle_json(
+            "import bpy, json\n"
+            f"obj = bpy.data.objects.get({quoted_name})\n"
+            'print(json.dumps({"exists": obj is not None, '
+            "\"vertices\": len(obj.data.vertices) if obj and obj.type == 'MESH' else None}))"
+        )
+        geometry_ok = geometry == {"exists": True, "vertices": 8}
+        _record(evidence, "Oracle geometry", geometry_ok, repr(geometry))
+
+        modified = await client.call_tool(
+            "modify_object",
+            {"name": nonce, "location": [1.0, 2.0, 3.0]},
+            raise_on_error=False,
+        )
+        modify_ok = not modified.is_error
+        _record(evidence, "MCP modify", modify_ok, _tool_detail(modified))
+
+        if modify_ok:
+            location = _oracle_json(
+                "import bpy, json\n"
+                f"obj = bpy.data.objects.get({quoted_name})\n"
+                "print(json.dumps(list(obj.location) if obj else None))"
+            )
+            location_ok = location == [1.0, 2.0, 3.0]
+            _record(evidence, "Oracle location", location_ok, repr(location))
+
+        deleted = await client.call_tool(
+            "delete_object",
+            {"name": nonce},
+            raise_on_error=False,
+        )
+        delete_ok = not deleted.is_error
+        _record(evidence, "MCP delete", delete_ok, _tool_detail(deleted))
+
+        if delete_ok:
+            exists = _oracle_json(
+                "import bpy, json\n"
+                f"print(json.dumps(bpy.data.objects.get({quoted_name}) is not None))"
+            )
+            _record(evidence, "Oracle deletion", exists is False, repr(exists))
+
+
 async def _verify() -> int:
     if not _socket_is_listening():
         print("SKIP: Blender addon is not listening on 127.0.0.1:9876")
@@ -141,56 +201,27 @@ async def _verify() -> int:
     try:
         removed_before = _cleanup_verification_objects()
         _record(evidence, "Preflight cleanup", True, f"removed={removed_before}")
-        async with Client(endpoint) as client:
-            created = await client.call_tool(
-                "create_object",
-                {"object_type": "MESH", "name": nonce},
-                raise_on_error=False,
-            )
-            create_ok = not created.is_error
-            _record(evidence, "MCP create", create_ok, _tool_detail(created))
-
-            if create_ok:
-                geometry = _oracle_json(
-                    "import bpy, json\n"
-                    f"obj = bpy.data.objects.get({quoted_name})\n"
-                    'print(json.dumps({"exists": obj is not None, '
-                    "\"vertices\": len(obj.data.vertices) if obj and obj.type == 'MESH' else None}))"
-                )
-                geometry_ok = geometry == {"exists": True, "vertices": 8}
-                _record(evidence, "Oracle geometry", geometry_ok, repr(geometry))
-
-                modified = await client.call_tool(
-                    "modify_object",
-                    {"name": nonce, "location": [1.0, 2.0, 3.0]},
-                    raise_on_error=False,
-                )
-                modify_ok = not modified.is_error
-                _record(evidence, "MCP modify", modify_ok, _tool_detail(modified))
-
-                if modify_ok:
-                    location = _oracle_json(
-                        "import bpy, json\n"
-                        f"obj = bpy.data.objects.get({quoted_name})\n"
-                        "print(json.dumps(list(obj.location) if obj else None))"
+        for attempt in (1, 2):
+            try:
+                async with Client(endpoint) as client:
+                    await _scenario(client, nonce, quoted_name, evidence)
+                break
+            except TRANSPORT_ERRORS as exc:
+                # The funnel path (Tailscale Funnel -> edge proxy -> web preview -> API)
+                # reset one handshake on 2026-10-21 and passed 46 s later with nothing
+                # in the API log. One reset before any MCP call is retried, visibly;
+                # a reset after a call began, or a second one, is the failure it is.
+                if attempt == 1 and not any(
+                    item.hypothesis.startswith("MCP ") for item in evidence
+                ):
+                    print(
+                        f"transport reset before any MCP call ({type(exc).__name__}: {exc}); "
+                        "retrying once",
+                        flush=True,
                     )
-                    location_ok = location == [1.0, 2.0, 3.0]
-                    _record(evidence, "Oracle location", location_ok, repr(location))
-
-                deleted = await client.call_tool(
-                    "delete_object",
-                    {"name": nonce},
-                    raise_on_error=False,
-                )
-                delete_ok = not deleted.is_error
-                _record(evidence, "MCP delete", delete_ok, _tool_detail(deleted))
-
-                if delete_ok:
-                    exists = _oracle_json(
-                        "import bpy, json\n"
-                        f"print(json.dumps(bpy.data.objects.get({quoted_name}) is not None))"
-                    )
-                    _record(evidence, "Oracle deletion", exists is False, repr(exists))
+                    continue
+                _record(evidence, "MCP transport", False, f"{type(exc).__name__}: {exc}")
+                break
     except Exception as exc:
         _record(evidence, "MCP transport", False, f"{type(exc).__name__}: {exc}")
     finally:

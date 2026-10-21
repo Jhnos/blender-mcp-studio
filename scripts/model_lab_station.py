@@ -28,7 +28,7 @@ from scripts.hollow_hinge_render import m  # noqa: E402
 from scripts.lab_station_arm import (  # noqa: E402
     build_shoulder,
     connect_serrated_joint,
-    finish_arm,
+    finish_link,
     joint_hardware,
     verify_elbow_assembly,
     verify_elbow_release,
@@ -260,7 +260,7 @@ def build() -> None:
         groups[0].extend([nut, right])
         apply_transform(rotor)
         parts.append(export_prototype(rotor, label + "_arm_shoulder_rotor"))
-        finish_arm(groups[0][0])
+        finish_link(groups[0][0])
         apply_transform(groups[0][0])
         parts.append(export_prototype(groups[0][0], label + "_arm_upper"))
         elbow_bolt, elbow_nut, elbow_left, elbow_right = joint_hardware(elbow, label, steel)
@@ -270,7 +270,7 @@ def build() -> None:
         frame_lift, carrier_lift, rods = build_lift(label, side, probe, color, steel)
         wrist_hardware = build_wrist(frame_lift, groups[1][0], wrist, label, color, steel)
         groups[2].extend(wrist_hardware)
-        finish_arm(groups[1][0])
+        finish_link(groups[1][0])
         apply_transform(groups[1][0])
         parts.append(export_prototype(groups[1][0], label + "_arm_lower"))
         cap, liners = lined_jaw(carrier_lift, label, side, probe, color, soft)

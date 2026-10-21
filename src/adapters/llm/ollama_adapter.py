@@ -55,6 +55,9 @@ class OllamaAdapter(LLMPort):
 
         A status error means Ollama answered and failed (502); anything else in
         httpx's hierarchy — connect, read, timeout — means it was not reached (503).
+        A timeout is still 503, but it is named as waiting, not as unreachable:
+        a shared Ollama that queues us behind another client's long completions
+        is alive, and "unreachable" sent people hunting for a dead service.
         """
         if isinstance(exc, httpx.HTTPStatusError):
             # reason_phrase, not .text: on a streaming response the body has not
@@ -62,6 +65,11 @@ class OllamaAdapter(LLMPort):
             response = exc.response
             return LLMProviderError(
                 f"Ollama answered {response.status_code} {response.reason_phrase}"
+            )
+        if isinstance(exc, httpx.TimeoutException):
+            return LLMConnectionError(
+                f"Ollama at {self._base_url} did not answer within {self._timeout:g}s "
+                f"(queued behind other requests or still loading {self._model})"
             )
         return LLMConnectionError(f"Ollama unreachable at {self._base_url}: {exc}")
 
@@ -247,3 +255,7 @@ class OllamaAdapter(LLMPort):
     @property
     def model_name(self) -> str:
         return self._model
+
+    @property
+    def base_url(self) -> str:
+        return self._base_url

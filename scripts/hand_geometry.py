@@ -29,9 +29,17 @@ def realise(solid: Solid) -> bpy.types.Object:
     if isinstance(solid, Ellipsoid):
         return add_ellipsoid(solid.name, solid.size_mm, solid.center_mm)
     if isinstance(solid, Cylinder):
+        # The shipped hand packages (models/hand-*/manifest.json) pin triangle counts
+        # produced with the float rotation; the exact-axis path changes them by ~14%.
+        # Republishing those packages is the only way to switch this flag.
         if solid.segments is None:
             return add_cylinder(
-                solid.name, solid.radius_mm, solid.height_mm, solid.center_mm, axis=solid.axis
+                solid.name,
+                solid.radius_mm,
+                solid.height_mm,
+                solid.center_mm,
+                axis=solid.axis,
+                exact_axes=False,
             )
         return add_cylinder(
             solid.name,
@@ -40,6 +48,7 @@ def realise(solid: Solid) -> bpy.types.Object:
             solid.center_mm,
             axis=solid.axis,
             vertices=solid.segments,
+            exact_axes=False,
         )
     outer = realise(solid.outer)
     boolean(outer, realise(solid.inner), "DIFFERENCE")

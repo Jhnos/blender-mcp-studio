@@ -6,13 +6,17 @@
 每輪 nonce 隔離 (verify_ 前綴) + teardown.
 """
 
+import functools
 import json
+import os
 import random
 import socket
 import ssl
 import sys
 import time
+import urllib.error
 import urllib.request
+from collections.abc import Callable
 from pathlib import Path
 
 # Every other verifier in this directory does this; this one never did, so it
@@ -135,6 +139,85 @@ def teardown() -> None:
     )
 
 
+def ollama_target() -> tuple[str, str]:
+    """Model and endpoint resolved the way the API resolves them, not a second copy."""
+    from src.adapters.llm.factory import build_llm_adapter
+    from src.adapters.llm.ollama_adapter import OllamaAdapter
+    from src.infrastructure.env_loader import load_env
+
+    load_env()
+    adapter = build_llm_adapter("ollama")
+    if not isinstance(adapter, OllamaAdapter):
+        raise RuntimeError("The chat gate expects the Ollama provider")
+    return adapter.model_name, adapter.base_url
+
+
+def ollama_probe(base_url: str, model: str, timeout_s: float) -> float | None:
+    """Seconds until a one-token answer, or None when Ollama did not answer in time."""
+    payload = {
+        "model": model,
+        "prompt": "Reply with OK.",
+        "stream": False,
+        "options": {"num_predict": 1},
+    }
+    req = urllib.request.Request(
+        f"{base_url}/api/generate",
+        data=json.dumps(payload).encode(),
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+    t0 = time.monotonic()
+    try:
+        with urllib.request.urlopen(req, timeout=timeout_s) as resp:
+            resp.read()
+            if resp.status != 200:
+                return None
+    except (urllib.error.URLError, TimeoutError, OSError):
+        return None
+    return time.monotonic() - t0
+
+
+def wait_for_ollama(
+    probe: Callable[[float], float | None],
+    *,
+    budget_s: float = 600.0,
+    attempt_timeout_s: float = 60.0,
+    pause_s: float = 15.0,
+    clock: Callable[[], float] = time.monotonic,
+    sleep: Callable[[float], None] = time.sleep,
+) -> float:
+    """Bounded wait with a heartbeat for the shared Ollama to answer a tiny probe.
+
+    Observed 2026-10-20: this Mac's Ollama is shared with other tailnet clients
+    and a local embedding worker. Our /api/chat sat in its queue for the API's
+    full 300 s and the gate reported "unreachable" for a service that was alive.
+    Liveness is a heartbeat; the budget is the last resort, and spending it names
+    the precondition rather than the chat path.
+    """
+    t0 = clock()
+    attempt = 0
+    while True:
+        attempt += 1
+        elapsed = probe(attempt_timeout_s)
+        if elapsed is not None:
+            print(f"  ollama probe attempt {attempt}: answered in {elapsed:.1f}s", flush=True)
+            return elapsed
+        waited = clock() - t0
+        # flush: ci.sh captures this into a log file, where block buffering would
+        # hide the heartbeat until the process ends — the opposite of a heartbeat.
+        print(
+            f"  ollama probe attempt {attempt}: no answer within {attempt_timeout_s:g}s "
+            f"(waited {waited:.0f}s of {budget_s:g}s budget)",
+            flush=True,
+        )
+        if waited >= budget_s:
+            raise RuntimeError(
+                f"precondition: shared Ollama did not answer a one-token probe within "
+                f"{budget_s:g}s; it is saturated or down, not a chat-path defect"
+            )
+        sleep(pause_s)
+
+
 def main() -> None:
     results: list[tuple[str, bool, object]] = []
 
@@ -143,6 +226,12 @@ def main() -> None:
         print(f"[{'PASS' if ok else 'FAIL'}] {hid}: {detail}")
 
     print("=== PRECHECK ===")
+    model, base_url = ollama_target()
+    print(f"ollama target: {model} at {base_url}")
+    wait_for_ollama(
+        functools.partial(ollama_probe, base_url, model),
+        budget_s=float(os.environ.get("CHAT_GATE_OLLAMA_BUDGET_S", "600")),
+    )
     teardown()  # exclude residue from the measured baseline
     base_names = o_names()
     base_n = len(base_names)

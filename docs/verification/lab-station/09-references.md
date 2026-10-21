@@ -89,3 +89,11 @@ GitHub 查找 `electrode holder 3d print clamp pH probe` 與分片夾座，檢�
 - 適用邊界：此為後續連續間隙方法的來源比較，尚未引入FCL／Bullet依賴，也不改變現有固定取樣的證據範圍。若採用現成求解器，須明確選擇運動及求解方式，驗證薄障礙、擦邊、旋轉與失敗／未收斂狀態，不能把不確定結果當作clear。
 
 - [python-fcl](https://github.com/BerkeleyAutomation/python-fcl)與[請求類別原始碼](https://github.com/BerkeleyAutomation/python-fcl/blob/master/src/fcl/collision_data.py)：Python binding預設solver為CONSERVATIVE_ADVANCEMENT，與FCL C++預設不同。研究採隔離venv及顯式solver／運動類型；三角網格須用解析薄障礙、擦邊與clear對照測試驗證變換處理與接觸時間，不能把套件預設結果直接當作資格。
+
+- [CGAL Polygon Mesh Processing](https://doc.cgal.org/latest/Polygon_mesh_processing/)與[官方SWIG綁定](https://github.com/CGAL/cgal-swig-bindings/blob/main/SWIG_CGAL/Polygon_mesh_processing/CGAL_Polygon_mesh_processing.i)：提供does_self_intersect／self_intersections；匯入前後頂點與面必須獨立核對，避免資料轉換改動掩蓋缺陷。
+
+共用網格測試抽離前（2026-10-03）：查閱 [Blender bmesh triangulate](https://github.com/blender/blender/blob/main/source/blender/bmesh/tools/bmesh_triangulate.cc) 與上述CGAL官方SWIG自交介面。沿用Blender內建三角化、既有BlenderSocketOracle及CGAL獨立研究檢查；mesh_refinement_verify_real只是移出既有測試並補表面保留回歸，不另造幾何核心或MCP通道。
+
+布林求解與永久自交守衛前置查找（2026-10-03）：[Blender 4.5 Manifold 說明](https://developer.blender.org/docs/release_notes/4.5/modeling/)、[官方Boolean原始碼](https://github.com/blender/blender/blob/main/source/blender/geometry/intern/mesh_boolean.cc)、[CGAL官方SWIG接口](https://github.com/CGAL/cgal-swig-bindings/blob/main/SWIG_CGAL/Polygon_mesh_processing/CGAL_Polygon_mesh_processing.i)。實測EXACT選項與MANIFOLD均不能解決重複孔壁，故保持原solver。永久mesh_integrity沿用CGAL，不重寫相交算法；新增自身拓樸及轉換保真守衛。
+
+CGAL輪子載入警告：查閱[SWIG官方issue 2881](https://github.com/swig/swig/issues/2881)，問題在內建型別metadata、修復里程碑SWIG4.4；目前CGAL可安裝最新wheel仍帶舊生成碼，未以全域warning filter掩蓋其他警告。

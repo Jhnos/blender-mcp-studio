@@ -240,7 +240,7 @@ def retained_pivot(
 
 
 def joint_boolean(target: bpy.types.Object, tool: bpy.types.Object, operation: str) -> None:
-    """Calculate small mating features in local millimetres, then restore metre geometry."""
+    """Calculate mating features at a binary-exact local scale, then restore metres."""
     frame = target.matrix_world.copy()
     relative = frame.inverted() @ tool.matrix_world
     tool.data.transform(relative)
@@ -248,13 +248,15 @@ def joint_boolean(target: bpy.types.Object, tool: bpy.types.Object, operation: s
         tool.data.flip_normals()
     tool.matrix_world = Matrix.Identity(4)
     target.matrix_world = Matrix.Identity(4)
-    scale = Matrix.Scale(1000, 4)
+    # Binary powers preserve float coordinates when scaling into and out of the solver.
+    factor = 1024.0
+    scale = Matrix.Scale(factor, 4)
     target.data.transform(scale)
     tool.data.transform(scale)
     try:
         boolean(target, tool, operation)
     finally:
-        target.data.transform(Matrix.Scale(0.001, 4))
+        target.data.transform(Matrix.Scale(1 / factor, 4))
         target.matrix_world = frame
         bpy.context.view_layer.update()
 
@@ -330,8 +332,11 @@ def electrode_joint_teeth(
                 )
             else:
                 pocket.matrix_world = body.matrix_world @ pocket.matrix_world
-            joint_boolean(teeth, pocket, "DIFFERENCE")
-            finish(teeth)
         joint_boolean(body, teeth, "UNION")
         finish(body)
+        if suffix == positive:
+            # Cut the shared pocket once, after joining; separately cut walls
+            # acquire slightly different coordinates and leave Boolean slivers.
+            joint_boolean(body, pocket, "DIFFERENCE")
+            finish(body)
         body[tag] = spec.teeth

@@ -5,6 +5,27 @@
 
 ## [Unreleased]
 
+### V01.0R.02I — V10 手臂根因修復、永久 CGAL 閘門與真機 CI 誤報修正
+
+#### Fixed
+
+- V10 手臂 readiness 失敗（下／上臂零面積 3、下臂相交 2，自 2026-10-03 起不變）根因：`connect_serrated_joint` 的布林輸入相切（肩座 cutter 端蓋落在 hub 面、齒盤內環貼著 bore、48 邊形與齒盤徑向格相位對齊）與共線頂點鏈被預設三角化跨鏈連線留下奈米薄片，遠離原點後變成零面積與自交。改為頸→穿透頸部的肩座→hub→齒盤（芯 2.0 mm、相位 π/192）UNION→共用 bore 一次 DIFFERENCE→頭座；新增逐面 CDT 的 `triangulate_faces` 與 V10 專用 `finish_link`。手臂左右兩契約 readiness forbidden 空，六件手臂 host 端 CGAL 全過。
+- 真機 CI 第一步「installed LaunchAgents match this checkout」誤報：launchd 的 log 落地檔被 macOS 回收即判漂移。改為對 `StandardOutPath`／`StandardErrorPath` 只要求目錄存在，其餘路徑照舊；測試補兩側。
+- 對話閘門把共用 Ollama 排隊 300 秒後的逾時印成「unreachable」。adapter 逾時改為「N 秒內未回應（排隊或載入中）」並附模型名，新增 `base_url` 屬性；閘門 PRECHECK 以 factory 同源模型／端點送一字探針、有界心跳等待（預設 600 s，`CHAT_GATE_OLLAMA_BUDGET_S` 可調），逾預算以前置條件訊息失敗。
+- 新增真機層前置閘門「running API is newer than this checkout」：API 的沙箱白名單與逐腳本逾時是啟動時快照，checkout 比它新時 API 會擋掉自己推導的驗證腳本（Security: blocked code）；閘門比對 API 監聽行程啟動時間與 api／src／scripts／config 的 mtime，紅燈直接給重啟指令。
+- MCP 協定真機閘門：Tailscale Funnel 路徑在握手期的一次對端重置改為重試一次並明確印出（任何 MCP 呼叫之後的重置或第二次重置仍為失敗），單元測試釘住三種形狀；此前一次中繼抖動讓整輪 CI 白跑。
+- 共用 primitive 檔逼近 400 行預算的 95% 警戒，CDT 三角化（`triangulate_faces`）拆成`scripts/blender_mesh_triangulation.py`，手臂與兩個真機控制改引新模組，SSOT 歸屬表同步。
+- 共用 `add_cylinder` 的精確軸向置換會改變手部已發布包的幾何（hand-v3 指節三角數 3434→3932），由「重生成包與已發布包一致」閘門抓到。新增 `exact_axes` 參數：預設 True（實驗室關節需要共面端蓋），`hand_geometry` 明確傳 False 沿用已發布包當初的浮點旋轉；AST 測試釘住預設與呼叫點。要換成精確版須走重新發布流程。
+- rotary 概念的肩部 rotor 退化面：偏航螺栓 Z 向 bore 的 48 邊形稜線正好穿過肩部齒盤外壁四邊形的中線（齒盤偏移 4.7 − bore 半徑 2.7 ＝ 底板厚 4 的一半），solver 留下重合頂點。`lab_station_base.yaw_spigot` 讓 bore 繞 Z 轉半步相位，尺寸位置不變；rotary 成員改用鏈安全的 `finish_link` 收尾；鋸齒關節控制把 area<1e-12 薄片納入失敗條件並加 rotor 偏航階段。
+- 驗證套件的 Blender 腳本逾時由 300 秒（最慢套件 274.98 秒的 1.09 倍）改為量測推導：`VERIFICATION_TIMEOUT_S = 5 × SLOWEST_SUITE_MEASURED_S`，MCP 工具與真機閘門客戶端逾時各加 30 秒由同一常數推導並以測試釘住順序與接線；閘門逐套記錄耗時。主機負載高時套件超過 300 秒曾讓活著的 Blender 被報成 unavailable 並中止整輪 CI。
+- pH 平台齒盤接合改為 body 與齒盤 UNION 後才一次 DIFFERENCE 共用孔；`joint_boolean` 內部尺度改 1024 二進位；`add_cylinder` 軸向四分之一轉改座標排列與符號翻轉；共用 `finish_arm` 對有效封閉非退化三角面只重算面向。
+
+#### Changed
+
+- 新增永久獨立表面驗證 `src/verification/mesh_integrity`（拓樸守衛＋CGAL 轉換保真＋自交），`verify_closed_surfaces` 遍歷保存場景全部 mesh；dev 依賴加入 cgal。
+- `mesh_refinement_verify_real` 自 `lab_electrode_readback_real` 抽出，並接入鋸齒關節 22 階段控制（含相切 bore 負對照）與共線鏈三角化控制；全部走 lab_simple 真機閘門。
+- 任務 16 交接段、索引與 LESSONS 補本輪四類教訓（執行期落地檔、共用資源排隊、布林相切與鏈三角化、參照幾何排除）。
+
 ### V01.0R.02H — 明確宣告 TestClient 測試依賴
 
 #### Fixed

@@ -91,6 +91,9 @@ if (( REAL )); then
     # Deployment artifacts live on this machine only, so this belongs here and
     # not in the hermetic tier: a fresh checkout has no LaunchAgents to inspect.
     _run hard "installed LaunchAgents match this checkout" "$PY" scripts/check_installed_plists.py
+    # The API's sandbox allowlist and script deadlines are startup snapshots of the
+    # files on disk; an API older than the checkout blocks its own derived scripts.
+    _run hard "running API is newer than this checkout" "$PY" scripts/check_running_api_freshness.py
     _run hard "REST pipeline (nonce + independent oracle)" "$PY" scripts/verify/mcp_verify_rest.py
     _run hard "MCP protocol (nonce + independent oracle)" "$PY" scripts/verify/mcp_verify_real.py
     # The conversation path — the project's stated Phase 1 — had a verifier that

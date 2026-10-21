@@ -32,12 +32,6 @@ def build(label: str, head_spec: ProbeHeadSpec | None = None) -> None:
             finish_arm(obj)
             boolean(obj, add_cylinder("E_TOOL", 2.7, 40, (x, 0, 126), "X"), "DIFFERENCE")
             finish_arm(obj)
-        if suffix == "upper":
-            for z in (0, 150):
-                boolean(
-                    obj, add_cylinder("E_TOOL", 4.8, 5, (6.6, 0, z), "X", vertices=6), "DIFFERENCE"
-                )
-                finish_arm(obj)
         bake(obj, side)
     obj = link(prefix + "follower", -4.2, mat, radius_mm=11)
     bake(obj, side)
@@ -53,11 +47,6 @@ def build(label: str, head_spec: ProbeHeadSpec | None = None) -> None:
     for y, z in vertices:
         boolean(obj, add_cylinder("E_TOOL", 2.7, 30, (4.2, y, z), "X"), "DIFFERENCE")
         finish_arm(obj)
-    boolean(
-        obj,
-        add_cylinder("E_TOOL", 4.8, 5, (6.6, spec.platform_offset_mm, 0), "X", vertices=6),
-        "DIFFERENCE",
-    )
     bake(obj, side)
     bpy.data.objects.remove(bpy.data.objects[prefix + "head"], do_unlink=True)
     for obj in compact_probe_head(label, mat, head_spec):

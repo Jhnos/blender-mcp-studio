@@ -1,14 +1,42 @@
 """Side-mounted elbow teeth connected to links through offset necks."""
 
+import math
 from collections.abc import Callable
 from typing import Literal
 
 import bmesh
 import bpy
+from mathutils import Matrix
 
-from scripts.blender_mesh_primitives import add_cylinder, assign, boolean, cleanup_mesh
+from scripts.blender_mesh_primitives import (
+    add_cylinder,
+    assign,
+    boolean,
+    cleanup_mesh,
+)
+from scripts.blender_mesh_primitives import finish_arm as finish_arm
+from scripts.blender_mesh_triangulation import triangulate_faces
 from scripts.lab_station_joints import placed_plate
 from src.core.domain.lab_station import Point
+
+#: Plate core well inside the shared 2.7 mm bore, drilled once after link, hub and
+#: plate are joined; half a plate step of phase keeps the 48-gon hub and bore edges
+#: off the plate's 1.875 degree radial grid, where they emitted coincident vertices.
+PLATE_CORE_RADIUS_MM = 2.0
+PLATE_PHASE_RAD = math.pi / 192
+
+
+def finish_link(obj: bpy.types.Object) -> None:
+    """Chain-safe triangulation, then the shared finish; coincident vertices raise."""
+    mesh = bmesh.new()
+    try:
+        mesh.from_mesh(obj.data)
+        triangulate_faces(mesh)
+        mesh.to_mesh(obj.data)
+    finally:
+        mesh.free()
+    obj.data.update()
+    finish_arm(obj)
 
 
 def connect_serrated_joint(
@@ -22,10 +50,19 @@ def connect_serrated_joint(
     joint: Literal["elbow", "shoulder"] = "elbow",
     shoulder_neck_plane_mm: float = 13,
 ) -> None:
+    # Every Boolean input crosses the link transversally; touching surfaces (a cutter
+    # cap on the hub face, a plate ring on its bore) leave slivers no weld removes.
     x, y, z = point
     for link, neck, sign in ((upper, necks[0], -1), (lower, necks[1], 1)):
         center = (x + sign * (shoulder_neck_plane_mm if joint == "shoulder" else 14), y, z)
         boolean(link, beam("TOOL_elbow_neck", center, neck, mat), "UNION")
+        if joint == "shoulder":
+            # Through the neck only; the hub added next refills it up to the seat floor.
+            boolean(
+                link,
+                add_cylinder("LS_TOOL_shoulder_seat", 5.3, 29.5, (x + sign * 19.75, y, z), "X"),
+                "DIFFERENCE",
+            )
         hub_center = (x + sign * (7 if joint == "shoulder" else 14), y, z)
         boolean(
             link,
@@ -34,27 +71,25 @@ def connect_serrated_joint(
             ),
             "UNION",
         )
-        boolean(link, add_cylinder("LS_TOOL_elbow_bore", 2.7, 70, point, "X"), "DIFFERENCE")
-        if joint == "shoulder":
-            boolean(
-                link,
-                add_cylinder("LS_TOOL_shoulder_seat", 5.3, 25, (x + sign * 22, y, z), "X"),
-                "DIFFERENCE",
-            )
-            if sign < 0:
-                boolean(
-                    link,
-                    add_cylinder("LS_TOOL_shoulder_head_seat", 8.3, 20, (x - 25.3, y, z), "X"),
-                    "DIFFERENCE",
-                )
         plate = placed_plate(
             "LS_TOOL_elbow_teeth",
             mat,
             (x + sign * 4.7, y, z),
             -sign,
-            2.75,
+            PLATE_CORE_RADIUS_MM,
         )
+        # The same world turn on both halves keeps their tooth engagement exact.
+        plate.rotation_euler = (
+            Matrix.Rotation(PLATE_PHASE_RAD, 4, "X") @ plate.rotation_euler.to_matrix().to_4x4()
+        ).to_euler()
         boolean(link, plate, "UNION")
+        boolean(link, add_cylinder("LS_TOOL_elbow_bore", 2.7, 70, point, "X"), "DIFFERENCE")
+        if joint == "shoulder" and sign < 0:
+            boolean(
+                link,
+                add_cylinder("LS_TOOL_shoulder_head_seat", 8.3, 20, (x - 25.3, y, z), "X"),
+                "DIFFERENCE",
+            )
         cleanup_mesh(link)
         link[joint + "_integrated"] = True
 
@@ -164,31 +199,6 @@ def verify_elbow_release() -> dict[str, object]:
     }
 
 
-def finish_arm(obj: bpy.types.Object) -> None:
-    """Resolve Boolean polygons before cleanup so export cannot create new slivers."""
-    mesh = bmesh.new()
-    mesh.from_mesh(obj.data)
-    bmesh.ops.triangulate(mesh, faces=list(mesh.faces))
-    original = mesh.copy()
-    bmesh.ops.remove_doubles(mesh, verts=list(mesh.verts), dist=0.00001)
-    bmesh.ops.dissolve_degenerate(mesh, edges=list(mesh.edges), dist=0.000005)
-    mesh.to_mesh(obj.data)
-    mesh.free()
-    cleanup_mesh(obj)
-    cleaned = bmesh.new()
-    cleaned.from_mesh(obj.data)
-    if all(edge.is_manifold for edge in original.edges) and any(
-        not edge.is_manifold for edge in cleaned.edges
-    ):
-        # A distance weld may merge nearby, distinct corrugation/pocket surfaces.
-        # Keep the valid triangulation instead of trading detail for open seams.
-        bmesh.ops.recalc_face_normals(original, faces=list(original.faces))
-        original.to_mesh(obj.data)
-        obj.data.update()
-    cleaned.free()
-    original.free()
-
-
 def verify_elbow_assembly(
     scene_prefixes: tuple[str, ...] = ("LS_",), hardware_prefix: str = "LS_HW_"
 ) -> dict[str, object]:
@@ -269,7 +279,7 @@ def build_shoulder(
     connect_serrated_joint(
         rotor, upper, point, (fixed_neck, neck), label, mat, beam, "shoulder", neck_plane_mm
     )
-    finish_arm(rotor)
+    finish_link(rotor)
     return rotor, joint_hardware(point, label, metal, "shoulder")
 
 
