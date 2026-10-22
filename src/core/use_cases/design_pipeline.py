@@ -12,11 +12,10 @@ loads STLs into Blender, Phase 1b must hold a single lease across both stages.
 from __future__ import annotations
 
 import asyncio
-import contextlib
 import logging
 import re
 import uuid
-from collections.abc import AsyncIterator, Awaitable, Callable, Mapping
+from collections.abc import Awaitable, Callable, Mapping
 from dataclasses import replace
 from pathlib import Path
 
@@ -31,17 +30,13 @@ from src.core.domain.design_run import (
 from src.core.domain.import_limits import ImportLimits
 from src.core.domain.mesh_integrity import MeshIntegrityReport
 from src.core.domain.model_spec import (
-    LEGACY_V1_MATERIAL,
     ModelSpec,
-    PrintTarget,
     parse_model_spec,
 )
 from src.core.domain.model_spec_schema import describe_model_spec
 from src.core.domain.slicing import (
-    SliceRequest,
     SliceResult,
     ToolAvailability,
-    ToolUnavailableError,
 )
 from src.core.ports.job_store_port import JobStorePort
 from src.core.ports.mechanism_simulation_port import MechanismSimulationPort
@@ -52,14 +47,14 @@ from src.core.use_cases import artifact_catalog, print_targets
 from src.core.use_cases import design_files as files
 from src.core.use_cases import design_reports as reports
 from src.core.use_cases import design_stages as stages
-from src.core.use_cases.blender_lease import BlenderLease, run_to_completion
+from src.core.use_cases.blender_lease import BlenderLease
+from src.core.use_cases.slice_file import slice_one
 
 logger = logging.getLogger(__name__)
 
 _RUN_ID = re.compile(r"[0-9a-f]{32}")
 _LEASED = frozenset({StageName.MECHANISM, StageName.PRINT})
 INTERRUPTED = "interrupted: service restarted"
-SLICER_BUSY = "slicer busy: another print job is running; retry later"
 
 
 class DesignPipeline:
@@ -184,51 +179,20 @@ class DesignPipeline:
     async def slice_file(self, input_3mf: str, printer: str, *, queue: bool = True) -> SliceResult:
         """Slice one 3MF under the artifact roots into a fresh run directory.
 
-        Output paths come back relative to the runs dir: ``<run_id>/print/<name>``. With
-        ``queue=False`` a held lease returns a "slicer busy" result at once instead of waiting.
-        A missing slicer is a failed result, never an exception; a run directory that ends up
-        empty (busy, failure) is removed.
+        Output paths come back relative to the runs dir: ``<run_id>/print/<name>``.
         """
-        (found,) = await asyncio.to_thread(
-            files.resolve_inputs,
-            (input_3mf,),
-            suffix=".3mf",
-            roots=self._roots,
-            max_count=1,
-            max_bytes=self._limits.max_3mf_bytes,
+        result = await slice_one(
+            self._slicing,
+            self._lease,
+            self._runs_dir,
+            self._roots,
+            self._limits,
+            input_3mf,
+            printer,
+            queue=queue,
         )
-        run_dir = self._runs_dir / uuid.uuid4().hex
-        try:
-            async with self._claim_print(queue) as acquired:
-                if not acquired:
-                    return SliceResult(False, None, None, "", -1, SLICER_BUSY)
-                run_dir.mkdir(parents=True)
-                request = SliceRequest.from_target(
-                    str(found.absolute),
-                    str(run_dir / "print"),
-                    # Task 5: slice_for_print gets a required material; drop the legacy fill.
-                    PrintTarget(printer=printer, material=LEGACY_V1_MATERIAL),
-                    printer_id=print_targets.printer_id_for(printer),
-                )
-                try:
-                    result = await run_to_completion(self._slicing.slice(request))
-                except ToolUnavailableError as exc:
-                    result = SliceResult(False, None, None, "", -1, str(exc))
-        finally:
-            for leftover in (run_dir / "print", run_dir):
-                with contextlib.suppress(OSError):
-                    leftover.rmdir()
         result = replace(result, message=await self.clean(result.message))
         return files.relative_slice(result, self._runs_dir, self._scrub)
-
-    @contextlib.asynccontextmanager
-    async def _claim_print(self, queue: bool) -> AsyncIterator[bool]:
-        if queue:
-            async with self._lease.hold(StageName.PRINT):
-                yield True
-        else:
-            async with self._lease.try_hold(StageName.PRINT) as acquired:
-                yield acquired
 
     async def clean(self, text: str) -> str:
         """Strip host paths from free text, including every slicer binary's directory."""
