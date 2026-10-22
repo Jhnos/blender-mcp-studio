@@ -170,7 +170,8 @@ if (( REAL )); then
     _run hard "hand-compact build determinism within budget" "$PY" scripts/verify/build_determinism_probe.py --instance hand-compact --runs 3 --against-budget
     # The user's v78 deliverable through the public MCP URL: import, geometry, print, package,
     # plus a truncated-header negative control. Needs Bambu Studio and a service running this code.
-    _run hard "design pipeline on the v78 deliverable (import → geometry → print → package)" "$PY" scripts/verify/design_pipeline_verify_real.py scripts/verify/contracts/design_pipeline_v78.json
+    _run hard "design pipeline on the v78 deliverable (Bambu P2S via Bambu Studio)" "$PY" scripts/verify/design_pipeline_verify_real.py scripts/verify/contracts/design_pipeline_v78.json
+    _run hard "design pipeline on the v78 deliverable (Creality K1 Max via OrcaSlicer)" "$PY" scripts/verify/design_pipeline_verify_real.py scripts/verify/contracts/design_pipeline_v78_creality_k1max.json
   else
     # Explicit SKIP, never a silent pass: with Blender down this tier is vacuous.
     printf '  %sSKIP%s MCP pipeline — Blender addon not listening on 9876 %s(start it: launchctl kickstart -k gui/$(id -u)/com.blender-mcp.blender)%s\n' \

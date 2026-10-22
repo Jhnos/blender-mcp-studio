@@ -156,7 +156,7 @@ async def test_submit_store_failure_error_is_scrubbed(tmp_path):
 
 
 def test_contract_spec_is_the_documented_example():
-    from src.core.domain.model_spec_schema import V1_EXAMPLE
+    from src.core.domain.model_spec_schema import V2_EXAMPLE
 
     contract = json.loads(_CONTRACT.read_text(encoding="utf-8"))
-    assert contract["spec"] == V1_EXAMPLE
+    assert contract["spec"] == V2_EXAMPLE

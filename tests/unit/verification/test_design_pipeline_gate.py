@@ -56,7 +56,7 @@ def good_manifest() -> dict:
         "tools": [
             {
                 "name": "bambu-studio",
-                "version": "2.0",
+                "version": EXPECT["slicer_version"],
                 "license": "AGPL-3.0-only",
                 "invocation": "subprocess",
             }

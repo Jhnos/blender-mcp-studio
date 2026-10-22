@@ -165,9 +165,13 @@ def check_manifest(
         required.append(out)
     failures = [f"manifest.json does not list {path}" for path in required if path not in listed]
     tool, licence = expect["slicer_tool"], expect["slicer_license"]
+    version = expect["slicer_version"]
     tools = _rows(manifest.get("tools"))
-    if not any(t.get("name") == tool and t.get("license") == licence for t in tools):
-        failures.append(f"manifest.json has no tool entry {tool} with license {licence}")
+    if not any(
+        t.get("name") == tool and t.get("license") == licence and t.get("version") == version
+        for t in tools
+    ):
+        failures.append(f"manifest.json has no tool entry {tool} {version} with license {licence}")
     return failures
 
 
@@ -205,6 +209,57 @@ def check_negative(report: Mapping[str, object], bad_rel: str) -> list[str]:
     if bad_rel not in message:
         return [f"negative control: geometry failure does not name {bad_rel}: {message[:300]}"]
     return []
+
+
+def check_printer_listed(listing: Mapping[str, object], printer_id: str) -> list[str]:
+    """Precondition from ``list_printers``: the contract printer must be usable on this host."""
+    if any(row.get("id") == printer_id for row in _rows(listing.get("printers"))):
+        return []
+    row = next((r for r in _rows(listing.get("unavailable")) if r.get("id") == printer_id), None)
+    if row is None:
+        return [f"list_printers does not know printer {printer_id}"]
+    return [
+        f"printer {printer_id} is unavailable on this host: {row.get('reason')} "
+        f"(install hint: {row.get('install_hint')})"
+    ]
+
+
+def listed_materials(listing: Mapping[str, object], printer_id: str) -> list[str]:
+    """The materials ``list_printers`` offers for the printer (empty when it is not listed)."""
+    for row in _rows(listing.get("printers")):
+        if row.get("id") == printer_id:
+            return [str(m) for m in _items(row.get("materials"))]
+    return []
+
+
+def check_material_rejection(error: str | None, material: str, allowed: Sequence[str]) -> list[str]:
+    """Submit-time rejection: ``error`` is the tool error text, or None when a job was created."""
+    if error is None:
+        return [f"material negative: {material!r} was accepted at submit (a job was created)"]
+    missing = [name for name in (material, *allowed) if name not in error]
+    if not allowed:
+        missing.append("(no allowed materials known to compare against)")
+    if missing:
+        return [
+            f"material negative: rejection must name {material!r} and list the allowed "
+            f"materials; missing {missing} in: {error[:300]}"
+        ]
+    return []
+
+
+def check_plate_fit_negative(report: Mapping[str, object], needles: Sequence[str]) -> list[str]:
+    """The too-small-printer control must end with the print stage FAILED, naming every needle."""
+    stage = _stage(report, "print")
+    if stage is None:
+        return ["plate-fit negative: no print stage in the report"]
+    if stage.get("outcome") != "failed":
+        return [f"plate-fit negative: print must be failed, was {stage.get('outcome')}"]
+    message = str(stage.get("message") or "")
+    return [
+        f"plate-fit negative: print failure lacks {needle!r}: {message[:300]}"
+        for needle in needles
+        if needle not in message
+    ]
 
 
 def poll_job(

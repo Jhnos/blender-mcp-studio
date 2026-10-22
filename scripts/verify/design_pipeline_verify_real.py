@@ -3,8 +3,11 @@
 
 Submits the contract's ModelSpec with ``run_design_pipeline``, polls ``get_job_status`` with a
 heartbeat, then asserts machine evidence for import, geometry, mechanism, print and package
-(``design_gate_checks``; expected numbers live in the contract JSON). A negative control submits
-a copy with one STL header truncated and requires a geometry FAILED naming that file.
+(``design_gate_checks``; expected numbers live in the contract JSON). Precondition: ``list_printers``
+must list the contract's printer as usable, else FAIL with the unavailable reason and install hint.
+Negative controls (data in the contract): an unknown material is rejected at submit; a printer
+whose bed is too small ends with print FAILED naming the fit; optionally a copy with one STL
+header truncated requires a geometry FAILED naming that file.
 
 Absent prerequisites (deliverable directory, slicer, MCP endpoint) are FAILs with a reason, never
 a silent SKIP. The deployed API must run code that has the design tools; run this after deploy.
@@ -193,6 +196,47 @@ async def _negative(client: Client[Any], contract: Mapping[str, Any], root: Path
         shutil.rmtree(work, ignore_errors=True)
 
 
+async def _material_negative(
+    client: Client[Any], contract: Mapping[str, Any], listing: Mapping[str, object]
+) -> list[str]:
+    """The same spec with a material the printer does not offer must fail at submit."""
+    spec = json.loads(json.dumps(contract["spec"]))
+    material = str(contract["negative_controls"]["material"]["material"])
+    printer = str(spec["print_target"]["printer"])
+    spec["print_target"]["material"] = material
+    spec["name"] = "negative-control-unknown-material"
+    try:
+        submitted = await _tool(client, "run_design_pipeline", {"spec": spec})
+    except (ToolError, McpError) as exc:
+        error: str | None = str(exc)
+    else:
+        error = None
+        print(f"[material] unexpectedly accepted: {str(submitted)[:200]}", flush=True)
+    allowed = checks.listed_materials(listing, printer)
+    return checks.check_material_rejection(error, material, allowed)
+
+
+async def _plate_fit_negative(client: Client[Any], contract: Mapping[str, Any]) -> list[str]:
+    """The same spec on a printer whose bed is too small must end with print FAILED."""
+    control = contract["negative_controls"]["plate_fit"]
+    spec = json.loads(json.dumps(contract["spec"]))
+    spec["print_target"]["printer"] = control["printer"]
+    spec["name"] = "negative-control-plate-too-big"
+    _, report = await _run_spec(client, spec, "plate-fit")
+    return checks.check_plate_fit_negative(report, control["message_contains"])
+
+
+async def _negatives(
+    client: Client[Any], contract: Mapping[str, Any], root: Path, listing: Mapping[str, object]
+) -> list[str]:
+    failures = await _material_negative(client, contract, listing)
+    if "plate_fit" in contract["negative_controls"]:
+        failures += await _plate_fit_negative(client, contract)
+    if "negative_control" in contract:
+        failures += await _negative(client, contract, root)
+    return failures
+
+
 async def _session(contract: Mapping[str, Any], url: str, root: Path) -> list[str]:
     failures: list[str] = []
     for attempt in (1, 2):
@@ -200,10 +244,13 @@ async def _session(contract: Mapping[str, Any], url: str, root: Path) -> list[st
             async with Client(url) as client:
                 rows = await _tool(client, "tool_status")
                 failures += checks.check_slicer(rows or [], contract["expect"]["slicer_tool"])
+                listing = await _object(client, "list_printers")
+                printer = str(contract["spec"]["print_target"]["printer"])
+                failures += checks.check_printer_listed(listing, printer)
                 if failures:
                     return failures
                 failures += await _positive(client, contract)
-                failures += await _negative(client, contract, root)
+                failures += await _negatives(client, contract, root, listing)
             return failures
         except TRANSPORT_ERRORS as exc:
             if attempt == 1 and not failures:
