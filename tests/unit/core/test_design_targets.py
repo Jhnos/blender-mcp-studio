@@ -6,6 +6,7 @@ import pytest
 
 from src.adapters.slicing.bundle_profiles import IncompatibleProfileError
 from src.core.domain.model_spec import ModelSpecError
+from src.core.domain.slicing import LayerHeightError
 from src.infrastructure.printer_catalog_loader import load_printer_catalog
 from tests.unit.core.test_design_fix_round1 import _real_missing_slicer
 from tests.unit.core.test_design_pipeline import _payload, _rig, _run
@@ -42,7 +43,7 @@ async def test_submit_rejects_printer_with_missing_slicer(tmp_path):
     _real_missing_slicer(rig, tmp_path)
     message = await _rejected(rig, _v2(rig, printer=K1C, material="PLA"))
     slicer = load_printer_catalog().slicer("orcaslicer")
-    assert "orcaslicer" in message and slicer.install_hint in message
+    assert "needs OrcaSlicer," in message and slicer.install_hint in message
     assert str(tmp_path) not in message
 
 
@@ -60,11 +61,24 @@ async def test_submit_rejects_unknown_material_listing_allowed(tmp_path):
     assert rig.slicing.checks == []  # the catalog check comes before the bundle check
 
 
-async def test_submit_rejects_unknown_layer_height_listing_allowed(tmp_path):
+async def test_height_outside_machine_range_rejected(tmp_path):
     rig = _rig(tmp_path)
-    message = await _rejected(rig, _v2(rig, printer=P2S, material="PLA", layer_height_mm=0.16))
-    assert message == (f"unsupported print_target.layer_height_mm 0.16 for {P2S}; allowed: 0.20")
-    assert rig.slicing.checks == []
+    rig.slicing.check_error = LayerHeightError(
+        "layer_height_mm 0.5 is outside bambu-p2s-0.4's range 0.08–0.28 mm"
+    )
+    message = await _rejected(rig, _v2(rig, printer=P2S, material="PLA", layer_height_mm=0.5))
+    assert message == "layer_height_mm 0.5 is outside bambu-p2s-0.4's range 0.08–0.28 mm"
+    assert rig.slicing.checks == [(P2S, 0.5, "PLA")]  # the port decides; no catalog-key gate
+
+
+async def test_v1_spec_with_0_28_still_accepted(tmp_path):
+    rig = _rig(tmp_path)
+    payload = {**_payload(rig), "print_target": {"layer_height_mm": 0.28}}
+    _, _, report = await _run(rig, payload)
+    assert report.passed
+    assert rig.slicing.requests[0].layer_height_mm == 0.28
+    print_stage = next(s for s in report.stages if s.name.value == "print")
+    assert ("process_profile", "0.20mm Standard @BBL P2S") in print_stage.metrics
 
 
 async def test_submit_rejects_incompatible_material(tmp_path):
@@ -75,7 +89,7 @@ async def test_submit_rejects_incompatible_material(tmp_path):
     message = await _rejected(rig, _v2(rig, printer=P2S, material="PLA"))
     assert message.startswith(f"print_target is not sliceable on {P2S}: ")
     assert "does not declare machine 'M' compatible" in message
-    assert rig.slicing.checks == [(P2S, "0.20", "PLA")]
+    assert rig.slicing.checks == [(P2S, 0.2, "PLA")]
 
 
 async def test_valid_v2_submit_runs_on_the_named_printer(tmp_path):

@@ -8,6 +8,10 @@ from src.core.domain.exceptions import DomainError
 from src.core.domain.model_spec import PrintTarget
 
 
+class LayerHeightError(DomainError):
+    """A layer height the printer cannot print (outside its machine range, or not a known key)."""
+
+
 class ToolUnavailableError(DomainError):
     """An external tool the pipeline needs is not installed or not executable."""
 
@@ -51,6 +55,7 @@ class SliceResult:
     log_path: str
     return_code: int
     message: str
+    process_profile: str = ""  # the base process profile the slice started from
 
 
 @dataclass(frozen=True, slots=True)
@@ -60,3 +65,11 @@ class ToolAvailability:
     path: str | None
     version: str | None
     install_hint: str
+
+
+@dataclass(frozen=True, slots=True)
+class TargetCheck:
+    """What a submit-time check learned: unevaluated-condition notes and the base process."""
+
+    notes: tuple[str, ...]
+    process_profile: str

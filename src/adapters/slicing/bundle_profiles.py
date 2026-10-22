@@ -196,3 +196,23 @@ def check_compatible(profiles: dict[str, Profile], machine_name: str) -> tuple[s
                 f"'{process.get('name')}' compatible"
             )
     return _unevaluated(profiles)
+
+
+def layer_range(machine: Profile) -> tuple[float, float] | None:
+    """``(min, max)`` layer height in mm a flattened machine profile declares, else ``None``.
+
+    Both keys are usually per-extruder lists of strings (``['0.08']``); with several extruders
+    the range every extruder can print is used. Anything unreadable counts as undeclared.
+    """
+    bounds: list[list[float]] = []
+    for key in ("min_layer_height", "max_layer_height"):
+        raw = machine.get(key)
+        items = as_sequence(raw) or [raw]
+        try:
+            values = [float(str(item)) for item in items if item is not None]
+        except ValueError:
+            return None
+        if not values:
+            return None
+        bounds.append(values)
+    return max(bounds[0]), min(bounds[1])

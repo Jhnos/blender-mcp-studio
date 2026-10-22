@@ -8,7 +8,7 @@ from pathlib import Path
 from src.core.domain.design_run import JobRecord, JobStatus, StageName
 from src.core.domain.mesh_integrity import MeshIntegrityReport, MeshVerdict
 from src.core.domain.packaging import PackagedFile, PackageManifest, ToolUse
-from src.core.domain.slicing import SliceResult, ToolAvailability
+from src.core.domain.slicing import SliceResult, TargetCheck, ToolAvailability
 from src.core.domain.verification import VerificationReport
 from src.core.use_cases.blender_lease import BlenderLease
 from src.infrastructure.printer_catalog_loader import load_printer_catalog
@@ -80,7 +80,7 @@ class FakeSlicing:
         self.requests: list = []
         self.error: Exception | None = None
         self.check_error: Exception | None = None  # what check_target raises (incompatibility)
-        self.checks: list[tuple[str, str, str]] = []
+        self.checks: list[tuple[str, float, str]] = []
         catalog = load_printer_catalog()
         self._catalog = catalog
         self._printers = tuple(catalog.printer(pid) for pid in printer_ids)
@@ -94,11 +94,17 @@ class FakeSlicing:
     def max_timeout_s(self) -> float:
         return FAKE_TIMEOUT_S
 
-    def check_target(self, printer_id: str, layer_height: str, material: str) -> tuple[str, ...]:
-        self.checks.append((printer_id, layer_height, material))
+    def _process_profile(self, printer_id: str) -> str:
+        return self._catalog.printer(printer_id).processes[0][1]
+
+    def slicer_name(self, printer_id: str) -> str:
+        return self._catalog.slicer(self._catalog.printer(printer_id).slicer).name
+
+    def check_target(self, printer_id: str, layer_height_mm: float, material: str) -> TargetCheck:
+        self.checks.append((printer_id, layer_height_mm, material))
         if self.check_error:
             raise self.check_error
-        return ()
+        return TargetCheck((), self._process_profile(printer_id))
 
     def tool_for(self, printer_id: str) -> ToolUse:
         slicer = self._catalog.slicer(self._catalog.printer(printer_id).slicer)
@@ -119,7 +125,15 @@ class FakeSlicing:
         out.mkdir(parents=True, exist_ok=True)  # like the real adapter: evidence is openable
         (out / "out.3mf").write_bytes(b"3mf")
         (out / "log.txt").write_text("ok", encoding="utf-8")
-        return SliceResult(True, f"{out}/out.3mf", None, f"{out}/log.txt", 0, "ok")
+        return SliceResult(
+            True,
+            f"{out}/out.3mf",
+            None,
+            f"{out}/log.txt",
+            0,
+            "ok",
+            self._process_profile(request.printer_id),
+        )
 
 
 class FakePackaging:

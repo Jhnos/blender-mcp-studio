@@ -9,7 +9,7 @@ from typing import Protocol
 
 from src.core.domain.packaging import ToolUse
 from src.core.domain.printer_catalog import PrinterProfile
-from src.core.domain.slicing import SliceRequest, SliceResult, ToolAvailability
+from src.core.domain.slicing import SliceRequest, SliceResult, TargetCheck, ToolAvailability
 
 
 class SlicingPort(Protocol):
@@ -29,10 +29,15 @@ class SlicingPort(Protocol):
         """The largest per-slicer deadline in the catalog, installed or not (seconds)."""
         ...
 
-    def check_target(self, printer_id: str, layer_height: str, material: str) -> tuple[str, ...]:
-        """Resolve the bundle profiles for ``printer_id`` at ``layer_height`` ("0.20", a key of
-        its processes) and ``material`` without slicing. Returns notes (conditions accepted
-        unevaluated); raises a DomainError when they are missing or not declared compatible."""
+    def slicer_name(self, printer_id: str) -> str:
+        """Display name of the slicer that slices ``printer_id`` (installed or not)."""
+        ...
+
+    def check_target(self, printer_id: str, layer_height_mm: float, material: str) -> TargetCheck:
+        """Resolve the bundle profiles for ``printer_id`` at ``layer_height_mm`` and ``material``
+        without slicing. Returns the notes and the base process profile used; raises a
+        DomainError when the profiles are missing, not declared compatible, or the height is
+        not printable (``LayerHeightError``: outside the machine's range)."""
         ...
 
     async def slice(self, request: SliceRequest) -> SliceResult: ...

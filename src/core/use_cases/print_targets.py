@@ -12,6 +12,7 @@ import asyncio
 from src.core.domain.exceptions import DomainError
 from src.core.domain.model_spec import V1_PRINTER_IDS, ModelSpec, ModelSpecError, PrintTarget
 from src.core.domain.printer_catalog import PrinterProfile, UnknownPrinterError
+from src.core.domain.slicing import LayerHeightError
 from src.core.ports.slicing_port import SlicingPort
 
 
@@ -32,20 +33,20 @@ async def check_print_target(target: PrintTarget, slicing: SlicingPort) -> Print
     """Raise ModelSpecError unless the target can be sliced on this host; else its printer.
 
     Fixed order: (1) the printer is in the catalog, (2) its slicer is usable here, (3) the
-    printer's catalog offers the material and layer height, (4) the bundle's profiles declare
-    them compatible. Runs before any run directory or job exists.
+    printer's catalog offers the material, (4) the bundle's profiles are compatible and the
+    layer height is printable (an exact process key, or inside the machine's range). Runs before any run directory or job exists.
     """
     try:
-        slicer = slicing.tool_for(target.printer).name
+        slicer_id = slicing.tool_for(target.printer).name
     except UnknownPrinterError as exc:
         raise ModelSpecError(f"unsupported print_target.printer {target.printer!r}: {exc}") from exc
     usable = {p.id: p for p in slicing.printers()}
     printer = usable.get(target.printer)
     if printer is None:
         tools = {tool.name: tool for tool in await slicing.availability()}
-        hint = tools[slicer].install_hint if slicer in tools else ""
+        hint = tools[slicer_id].install_hint if slicer_id in tools else ""
         raise ModelSpecError(
-            f"print_target.printer {target.printer!r} needs {slicer}, which is not available "
+            f"print_target.printer {target.printer!r} needs {slicing.slicer_name(target.printer)}, which is not available "
             f"on this host. {hint}".rstrip()
         )
     materials = [material for material, _ in printer.filaments]
@@ -54,16 +55,12 @@ async def check_print_target(target: PrintTarget, slicing: SlicingPort) -> Print
             f"unsupported print_target.material {target.material!r} for {printer.id}; "
             f"allowed: {', '.join(materials)}"
         )
-    heights = [height for height, _ in printer.processes]
-    if f"{target.layer_height_mm:.2f}" not in heights:
-        raise ModelSpecError(
-            f"unsupported print_target.layer_height_mm {target.layer_height_mm:g} for "
-            f"{printer.id}; allowed: {', '.join(heights)}"
-        )
     try:
         await asyncio.to_thread(
-            slicing.check_target, printer.id, f"{target.layer_height_mm:.2f}", target.material
+            slicing.check_target, printer.id, target.layer_height_mm, target.material
         )
+    except LayerHeightError as exc:
+        raise ModelSpecError(str(exc)) from exc
     except DomainError as exc:
         raise ModelSpecError(f"print_target is not sliceable on {printer.id}: {exc}") from exc
     return printer

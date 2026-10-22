@@ -39,6 +39,7 @@ import plistlib
 import subprocess
 import tempfile
 from collections.abc import Callable, Mapping
+from dataclasses import replace
 from pathlib import Path
 
 from src.adapters.slicing.bundle_profiles import (
@@ -46,6 +47,7 @@ from src.adapters.slicing.bundle_profiles import (
     UnknownProfileError,
     app_bundle,
     check_compatible,
+    layer_range,
     resolve_printer_profiles,
 )
 from src.adapters.slicing.plate_extent import plate_fit
@@ -64,8 +66,10 @@ from src.core.domain.printer_catalog import (
     UnknownPrinterError,
 )
 from src.core.domain.slicing import (
+    LayerHeightError,
     SliceRequest,
     SliceResult,
+    TargetCheck,
     ToolAvailability,
     ToolUnavailableError,
 )
@@ -91,16 +95,33 @@ def _bundle_version(binary: Path) -> str | None:
 
 
 def _process_key(printer: PrinterProfile, layer_height_mm: float) -> str:
-    """The printer's process profile nearest the requested layer height.
+    """The printer's process profile nearest the requested layer height (a tie takes the lower).
 
-    The request's ``layer_height`` is written over the profile either way, so a 0.16 mm
+    The request's ``layer_height`` is written over the profile either way, so a 0.28 mm
     request on a printer that offers only "0.20" starts from that profile (v80 behaviour).
     """
     keys = [key for key, _ in printer.processes]
     exact = f"{layer_height_mm:.2f}"
     if exact in keys:
         return exact
-    return min(keys, key=lambda key: abs(float(key) - layer_height_mm))
+    return min(keys, key=lambda key: (round(abs(float(key) - layer_height_mm), 9), float(key)))
+
+
+def _require_in_range(
+    printer: PrinterProfile, layer_height_mm: float, bounds: tuple[float, float] | None
+) -> None:
+    if bounds is None:
+        keys = ", ".join(key for key, _ in printer.processes)
+        raise LayerHeightError(
+            f"layer_height_mm {layer_height_mm:g} is not a process of {printer.id} and its "
+            f"machine profile declares no layer-height range; allowed: {keys}"
+        )
+    low, high = bounds
+    if not low - 1e-9 <= layer_height_mm <= high + 1e-9:
+        raise LayerHeightError(
+            f"layer_height_mm {layer_height_mm:g} is outside {printer.id}'s range "
+            f"{low:g}–{high:g} mm"
+        )
 
 
 class OrcaFamilyCli:
@@ -180,14 +201,26 @@ class OrcaFamilyCli:
             )
         return binary
 
-    def check_target(self, printer_id: str, layer_height: str, material: str) -> tuple[str, ...]:
-        """Submit-time check: the bundle has the profiles and declares them compatible."""
+    def slicer_name(self, printer_id: str) -> str:
+        return self._slicer_of(printer_id).name
+
+    def check_target(self, printer_id: str, layer_height_mm: float, material: str) -> TargetCheck:
+        """Submit-time check: profiles exist, are compatible, and the layer height is printable.
+
+        A height with an exact ``processes`` key needs no range. Any other height starts from
+        the nearest base process and must lie inside the machine profile's declared range; a
+        machine that declares none accepts exact keys only.
+        """
         printer = self._catalog.printer(printer_id)
         slicer = self._catalog.slicer(printer.slicer)
+        layer = _process_key(printer, layer_height_mm)
         profiles = self._bundle_profiles(
-            slicer, self._usable_binary(slicer), printer, layer_height, material
+            slicer, self._usable_binary(slicer), printer, layer, material
         )
-        return check_compatible(profiles, printer.machine)  # IncompatibleProfileError: DomainError
+        if f"{layer_height_mm:.2f}" != layer:
+            _require_in_range(printer, layer_height_mm, layer_range(profiles["machine"]))
+        notes = check_compatible(profiles, printer.machine)  # IncompatibleProfileError
+        return TargetCheck(notes, dict(printer.processes)[layer])
 
     def _write_profiles(
         self, profiles: dict[str, dict[str, object]], printer: PrinterProfile, request: SliceRequest
@@ -302,7 +335,8 @@ class OrcaFamilyCli:
                 return SliceResult(False, None, None, str(log_path), -1, msg)
             if proc.returncode != 0:
                 keep_datadir_logs(Path(datadir), out)
-        return self._result(proc.returncode, slicer, out, export, log_path, notes)
+        result = self._result(proc.returncode, slicer, out, export, log_path, notes)
+        return replace(result, process_profile=dict(printer.processes)[layer])
 
     @staticmethod
     def _result(

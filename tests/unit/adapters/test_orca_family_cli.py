@@ -18,11 +18,12 @@ from src.adapters.slicing.orca_family_cli import (
     SLICE_TIMEOUT_S,
     SLOWEST_SLICE_MEASURED_S,
     OrcaFamilyCli,
+    _process_key,
 )
 from src.core.domain.model_spec import PrintTarget
 from src.core.domain.packaging import ToolUse
-from src.core.domain.printer_catalog import PrinterCatalog
-from src.core.domain.slicing import SliceRequest, ToolUnavailableError
+from src.core.domain.printer_catalog import PrinterCatalog, PrinterProfile
+from src.core.domain.slicing import LayerHeightError, SliceRequest, ToolUnavailableError
 from src.infrastructure.printer_catalog_loader import load_printer_catalog
 from tests.fakes.bambu_bundle import K1C_LEAVES, flattened, make_bundle, make_orca_bundle
 from tests.fakes.plate_3mf import translate, write_3mf
@@ -427,7 +428,8 @@ async def test_incompatible_profile_is_a_failed_result_naming_it(tmp_path: Path)
 def test_check_target_passes_and_returns_notes_without_slicing(tmp_path: Path) -> None:
     runner = FakeRunner()
     cli = _both(tmp_path, runner)
-    assert cli.check_target(K1C, "0.20", "PLA") == ()
+    check = cli.check_target(K1C, 0.2, "PLA")
+    assert check.notes == () and check.process_profile == K1C_LEAVES["process"]
     assert runner.argv == []
 
 
@@ -439,9 +441,9 @@ def test_check_target_refuses_incompatible_and_missing_slicer(tmp_path: Path) ->
     data["compatible_printers"] = ["Creality K1 Max 0.4 nozzle"]
     path.write_text(json.dumps(data), encoding="utf-8")
     with pytest.raises(IncompatibleProfileError, match=K1C_LEAVES["filament"]):
-        cli.check_target(K1C, "0.20", "PLA")
+        cli.check_target(K1C, 0.2, "PLA")
     with pytest.raises(ToolUnavailableError, match="not available"):
-        _missing(tmp_path).check_target(K1C, "0.20", "PLA")
+        _missing(tmp_path).check_target(K1C, 0.2, "PLA")
 
 
 def test_every_slicer_has_a_measured_slowest_slice() -> None:
@@ -649,3 +651,62 @@ async def test_passing_run_keeps_no_datadir_logs(tmp_path: Path) -> None:
 def test_orcaslicer_timeout_is_five_times_the_measured_34_s() -> None:
     assert SLOWEST_SLICE_MEASURED_S["orcaslicer"] == 34
     assert SLICE_TIMEOUT_S["orcaslicer"] == 170
+
+
+# ---- layer height: nearest base process, bounded by the machine profile's range ----
+
+
+def _set_machine_range(tmp_path: Path, low: object, high: object) -> None:
+    leaf = tmp_path / "Orca.app/Contents/Resources/profiles/Creality/machine"
+    path = leaf / f"{K1C_LEAVES['machine']}.json"
+    data = json.loads(path.read_text(encoding="utf-8"))
+    data["min_layer_height"], data["max_layer_height"] = low, high
+    path.write_text(json.dumps(data), encoding="utf-8")
+
+
+def _two_process_printer() -> PrinterProfile:
+    base = load_printer_catalog().printer(K1C)
+    return replace(base, processes=(("0.20", "p20"), ("0.12", "p12")))
+
+
+def test_non_exact_height_uses_nearest_base_process(tmp_path: Path) -> None:
+    cli = _both(tmp_path, FakeRunner())
+    _set_machine_range(tmp_path, ["0.08"], ["0.3"])  # the real shape: per-extruder string lists
+    check = cli.check_target(K1C, 0.28, "PLA")
+    assert check.process_profile == K1C_LEAVES["process"]  # the only base process, "0.20"
+    printer = _two_process_printer()
+    assert _process_key(printer, 0.14) == "0.12" and _process_key(printer, 0.19) == "0.20"
+    assert _process_key(printer, 0.2) == "0.20"  # exact key wins
+
+
+def test_nearest_tie_takes_lower() -> None:
+    assert _process_key(_two_process_printer(), 0.16) == "0.12"
+
+
+async def test_slice_at_non_exact_height_overrides_layer_height_and_names_the_process(
+    tmp_path: Path,
+) -> None:
+    cli = _both(tmp_path, FakeRunner())
+    _set_machine_range(tmp_path, ["0.08"], ["0.3"])
+    result = await cli.slice(replace(_request(tmp_path, K1C), layer_height_mm=0.28))
+    assert result.passed is True and result.process_profile == K1C_LEAVES["process"]
+    process = json.loads((tmp_path / "out" / "process.json").read_text(encoding="utf-8"))
+    assert process["layer_height"] == "0.28"
+
+
+def test_height_outside_machine_range_rejected(tmp_path: Path) -> None:
+    cli = _both(tmp_path, FakeRunner())
+    _set_machine_range(tmp_path, ["0.08"], ["0.3"])
+    with pytest.raises(LayerHeightError) as info:
+        cli.check_target(K1C, 0.5, "PLA")
+    assert str(info.value) == f"layer_height_mm 0.5 is outside {K1C}'s range 0.08–0.3 mm"
+    with pytest.raises(LayerHeightError, match="0.05"):
+        cli.check_target(K1C, 0.05, "PLA")
+    assert cli.check_target(K1C, 0.3, "PLA").process_profile  # the bounds are inclusive
+
+
+def test_machine_without_a_range_accepts_only_exact_keys(tmp_path: Path) -> None:
+    cli = _both(tmp_path, FakeRunner())  # the fake machine profile declares no range
+    assert cli.check_target(K1C, 0.2, "PLA").process_profile
+    with pytest.raises(LayerHeightError, match="declares no layer-height range.*0.20"):
+        cli.check_target(K1C, 0.28, "PLA")

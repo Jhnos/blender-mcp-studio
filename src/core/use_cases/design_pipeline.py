@@ -206,6 +206,7 @@ class DesignPipeline:
                 request = SliceRequest.from_target(
                     str(found.absolute),
                     str(run_dir / "print"),
+                    # Task 5: slice_for_print gets a required material; drop the legacy fill.
                     PrintTarget(printer=printer, material=LEGACY_V1_MATERIAL),
                     printer_id=print_targets.printer_id_for(printer),
                 )

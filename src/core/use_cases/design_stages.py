@@ -218,7 +218,9 @@ async def print_stage(
         for p in (result.output_3mf, result.settings_json, result.log_path)
         if p
     )
-    metrics = (("return_code", str(result.return_code)),)
+    metrics: tuple[tuple[str, str], ...] = (("return_code", str(result.return_code)),)
+    if result.process_profile:
+        metrics += (("process_profile", result.process_profile),)
     if not result.passed:
         return _report(StageName.PRINT, StageOutcome.FAILED, result.message, metrics, evidence)
     state.tools = (slicing.tool_for(printer_id),)  # the slicer that actually ran
