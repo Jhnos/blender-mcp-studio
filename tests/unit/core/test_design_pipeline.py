@@ -15,6 +15,7 @@ from src.core.domain.model_spec import (
     MechanismChecks,
     ModelSpec,
     ModelSpecError,
+    PrintTarget,
 )
 from src.core.domain.slicing import ToolUnavailableError
 from src.core.use_cases import design_stages as stages
@@ -137,7 +138,11 @@ async def test_mechanism_failure_fails_run(tmp_path):
     # A5: spec v1 cannot declare suites, so the stage is driven directly with a built spec.
     rig = _rig(tmp_path, sim_ok=False)
     spec = ModelSpec(
-        "1", "demo", ImportedArtifact(str(rig.root)), mechanism=MechanismChecks(("s1",))
+        "1",
+        "demo",
+        ImportedArtifact(str(rig.root)),
+        PrintTarget("bambu-p2s-0.4", "PLA"),
+        mechanism=MechanismChecks(("s1",)),
     )
     report = await stages.mechanism_stage(spec, rig.simulation)
     assert report.name is StageName.MECHANISM and report.outcome is StageOutcome.FAILED

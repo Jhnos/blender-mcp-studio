@@ -30,7 +30,12 @@ from src.core.domain.design_run import (
 )
 from src.core.domain.import_limits import ImportLimits
 from src.core.domain.mesh_integrity import MeshIntegrityReport
-from src.core.domain.model_spec import ModelSpec, PrintTarget, parse_model_spec
+from src.core.domain.model_spec import (
+    LEGACY_V1_MATERIAL,
+    ModelSpec,
+    PrintTarget,
+    parse_model_spec,
+)
 from src.core.domain.model_spec_schema import describe_model_spec
 from src.core.domain.slicing import (
     SliceRequest,
@@ -107,7 +112,7 @@ class DesignPipeline:
         A printer not usable here, or a material it lacks, is rejected before any job exists.
         """
         target = parse_model_spec(payload, artifact_roots=self._roots).print_target
-        print_targets.check_target(target, self._slicing.printers())
+        await print_targets.check_print_target(target, self._slicing)
         run_id = uuid.uuid4().hex
         job = await self._jobs.create(run_id)
         try:
@@ -124,10 +129,8 @@ class DesignPipeline:
         return job
 
     def describe_spec(self) -> dict[str, object]:
-        """Spec v1 as JSON Schema with this host's usable printers and their materials."""
-        printers = self._slicing.printers()
-        names = print_targets.spec_printer_names(printers)
-        return describe_model_spec(names, print_targets.materials(printers))
+        """Spec v2 as JSON Schema with this host's usable printers and their materials."""
+        return describe_model_spec(self._slicing.printers())
 
     async def list_artifacts(self) -> dict[str, object]:
         """Candidate ``source.root_dir`` values under the artifact roots (relative only)."""
@@ -203,7 +206,7 @@ class DesignPipeline:
                 request = SliceRequest.from_target(
                     str(found.absolute),
                     str(run_dir / "print"),
-                    PrintTarget(printer=printer),
+                    PrintTarget(printer=printer, material=LEGACY_V1_MATERIAL),
                     printer_id=print_targets.printer_id_for(printer),
                 )
                 try:

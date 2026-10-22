@@ -22,7 +22,9 @@ async def test_slice_for_print_missing_binary_is_failed_result_without_path(tmp_
     rig = _rig(tmp_path)
     rig.pipeline._slicing = missing_slicers(tmp_path)
     async with Client(_server(rig)) as client:
-        res = await client.call_tool("slice_for_print", {"input_3mf": "artifact/p.3mf"})
+        res = await client.call_tool(
+            "slice_for_print", {"input_3mf": "artifact/p.3mf", "printer": "bambu-p2s-0.4"}
+        )
     data = res.structured_content
     assert data["passed"] is False and "not available" in data["message"]
     assert data["log_path"] is None and data["output_3mf"] is None
@@ -49,8 +51,12 @@ async def test_slice_for_print_returns_busy_when_lease_held(tmp_path):
     rig = _rig(tmp_path)
     async with Client(_server(rig)) as client:
         async with rig.lease.hold(StageName.MECHANISM):
-            res = await client.call_tool("slice_for_print", {"input_3mf": "artifact/p.3mf"})
-        later = await client.call_tool("slice_for_print", {"input_3mf": "artifact/p.3mf"})
+            res = await client.call_tool(
+                "slice_for_print", {"input_3mf": "artifact/p.3mf", "printer": "bambu-p2s-0.4"}
+            )
+        later = await client.call_tool(
+            "slice_for_print", {"input_3mf": "artifact/p.3mf", "printer": "bambu-p2s-0.4"}
+        )
     assert res.structured_content["passed"] is False
     assert res.structured_content["message"] == (
         "slicer busy: another print job is running; retry later"

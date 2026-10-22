@@ -79,6 +79,8 @@ class FakeSlicing:
         self.lease, self.delay, self.log = lease, delay, log if log is not None else []
         self.requests: list = []
         self.error: Exception | None = None
+        self.check_error: Exception | None = None  # what check_target raises (incompatibility)
+        self.checks: list[tuple[str, str, str]] = []
         catalog = load_printer_catalog()
         self._catalog = catalog
         self._printers = tuple(catalog.printer(pid) for pid in printer_ids)
@@ -91,6 +93,12 @@ class FakeSlicing:
 
     def max_timeout_s(self) -> float:
         return FAKE_TIMEOUT_S
+
+    def check_target(self, printer_id: str, layer_height: str, material: str) -> tuple[str, ...]:
+        self.checks.append((printer_id, layer_height, material))
+        if self.check_error:
+            raise self.check_error
+        return ()
 
     def tool_for(self, printer_id: str) -> ToolUse:
         slicer = self._catalog.slicer(self._catalog.printer(printer_id).slicer)

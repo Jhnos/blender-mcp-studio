@@ -117,7 +117,6 @@ def test_no_default_printer_exists() -> None:
         assert not any("default" in name.lower() for name in vars(module))
 
 
-@pytest.mark.xfail(strict=True, reason="Task 4 removes the PrintTarget default")
 def test_print_target_requires_printer() -> None:
     with pytest.raises(TypeError):
         PrintTarget()  # type: ignore[call-arg]

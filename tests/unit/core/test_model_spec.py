@@ -13,7 +13,7 @@ def test_parse_minimal_spec_resolves_root_inside_allowed_roots(tmp_path):
     (tmp_path / "v78").mkdir()
     spec = parse_model_spec(_payload(), artifact_roots=(tmp_path,))
     assert spec.source.root_dir == str(tmp_path / "v78")
-    assert spec.print_target.printer == "bambu-p2s"
+    assert spec.print_target.printer == "bambu-p2s-0.4"  # v1 legacy fill
     assert spec.mechanism.suites == ()
 
 
@@ -29,7 +29,7 @@ def test_absolute_path_outside_roots_is_rejected(tmp_path):
 
 def test_unknown_spec_version_is_rejected(tmp_path):
     payload = _payload()
-    payload["spec_version"] = "2"
+    payload["spec_version"] = "3"
     with pytest.raises(ModelSpecError):
         parse_model_spec(payload, artifact_roots=(tmp_path,))
 

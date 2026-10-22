@@ -70,8 +70,11 @@ def test_unknown_key_error_lists_allowed_keys(tmp_path, section, allowed):
 @pytest.mark.parametrize(
     ("target", "message"),
     [
-        ({"printer": "x1c"}, "unsupported print_target.printer 'x1c'; supported: bambu-p2s"),
-        ({"material": "PETG"}, "unsupported print_target.material 'PETG'; supported: PLA"),
+        ({"printer": "x1c"}, "unsupported print_target.printer 'x1c': unknown printer 'x1c'; "),
+        (
+            {"material": "PETG"},
+            "unsupported print_target.material 'PETG' for bambu-p2s-0.4; allowed: PLA",
+        ),
     ],
 )
 async def test_unsupported_printer_rejected_at_submit(tmp_path, target, message):
@@ -79,7 +82,7 @@ async def test_unsupported_printer_rejected_at_submit(tmp_path, target, message)
     payload = {**_payload(rig), "print_target": target}
     with pytest.raises(ModelSpecError) as info:
         await rig.pipeline.submit(payload)
-    assert str(info.value) == message
+    assert str(info.value).startswith(message)
     assert rig.jobs.records == {} and not rig.runs.exists()
 
 

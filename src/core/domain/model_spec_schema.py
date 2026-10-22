@@ -1,18 +1,23 @@
-"""ModelSpec v1 described as JSON Schema, so a client can build a spec without reading source.
+"""ModelSpec v2 described as JSON Schema, so a client can build a spec without reading source.
 
 The parser (``model_spec.parse_model_spec``) is the authority; this module mirrors its keys,
-types and defaults from the same constants, and ``V1_EXAMPLE`` is the v78 gate contract's spec
+types and defaults from the same constants. ``V2_EXAMPLE`` is a complete worked spec. Spec v1
+is still accepted but is not described here; ``V1_EXAMPLE`` is the v78 gate contract's spec
 (``scripts/verify/contracts/design_pipeline_v78.json``; a unit test keeps them equal).
 """
 
 from __future__ import annotations
 
 from src.core.domain.model_spec import (
-    MECHANISM_V1_UNSUPPORTED,
-    SUPPORTED_SPEC_VERSION,
-    ImportedArtifact,
-    PrintTarget,
+    JOB_DEFAULTS as JOB,
 )
+from src.core.domain.model_spec import (
+    LEGACY_V1_MATERIAL,
+    LEGACY_V1_PRINTER,
+    MECHANISM_V1_UNSUPPORTED,
+    ImportedArtifact,
+)
+from src.core.domain.printer_catalog import PrinterProfile
 
 V1_EXAMPLE: dict[str, object] = {
     "spec_version": "1",
@@ -25,20 +30,42 @@ V1_EXAMPLE: dict[str, object] = {
     "mechanism": {"suites": []},
 }
 
+V2_EXAMPLE: dict[str, object] = {
+    **V1_EXAMPLE,
+    "spec_version": "2",
+    "print_target": {"printer": LEGACY_V1_PRINTER, "material": LEGACY_V1_MATERIAL},
+}
+
 _PATH_RULES = "relative, no '..', no hidden ('.'-prefixed) part, must stay inside the root"
 
 
-def describe_model_spec(printers: tuple[str, ...], materials: tuple[str, ...]) -> dict[str, object]:
-    """JSON Schema for spec v1 plus a complete worked example; printers/materials from the slicer."""
-    source, target = ImportedArtifact(root_dir=""), PrintTarget()
+def _per_printer(printer: PrinterProfile) -> dict[str, object]:
+    """What ``printer`` accepts: its own materials and layer heights."""
+    return {
+        "if": {"properties": {"printer": {"const": printer.id}}, "required": ["printer"]},
+        "then": {
+            "properties": {
+                "material": {"enum": [m for m, _ in printer.filaments]},
+                "layer_height_mm": {"enum": [float(h) for h, _ in printer.processes]},
+            }
+        },
+    }
+
+
+def describe_model_spec(printers: tuple[PrinterProfile, ...]) -> dict[str, object]:
+    """JSON Schema for spec v2 plus a worked example; ``printers`` are the usable ones here."""
+    source = ImportedArtifact(root_dir="")
     schema: dict[str, object] = {
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "title": "ModelSpec",
         "type": "object",
         "additionalProperties": False,
-        "required": ["spec_version", "name", "source"],
+        "required": ["spec_version", "name", "source", "print_target"],
+        "description": "spec_version 1 is still accepted: a missing printer/material then falls "
+        f"back to {LEGACY_V1_PRINTER} / {LEGACY_V1_MATERIAL} and the run report says so. "
+        "Spec v2 never chooses a machine for you.",
         "properties": {
-            "spec_version": {"const": SUPPORTED_SPEC_VERSION},
+            "spec_version": {"const": "2"},
             "name": {"type": "string", "minLength": 1, "description": "Run and package name."},
             "source": {
                 "type": "object",
@@ -67,25 +94,24 @@ def describe_model_spec(printers: tuple[str, ...], materials: tuple[str, ...]) -
             "print_target": {
                 "type": "object",
                 "additionalProperties": False,
+                "required": ["printer", "material"],
+                "description": "printer and material are required: list_printers shows the "
+                "choices; the material and layer height must be ones that printer offers.",
                 "properties": {
-                    "printer": {
-                        "type": "string",
-                        "enum": list(printers),
-                        "default": target.printer,
-                    },
+                    "printer": {"type": "string", "enum": [p.id for p in printers]},
                     "material": {
                         "type": "string",
-                        "enum": list(materials),
-                        "default": target.material,
+                        "enum": sorted({m for p in printers for m, _ in p.filaments}),
                     },
                     "layer_height_mm": {
                         "type": "number",
                         "exclusiveMinimum": 0,
-                        "default": target.layer_height_mm,
+                        "default": JOB.layer_height_mm,
                     },
-                    "support": {"type": "boolean", "default": target.support},
-                    "brim_mm": {"type": "number", "minimum": 0, "default": target.brim_mm},
+                    "support": {"type": "boolean", "default": JOB.support},
+                    "brim_mm": {"type": "number", "minimum": 0, "default": JOB.brim_mm},
                 },
+                "allOf": [_per_printer(p) for p in printers],
             },
             "mechanism": {
                 "type": "object",
@@ -98,4 +124,4 @@ def describe_model_spec(printers: tuple[str, ...], materials: tuple[str, ...]) -
             },
         },
     }
-    return {"spec_version": SUPPORTED_SPEC_VERSION, "schema": schema, "example": V1_EXAMPLE}
+    return {"spec_version": "2", "schema": schema, "example": V2_EXAMPLE}

@@ -13,6 +13,7 @@ from pathlib import Path
 import pytest
 
 import src.adapters.slicing.orca_family_cli as cli_module
+from src.adapters.slicing.bundle_profiles import IncompatibleProfileError
 from src.adapters.slicing.orca_family_cli import (
     SLICE_TIMEOUT_S,
     SLOWEST_SLICE_MEASURED_S,
@@ -59,7 +60,7 @@ def _request(tmp_path: Path, printer_id: str = P2S, **over: object) -> SliceRequ
     return SliceRequest.from_target(
         str(tmp_path / "gate.3mf"),
         str(tmp_path / "out"),
-        PrintTarget(**over),  # type: ignore[arg-type]
+        PrintTarget(**{"printer": printer_id, "material": "PLA", **over}),  # type: ignore[arg-type]
         printer_id=printer_id,
     )
 
@@ -94,8 +95,10 @@ def test_timeout_is_five_times_the_measured_slowest() -> None:
 
 
 def test_from_target_carries_every_print_default() -> None:
-    req = SliceRequest.from_target("/a.3mf", "/out", PrintTarget(), printer_id=P2S)
-    assert (req.printer, req.material, req.layer_height_mm) == ("bambu-p2s", "PLA", 0.2)
+    req = SliceRequest.from_target(
+        "/a.3mf", "/out", PrintTarget(printer=P2S, material="PLA"), printer_id=P2S
+    )
+    assert (req.printer, req.material, req.layer_height_mm) == (P2S, "PLA", 0.2)
     assert (req.support, req.brim_mm) == (True, 3.0)
     assert (req.input_3mf, req.output_dir, req.printer_id) == ("/a.3mf", "/out", P2S)
 
@@ -225,7 +228,10 @@ async def test_slice_timeout_is_a_failed_result(tmp_path: Path) -> None:
 
 async def test_slice_rejects_unsupported_printer(tmp_path: Path) -> None:
     req = SliceRequest.from_target(
-        str(tmp_path / "a.3mf"), str(tmp_path / "out"), PrintTarget(), printer_id="other"
+        str(tmp_path / "a.3mf"),
+        str(tmp_path / "out"),
+        PrintTarget(printer="other", material="PLA"),
+        printer_id="other",
     )
     result = await _cli(tmp_path, FakeRunner()).slice(req)
     assert result.passed is False
@@ -273,7 +279,12 @@ async def test_stale_output_does_not_pass(tmp_path: Path) -> None:
 
 
 async def test_unsupported_target_reported_before_missing_binary(tmp_path: Path) -> None:
-    req = SliceRequest.from_target("/a.3mf", str(tmp_path / "out"), PrintTarget(), printer_id="x1c")
+    req = SliceRequest.from_target(
+        "/a.3mf",
+        str(tmp_path / "out"),
+        PrintTarget(printer="x1c", material="PLA"),
+        printer_id="x1c",
+    )
     result = await _missing(tmp_path).slice(req)
     assert result.passed is False
     assert "x1c" in result.message
@@ -411,6 +422,26 @@ async def test_incompatible_profile_is_a_failed_result_naming_it(tmp_path: Path)
     assert result.passed is False
     assert K1C_LEAVES["filament"] in result.message
     assert runner.argv == []  # the slicer never started
+
+
+def test_check_target_passes_and_returns_notes_without_slicing(tmp_path: Path) -> None:
+    runner = FakeRunner()
+    cli = _both(tmp_path, runner)
+    assert cli.check_target(K1C, "0.20", "PLA") == ()
+    assert runner.argv == []
+
+
+def test_check_target_refuses_incompatible_and_missing_slicer(tmp_path: Path) -> None:
+    cli = _both(tmp_path, FakeRunner())
+    leaf = tmp_path / "Orca.app/Contents/Resources/profiles/Creality/filament"
+    path = leaf / f"{K1C_LEAVES['filament']}.json"
+    data = json.loads(path.read_text(encoding="utf-8"))
+    data["compatible_printers"] = ["Creality K1 Max 0.4 nozzle"]
+    path.write_text(json.dumps(data), encoding="utf-8")
+    with pytest.raises(IncompatibleProfileError, match=K1C_LEAVES["filament"]):
+        cli.check_target(K1C, "0.20", "PLA")
+    with pytest.raises(ToolUnavailableError, match="not available"):
+        _missing(tmp_path).check_target(K1C, "0.20", "PLA")
 
 
 def test_every_slicer_has_a_measured_slowest_slice() -> None:

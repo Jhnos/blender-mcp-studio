@@ -13,7 +13,7 @@ from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
 from pathlib import Path
 
 from src.adapters.slicing.orca_family_cli import SLICE_TIMEOUT_S
-from src.core.domain.model_spec import PrintTarget
+from src.core.domain.model_spec import LEGACY_V1_PRINTER
 from src.core.use_cases import print_targets
 from src.infrastructure.narrowing import as_mapping, as_sequence
 from src.infrastructure.printer_catalog_loader import load_printer_catalog
@@ -39,7 +39,7 @@ def poll_budget_s(spec: Mapping[str, object]) -> float:
     Creality contract gets the OrcaSlicer budget and the v78 P2S contract Bambu Studio's.
     """
     target = as_mapping(spec.get("print_target")) or {}
-    printer = str(target.get("printer", PrintTarget().printer))
+    printer = str(target.get("printer", LEGACY_V1_PRINTER))  # contract specs are v1 today
     catalog = load_printer_catalog()
     slicer = catalog.printer(print_targets.printer_id_for(printer)).slicer
     return SLICE_TIMEOUT_S[slicer] + POLL_MARGIN_S

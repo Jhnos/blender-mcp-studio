@@ -7,7 +7,6 @@ import pytest
 from src.core.domain.model_spec import ModelSpecError
 from src.core.domain.packaging import ToolUse
 from src.core.use_cases import print_targets
-from src.infrastructure.printer_catalog_loader import load_printer_catalog
 from tests.fakes.design_ports import FakeSlicing
 from tests.unit.core.test_design_pipeline import _payload, _rig, _run
 
@@ -34,10 +33,10 @@ async def test_creality_run_records_orcaslicer_in_the_manifest(tmp_path):
 
 async def test_v1_printer_name_slices_on_the_p2s_and_records_bambu_studio(tmp_path):
     rig = _two_printer_rig(tmp_path)
-    _, _, report = await _run(rig, _payload(rig))  # print_target omitted: v1 "bambu-p2s"
+    _, _, report = await _run(rig, _payload(rig))  # print_target omitted: v1 legacy fill
     assert report.passed
     (request,) = rig.slicing.requests
-    assert (request.printer, request.printer_id) == ("bambu-p2s", P2S)
+    assert (request.printer, request.printer_id) == (P2S, P2S)
     (call,) = rig.packaging.calls
     assert call[4] == (ToolUse("bambu-studio", "02.06.00.51", "AGPL-3.0-only", "subprocess"),)
 
@@ -50,10 +49,7 @@ async def test_submit_rejects_a_printer_whose_slicer_is_not_usable(tmp_path):
     assert rig.jobs.records == {}
 
 
-def test_spec_names_list_each_usable_printer_once() -> None:
-    catalog = load_printer_catalog()
-    printers = (catalog.printer(P2S), catalog.printer(K1C))
-    assert print_targets.spec_printer_names(printers) == ("bambu-p2s", K1C)
+def test_printer_id_for_translates_only_the_v1_name() -> None:
     assert print_targets.printer_id_for("bambu-p2s") == P2S
     assert print_targets.printer_id_for(K1C) == K1C
 
@@ -61,7 +57,7 @@ def test_spec_names_list_each_usable_printer_once() -> None:
 async def test_describe_spec_lists_usable_printers(tmp_path):
     rig = _two_printer_rig(tmp_path)
     target = rig.pipeline.describe_spec()["schema"]["properties"]["print_target"]["properties"]
-    assert target["printer"]["enum"] == ["bambu-p2s", K1C]
+    assert target["printer"]["enum"] == [P2S, K1C]
     assert target["material"]["enum"] == ["PLA"]
 
 

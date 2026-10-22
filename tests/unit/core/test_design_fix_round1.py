@@ -10,6 +10,7 @@ import pytest
 
 from src.adapters.slicing.orca_family_cli import OrcaFamilyCli
 from src.core.domain.design_run import JobStatus, StageName, StageOutcome
+from src.core.domain.packaging import ToolUse
 from src.core.domain.slicing import SliceResult
 from src.infrastructure.printer_catalog_loader import load_printer_catalog
 from tests.unit.core.test_design_pipeline import _payload, _rig, _run
@@ -94,6 +95,12 @@ class BlockingSlicing:
 
     async def availability(self):
         raise AssertionError("not used")
+
+    def tool_for(self, printer_id):
+        return ToolUse("bambu-studio", "02.06.00.51", "AGPL-3.0-only", "subprocess")
+
+    def check_target(self, printer_id, layer_height, material):
+        return ()
 
 
 async def test_cancelled_slice_holds_lease_until_slicer_returns(tmp_path):

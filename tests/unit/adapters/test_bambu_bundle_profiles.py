@@ -28,7 +28,10 @@ _CONFIG = Path(cli_module.__file__).resolve().parents[3] / "config" / "slicer-pr
 def _request(tmp_path: Path) -> SliceRequest:
     write_3mf(tmp_path / "gate.3mf", [(10, translate(10, 10))])  # the precheck reads it
     return SliceRequest.from_target(
-        str(tmp_path / "gate.3mf"), str(tmp_path / "out"), PrintTarget(), printer_id="bambu-p2s-0.4"
+        str(tmp_path / "gate.3mf"),
+        str(tmp_path / "out"),
+        PrintTarget("bambu-p2s-0.4", "PLA"),
+        printer_id="bambu-p2s-0.4",
     )
 
 

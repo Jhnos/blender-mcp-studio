@@ -151,7 +151,11 @@ async def import_stage(
         ("skipped", str(len(skipped))),
     )
     return _report(
-        StageName.IMPORT, StageOutcome.PASSED, "", metrics, (evidence_docs.IMPORT_EVIDENCE,)
+        StageName.IMPORT,
+        StageOutcome.PASSED,
+        print_targets.legacy_note(spec),
+        metrics,
+        (evidence_docs.IMPORT_EVIDENCE,),
     )
 
 
@@ -201,7 +205,7 @@ async def print_stage(
     if state.project_3mf is None:
         return failed(StageName.PRINT, "no project 3MF to slice")
     target = spec.print_target
-    printer_id = print_targets.printer_id_for(target.printer)
+    printer_id = target.printer  # a catalog id: the parser translated any v1 name
     request = SliceRequest.from_target(
         state.project_3mf, str(run_dir / "print"), target, printer_id=printer_id
     )

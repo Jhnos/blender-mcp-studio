@@ -29,6 +29,12 @@ class SlicingPort(Protocol):
         """The largest per-slicer deadline in the catalog, installed or not (seconds)."""
         ...
 
+    def check_target(self, printer_id: str, layer_height: str, material: str) -> tuple[str, ...]:
+        """Resolve the bundle profiles for ``printer_id`` at ``layer_height`` ("0.20", a key of
+        its processes) and ``material`` without slicing. Returns notes (conditions accepted
+        unevaluated); raises a DomainError when they are missing or not declared compatible."""
+        ...
+
     async def slice(self, request: SliceRequest) -> SliceResult: ...
 
     def tool_for(self, printer_id: str) -> ToolUse:

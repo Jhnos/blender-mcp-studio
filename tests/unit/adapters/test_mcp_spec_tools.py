@@ -33,11 +33,11 @@ async def test_describe_model_spec_example_parses(tmp_path):
     rig = _rig(tmp_path)
     async with Client(_server(rig)) as client:
         described = _data(await client.call_tool("describe_model_spec", {}))
-    assert described["spec_version"] == "1"
+    assert described["spec_version"] == "2"
     schema = described["schema"]
-    assert schema["required"] == ["spec_version", "name", "source"]
+    assert schema["required"] == ["spec_version", "name", "source", "print_target"]
     target = schema["properties"]["print_target"]["properties"]
-    assert target["printer"]["enum"] == ["bambu-p2s"] and target["material"]["enum"] == ["PLA"]
+    assert target["printer"]["enum"] == ["bambu-p2s-0.4"] and target["material"]["enum"] == ["PLA"]
     assert target["layer_height_mm"]["default"] == 0.2
     assert schema["properties"]["source"]["properties"]["stl_glob"]["default"] == "STL/*.stl"
     assert schema["properties"]["mechanism"]["properties"]["suites"]["maxItems"] == 0

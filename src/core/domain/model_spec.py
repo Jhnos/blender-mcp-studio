@@ -1,4 +1,9 @@
-"""Machine-readable model specification for the design pipeline (spec version 1)."""
+"""Machine-readable model specification for the design pipeline (spec versions 1 and 2).
+
+Spec v2 names its printer and material explicitly. Spec v1 predates the printer catalog: a
+missing printer/material is filled from the one legacy machine v1 always meant, and the parse
+records that so the run report can say so. Nothing else in the domain chooses a machine.
+"""
 
 from __future__ import annotations
 
@@ -9,7 +14,12 @@ from pathlib import Path, PurePosixPath
 
 from src.core.domain.exceptions import DomainError
 
-SUPPORTED_SPEC_VERSION = "1"
+SUPPORTED_SPEC_VERSIONS = ("1", "2")
+#: What a spec v1 without ``print_target.printer`` / ``.material`` always meant.
+LEGACY_V1_PRINTER = "bambu-p2s-0.4"
+LEGACY_V1_MATERIAL = "PLA"
+#: Spec v1 printer names -> catalog ids (v1 vocabulary translation; v2 names catalog ids only).
+V1_PRINTER_IDS: dict[str, str] = {"bambu-p2s": LEGACY_V1_PRINTER}
 SPEC_KEYS = ("spec_version", "name", "source", "print_target", "mechanism")
 SOURCE_KEYS = ("root_dir", "stl_glob", "project_3mf")
 PRINT_TARGET_KEYS = ("printer", "material", "layer_height_mm", "support", "brim_mm")
@@ -26,11 +36,15 @@ class ModelSpecError(DomainError):
 
 @dataclass(frozen=True, slots=True)
 class PrintTarget:
-    printer: str = "bambu-p2s"
-    material: str = "PLA"
+    printer: str
+    material: str
     layer_height_mm: float = 0.2
     support: bool = True
     brim_mm: float = 3.0
+
+
+#: Job parameters only (layer height, support, brim); printer and material are never defaulted.
+JOB_DEFAULTS = PrintTarget(printer="", material="")
 
 
 @dataclass(frozen=True, slots=True)
@@ -50,8 +64,14 @@ class ModelSpec:
     spec_version: str
     name: str
     source: ImportedArtifact
-    print_target: PrintTarget = field(default_factory=PrintTarget)
+    print_target: PrintTarget
     mechanism: MechanismChecks = field(default_factory=MechanismChecks)
+    #: ``(field, value)`` pairs a spec v1 left out and the legacy defaults filled in.
+    legacy_defaults: tuple[tuple[str, str], ...] = ()
+
+    @property
+    def legacy_default(self) -> bool:
+        return bool(self.legacy_defaults)
 
 
 def _section(payload: Mapping[str, object], key: str, *, required: bool) -> Mapping[str, object]:
@@ -193,17 +213,32 @@ def _parse_source(payload: Mapping[str, object], roots: tuple[Path, ...]) -> Imp
     )
 
 
-def _parse_print_target(payload: Mapping[str, object]) -> PrintTarget:
-    sec = _section(payload, "print_target", required=False)
+def _parse_print_target(
+    payload: Mapping[str, object], version: str
+) -> tuple[PrintTarget, tuple[tuple[str, str], ...]]:
+    v2 = version == "2"
+    sec = _section(payload, "print_target", required=False)  # v2: its keys are required below
     _reject_unknown(sec, PRINT_TARGET_KEYS, "print_target")
-    d = PrintTarget()
-    return PrintTarget(
-        printer=_str(sec, "printer", d.printer),
-        material=_str(sec, "material", d.material),
+    legacy: list[tuple[str, str]] = []
+    chosen: dict[str, str] = {}
+    for key, fallback in (("printer", LEGACY_V1_PRINTER), ("material", LEGACY_V1_MATERIAL)):
+        if key in sec:
+            chosen[key] = _str(sec, key, "")
+        elif v2:
+            raise ModelSpecError(f"print_target.{key} is required in spec v2")
+        else:
+            chosen[key] = fallback
+            legacy.append((key, fallback))
+    printer = chosen["printer"] if v2 else V1_PRINTER_IDS.get(chosen["printer"], chosen["printer"])
+    d = JOB_DEFAULTS
+    target = PrintTarget(
+        printer=printer,
+        material=chosen["material"],
         layer_height_mm=_physical(sec, "layer_height_mm", d.layer_height_mm, positive=True),
         support=_bool(sec, "support", d.support),
         brim_mm=_physical(sec, "brim_mm", d.brim_mm, positive=False),
     )
+    return target, tuple(legacy)
 
 
 def _parse_mechanism(payload: Mapping[str, object]) -> MechanismChecks:
@@ -229,15 +264,21 @@ def parse_model_spec(
     _reject_unknown(payload, SPEC_KEYS, "spec")
     if "spec_version" not in payload:
         raise ModelSpecError("missing spec_version")
-    if payload.get("spec_version") != SUPPORTED_SPEC_VERSION:
-        raise ModelSpecError(f"unsupported spec_version: {payload.get('spec_version')!r}")
+    version = payload.get("spec_version")
+    if not isinstance(version, str) or version not in SUPPORTED_SPEC_VERSIONS:
+        raise ModelSpecError(
+            f"unsupported spec_version: {version!r} (supported: "
+            f"{', '.join(map(repr, SUPPORTED_SPEC_VERSIONS))})"
+        )
     name = payload.get("name")
     if not isinstance(name, str) or not name.strip():
         raise ModelSpecError("name must be a non-empty string")
+    target, legacy = _parse_print_target(payload, version)
     return ModelSpec(
-        spec_version=SUPPORTED_SPEC_VERSION,
+        spec_version=version,
         name=name,
         source=_parse_source(payload, artifact_roots),
-        print_target=_parse_print_target(payload),
+        print_target=target,
         mechanism=_parse_mechanism(payload),
+        legacy_defaults=legacy,
     )

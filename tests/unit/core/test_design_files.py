@@ -88,7 +88,7 @@ async def test_slice_file_fresh_run_dir_lease_and_print_defaults(tmp_path):
     assert request == SliceRequest.from_target(
         str((rig.root / "p.3mf").resolve()),
         str(run_dir / "print"),
-        PrintTarget(printer="bambu-p2s"),
+        PrintTarget(printer="bambu-p2s", material="PLA"),
         printer_id="bambu-p2s-0.4",  # the v1 name maps to its catalog id
     )
     assert ("slice-start", StageName.PRINT) in rig.log

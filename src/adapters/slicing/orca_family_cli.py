@@ -157,7 +157,7 @@ class OrcaFamilyCli:
         return ToolUse(slicer.id, version, slicer.license, "subprocess")
 
     def _bundle_profiles(
-        self, slicer: SlicerSpec, binary: Path, printer: PrinterProfile, request: SliceRequest
+        self, slicer: SlicerSpec, binary: Path, printer: PrinterProfile, layer: str, material: str
     ) -> dict[str, dict[str, object]]:
         bundle = app_bundle(binary)
         root = None if bundle is None else bundle / slicer.profiles_subdir
@@ -166,11 +166,28 @@ class OrcaFamilyCli:
                 f"{slicer.name} is installed but its app bundle has no profiles directory "
                 f"({slicer.profiles_subdir}); reinstall it. {slicer.install_hint}"
             )
-        layer = _process_key(printer, request.layer_height_mm)
         try:
-            return resolve_printer_profiles(root, printer, layer, request.material)
+            return resolve_printer_profiles(root, printer, layer, material)
         except UnknownProfileError as exc:
             raise ToolUnavailableError(str(exc)) from exc
+
+    def _usable_binary(self, slicer: SlicerSpec) -> Path:
+        binary = self._binary(slicer)
+        if binary is None or not binary.is_file():
+            # No path: this text reaches remote MCP hosts; availability() reports the path.
+            raise ToolUnavailableError(
+                f"{slicer.name} is not available on this host. {slicer.install_hint}"
+            )
+        return binary
+
+    def check_target(self, printer_id: str, layer_height: str, material: str) -> tuple[str, ...]:
+        """Submit-time check: the bundle has the profiles and declares them compatible."""
+        printer = self._catalog.printer(printer_id)
+        slicer = self._catalog.slicer(printer.slicer)
+        profiles = self._bundle_profiles(
+            slicer, self._usable_binary(slicer), printer, layer_height, material
+        )
+        return check_compatible(profiles, printer.machine)  # IncompatibleProfileError: DomainError
 
     def _write_profiles(
         self, profiles: dict[str, dict[str, object]], printer: PrinterProfile, request: SliceRequest
@@ -256,14 +273,10 @@ class OrcaFamilyCli:
         if isinstance(printer, str):
             return SliceResult(False, None, None, str(log_path), -1, printer)
         slicer = self._catalog.slicer(printer.slicer)
-        binary = self._binary(slicer)
-        if binary is None or not binary.is_file():
-            # No path: this text reaches remote MCP hosts; availability() reports the path.
-            raise ToolUnavailableError(
-                f"{slicer.name} is not available on this host. {slicer.install_hint}"
-            )
+        binary = self._usable_binary(slicer)
         out.mkdir(parents=True, exist_ok=True)
-        profiles = self._bundle_profiles(slicer, binary, printer, request)
+        layer = _process_key(printer, request.layer_height_mm)
+        profiles = self._bundle_profiles(slicer, binary, printer, layer, request.material)
         try:
             notes = check_compatible(profiles, printer.machine)
         except IncompatibleProfileError as exc:
