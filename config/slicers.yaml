@@ -1,0 +1,27 @@
+# One entry per slicer CLI. Binary paths come from config/tools.yaml (binary_key) and env overrides.
+# Profiles are read at runtime from <App>.app/<profiles_subdir>/<vendor>/{machine,process,filament}.
+slicers:
+  - id: bambu-studio
+    name: Bambu Studio
+    binary_key: bambu_studio_bin
+    profiles_subdir: Contents/Resources/profiles
+    license: AGPL-3.0-only
+    error_codes: []
+    install_hint: Install Bambu Studio, or set BAMBU_STUDIO_BIN to its executable.
+  - id: orcaslicer
+    name: OrcaSlicer
+    binary_key: orcaslicer_bin
+    profiles_subdir: Contents/Resources/profiles
+    license: AGPL-3.0-only
+    error_codes:
+      - {code: -2, meaning: invalid params}
+      - {code: -3, meaning: file not found}
+      - {code: -5, meaning: config file error}
+      - {code: -13, meaning: export 3MF error}
+      - {code: -17, meaning: process not compatible}
+      - {code: -50, meaning: no suitable objects}
+      - {code: -51, meaning: validate error}
+      - {code: -60, meaning: no suitable objects after skip}
+      - {code: -61, meaning: filament does not match bed type}
+      - {code: -100, meaning: slicing error}
+    install_hint: Install OrcaSlicer, or set ORCASLICER_BIN to its executable.

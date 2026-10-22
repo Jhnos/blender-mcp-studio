@@ -1,0 +1,15 @@
+id: creality-ender-3-v3-0.4
+vendor: Creality
+model: Ender-3 V3
+nozzle_mm: 0.4
+slicer: orcaslicer
+profile_vendor_dir: Creality
+machine: Creality Ender-3 V3 0.4 nozzle
+processes:
+  "0.20": 0.20mm Standard @Creality Ender-3 V3
+filaments:
+  PLA: Creality Generic PLA @Ender-3V3-all
+# The OrcaSlicer 2.4.2 machine_model file Creality/machine/Creality Ender-3 V3.json declares no
+# default_bed_type (checked 2026-10-22), so the K-series plate is used.
+bed_type: Textured PEI Plate
+overrides: null

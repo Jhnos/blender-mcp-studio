@@ -1,6 +1,7 @@
 # External tools and artifact locations. Environment variables override (see docs/10-runtime-ssot.md).
 # Relative paths resolve against the repository root.
 bambu_studio_bin: /Applications/BambuStudio.app/Contents/MacOS/BambuStudio
+orcaslicer_bin: /Applications/OrcaSlicer.app/Contents/MacOS/OrcaSlicer
 design_runs_dir: data/runs
 design_jobs_db: data/jobs.db
 artifact_roots: [".", "models"]

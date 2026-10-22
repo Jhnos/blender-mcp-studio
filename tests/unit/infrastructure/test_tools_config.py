@@ -9,6 +9,7 @@ from src.infrastructure.tools_config import load_tools_config
 
 _YAML = (
     "bambu_studio_bin: /opt/bambu/BambuStudio\n"
+    "orcaslicer_bin: /opt/orca/OrcaSlicer\n"
     "design_runs_dir: data/runs\n"
     "design_jobs_db: data/jobs.db\n"
     'artifact_roots: [".", "models"]\n'

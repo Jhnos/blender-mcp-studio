@@ -124,6 +124,7 @@ def make_fake_runtime(
         (base,),
         ImportLimits(565, 2457920, 7036310, 29292960),
         base / "jobs.db",
+        Path("/x/orca"),
     )
     lease = BlenderLease()
     marker = MagicMock()

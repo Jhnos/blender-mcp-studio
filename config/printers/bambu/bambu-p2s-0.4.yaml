@@ -1,0 +1,13 @@
+id: bambu-p2s-0.4
+vendor: Bambu Lab
+model: P2S
+nozzle_mm: 0.4
+slicer: bambu-studio
+profile_vendor_dir: BBL
+machine: Bambu Lab P2S 0.4 nozzle
+processes:
+  "0.20": 0.20mm Standard @BBL P2S
+filaments:
+  PLA: Generic PLA @BBL P2S
+bed_type: Textured PEI Plate
+overrides: p2s-pla-overrides.json

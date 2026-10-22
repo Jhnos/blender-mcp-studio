@@ -1,0 +1,13 @@
+id: creality-k1-max-0.4
+vendor: Creality
+model: K1 Max
+nozzle_mm: 0.4
+slicer: orcaslicer
+profile_vendor_dir: Creality
+machine: Creality K1 Max (0.4 nozzle)
+processes:
+  "0.20": 0.20mm Standard @Creality K1Max (0.4 nozzle)
+filaments:
+  PLA: Creality HF Generic PLA
+bed_type: Textured PEI Plate
+overrides: null

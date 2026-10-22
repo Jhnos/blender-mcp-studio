@@ -80,15 +80,21 @@ CORS_ORIGINS=https://bearmacminimac-mini.tail56c751.ts.net
 REQUIRE_TAILNET_IDENTITY=1
 BLENDER_MCP_URL=https://bearmacminimac-mini.tail56c751.ts.net/blender/mcp
 BAMBU_STUDIO_BIN=/Applications/BambuStudio.app/Contents/MacOS/BambuStudio
+ORCASLICER_BIN=/Applications/OrcaSlicer.app/Contents/MacOS/OrcaSlicer
 DESIGN_RUNS_DIR=data/runs
 DESIGN_JOBS_DB=data/jobs.db
 ARTIFACT_ROOTS=.:models
 BLENDER_MCP_PUBLIC_BASE_URL=
 ```
 
-`BAMBU_STUDIO_BIN`、`DESIGN_RUNS_DIR`、`DESIGN_JOBS_DB`（設計管線工作紀錄的 SQLite 檔）、
+`BAMBU_STUDIO_BIN`、`ORCASLICER_BIN`、`DESIGN_RUNS_DIR`、`DESIGN_JOBS_DB`（設計管線工作紀錄的 SQLite 檔）、
 `ARTIFACT_ROOTS`（以 `os.pathsep` 分隔）覆寫 `config/tools.yaml` 的預設值
-（`bambu_studio_bin`、`design_runs_dir`、`design_jobs_db`、`artifact_roots`）；相對路徑以 repo 根目錄解析。
+（`bambu_studio_bin`、`orcaslicer_bin`、`design_runs_dir`、`design_jobs_db`、`artifact_roots`）；相對路徑以 repo 根目錄解析。
+
+**印表機與切片器目錄**：`config/slicers.yaml` 每個切片器一筆（id、`binary_key` 指向 `tools.yaml` 的鍵、
+profiles 子目錄、授權、錯誤碼、安裝提示）；`config/printers/<vendor>/<id>.yaml` 每台印表機一個檔
+（切片器、設定檔名稱、材料、床板、覆寫檔）。由 `load_printer_catalog()` 載入；id 重複或指向不存在的
+切片器會載入失敗並指名檔案。程式碼裡沒有預設印表機，`printer` 一律必填。
 
 **切片設定檔**：P2S／PLA 的廠商設定檔不放在 repo，而是每次切片時從已安裝的 app 讀取：
 `<App>.app/Contents/Resources/profiles/`，其中 `<App>.app` 由 `BAMBU_STUDIO_BIN` 往上找到的

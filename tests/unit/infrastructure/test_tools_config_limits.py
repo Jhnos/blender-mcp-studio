@@ -8,6 +8,7 @@ from src.infrastructure.tools_config import load_tools_config
 
 _LINES = [
     "bambu_studio_bin: /opt/bambu/BambuStudio",
+    "orcaslicer_bin: /opt/orca/OrcaSlicer",
     "design_runs_dir: data/runs",
     "design_jobs_db: data/jobs.db",
     'artifact_roots: ["."]',
