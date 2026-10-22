@@ -2,7 +2,7 @@
 
 The command line is the v80-proven form (``tmp/lab-station-slicing-v80/slice_candidate.py``).
 Profiles are read from the installed app bundle at slice time (``bundle_profiles``: the leaf
-names live in ``config/slicer-profiles/p2s-pla-profiles.json``) and written, with the v80
+names live in ``config/printers/bambu/bambu-p2s-0.4.yaml``) and written, with the v80
 override data file and per-request keys applied, into ``output_dir`` (reproduction inputs). The slicer's own ``--datadir`` is a
 ``tempfile.TemporaryDirectory`` outside ``output_dir``, removed after each run, so the user's
 real Bambu profile is never read or modified and scratch state never reaches a package.
@@ -23,7 +23,12 @@ import tempfile
 from collections.abc import Callable
 from pathlib import Path
 
-from src.adapters.slicing.bundle_profiles import app_bundle, bundle_profiles
+from src.adapters.slicing.bundle_profiles import (
+    UnknownProfileError,
+    app_bundle,
+    profiles_root,
+    resolve_printer_profiles,
+)
 from src.core.domain.slicing import (
     SliceRequest,
     SliceResult,
@@ -32,6 +37,7 @@ from src.core.domain.slicing import (
     ToolUnavailableError,
 )
 from src.infrastructure.narrowing import as_str_keyed
+from src.infrastructure.printer_catalog_loader import load_printer_catalog
 
 SLOWEST_SLICE_MEASURED_S = 171
 SLICE_TIMEOUT_S = 5 * SLOWEST_SLICE_MEASURED_S
@@ -43,6 +49,7 @@ _INSTALL_HINT = (
 _SUPPORTED_PRINTERS = {"bambu-p2s": "P2S"}
 _SUPPORTED_MATERIALS = {"PLA"}
 _LOG_TAIL_LINES = 20
+_LEGACY_PRINTER = "bambu-p2s-0.4"  # transitional: removed when the generic adapter lands
 
 Runner = Callable[..., "subprocess.CompletedProcess[str]"]
 
@@ -101,8 +108,21 @@ class BambuStudioCli:
             "bambu-studio", True, str(self._binary), _bundle_version(self._binary), ""
         )
 
+    def _bundle_profiles(self) -> dict[str, dict[str, object]]:
+        root = profiles_root(self._binary)
+        if root is None or not root.is_dir():
+            raise ToolUnavailableError(
+                "Bambu Studio is installed but its app bundle has no profiles directory "
+                "(Contents/Resources/profiles); reinstall BambuStudio.app."
+            )
+        printer = load_printer_catalog().printer(_LEGACY_PRINTER)
+        try:
+            return resolve_printer_profiles(root, printer, "0.20", "PLA")
+        except UnknownProfileError as exc:
+            raise ToolUnavailableError(str(exc)) from exc
+
     def _write_profiles(self, request: SliceRequest, out: Path) -> None:
-        profiles = bundle_profiles(self._binary, self._profiles_dir)
+        profiles = self._bundle_profiles()
         process = profiles["process"]
         # Order: bundle profile, then the v80 override data file, then request-derived keys.
         overrides = as_str_keyed(

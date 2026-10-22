@@ -99,7 +99,7 @@ profiles 子目錄、授權、錯誤碼、安裝提示）；`config/printers/<ve
 **切片設定檔**：P2S／PLA 的廠商設定檔不放在 repo，而是每次切片時從已安裝的 app 讀取：
 `<App>.app/Contents/Resources/profiles/`，其中 `<App>.app` 由 `BAMBU_STUDIO_BIN` 往上找到的
 `.app` 推得（與讀 `Info.plist` 版本同一方法）。要讀哪三個葉設定檔寫在
-`config/slicer-profiles/p2s-pla-profiles.json`；`inherits` 鏈先父後子攤平（子鍵覆蓋，`include`
+`config/printers/bambu/bambu-p2s-0.4.yaml`，依 JSON 的 `name` 欄位查找（不是檔名）；`inherits` 鏈先父後子攤平（子鍵覆蓋，`include`
 依序併入、移除，`inherits` 清空），語意同 v80 的 `prepare_profiles.py`
 （`src/adapters/slicing/bundle_profiles.py`）。之後套 `p2s-pla-overrides.json`（我們自己的資料）
 與請求參數。app 內沒有 profiles 目錄時，切片結果是 failed，訊息與「切片器不可用」同一類。
