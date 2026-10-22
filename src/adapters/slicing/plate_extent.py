@@ -168,6 +168,18 @@ def printable_area(machine: Mapping[str, object]) -> Extent | None:
     return min(xs), min(ys), max(xs), max(ys)
 
 
+def bed_size(machine: Mapping[str, object]) -> tuple[float, float, float] | None:
+    """``(width, depth, height)`` mm a flattened machine profile prints, else ``None``."""
+    area = printable_area(machine)
+    try:
+        height = float(str(machine.get("printable_height")))
+    except ValueError:
+        return None
+    if area is None:
+        return None
+    return area[2] - area[0], area[3] - area[1], height
+
+
 def fits(layout: Extent, bed: Extent, tolerance_mm: float = 0.01) -> bool:
     return (
         layout[0] >= bed[0] - tolerance_mm

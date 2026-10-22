@@ -35,7 +35,6 @@ from __future__ import annotations
 import asyncio
 import json
 import math
-import plistlib
 import subprocess
 import tempfile
 from collections.abc import Callable, Mapping
@@ -46,11 +45,12 @@ from src.adapters.slicing.bundle_profiles import (
     IncompatibleProfileError,
     UnknownProfileError,
     app_bundle,
+    bundle_version,
     check_compatible,
     layer_range,
     resolve_printer_profiles,
 )
-from src.adapters.slicing.plate_extent import plate_fit
+from src.adapters.slicing.plate_extent import bed_size, plate_fit
 from src.adapters.slicing.slice_job import (
     exit_head,
     failure,
@@ -81,17 +81,6 @@ SLICE_TIMEOUT_S: dict[str, float] = {
 }
 
 Runner = Callable[..., "subprocess.CompletedProcess[str]"]
-
-
-def _bundle_version(binary: Path) -> str | None:
-    """CFBundleShortVersionString of the enclosing .app (the CLIs reject --version)."""
-    bundle = app_bundle(binary)
-    plist = None if bundle is None else bundle / "Contents" / "Info.plist"
-    if plist is None or not plist.is_file():
-        return None
-    with plist.open("rb") as handle:
-        value = plistlib.load(handle).get("CFBundleShortVersionString")
-    return value if isinstance(value, str) else None
 
 
 def _process_key(printer: PrinterProfile, layer_height_mm: float) -> str:
@@ -169,12 +158,12 @@ class OrcaFamilyCli:
         binary = self._binary(slicer)
         if binary is None or not binary.is_file():
             return ToolAvailability(slicer.id, False, None, None, slicer.install_hint)
-        return ToolAvailability(slicer.id, True, str(binary), _bundle_version(binary), "")
+        return ToolAvailability(slicer.id, True, str(binary), bundle_version(binary), "")
 
     def tool_for(self, printer_id: str) -> ToolUse:
         slicer = self._slicer_of(printer_id)
         binary = self._binary(slicer)
-        version = None if binary is None or not binary.is_file() else _bundle_version(binary)
+        version = None if binary is None or not binary.is_file() else bundle_version(binary)
         return ToolUse(slicer.id, version, slicer.license, "subprocess")
 
     def _bundle_profiles(
@@ -201,23 +190,28 @@ class OrcaFamilyCli:
             )
         return binary
 
+    def _machine(self, p: PrinterProfile) -> dict[str, object] | None:
+        """The printer's flattened machine profile; ``None`` when its bundle is unreadable."""
+        slicer = self._catalog.slicer(p.slicer)
+        try:
+            binary = self._usable_binary(slicer)
+            return self._bundle_profiles(slicer, binary, p, p.processes[0][0], p.filaments[0][0])[
+                "machine"
+            ]
+        except ToolUnavailableError:
+            return None
+
+    def _machines(self) -> dict[str, dict[str, object] | None]:
+        return {p.id: self._machine(p) for p in self.printers()}
+
     def layer_ranges(self) -> dict[str, tuple[float, float] | None]:
-        ranges: dict[str, tuple[float, float] | None] = {}
-        for printer in self.printers():
-            slicer = self._catalog.slicer(printer.slicer)
-            try:
-                profiles = self._bundle_profiles(
-                    slicer,
-                    self._usable_binary(slicer),
-                    printer,
-                    printer.processes[0][0],
-                    printer.filaments[0][0],
-                )
-            except ToolUnavailableError:
-                ranges[printer.id] = None
-            else:
-                ranges[printer.id] = layer_range(profiles["machine"])
-        return ranges
+        return {k: None if m is None else layer_range(m) for k, m in self._machines().items()}
+
+    def bed_sizes(self) -> dict[str, tuple[float, float, float] | None]:
+        return {k: None if m is None else bed_size(m) for k, m in self._machines().items()}
+
+    def catalog_printers(self) -> tuple[PrinterProfile, ...]:
+        return self._catalog.printers
 
     def slicer_name(self, printer_id: str) -> str:
         return self._slicer_of(printer_id).name

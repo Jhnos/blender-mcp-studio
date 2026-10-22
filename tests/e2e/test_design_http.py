@@ -170,3 +170,34 @@ def test_rest_report_has_no_absolute_paths(tmp_path: Path) -> None:
     assert "STL/a.stl: open" in text
     assert str(tmp_path) not in text and str(Path.home()) not in text
     assert "run_dir" not in json.loads(text)
+
+
+def test_rest_printers_matches_mcp(tmp_path: Path) -> None:
+    import asyncio
+
+    from fastmcp import Client
+
+    from src.adapters.mcp_server import create_mcp_server
+
+    runtime = make_fake_runtime(tmp_path)
+    app = create_app(runtime=runtime, require_identity=False)
+    with TestClient(app, base_url="http://localhost") as client:
+        response = client.get("/api/design/printers")
+    assert response.status_code == 200
+    body = response.json()
+    assert [p["id"] for p in body["printers"]] == ["bambu-p2s-0.4"]
+    assert body["unavailable"] and "path" not in str(body)
+
+    async def over_mcp() -> object:
+        server = create_mcp_server(
+            AsyncMock(),
+            AsyncMock(),
+            AsyncMock(),
+            AsyncMock(),
+            design=runtime.design_pipeline,
+            generation=None,
+        )
+        async with Client(server) as mcp_client:
+            return (await mcp_client.call_tool("list_printers", {})).structured_content
+
+    assert asyncio.run(over_mcp()) == body

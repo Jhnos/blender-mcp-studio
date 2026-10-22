@@ -30,7 +30,9 @@ from src.core.domain.design_run import (
 from src.core.domain.import_limits import ImportLimits
 from src.core.domain.mesh_integrity import MeshIntegrityReport
 from src.core.domain.model_spec import (
+    JOB_DEFAULTS,
     ModelSpec,
+    PrintTarget,
     parse_model_spec,
 )
 from src.core.domain.model_spec_schema import describe_model_spec
@@ -48,6 +50,7 @@ from src.core.use_cases import design_files as files
 from src.core.use_cases import design_reports as reports
 from src.core.use_cases import design_stages as stages
 from src.core.use_cases.blender_lease import BlenderLease
+from src.core.use_cases.printer_listing import PrinterListing, list_printers
 from src.core.use_cases.slice_file import slice_one
 
 logger = logging.getLogger(__name__)
@@ -176,11 +179,26 @@ class DesignPipeline:
         report = await self._integrity.check(tuple(str(f.absolute) for f in found))
         return files.relative_report(report, found, self._scrub)
 
-    async def slice_file(self, input_3mf: str, printer: str, *, queue: bool = True) -> SliceResult:
+    async def list_printers(self) -> PrinterListing:
+        """The printers this host can slice for (with machine facts) and those it cannot."""
+        return await list_printers(self._slicing)
+
+    async def slice_file(
+        self,
+        input_3mf: str,
+        printer: str,
+        material: str,
+        *,
+        layer_height_mm: float | None = None,
+        queue: bool = True,
+    ) -> SliceResult:
         """Slice one 3MF under the artifact roots into a fresh run directory.
 
+        Printer and material are required; the layer height defaults to the job default.
         Output paths come back relative to the runs dir: ``<run_id>/print/<name>``.
         """
+        height = JOB_DEFAULTS.layer_height_mm if layer_height_mm is None else layer_height_mm
+        target = PrintTarget(printer=printer, material=material, layer_height_mm=height)
         result = await slice_one(
             self._slicing,
             self._lease,
@@ -188,7 +206,7 @@ class DesignPipeline:
             self._roots,
             self._limits,
             input_3mf,
-            printer,
+            target,
             queue=queue,
         )
         result = replace(result, message=await self.clean(result.message))

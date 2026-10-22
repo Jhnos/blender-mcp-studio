@@ -35,6 +35,15 @@ class SlicingPort(Protocol):
         in mm, or ``None`` when it declares none (or its profiles cannot be read)."""
         ...
 
+    def bed_sizes(self) -> Mapping[str, tuple[float, float, float] | None]:
+        """For each usable printer id, the (width, depth, height) in mm its machine profile
+        prints, or ``None`` when it declares none (or its profiles cannot be read)."""
+        ...
+
+    def catalog_printers(self) -> tuple[PrinterProfile, ...]:
+        """Every catalog printer, usable here or not (to name what is missing)."""
+        ...
+
     def slicer_name(self, printer_id: str) -> str:
         """Display name of the slicer that slices ``printer_id`` (installed or not)."""
         ...

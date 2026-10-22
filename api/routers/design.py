@@ -6,7 +6,7 @@ from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import FileResponse
 
 from api.schemas import DesignRunRequest
-from src.adapters.design_payloads import job_dict, report_dict, tool_dict
+from src.adapters.design_payloads import job_dict, printer_dict, report_dict, tool_dict
 from src.core.use_cases.design_pipeline import DesignPipeline
 
 router = APIRouter(prefix="/api/design")
@@ -54,6 +54,11 @@ async def download_design_file(run_id: str, name: str, request: Request) -> File
         filename=path.name,
         content_disposition_type="attachment",
     )
+
+
+@router.get("/printers")
+async def list_design_printers(request: Request) -> dict[str, object]:
+    return printer_dict(await _pipeline(request).list_printers())
 
 
 @router.get("/tools")

@@ -58,6 +58,7 @@ _EXPECTED_TOOLS = {
     "get_run_report",
     "check_mesh_integrity",
     "slice_for_print",
+    "list_printers",
     "list_instances",
     "build_instance",
     "tool_status",
@@ -306,5 +307,5 @@ def test_public_catalog_exposes_only_the_declared_generation_tools() -> None:
     """
     from src.core.use_cases.conversation_generation import GENERATION_TOOL_NAMES
 
-    assert len(_EXPECTED_TOOLS) == 21
+    assert len(_EXPECTED_TOOLS) == 22
     assert _EXPECTED_TOOLS & GENERATION_TOOL_NAMES == _PUBLIC_GENERATION_TOOLS

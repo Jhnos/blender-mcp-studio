@@ -21,6 +21,7 @@ evaluated here: it is accepted and ``check_compatible`` returns a note for it.
 from __future__ import annotations
 
 import json
+import plistlib
 from pathlib import Path
 
 from src.core.domain.exceptions import DomainError
@@ -216,3 +217,14 @@ def layer_range(machine: Profile) -> tuple[float, float] | None:
             return None
         bounds.append(values)
     return max(bounds[0]), min(bounds[1])
+
+
+def bundle_version(binary: Path) -> str | None:
+    """CFBundleShortVersionString of the enclosing .app (the CLIs reject --version)."""
+    bundle = app_bundle(binary)
+    plist = None if bundle is None else bundle / "Contents" / "Info.plist"
+    if plist is None or not plist.is_file():
+        return None
+    with plist.open("rb") as handle:
+        value = plistlib.load(handle).get("CFBundleShortVersionString")
+    return value if isinstance(value, str) else None

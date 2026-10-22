@@ -67,12 +67,13 @@ examples, not server requirements.
 | `delete_object` | Destructive write | Permanently remove one object |
 | `apply_material` | Destructive write | Create/update and assign a Principled BSDF material |
 | `run_design_pipeline` | Write | Submit a ModelSpec; returns a queued job (import, geometry, mechanism, print, package) |
-| `describe_model_spec` | Read | ModelSpec v1 JSON Schema, defaults, supported printers/materials and a worked example |
+| `describe_model_spec` | Read | ModelSpec v2 JSON Schema, defaults, usable printers/materials and a worked example |
+| `list_printers` | Read | Printers this host can slice for: bed, height, layer range, materials, slicer; plus `unavailable` with install hints |
 | `list_artifacts` | Read | Deliverable directories usable as `source.root_dir` (STL count per subdirectory, 3MF names) |
 | `get_job_status` | Read | Poll a design job by `job_id` |
 | `get_run_report` | Read | Per-stage verdicts, metrics, evidence and the overall `passed` flag of one run |
 | `check_mesh_integrity` | Read | Closed / non-self-intersecting check for STLs under an artifact root |
-| `slice_for_print` | Write | Slice a 3MF with the Bambu Studio CLI into a new run directory |
+| `slice_for_print` | Write | Slice a 3MF for a required `printer` and `material` (optional `layer_height_mm`, default 0.2) into a new run directory |
 | `list_instances` | Read | Registered parametric instances and the part files each build must produce |
 | `build_instance` | Destructive write | Build one registered instance in Blender and overwrite its declared STLs |
 | `tool_status` | Read | Availability and version of the external tools the pipeline needs |
@@ -98,6 +99,7 @@ arbitrary Python.
 | `apply_material` | no | yes | no | 30 s |
 | `run_design_pipeline` | no | no | no | 30 s |
 | `describe_model_spec` | yes | no | yes | 10 s |
+| `list_printers` | yes | no | yes | 10 s |
 | `list_artifacts` | yes | no | yes | 10 s |
 | `get_job_status` | yes | no | yes | 10 s |
 | `get_run_report` | yes | no | yes | 10 s |
@@ -113,7 +115,7 @@ arbitrary Python.
 
 ### 設計管線（ModelSpec → 可列印包）
 
-LLM 供應想法與 ModelSpec，MCP 負責走到可列印包：先用 `describe_model_spec` 取得 schema 與範例、
+LLM 供應想法與 ModelSpec，MCP 負責走到可列印包：先用 `list_printers` 看這台主機能切哪些機型（`bed_mm` 要放得下盤面；`unavailable` 附安裝提示）、`describe_model_spec` 取得 schema 與範例、
 `list_artifacts` 找可用的 `source.root_dir`，再以 `run_design_pipeline` 送出（立即回傳
 `job_id`／`run_id`）→ `get_job_status` 輪詢 → `get_run_report` 讀逐階段證據。
 `check_mesh_integrity` 與 `slice_for_print` 可單獨使用，也接受 ModelSpec 以外的檔案。
@@ -224,7 +226,7 @@ because GUI-launched clients do not reliably inherit the shell working directory
 
 ## 接上之後
 
-**安全邊界**（identity、Host/Origin、protocol version、二十一項工具相等性、公網散布的
+**安全邊界**（identity、Host/Origin、protocol version、二十二項工具相等性、公網散布的
 前提）完整說明見 [[01-architecture]] 的安全邊界一節。這裡只提醒 client 開發者三件事：
 
 - `/mcp` **不是** identity exemption。缺少可信 Tailnet identity 的請求會收到 HTTP 401。

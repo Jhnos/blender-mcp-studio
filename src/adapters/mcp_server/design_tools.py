@@ -10,13 +10,14 @@ relative to their artifact root, slice outputs are ``run://{run_id}/print/<name>
 from __future__ import annotations
 
 from dataclasses import asdict
-from typing import TypeVar
+from typing import Annotated, TypeVar
 
 from fastmcp import FastMCP
 from fastmcp.exceptions import ResourceError, ToolError
 from mcp.types import ToolAnnotations
+from pydantic import Field
 
-from src.adapters.design_payloads import job_dict, report_dict, tool_dict
+from src.adapters.design_payloads import job_dict, printer_dict, report_dict, tool_dict
 from src.adapters.generation.authorized_code import GENERATOR_TIMEOUT_S
 from src.adapters.mcp_server.errors import exclusive, tool_error
 from src.adapters.mcp_server.schemas import Name
@@ -138,15 +139,14 @@ def register_design_tools(
         annotations=_annotations("Run design pipeline", read_only=False, idempotent=False),
     )
     async def run_design_pipeline(spec: dict[str, object]) -> dict[str, object]:
-        """Submit a ModelSpec (spec_version 2) and return its queued job; poll get_job_status.
+        """Submit a ModelSpec (spec_version 2); returns the queued job at once, poll get_job_status.
 
-        Minimal spec: {"spec_version": "2", "name": ..., "source": {"root_dir": ...,
-        "project_3mf": ...}, "print_target": {"printer": ..., "material": ...}}. Call describe_model_spec for the full schema, defaults and a worked
-        example, and list_artifacts for valid root_dir values. The run imports the STLs under
-        source.root_dir, checks geometry, slices the project 3MF and packages the evidence
-        (mechanism is not evaluated in Phase 1). The call returns at once; read the verdict with
-        get_run_report. A malformed, out-of-root, unknown-printer, slicer-less or incompatible
-        printer/material/layer-height spec is an error and creates no job. Ignored files are listed in the run's import.json.
+        Call list_printers first; choose a printer whose bed_mm fits the plate. Minimal spec:
+        {"spec_version": "2", "name": ..., "source": {"root_dir": ..., "project_3mf": ...},
+        "print_target": {"printer": ..., "material": ...}}. describe_model_spec gives the full
+        schema and an example, list_artifacts the valid root_dir values. The run checks geometry,
+        slices the 3MF and packages the evidence; read the verdict with get_run_report. A bad,
+        out-of-root, unsliceable printer/material/layer-height spec is an error and makes no job.
         """
         pipeline = _configured(design, "design pipeline")
         try:
@@ -160,8 +160,21 @@ def register_design_tools(
     )
     async def describe_model_spec() -> dict[str, object]:
         """Return the ModelSpec v2 JSON Schema (fields, types, defaults, usable printers and
-        their materials) and a complete worked example for run_design_pipeline."""
+        their materials) and a complete worked example for run_design_pipeline. Call
+        list_printers first; choose a printer whose bed_mm fits the plate."""
         return _configured(design, "design pipeline").describe_spec()
+
+    @mcp.tool(
+        timeout=QUERY_TIMEOUT_S,
+        annotations=_annotations("List printers", read_only=True, idempotent=True),
+    )
+    async def list_printers() -> dict[str, object]:
+        """List printers this host can slice for; choose one for run_design_pipeline and
+        slice_for_print. Per printer: id, vendor, model, nozzle_mm, materials, layer_height_mm
+        ({min,max}, or {exact:[...]}), bed_mm [width, depth], max_height_mm, bed_type, slicer
+        {name, version}. Pick a printer whose bed_mm fits the plate. unavailable lists the
+        rest with a reason and install_hint to relay to the user."""
+        return printer_dict(await _configured(design, "design pipeline").list_printers())
 
     @mcp.tool(
         timeout=QUERY_TIMEOUT_S,
@@ -220,18 +233,28 @@ def register_design_tools(
         timeout=slice_timeout,
         annotations=_annotations("Slice for print", read_only=False, idempotent=False),
     )
-    async def slice_for_print(input_3mf: str, printer: Name) -> dict[str, object]:
-        """Slice one 3MF for the named printer (a catalog id; required, never defaulted), with
-        the slicer its catalog entry names, into a fresh run directory.
+    async def slice_for_print(
+        input_3mf: str,
+        printer: Name,
+        material: Name,
+        layer_height_mm: Annotated[float, Field(gt=0, allow_inf_nan=False)] | None = None,
+    ) -> dict[str, object]:
+        """Slice one 3MF into a fresh run directory. Call list_printers first; choose a printer
+        whose bed_mm fits the plate. printer (an id) and material (one of its materials) are
+        required, never defaulted; layer_height_mm defaults to 0.2 and must be printable there.
 
-        input_3mf is relative to an allowed artifact root and ends in .3mf. Output files come
-        back as run://{run_id}/print/<name> resource URIs, readable with the run resource. A
-        missing slicer, a non-zero exit, or another print job holding the slicer ("slicer busy",
-        retry later; this tool never queues) is a result with passed=false and a message.
+        input_3mf is relative to an allowed artifact root, ends in .3mf. Output comes back as
+        run://{run_id}/print/<name> URIs. An unusable printer, material or height is an error
+        and starts nothing; a non-zero exit or a busy slicer (retry later; never queues) is a
+        result with passed=false and a message.
         """
         pipeline = _configured(design, "design pipeline")
         try:
-            return slice_result_dict(await pipeline.slice_file(input_3mf, printer, queue=False))
+            return slice_result_dict(
+                await pipeline.slice_file(
+                    input_3mf, printer, material, layer_height_mm=layer_height_mm, queue=False
+                )
+            )
         except DomainError as exc:
             raise await fail(exc) from exc
 

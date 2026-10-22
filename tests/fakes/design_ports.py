@@ -103,6 +103,15 @@ class FakeSlicing:
     def layer_ranges(self):
         return {p.id: self.RANGES.get(p.id) for p in self._printers}
 
+    #: Bed width, depth and printable height read 2026-10-22; other printers declare none here.
+    BEDS = {"bambu-p2s-0.4": (256.0, 256.0, 256.0), "creality-k1c-0.4": (220.0, 220.0, 250.0)}
+
+    def bed_sizes(self):
+        return {p.id: self.BEDS.get(p.id) for p in self._printers}
+
+    def catalog_printers(self):
+        return self._catalog.printers
+
     def slicer_name(self, printer_id: str) -> str:
         return self._catalog.slicer(self._catalog.printer(printer_id).slicer).name
 

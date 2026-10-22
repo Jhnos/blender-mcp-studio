@@ -14,7 +14,7 @@ from pathlib import Path
 
 from src.core.domain.design_run import StageName
 from src.core.domain.import_limits import ImportLimits
-from src.core.domain.model_spec import LEGACY_V1_MATERIAL, PrintTarget
+from src.core.domain.model_spec import PrintTarget
 from src.core.domain.slicing import SliceRequest, SliceResult, ToolUnavailableError
 from src.core.ports.slicing_port import SlicingPort
 from src.core.use_cases import design_files as files
@@ -41,11 +41,15 @@ async def slice_one(
     roots: tuple[Path, ...],
     limits: ImportLimits,
     input_3mf: str,
-    printer: str,
+    target: PrintTarget,
     *,
     queue: bool = True,
 ) -> SliceResult:
-    """Slice ``input_3mf`` (relative to an artifact root) for ``printer``; paths stay absolute.
+    """Slice ``input_3mf`` (relative to an artifact root) for ``target``; paths stay absolute.
+
+    The target is checked as at spec submit (``check_print_target``) before any run directory
+    exists: an unusable printer, a material it lacks or an unprintable height is a
+    ``ModelSpecError``.
 
     With ``queue=False`` a held lease returns a "slicer busy" result at once instead of waiting.
     A missing slicer is a failed result, never an exception; a run directory that ends up
@@ -59,6 +63,7 @@ async def slice_one(
         max_count=1,
         max_bytes=limits.max_3mf_bytes,
     )
+    await print_targets.check_print_target(target, slicing)
     run_dir = runs_dir / uuid.uuid4().hex
     try:
         async with claim_print(lease, queue) as acquired:
@@ -68,9 +73,8 @@ async def slice_one(
             request = SliceRequest.from_target(
                 str(found.absolute),
                 str(run_dir / "print"),
-                # Task 5: slice_for_print gets a required material; drop the legacy fill.
-                PrintTarget(printer=printer, material=LEGACY_V1_MATERIAL),
-                printer_id=print_targets.printer_id_for(printer),
+                target,
+                printer_id=target.printer,
             )
             try:
                 return await run_to_completion(slicing.slice(request))

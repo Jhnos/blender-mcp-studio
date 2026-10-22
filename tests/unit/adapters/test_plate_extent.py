@@ -7,6 +7,7 @@ import pytest
 from src.adapters.slicing.plate_extent import (
     MAX_MODEL_BYTES,
     PlateExtentError,
+    bed_size,
     plate_extent,
     printable_area,
 )
@@ -243,3 +244,15 @@ def test_every_catalog_printer_resolves_a_printable_area() -> None:
         checked.append(printer.id)
     if not checked:
         pytest.skip("no slicer app bundle installed on this host")
+
+
+def test_bed_size_reads_area_and_height() -> None:
+    machine = {"printable_area": ["0x0", "256x0", "256x250", "0x250"], "printable_height": "240"}
+    assert bed_size(machine) == (256.0, 250.0, 240.0)
+
+
+def test_bed_size_is_none_when_height_or_area_is_missing_or_unreadable() -> None:
+    area = ["0x0", "10x0", "10x10", "0x10"]
+    assert bed_size({"printable_area": area}) is None
+    assert bed_size({"printable_area": area, "printable_height": "tall"}) is None
+    assert bed_size({"printable_height": "100"}) is None

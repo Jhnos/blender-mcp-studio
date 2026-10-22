@@ -72,24 +72,24 @@ async def test_check_meshes_rejects_oversized_file(tmp_path):
 async def test_slice_file_rejects_non_3mf_and_oversized(tmp_path):
     rig = _rig(tmp_path)
     with pytest.raises(ModelSpecError, match="3mf"):
-        await rig.pipeline.slice_file("artifact/STL/a.stl", "bambu-p2s")
+        await rig.pipeline.slice_file("artifact/STL/a.stl", "bambu-p2s-0.4", "PLA")
     _tight(rig, max_3mf_bytes=1)
     with pytest.raises(ModelSpecError, match="artifact/p.3mf"):
-        await rig.pipeline.slice_file("artifact/p.3mf", "bambu-p2s")
+        await rig.pipeline.slice_file("artifact/p.3mf", "bambu-p2s-0.4", "PLA")
     assert rig.slicing.requests == []
 
 
 async def test_slice_file_fresh_run_dir_lease_and_print_defaults(tmp_path):
     rig = _rig(tmp_path)
-    result = await rig.pipeline.slice_file("artifact/p.3mf", "bambu-p2s")
+    result = await rig.pipeline.slice_file("artifact/p.3mf", "bambu-p2s-0.4", "PLA")
     (request,) = rig.slicing.requests
     run_dir = Path(request.output_dir).parent
     assert len(run_dir.name) == 32 and run_dir.parent == rig.runs
     assert request == SliceRequest.from_target(
         str((rig.root / "p.3mf").resolve()),
         str(run_dir / "print"),
-        PrintTarget(printer="bambu-p2s", material="PLA"),
-        printer_id="bambu-p2s-0.4",  # the v1 name maps to its catalog id
+        PrintTarget(printer="bambu-p2s-0.4", material="PLA"),
+        printer_id="bambu-p2s-0.4",
     )
     assert ("slice-start", StageName.PRINT) in rig.log
     assert ("slice-end", StageName.PRINT) in rig.log
@@ -102,6 +102,6 @@ async def test_slice_file_fresh_run_dir_lease_and_print_defaults(tmp_path):
 
 async def test_two_slice_files_get_distinct_run_dirs(tmp_path):
     rig = _rig(tmp_path)
-    await rig.pipeline.slice_file("artifact/p.3mf", "bambu-p2s")
-    await rig.pipeline.slice_file("artifact/p.3mf", "bambu-p2s")
+    await rig.pipeline.slice_file("artifact/p.3mf", "bambu-p2s-0.4", "PLA")
+    await rig.pipeline.slice_file("artifact/p.3mf", "bambu-p2s-0.4", "PLA")
     assert len({r.output_dir for r in rig.slicing.requests}) == 2

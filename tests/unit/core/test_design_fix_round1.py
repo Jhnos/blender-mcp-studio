@@ -10,6 +10,7 @@ import pytest
 
 from src.adapters.slicing.orca_family_cli import OrcaFamilyCli
 from src.core.domain.design_run import JobStatus, StageName, StageOutcome
+from src.core.domain.model_spec import ModelSpecError
 from src.core.domain.packaging import ToolUse
 from src.core.domain.slicing import SliceResult
 from src.infrastructure.printer_catalog_loader import load_printer_catalog
@@ -65,16 +66,17 @@ async def test_slice_file_failure_leaves_no_run_dir(tmp_path):
     rig = _rig(tmp_path)
     rig.slicing.error = RuntimeError("slicer exploded")
     with pytest.raises(RuntimeError):
-        await rig.pipeline.slice_file("artifact/p.3mf", "bambu-p2s")
+        await rig.pipeline.slice_file("artifact/p.3mf", "bambu-p2s-0.4", "PLA")
     assert not rig.runs.exists() or list(rig.runs.iterdir()) == []
 
 
-async def test_slice_file_unavailable_tool_is_a_failed_result_and_leaves_no_dir(tmp_path):
+async def test_slice_file_unavailable_tool_is_refused_up_front_and_leaves_no_dir(tmp_path):
+    # Rule change (task 18/5): the submit-time target check runs before any run dir exists.
     rig = _rig(tmp_path)
     _real_missing_slicer(rig, tmp_path)
-    result = await rig.pipeline.slice_file("artifact/p.3mf", "bambu-p2s")
-    assert result.passed is False and "not available" in result.message
-    assert _leaks(repr(result), tmp_path) == []
+    with pytest.raises(ModelSpecError, match="not available") as caught:
+        await rig.pipeline.slice_file("artifact/p.3mf", "bambu-p2s-0.4", "PLA")
+    assert _leaks(str(caught.value), tmp_path) == []
     assert not rig.runs.exists() or list(rig.runs.iterdir()) == []
 
 
@@ -107,7 +109,7 @@ async def test_cancelled_slice_holds_lease_until_slicer_returns(tmp_path):
     rig = _rig(tmp_path)
     blocking = BlockingSlicing()
     rig.pipeline._slicing = blocking
-    task = asyncio.create_task(rig.pipeline.slice_file("artifact/p.3mf", "bambu-p2s"))
+    task = asyncio.create_task(rig.pipeline.slice_file("artifact/p.3mf", "bambu-p2s-0.4", "PLA"))
     await asyncio.wait_for(blocking.started.wait(), 2)
     task.cancel()
     await asyncio.sleep(0.05)

@@ -67,7 +67,7 @@ async def test_unconfigured_tools_stay_in_the_catalog_and_say_so():
         "get_job_status": {"job_id": "j"},
         "get_run_report": {"run_id": "r"},
         "check_mesh_integrity": {"stl_paths": ["a.stl"]},
-        "slice_for_print": {"input_3mf": "a.3mf", "printer": "bambu-p2s-0.4"},
+        "slice_for_print": {"input_3mf": "a.3mf", "printer": "bambu-p2s-0.4", "material": "PLA"},
         "list_instances": {},
         "build_instance": {"slug": "x"},
         "tool_status": {},
@@ -162,7 +162,7 @@ async def test_slice_for_print_rejects_non_3mf(tmp_path):
     async with Client(_server(rig)) as client:
         res = await client.call_tool(
             "slice_for_print",
-            {"input_3mf": "artifact/STL/a.stl", "printer": "bambu-p2s-0.4"},
+            {"input_3mf": "artifact/STL/a.stl", "printer": "bambu-p2s-0.4", "material": "PLA"},
             raise_on_error=False,
         )
     assert res.is_error and "3mf" in _text(res)
@@ -173,7 +173,8 @@ async def test_slice_for_print_returns_run_uris(tmp_path):
     rig = _rig(tmp_path)
     async with Client(_server(rig)) as client:
         res = await client.call_tool(
-            "slice_for_print", {"input_3mf": "artifact/p.3mf", "printer": "bambu-p2s-0.4"}
+            "slice_for_print",
+            {"input_3mf": "artifact/p.3mf", "printer": "bambu-p2s-0.4", "material": "PLA"},
         )
     data = res.structured_content
     run_id = Path(rig.slicing.requests[0].output_dir).parent.name
@@ -207,7 +208,8 @@ async def test_mcp_outputs_have_no_absolute_paths(tmp_path):
             (await client.call_tool("check_mesh_integrity", {"stl_paths": ["artifact/STL/a.stl"]})),
             (
                 await client.call_tool(
-                    "slice_for_print", {"input_3mf": "artifact/p.3mf", "printer": "bambu-p2s-0.4"}
+                    "slice_for_print",
+                    {"input_3mf": "artifact/p.3mf", "printer": "bambu-p2s-0.4", "material": "PLA"},
                 )
             ),
             (await client.call_tool("list_instances", {})),

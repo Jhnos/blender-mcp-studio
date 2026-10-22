@@ -13,23 +13,25 @@ from src.adapters.mcp_server import design_tools
 from src.core.domain.design_run import StageName
 from src.core.domain.exceptions import DomainError
 from src.infrastructure.tools_config import load_tools_config
-from tests.unit.adapters.test_mcp_design_tools import _server, _strings, _text
+from tests.unit.adapters.test_mcp_design_tools import _server, _text
 from tests.unit.core.test_design_fix_round1 import missing_slicers
 from tests.unit.core.test_design_pipeline import _payload, _rig
 
 
-async def test_slice_for_print_missing_binary_is_failed_result_without_path(tmp_path):
+async def test_slice_for_print_missing_binary_is_an_error_with_hint_without_path(tmp_path):
+    # Rule change (task 18/5): the submit-time target check runs first, so a slicer that is
+    # not installed is a tool error naming the slicer and the install hint, before any run dir.
     rig = _rig(tmp_path)
     rig.pipeline._slicing = missing_slicers(tmp_path)
     async with Client(_server(rig)) as client:
         res = await client.call_tool(
-            "slice_for_print", {"input_3mf": "artifact/p.3mf", "printer": "bambu-p2s-0.4"}
+            "slice_for_print",
+            {"input_3mf": "artifact/p.3mf", "printer": "bambu-p2s-0.4", "material": "PLA"},
+            raise_on_error=False,
         )
-    data = res.structured_content
-    assert data["passed"] is False and "not available" in data["message"]
-    assert data["log_path"] is None and data["output_3mf"] is None
-    texts = [*_strings(data), _text(res)]
-    assert not [t for t in texts for f in (str(tmp_path), str(Path.home())) if f in t]
+    assert res.is_error and "not available" in _text(res)
+    assert not [f for f in (str(tmp_path), str(Path.home())) if f in _text(res)]
+    assert not rig.runs.exists() or not list(rig.runs.iterdir())
 
 
 async def test_design_tool_errors_are_scrubbed(tmp_path):
@@ -52,10 +54,12 @@ async def test_slice_for_print_returns_busy_when_lease_held(tmp_path):
     async with Client(_server(rig)) as client:
         async with rig.lease.hold(StageName.MECHANISM):
             res = await client.call_tool(
-                "slice_for_print", {"input_3mf": "artifact/p.3mf", "printer": "bambu-p2s-0.4"}
+                "slice_for_print",
+                {"input_3mf": "artifact/p.3mf", "printer": "bambu-p2s-0.4", "material": "PLA"},
             )
         later = await client.call_tool(
-            "slice_for_print", {"input_3mf": "artifact/p.3mf", "printer": "bambu-p2s-0.4"}
+            "slice_for_print",
+            {"input_3mf": "artifact/p.3mf", "printer": "bambu-p2s-0.4", "material": "PLA"},
         )
     assert res.structured_content["passed"] is False
     assert res.structured_content["message"] == (
