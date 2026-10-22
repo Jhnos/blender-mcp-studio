@@ -53,7 +53,28 @@ def test_loads_seven_printers_and_two_slicers() -> None:
     assert sorted(s.id for s in catalog.slicers) == ["bambu-studio", "orcaslicer"]
     assert catalog.printer("bambu-p2s-0.4").slicer == "bambu-studio"
     assert catalog.slicer("orcaslicer").binary_key == "orcaslicer_bin"
-    assert (-61, "filament does not match bed type") in catalog.slicer("orcaslicer").error_codes
+    codes = {c.code: c for c in catalog.slicer("orcaslicer").error_codes}
+    assert codes[-61].meaning == "filament does not match bed type"
+    assert codes[-61].name == "CLI_FILAMENT_NOT_MATCH_BED_TYPE"
+
+
+def test_every_orca_code_has_its_macro_name_and_orca_hint() -> None:
+    codes = load_printer_catalog().slicer("orcaslicer").error_codes
+    assert len(codes) == 46
+    assert all(c.name.startswith("CLI_") and c.hint and c.meaning for c in codes)
+    by_code = {c.code: c for c in codes}
+    assert by_code[-52].name == "CLI_OBJECTS_PARTLY_INSIDE"
+    assert by_code[-101].hint.startswith("G-code conflicts detected after slicing.")
+
+
+def test_unknown_error_code_key_rejected(tmp_path: Path) -> None:
+    cfg = _config(tmp_path, {"a.yaml": _printer("x")})
+    text = _SLICERS.replace(
+        "error_codes: []", "error_codes:\n      - {code: -1, meaning: m, severity: high}"
+    )
+    (cfg / "slicers.yaml").write_text(text, encoding="utf-8")
+    with pytest.raises(ValueError, match="slicers.yaml: unknown key.*severity"):
+        load_printer_catalog(cfg)
 
 
 def test_unknown_printer_error_lists_ids() -> None:

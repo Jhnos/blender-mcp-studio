@@ -290,9 +290,9 @@ def test_failed_job_is_terminal_not_a_hang() -> None:
 
 
 def test_poll_budget_is_derived_from_the_slicer_timeout() -> None:
-    from src.adapters.slicing.bambu_studio_cli import SLICE_TIMEOUT_S
+    from src.adapters.slicing.orca_family_cli import SLICE_TIMEOUT_S
 
-    assert gate.poll_budget_s() == SLICE_TIMEOUT_S + 300
+    assert gate.poll_budget_s() == SLICE_TIMEOUT_S["bambu-studio"] + 300
 
 
 def test_absent_deliverable_is_a_failure_naming_the_directory(tmp_path: Path) -> None:

@@ -258,7 +258,7 @@ async def test_package_stage_records_slicer_license(tmp_path):
     job, _, _ = await _run(rig, _payload(rig))
     _, _, run_dir, files, tools = rig.packaging.calls[0]
     assert (tools[0].name, tools[0].version, tools[0].license, tools[0].invocation) == (
-        "Bambu Studio",
+        "bambu-studio",  # tool_for: the catalog slicer id, as the real adapter records it
         "02.06.00.51",
         "AGPL-3.0-only",
         "subprocess",
@@ -405,7 +405,7 @@ async def test_cancel_mid_print_marks_cancelled_and_report_failed(tmp_path):
 
 
 async def test_package_excludes_slicer_scratch(tmp_path):
-    # The real guarantee is the adapter's temp datadir (test_bambu_studio_cli); this pins
+    # The real guarantee is the adapter's temp datadir (test_orca_family_cli); this pins
     # that nothing named bambu-data is handed to the packager.
     rig = _rig(tmp_path)
     await _run(rig, _payload(rig))

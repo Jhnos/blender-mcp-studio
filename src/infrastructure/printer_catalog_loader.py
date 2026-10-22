@@ -7,13 +7,14 @@ from pathlib import Path
 
 import yaml
 
-from src.core.domain.printer_catalog import PrinterCatalog, PrinterProfile, SlicerSpec
+from src.core.domain.printer_catalog import ExitCode, PrinterCatalog, PrinterProfile, SlicerSpec
 from src.infrastructure.config_loader import default_config_dir as _builtin_dir
 from src.infrastructure.narrowing import as_int, as_mapping, as_sequence
 
 _SLICER_KEYS = frozenset(
     ("id", "name", "binary_key", "profiles_subdir", "license", "error_codes", "install_hint")
 )
+_EXIT_CODE_KEYS = frozenset(("code", "meaning", "name", "hint"))
 _PRINTER_KEYS = frozenset(
     (
         "id",
@@ -81,13 +82,21 @@ def _slicer(raw: Mapping[str, object], where: str) -> SlicerSpec:
     codes = as_sequence(raw.get("error_codes", []))
     if codes is None:
         raise ValueError(f"{where}: error_codes must be a list")
-    pairs: list[tuple[int, str]] = []
+    pairs: list[ExitCode] = []
     for item in codes:
         entry = as_mapping(item)
         code = as_int(entry.get("code")) if entry is not None else None
         if entry is None or code is None:
             raise ValueError(f"{where}: error_codes entries need an integer code and a meaning")
-        pairs.append((code, str(entry.get("meaning", ""))))
+        _known_keys(entry, _EXIT_CODE_KEYS, where)
+        pairs.append(
+            ExitCode(
+                code,
+                str(entry.get("meaning", "")),
+                str(entry.get("name", "")),
+                str(entry.get("hint", "")),
+            )
+        )
     return SlicerSpec(
         id=_text(raw, "id", where),
         name=_text(raw, "name", where),

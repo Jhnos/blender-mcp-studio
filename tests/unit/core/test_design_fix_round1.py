@@ -8,14 +8,24 @@ from pathlib import Path
 
 import pytest
 
-from src.adapters.slicing.bambu_studio_cli import BambuStudioCli
+from src.adapters.slicing.orca_family_cli import OrcaFamilyCli
 from src.core.domain.design_run import JobStatus, StageName, StageOutcome
-from src.core.domain.slicing import SliceResult, SupportedTargets
+from src.core.domain.slicing import SliceResult
+from src.infrastructure.printer_catalog_loader import load_printer_catalog
 from tests.unit.core.test_design_pipeline import _payload, _rig, _run
 
 
+def missing_slicers(tmp_path: Path) -> OrcaFamilyCli:
+    """The real adapter on a host with neither slicer installed."""
+    binaries = {
+        "bambu-studio": tmp_path / "nope" / "BambuStudio",
+        "orcaslicer": tmp_path / "nope" / "OrcaSlicer",
+    }
+    return OrcaFamilyCli(load_printer_catalog(), binaries, overrides_dir=tmp_path)
+
+
 def _real_missing_slicer(rig, tmp_path: Path) -> None:
-    rig.slicing = BambuStudioCli(tmp_path / "nope" / "BambuStudio", profiles_dir=tmp_path)
+    rig.slicing = missing_slicers(tmp_path)
     rig.pipeline._slicing = rig.slicing
 
 
@@ -25,8 +35,12 @@ def _leaks(text: str, tmp_path: Path) -> list[str]:
 
 async def test_pipeline_job_error_has_no_host_path(tmp_path):
     rig = _rig(tmp_path)
+    # Submit now accepts only printers whose slicer is installed, so the slicer goes missing
+    # between submit and run (the run task has not started before the next await).
+    job = await rig.pipeline.submit(_payload(rig))
     _real_missing_slicer(rig, tmp_path)
-    job, status, report = await _run(rig, _payload(rig))
+    await rig.pipeline.wait_idle()
+    status, report = await rig.pipeline.status(job.job_id), await rig.pipeline.report(job.run_id)
     last = report.stages[-1]
     assert last.name is StageName.PRINT and last.outcome is StageOutcome.FAILED
     assert "not available" in last.message
@@ -75,8 +89,8 @@ class BlockingSlicing:
             True, f"{request.output_dir}/o.3mf", None, f"{request.output_dir}/l", 0, "ok"
         )
 
-    def supported(self):  # A4: submit checks the slicer's supported targets
-        return SupportedTargets(("bambu-p2s",), ("PLA",))
+    def printers(self):  # A4: submit checks the slicer's usable printers
+        return (load_printer_catalog().printer("bambu-p2s-0.4"),)
 
     async def availability(self):
         raise AssertionError("not used")

@@ -30,7 +30,7 @@ from src.core.domain.design_run import (
 )
 from src.core.domain.import_limits import ImportLimits
 from src.core.domain.mesh_integrity import MeshIntegrityReport
-from src.core.domain.model_spec import ModelSpec, ModelSpecError, PrintTarget, parse_model_spec
+from src.core.domain.model_spec import ModelSpec, PrintTarget, parse_model_spec
 from src.core.domain.model_spec_schema import describe_model_spec
 from src.core.domain.slicing import (
     SliceRequest,
@@ -43,7 +43,7 @@ from src.core.ports.mechanism_simulation_port import MechanismSimulationPort
 from src.core.ports.mesh_integrity_port import MeshIntegrityPort
 from src.core.ports.packaging_port import PackagingPort
 from src.core.ports.slicing_port import SlicingPort
-from src.core.use_cases import artifact_catalog
+from src.core.use_cases import artifact_catalog, print_targets
 from src.core.use_cases import design_files as files
 from src.core.use_cases import design_reports as reports
 from src.core.use_cases import design_stages as stages
@@ -94,15 +94,17 @@ class DesignPipeline:
 
     @property
     def slice_timeout_s(self) -> float:
-        """The slicing port's own deadline (delivery adapters add their transport margin)."""
-        return self._slicing.timeout_s
+        """The slowest usable printer's slice deadline (delivery adapters add their margin)."""
+        printers = self._slicing.printers()
+        return max((self._slicing.timeout_s(p.id) for p in printers), default=0.0)
 
     async def submit(self, payload: Mapping[str, object]) -> JobRecord:
         """Parse (ModelSpecError, no side effects), create job + run dir + spec.json, schedule.
 
-        An unsupported printer or material is rejected here, before any job exists.
+        A printer not usable here, or a material it lacks, is rejected before any job exists.
         """
-        self._check_target(parse_model_spec(payload, artifact_roots=self._roots).print_target)
+        target = parse_model_spec(payload, artifact_roots=self._roots).print_target
+        print_targets.check_target(target, self._slicing.printers())
         run_id = uuid.uuid4().hex
         job = await self._jobs.create(run_id)
         try:
@@ -118,21 +120,11 @@ class DesignPipeline:
         task.add_done_callback(self._finished)
         return job
 
-    def _check_target(self, target: PrintTarget) -> None:
-        supported = self._slicing.supported()
-        for label, value, allowed in (
-            ("printer", target.printer, supported.printers),
-            ("material", target.material, supported.materials),
-        ):
-            if value not in allowed:
-                raise ModelSpecError(
-                    f"unsupported print_target.{label} {value!r}; supported: {', '.join(allowed)}"
-                )
-
     def describe_spec(self) -> dict[str, object]:
-        """Spec v1 as JSON Schema with this host's supported printers and materials."""
-        supported = self._slicing.supported()
-        return describe_model_spec(supported.printers, supported.materials)
+        """Spec v1 as JSON Schema with this host's usable printers and their materials."""
+        printers = self._slicing.printers()
+        names = print_targets.spec_printer_names(printers)
+        return describe_model_spec(names, print_targets.materials(printers))
 
     async def list_artifacts(self) -> dict[str, object]:
         """Candidate ``source.root_dir`` values under the artifact roots (relative only)."""
@@ -163,8 +155,8 @@ class DesignPipeline:
         await asyncio.gather(*tasks, return_exceptions=True)
 
     async def tools(self) -> tuple[ToolAvailability, ...]:
-        """External tools the pipeline depends on (currently the slicer)."""
-        return (await self._slicing.availability(),)
+        """External tools the pipeline depends on (one entry per catalog slicer)."""
+        return await self._slicing.availability()
 
     async def check_meshes(self, paths: tuple[str, ...]) -> MeshIntegrityReport:
         """Integrity-check STLs named relative to an artifact root (no run, no Blender lease).
@@ -206,7 +198,10 @@ class DesignPipeline:
                     return SliceResult(False, None, None, "", -1, SLICER_BUSY)
                 run_dir.mkdir(parents=True)
                 request = SliceRequest.from_target(
-                    str(found.absolute), str(run_dir / "print"), PrintTarget(printer=printer)
+                    str(found.absolute),
+                    str(run_dir / "print"),
+                    PrintTarget(printer=printer),
+                    printer_id=print_targets.printer_id_for(printer),
                 )
                 try:
                     result = await run_to_completion(self._slicing.slice(request))
@@ -229,14 +224,12 @@ class DesignPipeline:
                 yield acquired
 
     async def clean(self, text: str) -> str:
-        """Strip host paths from free text, including the slicer binary's directory."""
-        extra: tuple[str, ...] = ()
+        """Strip host paths from free text, including every slicer binary's directory."""
         try:
-            tool = await self._slicing.availability()
+            tools = await self._slicing.availability()
         except Exception:  # noqa: BLE001 - scrubbing must never fail a run
-            tool = None
-        if tool is not None and tool.path:
-            extra = (str(Path(tool.path).parent),)
+            tools = ()
+        extra = tuple(str(Path(tool.path).parent) for tool in tools if tool.path)
         return self._scrub.text(text, extra)
 
     def _load_spec(self, run_dir: Path) -> ModelSpec:

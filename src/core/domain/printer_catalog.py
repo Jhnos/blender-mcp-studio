@@ -16,13 +16,23 @@ class UnknownSlicerError(DomainError):
 
 
 @dataclass(frozen=True, slots=True)
+class ExitCode:
+    """One documented slicer exit code: its source macro name and the slicer's own hint."""
+
+    code: int
+    meaning: str
+    name: str = ""
+    hint: str = ""
+
+
+@dataclass(frozen=True, slots=True)
 class SlicerSpec:
     id: str
     name: str
     binary_key: str
     profiles_subdir: str
     license: str
-    error_codes: tuple[tuple[int, str], ...]
+    error_codes: tuple[ExitCode, ...]
     install_hint: str
 
 

@@ -1,4 +1,8 @@
-"""A tiny fake BambuStudio.app tree with vendor profiles (2-level ``inherits`` plus an include)."""
+"""Tiny fake slicer .app trees with vendor profiles (2-level ``inherits`` plus an include).
+
+``make_bundle`` is a BambuStudio-shaped app with the P2S leaves; ``make_orca_bundle`` is an
+OrcaSlicer-shaped app with the Creality K1C leaves named in ``config/printers/creality``.
+"""
 
 from __future__ import annotations
 
@@ -11,6 +15,12 @@ LEAVES = {
     "filament": "Generic PLA @BBL P2S",
 }
 
+K1C_LEAVES = {
+    "machine": "Creality K1C 0.4 nozzle",
+    "process": "0.20mm Standard @Creality K1C",
+    "filament": "Generic PLA @K1C-all",
+}
+
 
 def _write(path: Path, data: dict[str, object]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -19,24 +29,32 @@ def _write(path: Path, data: dict[str, object]) -> None:
 
 def make_bundle(tmp_path: Path, *, profiles: bool = True) -> Path:
     """Create ``Fake.app`` and return its ``Contents/MacOS/BambuStudio`` binary path."""
-    app = tmp_path / "Fake.app"
-    binary = app / "Contents" / "MacOS" / "BambuStudio"
+    return _make_app(tmp_path / "Fake.app", "BambuStudio", "BBL", LEAVES if profiles else None)
+
+
+def make_orca_bundle(tmp_path: Path) -> Path:
+    """Create ``Orca.app`` and return its ``Contents/MacOS/OrcaSlicer`` binary path."""
+    return _make_app(tmp_path / "Orca.app", "OrcaSlicer", "Creality", K1C_LEAVES)
+
+
+def _make_app(app: Path, exe: str, vendor: str, leaves: dict[str, str] | None) -> Path:
+    binary = app / "Contents" / "MacOS" / exe
     binary.parent.mkdir(parents=True)
     binary.write_text("#!/bin/sh\n", encoding="utf-8")
-    if not profiles:
+    if leaves is None:
         return binary
-    bbl = app / "Contents" / "Resources" / "profiles" / "BBL"
-    for kind, leaf in LEAVES.items():
+    vendor_dir = app / "Contents" / "Resources" / "profiles" / vendor
+    for kind, leaf in leaves.items():
         _write(
-            bbl / kind / f"{kind}_base.json",
+            vendor_dir / kind / f"{kind}_base.json",
             {"name": f"{kind}_base", "type": kind, "base_key": "base", "shared": "base"},
         )
         _write(
-            bbl / kind / f"{kind}_extra.json",
+            vendor_dir / kind / f"{kind}_extra.json",
             {"name": f"{kind}_extra", "extra_key": "extra", "shared": "extra"},
         )
         _write(
-            bbl / kind / f"{kind}_mid.json",
+            vendor_dir / kind / f"{kind}_mid.json",
             {
                 "name": f"{kind}_mid",
                 "inherits": f"{kind}_base",
@@ -45,7 +63,7 @@ def make_bundle(tmp_path: Path, *, profiles: bool = True) -> Path:
             },
         )
         _write(
-            bbl / kind / f"{leaf}.json",
+            vendor_dir / kind / f"{leaf}.json",
             {
                 "type": kind,
                 "name": leaf,
@@ -58,8 +76,8 @@ def make_bundle(tmp_path: Path, *, profiles: bool = True) -> Path:
     return binary
 
 
-def flattened(kind: str) -> dict[str, object]:
-    """What the adapter must produce for ``kind`` from ``make_bundle`` (v80 semantics)."""
+def flattened(kind: str, leaves: dict[str, str] = LEAVES) -> dict[str, object]:
+    """What the adapter must produce for ``kind`` from a fake bundle (v80 semantics)."""
     return {
         "type": kind,
         "base_key": "base",
@@ -67,7 +85,7 @@ def flattened(kind: str) -> dict[str, object]:
         "mid_key": "mid",
         "shared": "leaf",
         "leaf_key": "leaf",
-        "name": LEAVES[kind],
+        "name": leaves[kind],
         "instantiation": "true",
         "inherits": "",
         "from": "system",

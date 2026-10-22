@@ -5,8 +5,7 @@ from pathlib import Path
 
 import pytest
 
-import src.adapters.slicing.bambu_studio_cli as cli_module
-from src.adapters.slicing.bambu_studio_cli import SLICE_TIMEOUT_S, BambuStudioCli
+import src.adapters.slicing.orca_family_cli as cli_module
 from src.adapters.slicing.bundle_profiles import (
     IncompatibleProfileError,
     UnknownProfileError,
@@ -14,20 +13,26 @@ from src.adapters.slicing.bundle_profiles import (
     profiles_root,
     resolve_printer_profiles,
 )
+from src.adapters.slicing.orca_family_cli import SLICE_TIMEOUT_S, OrcaFamilyCli
 from src.core.domain.model_spec import PrintTarget
 from src.core.domain.printer_catalog import PrinterProfile
 from src.core.domain.slicing import SliceRequest, ToolUnavailableError
 from src.infrastructure.printer_catalog_loader import load_printer_catalog
 from tests.fakes.bambu_bundle import LEAVES, flattened, make_bundle, make_named_bundle
-from tests.unit.adapters.test_bambu_studio_cli import FakeRunner
+from tests.unit.adapters.test_orca_family_cli import FakeRunner
 
 _CONFIG = Path(cli_module.__file__).resolve().parents[3] / "config" / "slicer-profiles"
 
 
 def _request(tmp_path: Path) -> SliceRequest:
     return SliceRequest.from_target(
-        str(tmp_path / "gate.3mf"), str(tmp_path / "out"), PrintTarget()
+        str(tmp_path / "gate.3mf"), str(tmp_path / "out"), PrintTarget(), printer_id="bambu-p2s-0.4"
     )
+
+
+def _adapter(binary: Path, runner: FakeRunner) -> OrcaFamilyCli:
+    binaries = {"bambu-studio": binary, "orcaslicer": binary.parent / "no-orca"}
+    return OrcaFamilyCli(load_printer_catalog(), binaries, overrides_dir=_CONFIG, runner=runner)
 
 
 def test_vendored_full_profiles_are_gone_and_leaves_live_in_the_printer_yaml() -> None:
@@ -69,7 +74,7 @@ def test_flatten_rejects_inheritance_cycle(tmp_path: Path) -> None:
 
 
 async def test_slice_writes_profiles_flattened_from_the_bundle(tmp_path: Path) -> None:
-    cli = BambuStudioCli(make_bundle(tmp_path), profiles_dir=_CONFIG, runner=FakeRunner())
+    cli = _adapter(make_bundle(tmp_path), FakeRunner())
     await cli.slice(_request(tmp_path))
     out = tmp_path / "out"
     for kind in ("machine", "filament"):
@@ -80,7 +85,7 @@ async def test_slice_writes_profiles_flattened_from_the_bundle(tmp_path: Path) -
 
 async def test_bundle_without_profiles_dir_is_unavailable(tmp_path: Path) -> None:
     runner = FakeRunner()
-    cli = BambuStudioCli(make_bundle(tmp_path, profiles=False), profiles_dir=_CONFIG, runner=runner)
+    cli = _adapter(make_bundle(tmp_path, profiles=False), runner)
     with pytest.raises(ToolUnavailableError, match="no profiles directory") as info:
         await cli.slice(_request(tmp_path))
     assert str(tmp_path) not in str(info.value)
@@ -88,8 +93,8 @@ async def test_bundle_without_profiles_dir_is_unavailable(tmp_path: Path) -> Non
 
 
 def test_adapter_exposes_its_timeout_through_the_port(tmp_path: Path) -> None:
-    cli = BambuStudioCli(make_bundle(tmp_path), profiles_dir=_CONFIG, runner=FakeRunner())
-    assert cli.timeout_s == SLICE_TIMEOUT_S
+    cli = _adapter(make_bundle(tmp_path), FakeRunner())
+    assert cli.timeout_s("bambu-p2s-0.4") == SLICE_TIMEOUT_S["bambu-studio"]
 
 
 # ---- resolution by JSON name, with a non-Bambu vendor whose file names differ ----

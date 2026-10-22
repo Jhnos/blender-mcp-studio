@@ -7,10 +7,11 @@ from pathlib import Path
 
 from src.core.domain.design_run import JobRecord, JobStatus, StageName
 from src.core.domain.mesh_integrity import MeshIntegrityReport, MeshVerdict
-from src.core.domain.packaging import PackagedFile, PackageManifest
-from src.core.domain.slicing import SliceResult, SupportedTargets, ToolAvailability
+from src.core.domain.packaging import PackagedFile, PackageManifest, ToolUse
+from src.core.domain.slicing import SliceResult, ToolAvailability
 from src.core.domain.verification import VerificationReport
 from src.core.use_cases.blender_lease import BlenderLease
+from src.infrastructure.printer_catalog_loader import load_printer_catalog
 
 
 class FakeJobs:
@@ -62,18 +63,39 @@ class FakeSimulation:
         return tuple(VerificationReport(s, self.ok, (), "scope", True) for s in suites)
 
 
+FAKE_TIMEOUT_S = 123.0  # not the real slicer value: MCP must read it from the port
+
+
 class FakeSlicing:
-    def __init__(self, lease: BlenderLease, delay: float = 0.0, log: list | None = None) -> None:
+    """One usable printer (the P2S) unless ``printer_ids`` names more catalog printers."""
+
+    def __init__(
+        self,
+        lease: BlenderLease,
+        delay: float = 0.0,
+        log: list | None = None,
+        printer_ids: tuple[str, ...] = ("bambu-p2s-0.4",),
+    ) -> None:
         self.lease, self.delay, self.log = lease, delay, log if log is not None else []
         self.requests: list = []
         self.error: Exception | None = None
-        self.timeout_s = 123.0  # not the real slicer value: MCP must read it from the port
+        catalog = load_printer_catalog()
+        self._catalog = catalog
+        self._printers = tuple(catalog.printer(pid) for pid in printer_ids)
 
-    def supported(self):
-        return SupportedTargets(("bambu-p2s",), ("PLA",))
+    def printers(self):
+        return self._printers
+
+    def timeout_s(self, printer_id: str) -> float:
+        return FAKE_TIMEOUT_S
+
+    def tool_for(self, printer_id: str) -> ToolUse:
+        slicer = self._catalog.slicer(self._catalog.printer(printer_id).slicer)
+        version = {"bambu-studio": "02.06.00.51", "orcaslicer": "2.4.2"}[slicer.id]
+        return ToolUse(slicer.id, version, slicer.license, "subprocess")
 
     async def availability(self):
-        return ToolAvailability("Bambu Studio", True, "/x/bs", "02.06.00.51", "hint")
+        return (ToolAvailability("Bambu Studio", True, "/x/bs", "02.06.00.51", "hint"),)
 
     async def slice(self, request):
         self.requests.append(request)

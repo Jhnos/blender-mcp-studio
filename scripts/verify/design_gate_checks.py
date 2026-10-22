@@ -12,7 +12,7 @@ import time
 from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
 from pathlib import Path
 
-from src.adapters.slicing.bambu_studio_cli import SLICE_TIMEOUT_S
+from src.adapters.slicing.orca_family_cli import SLICE_TIMEOUT_S
 from src.infrastructure.narrowing import as_mapping, as_sequence
 
 #: Slicing is the long pole; the other four stages took seconds on the same host (the v78
@@ -30,7 +30,7 @@ class GateError(RuntimeError):
 
 
 def poll_budget_s() -> float:
-    return SLICE_TIMEOUT_S + POLL_MARGIN_S
+    return SLICE_TIMEOUT_S["bambu-studio"] + POLL_MARGIN_S  # the v78 gate slices on the P2S
 
 
 def _items(value: object) -> list[object]:

@@ -10,17 +10,17 @@ import pytest
 from fastmcp import Client
 
 from src.adapters.mcp_server import design_tools
-from src.adapters.slicing.bambu_studio_cli import BambuStudioCli
 from src.core.domain.design_run import StageName
 from src.core.domain.exceptions import DomainError
 from src.infrastructure.tools_config import load_tools_config
 from tests.unit.adapters.test_mcp_design_tools import _server, _strings, _text
+from tests.unit.core.test_design_fix_round1 import missing_slicers
 from tests.unit.core.test_design_pipeline import _payload, _rig
 
 
 async def test_slice_for_print_missing_binary_is_failed_result_without_path(tmp_path):
     rig = _rig(tmp_path)
-    rig.pipeline._slicing = BambuStudioCli(tmp_path / "nope" / "BambuStudio", profiles_dir=tmp_path)
+    rig.pipeline._slicing = missing_slicers(tmp_path)
     async with Client(_server(rig)) as client:
         res = await client.call_tool("slice_for_print", {"input_3mf": "artifact/p.3mf"})
     data = res.structured_content

@@ -26,11 +26,11 @@ from src.core.ports.mesh_integrity_port import MeshIntegrityPort
 from src.core.ports.packaging_port import PackagingPort
 from src.core.ports.slicing_port import SlicingPort
 from src.core.use_cases import design_evidence as evidence_docs
+from src.core.use_cases import print_targets
 from src.core.use_cases.blender_lease import run_to_completion
 from src.core.use_cases.design_files import relative_path
 from src.core.use_cases.design_reports import REPORT_NAME, write_evidence
 
-SLICER_LICENSE = "AGPL-3.0-only"
 MECHANISM_NOT_EVALUATED = "mechanism not evaluated in Phase 1 (import path)"
 MAX_SKIPPED_EVIDENCE = 20  # import.json lists at most this many skips; the metric counts all
 
@@ -200,7 +200,11 @@ async def print_stage(
 ) -> StageReport:
     if state.project_3mf is None:
         return failed(StageName.PRINT, "no project 3MF to slice")
-    request = SliceRequest.from_target(state.project_3mf, str(run_dir / "print"), spec.print_target)
+    target = spec.print_target
+    printer_id = print_targets.printer_id_for(target.printer)
+    request = SliceRequest.from_target(
+        state.project_3mf, str(run_dir / "print"), target, printer_id=printer_id
+    )
     try:
         result = await run_to_completion(slicing.slice(request))
     except ToolUnavailableError as exc:
@@ -213,8 +217,7 @@ async def print_stage(
     metrics = (("return_code", str(result.return_code)),)
     if not result.passed:
         return _report(StageName.PRINT, StageOutcome.FAILED, result.message, metrics, evidence)
-    tool = await slicing.availability()
-    state.tools = (ToolUse(tool.name, tool.version, SLICER_LICENSE, "subprocess"),)
+    state.tools = (slicing.tool_for(printer_id),)  # the slicer that actually ran
     return _report(StageName.PRINT, StageOutcome.PASSED, result.message, metrics, evidence)
 
 

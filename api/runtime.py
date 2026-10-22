@@ -86,7 +86,7 @@ def build_runtime(env_file: Path | None = None) -> AppRuntime:
     from src.adapters.security.prompt_injection_sanitizer import PromptInjectionSanitizer
     from src.adapters.session.sqlite_session_store import SQLiteSessionStore
     from src.adapters.simulation.registered_suites_simulation import RegisteredSuitesSimulation
-    from src.adapters.slicing.bambu_studio_cli import BambuStudioCli
+    from src.adapters.slicing.orca_family_cli import OrcaFamilyCli
     from src.adapters.snapshot.sqlite_snapshot_store import SQLiteSnapshotStore
     from src.adapters.text3d.hunyuan3d_adapter import build_text3d_adapter
     from src.adapters.verification.authorized_code import (
@@ -98,6 +98,7 @@ def build_runtime(env_file: Path | None = None) -> AppRuntime:
     from src.core.use_cases.blender_lease import BlenderLease
     from src.infrastructure.config_loader import default_config_dir
     from src.infrastructure.env_loader import load_env
+    from src.infrastructure.printer_catalog_loader import load_printer_catalog
     from src.infrastructure.tools_config import load_tools_config
     from src.verification.cable_route_cases import registered_suites
 
@@ -119,11 +120,14 @@ def build_runtime(env_file: Path | None = None) -> AppRuntime:
     generation = MechanicalGenerationService(BlenderInstanceBuilder(blender))
     verification = VerificationService(BlenderVerificationAdapter(blender), registered_suites())
     tools = load_tools_config()
+    catalog = load_printer_catalog()  # each slicer's binary_key names a tools.yaml field
     design_pipeline = DesignPipeline(
         integrity=TrimeshCgalIntegrity(),
         simulation=RegisteredSuitesSimulation(verification),
-        slicing=BambuStudioCli(
-            tools.bambu_studio_bin, profiles_dir=default_config_dir() / "slicer-profiles"
+        slicing=OrcaFamilyCli(
+            catalog,
+            {slicer.id: getattr(tools, slicer.binary_key) for slicer in catalog.slicers},
+            overrides_dir=default_config_dir() / "slicer-profiles",
         ),
         packaging=ManifestPackager(),
         jobs=SQLiteJobStore(tools.design_jobs_db),
