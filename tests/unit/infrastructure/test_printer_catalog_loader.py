@@ -67,6 +67,16 @@ def test_every_orca_code_has_its_macro_name_and_orca_hint() -> None:
     assert by_code[-101].hint.startswith("G-code conflicts detected after slicing.")
 
 
+def test_every_bambu_code_has_its_macro_name_and_hint() -> None:
+    codes = load_printer_catalog().slicer("bambu-studio").error_codes
+    assert len(codes) == 50  # BambuStudio v02.08.02.61 Utils.hpp, CLI_SUCCESS excluded
+    assert all(c.name.startswith("CLI_") and c.hint and c.meaning for c in codes)
+    by_code = {c.code: c for c in codes}
+    assert by_code[-101].name == "CLI_GCODE_PATH_CONFLICTS"
+    assert by_code[-105].name == "CLI_GCODE_IN_WRAPPING_DETECT_AREA"
+    assert "Bambu Studio" in by_code[-100].hint
+
+
 def test_unknown_error_code_key_rejected(tmp_path: Path) -> None:
     cfg = _config(tmp_path, {"a.yaml": _printer("x")})
     text = _SLICERS.replace(

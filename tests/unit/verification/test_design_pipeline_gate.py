@@ -289,10 +289,17 @@ def test_failed_job_is_terminal_not_a_hang() -> None:
     assert job["status"] == "failed"
 
 
-def test_poll_budget_is_derived_from_the_slicer_timeout() -> None:
+def test_poll_budget_is_derived_from_the_contract_printers_slicer() -> None:
     from src.adapters.slicing.orca_family_cli import SLICE_TIMEOUT_S
 
-    assert gate.poll_budget_s() == SLICE_TIMEOUT_S["bambu-studio"] + 300
+    v1 = {"spec_version": "1", "name": "n", "source": {"root_dir": "r"}}  # v1 -> P2S
+    assert gate.poll_budget_s(v1) == SLICE_TIMEOUT_S["bambu-studio"] + 300
+    creality = {**v1, "print_target": {"printer": "creality-k1-max-0.4"}}
+    assert gate.poll_budget_s(creality) == SLICE_TIMEOUT_S["orcaslicer"] + 300
+    contract = json.loads(
+        (Path(gate.__file__).parent / "contracts" / "design_pipeline_v78.json").read_text("utf-8")
+    )
+    assert gate.poll_budget_s(contract["spec"]) == SLICE_TIMEOUT_S["bambu-studio"] + 300
 
 
 def test_absent_deliverable_is_a_failure_naming_the_directory(tmp_path: Path) -> None:

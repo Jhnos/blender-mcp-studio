@@ -9,9 +9,14 @@ part (``p:path``, production extension) cannot be measured here and raises ``Pla
 
 Hardening (the input can come from a remote MCP caller; stdlib only, no new dependency):
 the model part is read once with a bounded read of at most ``MAX_MODEL_BYTES`` + 1 (and its
-declared size is checked first), so a zip bomb cannot inflate past the cap; any ``<!DOCTYPE``
-or ``<!ENTITY`` anywhere in it, any case, is refused before parsing, so ``ElementTree`` never
-sees a DTD and cannot expand entities (a 3MF core model has no use for one).
+declared size is checked first), so a zip bomb cannot inflate past the cap. A model that is not
+UTF-8 (a UTF-16/UTF-32 byte-order mark, or an XML declaration naming another ``encoding``) is
+refused first, because the byte-level DTD check below only holds for an ASCII-compatible
+encoding: a UTF-16 ``<!ENTITY`` would not match it. Then any ``<!DOCTYPE`` or ``<!ENTITY``
+anywhere in the bytes, any case, is refused before parsing, so ``ElementTree`` never sees a DTD
+and cannot expand entities (a 3MF core model has no use for one). Encrypted members,
+unsupported compression and corrupt deflate data are refused as ``PlateExtentError`` too.
+Anything this module cannot measure is refused by ``plate_fit``; no slicer then starts.
 ``MAX_MODEL_BYTES`` is 5 x the measured uncompressed v78 ``3D/3dmodel.model``: 8168153 B
 (1402754 B compressed) in ``雙上臂四點梯形-v78/整機69件-單盤排版-v78.3mf``, 69 parts, measured
 with ``zipfile.ZipInfo.file_size`` on 2026-10-22, giving 40840765 B.
@@ -21,6 +26,7 @@ from __future__ import annotations
 
 import re
 import zipfile
+import zlib
 from collections.abc import Iterator, Mapping
 from pathlib import Path
 from xml.etree import ElementTree
@@ -33,6 +39,8 @@ _MODEL = "3D/3dmodel.model"
 #: 5 x the measured uncompressed v78 ``3D/3dmodel.model`` (8168153 B, 69 parts, 2026-10-22).
 MAX_MODEL_BYTES = 5 * 8168153
 _DTD = re.compile(rb"<!\s*(doctype|entity)", re.IGNORECASE)
+_WIDE_BOMS = (b"\xff\xfe", b"\xfe\xff", b"\x00\x00\xfe\xff")  # UTF-16 LE/BE, UTF-32 BE (LE ⊃ 16 LE)
+_DECLARED = re.compile(rb"""^(?:\xef\xbb\xbf)?\s*<\?xml[^>]*?\bencoding\s*=\s*["']([^"']*)["']""")
 _IDENTITY = (1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0)
 
 Matrix = tuple[float, ...]
@@ -101,6 +109,13 @@ def _model_bytes(path: Path, cap: int) -> bytes:
             data = member.read(cap + 1)  # a false declared size cannot exceed the cap either
     if len(data) > cap:
         raise PlateExtentError(f"{path.name}: {_MODEL} exceeds {cap} B uncompressed")
+    declared = _DECLARED.match(data)
+    if (
+        data.startswith(_WIDE_BOMS)
+        or b"\x00" in data  # UTF-16/32 even without a BOM; never legal in UTF-8 XML
+        or (declared is not None and declared.group(1).lower() != b"utf-8")
+    ):
+        raise PlateExtentError(f"{path.name}: {_MODEL} is not UTF-8; refused")
     if _DTD.search(data):
         raise PlateExtentError(f"{path.name}: {_MODEL} declares a DTD (DOCTYPE/ENTITY); refused")
     return data
@@ -121,8 +136,17 @@ def plate_extent(path: Path, *, max_model_bytes: int = MAX_MODEL_BYTES) -> Exten
         raise PlateExtentError(
             f"cannot measure the layout of {path.name}: {exc.strerror or type(exc).__name__}"
         ) from exc
-    except (KeyError, ValueError, zipfile.BadZipFile, ElementTree.ParseError) as exc:
-        raise PlateExtentError(f"cannot measure the layout of {path.name}: {exc}") from exc
+    except (
+        KeyError,
+        ValueError,
+        zipfile.BadZipFile,
+        ElementTree.ParseError,
+        RuntimeError,  # encrypted member
+        NotImplementedError,  # unsupported compression method
+        zlib.error,  # corrupt deflate stream
+    ) as exc:
+        reason = str(exc) or type(exc).__name__
+        raise PlateExtentError(f"cannot measure the layout of {path.name}: {reason}") from exc
     if not xs:
         raise PlateExtentError(f"cannot measure the layout of {path.name}: no placed vertices")
     return min(xs), min(ys), max(xs), max(ys)
@@ -153,26 +177,24 @@ def fits(layout: Extent, bed: Extent, tolerance_mm: float = 0.01) -> bool:
     )
 
 
-def plate_fit(
-    input_3mf: Path, machine: Mapping[str, object], printer_id: str
-) -> tuple[str | None, tuple[str, ...]]:
-    """(refusal message, notes): refuse a layout outside the printable area before slicing.
+def plate_fit(input_3mf: Path, machine: Mapping[str, object], printer_id: str) -> str | None:
+    """The refusal message, or None when the layout fits the printable area.
 
-    A layout or bed that cannot be measured is not refused: the slicer gives the definitive
-    answer, and a note says the precheck was skipped.
+    A layout or bed that cannot be measured is refused as well: a model this module will not
+    parse (DTD, non-UTF-8, oversize, broken zip) must not reach the slicer either.
     """
     bed = printable_area(machine)
     if bed is None:
-        return None, (f"plate-fit precheck skipped: {printer_id} has no printable_area",)
+        return f"plate-fit precheck failed: {printer_id} has no printable_area"
     try:
         layout = plate_extent(input_3mf)
     except PlateExtentError as exc:
-        return None, (f"plate-fit precheck skipped: {exc}",)
+        return f"plate-fit precheck failed: {exc}"
     if fits(layout, bed):
-        return None, ()
+        return None
     w, h = layout[2] - layout[0], layout[3] - layout[1]
     big_w, big_h = bed[2] - bed[0], bed[3] - bed[1]
     return (
         f"layout {w:.0f}×{h:.0f} mm does not fit {printer_id} printable area "
         f"{big_w:.0f}×{big_h:.0f} mm; choose a larger printer or re-lay out the plate"
-    ), ()
+    )

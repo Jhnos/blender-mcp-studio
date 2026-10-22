@@ -111,7 +111,7 @@ async def _run_spec(
         checks.poll_job,
         status,
         job_id,
-        budget_s=checks.poll_budget_s(),
+        budget_s=checks.poll_budget_s(spec),
         pause_s=POLL_PAUSE_S,
     )
     report = await _object(client, "get_run_report", {"run_id": run_id})

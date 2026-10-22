@@ -13,7 +13,10 @@ from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
 from pathlib import Path
 
 from src.adapters.slicing.orca_family_cli import SLICE_TIMEOUT_S
+from src.core.domain.model_spec import PrintTarget
+from src.core.use_cases import print_targets
 from src.infrastructure.narrowing import as_mapping, as_sequence
+from src.infrastructure.printer_catalog_loader import load_printer_catalog
 
 #: Slicing is the long pole; the other four stages took seconds on the same host (the v78
 #: integrity check measured 1.9 s), so 300 s covers import, geometry, packaging and queueing.
@@ -29,8 +32,17 @@ class GateError(RuntimeError):
     """A gate precondition or budget failed; the message is the whole explanation."""
 
 
-def poll_budget_s() -> float:
-    return SLICE_TIMEOUT_S["bambu-studio"] + POLL_MARGIN_S  # the v78 gate slices on the P2S
+def poll_budget_s(spec: Mapping[str, object]) -> float:
+    """The slice deadline of the slicer the contract spec's printer uses, plus the margin.
+
+    The printer resolves through the catalog (a spec-v1 name maps to its catalog id), so a
+    Creality contract gets the OrcaSlicer budget and the v78 P2S contract Bambu Studio's.
+    """
+    target = as_mapping(spec.get("print_target")) or {}
+    printer = str(target.get("printer", PrintTarget().printer))
+    catalog = load_printer_catalog()
+    slicer = catalog.printer(print_targets.printer_id_for(printer)).slicer
+    return SLICE_TIMEOUT_S[slicer] + POLL_MARGIN_S
 
 
 def _items(value: object) -> list[object]:

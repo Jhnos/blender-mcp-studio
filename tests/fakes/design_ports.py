@@ -89,6 +89,9 @@ class FakeSlicing:
     def timeout_s(self, printer_id: str) -> float:
         return FAKE_TIMEOUT_S
 
+    def max_timeout_s(self) -> float:
+        return FAKE_TIMEOUT_S
+
     def tool_for(self, printer_id: str) -> ToolUse:
         slicer = self._catalog.slicer(self._catalog.printer(printer_id).slicer)
         version = {"bambu-studio": "02.06.00.51", "orcaslicer": "2.4.2"}[slicer.id]

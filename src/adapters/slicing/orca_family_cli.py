@@ -138,6 +138,9 @@ class OrcaFamilyCli:
     def timeout_s(self, printer_id: str) -> float:
         return self._timeouts[self._slicer_of(printer_id).id]
 
+    def max_timeout_s(self) -> float:
+        return max(self._timeouts[slicer.id] for slicer in self._catalog.slicers)
+
     async def availability(self) -> tuple[ToolAvailability, ...]:
         return tuple(self._availability(slicer) for slicer in self._catalog.slicers)
 
@@ -265,10 +268,9 @@ class OrcaFamilyCli:
             notes = check_compatible(profiles, printer.machine)
         except IncompatibleProfileError as exc:
             return SliceResult(False, None, None, str(log_path), -1, str(exc))
-        refusal, fit_notes = plate_fit(Path(request.input_3mf), profiles["machine"], printer.id)
+        refusal = plate_fit(Path(request.input_3mf), profiles["machine"], printer.id)
         if refusal is not None:
             return SliceResult(False, None, None, str(log_path), -1, refusal)
-        notes = (*notes, *fit_notes)
         self._write_profiles(profiles, printer, request)
         model = printer.model.replace(" ", "-")
         # Export name is "<input stem>-<printer model>-<material>.3mf".

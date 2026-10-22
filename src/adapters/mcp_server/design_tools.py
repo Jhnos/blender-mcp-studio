@@ -221,7 +221,8 @@ def register_design_tools(
         annotations=_annotations("Slice for print", read_only=False, idempotent=False),
     )
     async def slice_for_print(input_3mf: str, printer: Name = "bambu-p2s") -> dict[str, object]:
-        """Slice one 3MF with the Bambu Studio CLI into a fresh run directory.
+        """Slice one 3MF for a printer, with the slicer its catalog entry names, into a fresh run
+        directory (spec v1 printer names such as "bambu-p2s" or catalog ids are accepted).
 
         input_3mf is relative to an allowed artifact root and ends in .3mf. Output files come
         back as run://{run_id}/print/<name> resource URIs, readable with the run resource. A

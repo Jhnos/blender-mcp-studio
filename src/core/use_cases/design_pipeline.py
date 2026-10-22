@@ -94,9 +94,12 @@ class DesignPipeline:
 
     @property
     def slice_timeout_s(self) -> float:
-        """The slowest usable printer's slice deadline (delivery adapters add their margin)."""
-        printers = self._slicing.printers()
-        return max((self._slicing.timeout_s(p.id) for p in printers), default=0.0)
+        """The slowest catalog slicer's deadline, installed or not (adapters add their margin).
+
+        Not only usable printers: with no slicer installed at startup the MCP tool timeout
+        would otherwise collapse to the bare transport margin.
+        """
+        return self._slicing.max_timeout_s()
 
     async def submit(self, payload: Mapping[str, object]) -> JobRecord:
         """Parse (ModelSpecError, no side effects), create job + run dir + spec.json, schedule.

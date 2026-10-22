@@ -25,6 +25,10 @@ class SlicingPort(Protocol):
         """How long one slice on ``printer_id`` may run before the adapter gives up (seconds)."""
         ...
 
+    def max_timeout_s(self) -> float:
+        """The largest per-slicer deadline in the catalog, installed or not (seconds)."""
+        ...
+
     async def slice(self, request: SliceRequest) -> SliceResult: ...
 
     def tool_for(self, printer_id: str) -> ToolUse:

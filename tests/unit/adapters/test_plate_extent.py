@@ -119,3 +119,127 @@ def test_printable_area_is_the_bounding_box_of_its_points() -> None:
     )
     assert printable_area({}) is None
     assert printable_area({"printable_area": ["junk"]}) is None
+
+
+# ---- review round: encodings, broken zips, lying sizes, the real catalog ----
+
+_NS = 'xmlns="http://schemas.microsoft.com/3dmanufacturing/core/2015/02"'
+
+
+def _model(prefix: str = "") -> str:
+    return (
+        prefix + f'<model {_NS}><resources><object id="1"><mesh><vertices>'
+        '<vertex x="0" y="0" z="0"/><vertex x="10" y="10" z="0"/></vertices></mesh></object>'
+        '</resources><build><item objectid="1"/></build></model>'
+    )
+
+
+def _raw_3mf(path: Path, data: bytes, method: int = 8) -> Path:
+    import zipfile
+
+    with zipfile.ZipFile(path, "w", method) as archive:
+        archive.writestr("3D/3dmodel.model", data)
+    return path
+
+
+def _patch(path: Path, local_offset: int, central_offset: int, fmt: str, value: int) -> None:
+    import struct
+
+    raw = bytearray(path.read_bytes())
+    struct.pack_into(fmt, raw, raw.rfind(b"PK\x01\x02") + central_offset, value)
+    struct.pack_into(fmt, raw, raw.find(b"PK\x03\x04") + local_offset, value)
+    path.write_bytes(bytes(raw))
+
+
+def test_plate_extent_rejects_non_utf8(tmp_path: Path) -> None:
+    # the reviewer's case: a UTF-16 entity declaration slips past a byte-level DTD regex
+    u16 = '<?xml version="1.0" encoding="UTF-16"?><!DOCTYPE model [<!ENTITY a "aaaa">]>'
+    with pytest.raises(PlateExtentError, match="u16.3mf.*not UTF-8"):
+        plate_extent(_raw_3mf(tmp_path / "u16.3mf", (u16 + _model()).encode("utf-16")))
+    with pytest.raises(PlateExtentError, match="not UTF-8"):  # BOM, no DTD at all
+        plate_extent(_raw_3mf(tmp_path / "bom.3mf", b"\xff\xfe" + _model().encode("utf-16-le")))
+    with pytest.raises(PlateExtentError, match="not UTF-8"):
+        plate_extent(_raw_3mf(tmp_path / "u32.3mf", _model().encode("utf-32")))
+    latin = _model('<?xml version="1.0" encoding="ISO-8859-1"?>').encode("latin-1")
+    with pytest.raises(PlateExtentError, match="not UTF-8"):
+        plate_extent(_raw_3mf(tmp_path / "latin.3mf", latin))
+    ok = _model("<?xml version='1.0' encoding='utf-8'?>").encode("utf-8")
+    assert plate_extent(_raw_3mf(tmp_path / "ok.3mf", ok)) == pytest.approx((0, 0, 10, 10))
+    bom8 = b"\xef\xbb\xbf" + _model('<?xml version="1.0" encoding="UTF-8"?>').encode()
+    assert plate_extent(_raw_3mf(tmp_path / "bom8.3mf", bom8)) == pytest.approx((0, 0, 10, 10))
+
+
+def test_encrypted_member_is_refused(tmp_path: Path) -> None:
+    path = _raw_3mf(tmp_path / "enc.3mf", _model().encode())
+    raw = bytearray(path.read_bytes())
+    raw[raw.rfind(b"PK\x01\x02") + 8] |= 1
+    raw[raw.find(b"PK\x03\x04") + 6] |= 1
+    path.write_bytes(bytes(raw))
+    with pytest.raises(PlateExtentError, match="enc.3mf"):
+        plate_extent(path)
+
+
+def test_unsupported_compression_is_refused(tmp_path: Path) -> None:
+    path = _raw_3mf(tmp_path / "meth.3mf", _model().encode())
+    _patch(path, 8, 10, "<H", 99)
+    with pytest.raises(PlateExtentError, match="meth.3mf"):
+        plate_extent(path)
+
+
+def test_corrupt_deflate_is_refused(tmp_path: Path) -> None:
+    import struct
+
+    path = _raw_3mf(tmp_path / "corrupt.3mf", (_model() * 20).encode())
+    raw = bytearray(path.read_bytes())
+    local = raw.find(b"PK\x03\x04")
+    start = local + 30 + struct.unpack_from("<H", raw, local + 26)[0]
+    raw[start + 2 : start + 40] = b"\xff" * 38
+    path.write_bytes(bytes(raw))
+    with pytest.raises(PlateExtentError, match="corrupt.3mf"):
+        plate_extent(path)
+
+
+def test_lying_declared_size_is_refused(tmp_path: Path) -> None:
+    path = _raw_3mf(tmp_path / "lie.3mf", _model().encode() + b" " * 5000, method=0)
+    _patch(path, 22, 24, "<I", 500)  # declares 500 B; really 5k
+    with pytest.raises(PlateExtentError, match="lie.3mf"):
+        plate_extent(path, max_model_bytes=1000)
+
+
+def test_model_read_is_bounded_whatever_the_member_yields(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """An endless member (a size the zip reader would not stop at) is cut at cap + 1 bytes."""
+    import io
+    import zipfile
+
+    class Endless(io.RawIOBase):
+        def read(self, size: int = -1) -> bytes:
+            if size is None or size < 0:
+                raise AssertionError("unbounded read of the model part")
+            return b" " * size
+
+    path = write_3mf(tmp_path / "e.3mf", [(10, None)])
+    monkeypatch.setattr(zipfile.ZipFile, "open", lambda self, name, *a, **k: Endless())
+    with pytest.raises(PlateExtentError, match="e.3mf.*exceeds 1000 B"):
+        plate_extent(path, max_model_bytes=1000)
+
+
+def test_every_catalog_printer_resolves_a_printable_area() -> None:
+    from src.adapters.slicing.bundle_profiles import app_bundle, resolve_printer_profiles
+    from src.infrastructure.printer_catalog_loader import load_printer_catalog
+    from src.infrastructure.tools_config import load_tools_config
+
+    catalog, tools = load_printer_catalog(), load_tools_config()
+    checked = []
+    for printer in catalog.printers:
+        slicer = catalog.slicer(printer.slicer)
+        bundle = app_bundle(getattr(tools, slicer.binary_key))
+        if bundle is None or not (bundle / slicer.profiles_subdir).is_dir():
+            continue
+        machine = resolve_printer_profiles(bundle / slicer.profiles_subdir, printer, "0.20", "PLA")
+        area = printable_area(machine["machine"])
+        assert area is not None and area[2] > area[0] and area[3] > area[1], printer.id
+        checked.append(printer.id)
+    if not checked:
+        pytest.skip("no slicer app bundle installed on this host")

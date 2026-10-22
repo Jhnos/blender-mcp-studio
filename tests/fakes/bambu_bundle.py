@@ -71,9 +71,18 @@ def _make_app(app: Path, exe: str, vendor: str, leaves: dict[str, str] | None) -
                 "instantiation": "true",
                 "shared": "leaf",
                 "leaf_key": "leaf",
+                **_bed(kind),
             },
         )
     return binary
+
+
+#: Every fake machine has a 220 x 220 printable area (the plate-fit precheck needs one).
+FAKE_BED = ["0x0", "220x0", "220x220", "0x220"]
+
+
+def _bed(kind: str) -> dict[str, object]:
+    return {"printable_area": list(FAKE_BED)} if kind == "machine" else {}
 
 
 def flattened(kind: str, leaves: dict[str, str] = LEAVES) -> dict[str, object]:
@@ -85,6 +94,7 @@ def flattened(kind: str, leaves: dict[str, str] = LEAVES) -> dict[str, object]:
         "mid_key": "mid",
         "shared": "leaf",
         "leaf_key": "leaf",
+        **_bed(kind),
         "name": leaves[kind],
         "instantiation": "true",
         "inherits": "",

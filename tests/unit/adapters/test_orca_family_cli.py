@@ -308,7 +308,6 @@ async def test_each_printer_uses_its_slicer_binary(tmp_path: Path) -> None:
     [
         (156, "slicing error"),
         (206, "no suitable objects"),
-        (-100, "slicing error"),
         (204, "objects partly inside the printable area"),  # the real K1C v78 run, -52
     ],
 )
@@ -320,10 +319,16 @@ async def test_orca_negative_exit_code_mapped(tmp_path: Path, rc: int, meaning: 
 
 
 async def test_exit_code_without_a_mapping_is_reported_bare(tmp_path: Path) -> None:
-    runner = FakeRunner(returncode=156, write_output=False)
-    result = await _both(tmp_path, runner).slice(_request(tmp_path, P2S))  # Bambu: no codes
-    assert result.message.startswith("slicer exited 156; ")  # no "(meaning)" after the code
+    runner = FakeRunner(returncode=1, write_output=False)  # 1 is no CLI_* code (1 - 256)
+    result = await _both(tmp_path, runner).slice(_request(tmp_path, P2S))
+    assert result.message.startswith("slicer exited 1; ")  # no "(meaning)" after the code
     assert "CLI_" not in result.message and "log tail:" in result.message
+
+
+async def test_bambu_exit_code_maps_with_its_own_hint(tmp_path: Path) -> None:
+    runner = FakeRunner(returncode=156, write_output=False)
+    result = await _both(tmp_path, runner).slice(_request(tmp_path, P2S))
+    assert "CLI_SLICING_ERROR" in result.message and "Bambu Studio" in result.message
 
 
 async def test_printers_lists_only_installed_slicers(tmp_path: Path) -> None:
@@ -463,15 +468,24 @@ async def test_plate_placed_outside_the_bed_fails_even_if_small(tmp_path: Path) 
     assert runner.argv == []
 
 
-async def test_unreadable_layout_skips_precheck_with_a_note(tmp_path: Path) -> None:
+async def test_unreadable_layout_is_refused_before_slicer(tmp_path: Path) -> None:
     runner = FakeRunner()
     cli = _both(tmp_path, runner)
     _k1c_bed(tmp_path, _BED_220)
     (tmp_path / "gate.3mf").write_bytes(b"not a zip")
     result = await cli.slice(_request(tmp_path, K1C))
-    assert runner.argv != []  # the slicer gives the definitive answer
-    assert "plate-fit precheck skipped" in result.message
+    assert runner.argv == []  # what cannot be measured never reaches the slicer
+    assert result.passed is False and "plate-fit precheck failed" in result.message
     assert str(tmp_path) not in result.message
+
+
+async def test_machine_without_printable_area_is_refused_before_slicer(tmp_path: Path) -> None:
+    runner = FakeRunner()
+    cli = _both(tmp_path, runner)
+    _k1c_bed(tmp_path, [])
+    result = await cli.slice(_request(tmp_path, K1C))
+    assert runner.argv == []
+    assert "creality-k1c-0.4 has no printable_area" in result.message
 
 
 # ---- job-derived keys and readable failures ----
@@ -555,6 +569,8 @@ class DatadirLogRunner(FakeRunner):
         datadir = Path(argv[argv.index("--datadir") + 1])
         (datadir / "log").mkdir(parents=True, exist_ok=True)
         (datadir / "log" / "debug_run.log").write_text("conflict at layer 12\n", "utf-8")
+        (datadir / "plate").mkdir(exist_ok=True)
+        (datadir / "plate" / "debug_run.log").write_text("plate log\n", "utf-8")
         (datadir / "cache.bin").write_bytes(b"not a log")
         return super().__call__(argv, **kwargs)
 
@@ -563,8 +579,35 @@ async def test_failed_run_keeps_datadir_logs(tmp_path: Path) -> None:
     runner = DatadirLogRunner(returncode=155, write_output=False)
     await _both(tmp_path, runner).slice(_request(tmp_path, K1C))
     kept = tmp_path / "out" / "slicer-datadir-logs"
-    assert sorted(p.name for p in kept.iterdir()) == ["debug_run.log"]
-    assert (kept / "debug_run.log").read_text("utf-8") == "conflict at layer 12\n"
+    found = sorted(p.relative_to(kept).as_posix() for p in kept.rglob("*") if p.is_file())
+    assert found == ["log/debug_run.log", "plate/debug_run.log"]  # same name, both kept
+    assert (kept / "log" / "debug_run.log").read_text("utf-8") == "conflict at layer 12\n"
+    assert (kept / "plate" / "debug_run.log").read_text("utf-8") == "plate log\n"
+
+
+async def test_timed_out_run_keeps_datadir_logs(tmp_path: Path) -> None:
+    class HangingRunner(DatadirLogRunner):
+        def __call__(self, argv: list[str], **kwargs: object) -> subprocess.CompletedProcess[str]:
+            super().__call__(argv, **kwargs)
+            raise subprocess.TimeoutExpired(argv, 1)
+
+    result = await _both(tmp_path, HangingRunner(write_output=False)).slice(_request(tmp_path, K1C))
+    assert "did not finish" in result.message
+    kept = tmp_path / "out" / "slicer-datadir-logs"
+    assert (kept / "log" / "debug_run.log").is_file()
+
+
+async def test_signal_death_is_named_without_a_cli_hint(tmp_path: Path) -> None:
+    runner = FakeRunner(returncode=-9, write_output=False)
+    result = await _both(tmp_path, runner).slice(_request(tmp_path, K1C))
+    assert result.message.startswith("slicer was killed by signal 9 (SIGKILL)")
+    assert "CLI_" not in result.message and result.return_code == -9
+
+
+async def test_shell_wrapped_code_still_maps(tmp_path: Path) -> None:
+    runner = FakeRunner(returncode=155, write_output=False)
+    result = await _both(tmp_path, runner).slice(_request(tmp_path, K1C))
+    assert "CLI_GCODE_PATH_CONFLICTS" in result.message
 
 
 async def test_passing_run_keeps_no_datadir_logs(tmp_path: Path) -> None:

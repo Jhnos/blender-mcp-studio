@@ -4,6 +4,7 @@ messages, and the diagnostics kept from a failed run. No subprocess here."""
 from __future__ import annotations
 
 import shutil
+import signal
 from pathlib import Path
 
 from src.core.domain.printer_catalog import ExitCode, SlicerSpec
@@ -45,13 +46,25 @@ def log_tail(log_path: Path) -> str:
 
 
 def exit_code(slicer: SlicerSpec, rc: int) -> ExitCode | None:
-    """The documented exit code for ``rc``; a shell reports a negative code modulo 256."""
-    table = {entry.code: entry for entry in slicer.error_codes}
-    return table.get(rc, table.get(rc - 256))
+    """The documented code behind exit status ``rc``.
+
+    The CLIs ``exit()`` negative codes, which the OS reports modulo 256 (-101 -> 155), so only
+    128 < rc < 256 is looked up, as ``rc - 256``. A negative ``rc`` from ``subprocess`` is a
+    signal death, never a CLI code.
+    """
+    if not 128 < rc < 256:
+        return None
+    return next((entry for entry in slicer.error_codes if entry.code == rc - 256), None)
 
 
 def exit_head(slicer: SlicerSpec, rc: int) -> str:
     """``slicer exited 155 (CLI_GCODE_PATH_CONFLICTS: G-code path conflicts). <slicer's hint>``"""
+    if rc < 0:
+        try:
+            name = signal.Signals(-rc).name
+        except ValueError:
+            name = "unknown signal"
+        return f"slicer was killed by signal {-rc} ({name})"
     entry = exit_code(slicer, rc)
     if entry is None:
         return f"slicer exited {rc}"
@@ -81,4 +94,6 @@ def keep_datadir_logs(datadir: Path, out: Path) -> None:
     kept = out / DATADIR_LOGS
     kept.mkdir(exist_ok=True)
     for log in logs:
-        shutil.copyfile(log, kept / log.name)
+        target = kept / log.relative_to(datadir)  # same-named logs in two dirs both survive
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(log, target)

@@ -19,12 +19,14 @@ from src.core.domain.printer_catalog import PrinterProfile
 from src.core.domain.slicing import SliceRequest, ToolUnavailableError
 from src.infrastructure.printer_catalog_loader import load_printer_catalog
 from tests.fakes.bambu_bundle import LEAVES, flattened, make_bundle, make_named_bundle
+from tests.fakes.plate_3mf import translate, write_3mf
 from tests.unit.adapters.test_orca_family_cli import FakeRunner
 
 _CONFIG = Path(cli_module.__file__).resolve().parents[3] / "config" / "slicer-profiles"
 
 
 def _request(tmp_path: Path) -> SliceRequest:
+    write_3mf(tmp_path / "gate.3mf", [(10, translate(10, 10))])  # the precheck reads it
     return SliceRequest.from_target(
         str(tmp_path / "gate.3mf"), str(tmp_path / "out"), PrintTarget(), printer_id="bambu-p2s-0.4"
     )

@@ -6,7 +6,212 @@ slicers:
     binary_key: bambu_studio_bin
     profiles_subdir: Contents/Resources/profiles
     license: AGPL-3.0-only
-    error_codes: []
+    # Every CLI_* exit code in Bambu Studio v02.08.02.61 (the installed version's exact tag)
+    # src/libslic3r/Utils.hpp (lines 21-75), read 2026-10-22 from
+    # raw.githubusercontent.com/bambulab/BambuStudio/v02.08.02.61; CLI_SUCCESS (0) is not an
+    # error. `hint` is Bambu Studio's own text from the `cli_errors` map in src/BambuStudio.cpp
+    # (lines 123-175; leading spaces trimmed). Each comment names the macro and both lines.
+    error_codes:
+      - code: -1  # CLI_ENVIRONMENT_ERROR: Utils.hpp:22; hint: BambuStudio.cpp:125
+        name: CLI_ENVIRONMENT_ERROR
+        meaning: environment error
+        hint: "Failed setting up server environment."
+      - code: -2  # CLI_INVALID_PARAMS: Utils.hpp:23; hint: BambuStudio.cpp:126
+        name: CLI_INVALID_PARAMS
+        meaning: invalid params
+        hint: "Invalid parameters to the slicer."
+      - code: -3  # CLI_FILE_NOTFOUND: Utils.hpp:24; hint: BambuStudio.cpp:127
+        name: CLI_FILE_NOTFOUND
+        meaning: file not found
+        hint: "The input files to the slicer are not found."
+      - code: -4  # CLI_FILELIST_INVALID_ORDER: Utils.hpp:25; hint: BambuStudio.cpp:128
+        name: CLI_FILELIST_INVALID_ORDER
+        meaning: file list in invalid order
+        hint: "File list order to the slicer is invalid. Please make sure the 3mf in the first place."
+      - code: -5  # CLI_CONFIG_FILE_ERROR: Utils.hpp:26; hint: BambuStudio.cpp:129
+        name: CLI_CONFIG_FILE_ERROR
+        meaning: config file error
+        hint: "The input preset file is invalid and can not be parsed."
+      - code: -6  # CLI_DATA_FILE_ERROR: Utils.hpp:27; hint: BambuStudio.cpp:130
+        name: CLI_DATA_FILE_ERROR
+        meaning: data file error
+        hint: "The input model file to the slicer can not be parsed."
+      - code: -7  # CLI_INVALID_PRINTER_TECH: Utils.hpp:28; hint: BambuStudio.cpp:131
+        name: CLI_INVALID_PRINTER_TECH
+        meaning: invalid printer technology
+        hint: "Unsupported printer technology (not FDM)."
+      - code: -8  # CLI_UNSUPPORTED_OPERATION: Utils.hpp:29; hint: BambuStudio.cpp:132
+        name: CLI_UNSUPPORTED_OPERATION
+        meaning: unsupported operation
+        hint: "Unsupported CLI instruction."
+      - code: -9  # CLI_COPY_OBJECTS_ERROR: Utils.hpp:31; hint: BambuStudio.cpp:133
+        name: CLI_COPY_OBJECTS_ERROR
+        meaning: copy objects error
+        hint: "Failed copying objects."
+      - code: -10  # CLI_SCALE_TO_FIT_ERROR: Utils.hpp:32; hint: BambuStudio.cpp:134
+        name: CLI_SCALE_TO_FIT_ERROR
+        meaning: scale to fit error
+        hint: "Failed scaling an object to fit the plate."
+      - code: -11  # CLI_EXPORT_STL_ERROR: Utils.hpp:33; hint: BambuStudio.cpp:135
+        name: CLI_EXPORT_STL_ERROR
+        meaning: export STL error
+        hint: "Failed exporting STL files."
+      - code: -12  # CLI_EXPORT_OBJ_ERROR: Utils.hpp:34; hint: BambuStudio.cpp:136
+        name: CLI_EXPORT_OBJ_ERROR
+        meaning: export OBJ error
+        hint: "Failed exporting OBJ files."
+      - code: -13  # CLI_EXPORT_3MF_ERROR: Utils.hpp:35; hint: BambuStudio.cpp:137
+        name: CLI_EXPORT_3MF_ERROR
+        meaning: export 3MF error
+        hint: "Failed exporting 3mf files."
+      - code: -14  # CLI_OUT_OF_MEMORY: Utils.hpp:36; hint: BambuStudio.cpp:138
+        name: CLI_OUT_OF_MEMORY
+        meaning: out of memory
+        hint: "Out of memory during slicing. Please upload a model with lower geometry resolution and try again."
+      - code: -15  # CLI_3MF_NOT_SUPPORT_MACHINE_CHANGE: Utils.hpp:37; hint: BambuStudio.cpp:139
+        name: CLI_3MF_NOT_SUPPORT_MACHINE_CHANGE
+        meaning: 3MF does not support machine change
+        hint: "The selected printer is not supported."
+      - code: -16  # CLI_3MF_NEW_MACHINE_NOT_SUPPORTED: Utils.hpp:38; hint: BambuStudio.cpp:140
+        name: CLI_3MF_NEW_MACHINE_NOT_SUPPORTED
+        meaning: 3MF new machine not supported
+        hint: "The selected printer is not compatible with the 3mf."
+      - code: -17  # CLI_PROCESS_NOT_COMPATIBLE: Utils.hpp:39; hint: BambuStudio.cpp:141
+        name: CLI_PROCESS_NOT_COMPATIBLE
+        meaning: process not compatible
+        hint: "The selected printer is not compatible with the process preset in the 3mf."
+      - code: -18  # CLI_INVALID_VALUES_IN_3MF: Utils.hpp:40; hint: BambuStudio.cpp:142
+        name: CLI_INVALID_VALUES_IN_3MF
+        meaning: invalid values in 3MF
+        hint: "Invalid parameter value(s) included in the 3mf file."
+      - code: -19  # CLI_POSTPROCESS_NOT_SUPPORTED: Utils.hpp:41; hint: BambuStudio.cpp:143
+        name: CLI_POSTPROCESS_NOT_SUPPORTED
+        meaning: postprocess not supported
+        hint: "post_process is not supported under CLI."
+      - code: -20  # CLI_PRINTABLE_SIZE_REDUCED: Utils.hpp:42; hint: BambuStudio.cpp:144
+        name: CLI_PRINTABLE_SIZE_REDUCED
+        meaning: printable size reduced
+        hint: "The selected printer's bed size is smaller than the bed size used in the print profile."
+      - code: -21  # CLI_OBJECT_ARRANGE_FAILED: Utils.hpp:43; hint: BambuStudio.cpp:145
+        name: CLI_OBJECT_ARRANGE_FAILED
+        meaning: object arrange failed
+        hint: "An error occurred when auto-arranging object(s)."
+      - code: -22  # CLI_OBJECT_ORIENT_FAILED: Utils.hpp:44; hint: BambuStudio.cpp:146
+        name: CLI_OBJECT_ORIENT_FAILED
+        meaning: object orient failed
+        hint: "An error occurred when auto-orienting object(s)."
+      - code: -23  # CLI_MODIFIED_PARAMS_TO_PRINTER: Utils.hpp:45; hint: BambuStudio.cpp:147
+        name: CLI_MODIFIED_PARAMS_TO_PRINTER
+        meaning: modified params to printer
+        hint: "You cannot change the Printable Area, Printable Height, and Exclude Area in Printer Settings."
+      - code: -24  # CLI_FILE_VERSION_NOT_SUPPORTED: Utils.hpp:46; hint: BambuStudio.cpp:148
+        name: CLI_FILE_VERSION_NOT_SUPPORTED
+        meaning: file version not supported
+        hint: "Unsupported 3MF version. Please make sure the 3MF file was created with the official version of Bambu Studio, not a beta version."
+      - code: -25  # CLI_3MF_FEATURE_NOT_SUPPORTED: Utils.hpp:47; hint: BambuStudio.cpp:149
+        name: CLI_3MF_FEATURE_NOT_SUPPORTED
+        meaning: 3MF feature not supported
+        hint: "Unsupported features were found in this 3MF file. These features are still in an experimental stage. Please wait until MakerWorld supports them before uploading."
+      - code: -50  # CLI_NO_SUITABLE_OBJECTS: Utils.hpp:50; hint: BambuStudio.cpp:150
+        name: CLI_NO_SUITABLE_OBJECTS
+        meaning: no suitable objects
+        hint: "One of the plate is empty or has no object fully inside it. Please check that the 3mf contains no empty plate in Bambu Studio before uploading."
+      - code: -51  # CLI_VALIDATE_ERROR: Utils.hpp:51; hint: BambuStudio.cpp:151
+        name: CLI_VALIDATE_ERROR
+        meaning: validate error
+        hint: "There are some incorrect slicing parameters in the 3mf. Please verify the slicing of all plates in Bambu Studio before uploading."
+      - code: -52  # CLI_OBJECTS_PARTLY_INSIDE: Utils.hpp:52; hint: BambuStudio.cpp:152
+        name: CLI_OBJECTS_PARTLY_INSIDE
+        meaning: objects partly inside the printable area
+        hint: "Some objects are located over the boundary of the heated bed."
+      - code: -53  # CLI_EXPORT_CACHE_DIRECTORY_CREATE_FAILED: Utils.hpp:53; hint: BambuStudio.cpp:153
+        name: CLI_EXPORT_CACHE_DIRECTORY_CREATE_FAILED
+        meaning: export cache directory create failed
+        hint: "Failed creating directory when exporting cache data."
+      - code: -54  # CLI_EXPORT_CACHE_WRITE_FAILED: Utils.hpp:54; hint: BambuStudio.cpp:154
+        name: CLI_EXPORT_CACHE_WRITE_FAILED
+        meaning: export cache write failed
+        hint: "Failed exporting cache data."
+      - code: -55  # CLI_IMPORT_CACHE_NOT_FOUND: Utils.hpp:55; hint: BambuStudio.cpp:155
+        name: CLI_IMPORT_CACHE_NOT_FOUND
+        meaning: import cache not found
+        hint: "Cache data not found."
+      - code: -56  # CLI_IMPORT_CACHE_DATA_CAN_NOT_USE: Utils.hpp:56; hint: BambuStudio.cpp:156
+        name: CLI_IMPORT_CACHE_DATA_CAN_NOT_USE
+        meaning: import cache data can not be used
+        hint: "Cache data can not be parsed."
+      - code: -57  # CLI_IMPORT_CACHE_LOAD_FAILED: Utils.hpp:57; hint: BambuStudio.cpp:157
+        name: CLI_IMPORT_CACHE_LOAD_FAILED
+        meaning: import cache load failed
+        hint: "Failed importing cache data."
+      - code: -58  # CLI_SLICING_TIME_EXCEEDS_LIMIT: Utils.hpp:58; hint: BambuStudio.cpp:158
+        name: CLI_SLICING_TIME_EXCEEDS_LIMIT
+        meaning: slicing time exceeds limit
+        hint: "Slicing time of a certain plate exceeds the limit. Please simplify the model or use a larger slicing layer height."
+      - code: -59  # CLI_TRIANGLE_COUNT_EXCEEDS_LIMIT: Utils.hpp:59; hint: BambuStudio.cpp:159
+        name: CLI_TRIANGLE_COUNT_EXCEEDS_LIMIT
+        meaning: triangle count exceeds limit
+        hint: "Triangle count of single plate exceeds the limit. Please simplify the model and try to upload again."
+      - code: -60  # CLI_NO_SUITABLE_OBJECTS_AFTER_SKIP: Utils.hpp:60; hint: BambuStudio.cpp:160
+        name: CLI_NO_SUITABLE_OBJECTS_AFTER_SKIP
+        meaning: no suitable objects after skip
+        hint: "No printable objects to slice after skipping."
+      - code: -61  # CLI_FILAMENT_NOT_MATCH_BED_TYPE: Utils.hpp:61; hint: BambuStudio.cpp:161
+        name: CLI_FILAMENT_NOT_MATCH_BED_TYPE
+        meaning: filament does not match bed type
+        hint: "Filaments are not compatible with the plate type. Please verify the slicing of all plates in Bambu Studio before uploading."
+      - code: -62  # CLI_FILAMENTS_DIFFERENT_TEMP: Utils.hpp:62; hint: BambuStudio.cpp:162
+        name: CLI_FILAMENTS_DIFFERENT_TEMP
+        meaning: filaments have different temperatures
+        hint: "The temperature difference of the filaments used is too large. Please verify the slicing of all plates in Bambu Studio before uploading."
+      - code: -63  # CLI_OBJECT_COLLISION_IN_SEQ_PRINT: Utils.hpp:63; hint: BambuStudio.cpp:163
+        name: CLI_OBJECT_COLLISION_IN_SEQ_PRINT
+        meaning: object collision in sequential print
+        hint: "Object conflicts were detected when using print-by-object mode. Please verify the slicing of all plates in Bambu Studio before uploading."
+      - code: -64  # CLI_OBJECT_COLLISION_IN_LAYER_PRINT: Utils.hpp:64; hint: BambuStudio.cpp:164
+        name: CLI_OBJECT_COLLISION_IN_LAYER_PRINT
+        meaning: object collision in layer print
+        hint: "Object conflicts were detected. Please verify the slicing of all plates in Bambu Studio before uploading."
+      - code: -65  # CLI_SPIRAL_MODE_INVALID_PARAMS: Utils.hpp:65; hint: BambuStudio.cpp:165
+        name: CLI_SPIRAL_MODE_INVALID_PARAMS
+        meaning: spiral mode invalid params
+        hint: "Some slicing parameters cannot work with Spiral Vase mode. Please solve the issue in Bambu Studio before uploading."
+      - code: -66  # CLI_FILAMENT_CAN_NOT_MAP: Utils.hpp:66; hint: BambuStudio.cpp:166
+        name: CLI_FILAMENT_CAN_NOT_MAP
+        meaning: filament can not be mapped
+        hint: "Some filaments cannot be mapped to correct extruders for multi-extruder Printer."
+      - code: -67  # CLI_ONLY_ONE_TPU_SUPPORTED: Utils.hpp:67; hint: BambuStudio.cpp:167
+        name: CLI_ONLY_ONE_TPU_SUPPORTED
+        meaning: only one TPU supported
+        hint: "Not support printing 2 or more TPU filaments."
+      - code: -68  # CLI_FILAMENTS_NOT_SUPPORTED_BY_EXTRUDER: Utils.hpp:68; hint: BambuStudio.cpp:168
+        name: CLI_FILAMENTS_NOT_SUPPORTED_BY_EXTRUDER
+        meaning: filaments not supported by extruder
+        hint: "Some filaments cannot be printed on the extruder mapped to."
+      - code: -100  # CLI_SLICING_ERROR: Utils.hpp:70; hint: BambuStudio.cpp:169
+        name: CLI_SLICING_ERROR
+        meaning: slicing error
+        hint: "Failed slicing the model. Please verify the slicing of all plates on Bambu Studio before uploading."
+      - code: -101  # CLI_GCODE_PATH_CONFLICTS: Utils.hpp:71; hint: BambuStudio.cpp:170
+        name: CLI_GCODE_PATH_CONFLICTS
+        meaning: G-code path conflicts
+        hint: "G-code conflicts detected after slicing. Please make sure the 3mf file can be successfully sliced in the latest Bambu Studio. If the file slices normally in Bambu Studio, try moving the wipe tower further from other models, as we use more conservative parameters for it during upload."
+      - code: -102  # CLI_GCODE_PATH_IN_UNPRINTABLE_AREA: Utils.hpp:72; hint: BambuStudio.cpp:171
+        name: CLI_GCODE_PATH_IN_UNPRINTABLE_AREA
+        meaning: G-code path in unprintable area
+        hint: "Found G-code in unprintable area of multi-extruder printers after slicing. Please make sure the 3mf file can be successfully sliced in the latest Bambu Studio."
+      - code: -103  # CLI_FILAMENT_UNPRINTABLE_ON_FIRST_LAYER: Utils.hpp:73; hint: BambuStudio.cpp:172
+        name: CLI_FILAMENT_UNPRINTABLE_ON_FIRST_LAYER
+        meaning: filament unprintable on first layer
+        hint: "Found some filament unprintable at first layer on current Plate. Please make sure the 3mf file can be successfully sliced with the same Plate type in the latest Bambu Studio."
+      - code: -104  # CLI_GCODE_PATH_OUTSIDE: Utils.hpp:74; hint: BambuStudio.cpp:173
+        name: CLI_GCODE_PATH_OUTSIDE
+        meaning: G-code path outside the printable area
+        hint: "Found G-code outside of the printable area. The issue may be caused by support, wipe tower, brim, or skirt. If the file slices normally in Bambu Studio, try moving the wipe tower further inside the build plate, as we use more conservative parameters for it during upload."
+      - code: -105  # CLI_GCODE_IN_WRAPPING_DETECT_AREA: Utils.hpp:75; hint: BambuStudio.cpp:174
+        name: CLI_GCODE_IN_WRAPPING_DETECT_AREA
+        meaning: G-code in wrapping detect area
+        hint: "Found G-code in the wrapping detect area. Please make sure the 3mf file can be successfully sliced in the latest Bambu Studio."
     install_hint: Install Bambu Studio, or set BAMBU_STUDIO_BIN to its executable.
   - id: orcaslicer
     name: OrcaSlicer
