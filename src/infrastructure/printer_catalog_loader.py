@@ -5,10 +5,50 @@ from __future__ import annotations
 from collections.abc import Mapping
 from pathlib import Path
 
+import yaml
+
 from src.core.domain.printer_catalog import PrinterCatalog, PrinterProfile, SlicerSpec
 from src.infrastructure.config_loader import default_config_dir as _builtin_dir
-from src.infrastructure.config_loader import load_yaml
 from src.infrastructure.narrowing import as_int, as_mapping, as_sequence
+
+_SLICER_KEYS = frozenset(
+    ("id", "name", "binary_key", "profiles_subdir", "license", "error_codes", "install_hint")
+)
+_PRINTER_KEYS = frozenset(
+    (
+        "id",
+        "vendor",
+        "model",
+        "nozzle_mm",
+        "slicer",
+        "profile_vendor_dir",
+        "machine",
+        "processes",
+        "filaments",
+        "bed_type",
+        "overrides",
+    )
+)
+
+
+def _read(path: Path, base: Path) -> tuple[str, Mapping[str, object]]:
+    """Parse one catalog file; every error names the path relative to the config dir."""
+    where = path.relative_to(base).as_posix()
+    try:
+        raw = yaml.safe_load(path.read_text(encoding="utf-8"))
+    except yaml.YAMLError as exc:
+        problem = str(getattr(exc, "problem", None) or "parse error")
+        raise ValueError(f"{where}: invalid YAML: {problem}") from exc
+    mapping = as_mapping(raw)
+    if mapping is None:
+        raise ValueError(f"{where}: top level must be a mapping")
+    return where, mapping
+
+
+def _known_keys(raw: Mapping[str, object], allowed: frozenset[str], where: str) -> None:
+    extra = sorted(str(key) for key in raw if key not in allowed)
+    if extra:
+        raise ValueError(f"{where}: unknown key(s) {', '.join(extra)}; allowed: {sorted(allowed)}")
 
 
 def _require(raw: Mapping[str, object], key: str, where: str) -> object:
@@ -25,14 +65,19 @@ def _text(raw: Mapping[str, object], key: str, where: str) -> str:
 
 
 def _pairs(raw: Mapping[str, object], key: str, where: str) -> tuple[tuple[str, str], ...]:
-    value = _require(raw, key, where)
-    mapping = as_mapping(value)
+    mapping = as_mapping(_require(raw, key, where))
     if not mapping:
         raise ValueError(f"{where}: {key} must be a non-empty mapping")
+    for name in mapping:
+        if not isinstance(name, str):
+            raise ValueError(
+                f"{where}: {key} key {name} must be a string; quote it in YAML, e.g. '0.20'"
+            )
     return tuple((str(k), str(v)) for k, v in mapping.items())
 
 
 def _slicer(raw: Mapping[str, object], where: str) -> SlicerSpec:
+    _known_keys(raw, _SLICER_KEYS, where)
     codes = as_sequence(raw.get("error_codes", []))
     if codes is None:
         raise ValueError(f"{where}: error_codes must be a list")
@@ -55,6 +100,7 @@ def _slicer(raw: Mapping[str, object], where: str) -> SlicerSpec:
 
 
 def _printer(raw: Mapping[str, object], where: str) -> PrinterProfile:
+    _known_keys(raw, _PRINTER_KEYS, where)
     nozzle = _require(raw, "nozzle_mm", where)
     if isinstance(nozzle, bool) or not isinstance(nozzle, int | float) or nozzle <= 0:
         raise ValueError(f"{where}: nozzle_mm must be a positive number")
@@ -74,29 +120,52 @@ def _printer(raw: Mapping[str, object], where: str) -> PrinterProfile:
     )
 
 
-def _slicer_entry(item: object) -> Mapping[str, object]:
+def _slicer_entry(item: object, where: str) -> Mapping[str, object]:
     entry = as_mapping(item)
     if entry is None:
-        raise ValueError("config/slicers.yaml: every slicers entry must be a mapping")
+        raise ValueError(f"{where}: every slicers entry must be a mapping")
     return entry
+
+
+def _printer_files(base: Path) -> list[Path]:
+    """Every ``printers/<vendor>/<id>.yaml``; anything else under printers/ is an error."""
+    root = base / "printers"
+    files: list[Path] = []
+    for path in sorted(root.rglob("*")):
+        if path.is_dir() or path.name == ".DS_Store":
+            continue
+        rel = path.relative_to(base).as_posix()
+        if path.suffix != ".yaml":
+            raise ValueError(f"{rel}: stray file; printer files must be named <id>.yaml")
+        if path.parent == root:
+            raise ValueError(f"{rel}: misplaced; put it in a vendor folder printers/<vendor>/")
+        files.append(path)
+    return files
 
 
 def load_printer_catalog(config_dir: Path | None = None) -> PrinterCatalog:
     """Read every slicer and printer file; fail loudly, naming the file, on any inconsistency."""
     base = config_dir or _builtin_dir()
-    slicers_raw = as_sequence(load_yaml(base / "slicers.yaml").get("slicers"))
+    where, top = _read(base / "slicers.yaml", base)
+    _known_keys(top, frozenset(("slicers",)), where)
+    slicers_raw = as_sequence(top.get("slicers"))
     if not slicers_raw:
-        raise ValueError("config/slicers.yaml: slicers must be a non-empty list")
-    slicers = tuple(_slicer(_slicer_entry(item), "config/slicers.yaml") for item in slicers_raw)
-    slicer_ids = {s.id for s in slicers}
+        raise ValueError(f"{where}: slicers must be a non-empty list")
+    slicers = tuple(_slicer(_slicer_entry(item, where), where) for item in slicers_raw)
+    slicer_ids: set[str] = set()
+    for slicer in slicers:
+        if slicer.id in slicer_ids:
+            raise ValueError(f"{where}: duplicate slicer id '{slicer.id}'")
+        slicer_ids.add(slicer.id)
     printers: list[PrinterProfile] = []
     seen: dict[str, str] = {}
-    for path in sorted((base / "printers").glob("*/*.yaml")):
-        where = f"config/printers/{path.parent.name}/{path.name}"
-        printer = _printer(load_yaml(path), where)
+    for path in _printer_files(base):
+        where, raw = _read(path, base)
+        printer = _printer(raw, where)
         if printer.id in seen:
             raise ValueError(
-                f"duplicate printer id '{printer.id}' in {where}, already defined in {seen[printer.id]}"
+                f"duplicate printer id '{printer.id}' in {where}, "
+                f"already defined in {seen[printer.id]}"
             )
         if printer.slicer not in slicer_ids:
             raise ValueError(
@@ -104,4 +173,6 @@ def load_printer_catalog(config_dir: Path | None = None) -> PrinterCatalog:
             )
         seen[printer.id] = where
         printers.append(printer)
+    if not printers:
+        raise ValueError("printers/: no printers found; add printers/<vendor>/<id>.yaml files")
     return PrinterCatalog(printers=tuple(printers), slicers=slicers)

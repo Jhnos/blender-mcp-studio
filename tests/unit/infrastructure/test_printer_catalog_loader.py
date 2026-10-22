@@ -96,3 +96,62 @@ def test_orcaslicer_bin_env_override() -> None:
     assert load_tools_config(env={}).orcaslicer_bin.name == "OrcaSlicer"
     cfg = load_tools_config(env={"ORCASLICER_BIN": "/x/Orca"})
     assert cfg.orcaslicer_bin == Path("/x/Orca")
+
+
+def test_list_root_named(tmp_path: Path) -> None:
+    cfg = _config(tmp_path, {"a.yaml": "- 1\n- 2\n"})
+    with pytest.raises(ValueError, match="printers/acme/a.yaml: top level must be a mapping"):
+        load_printer_catalog(cfg)
+    (cfg / "slicers.yaml").write_text("- x\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="slicers.yaml: top level must be a mapping"):
+        load_printer_catalog(cfg)
+
+
+def test_invalid_yaml_named(tmp_path: Path) -> None:
+    cfg = _config(tmp_path, {"a.yaml": "id: [unclosed\n"})
+    with pytest.raises(ValueError, match="printers/acme/a.yaml: invalid YAML") as caught:
+        load_printer_catalog(cfg)
+    assert str(tmp_path) not in str(caught.value)
+
+
+def test_unknown_key_rejected(tmp_path: Path) -> None:
+    cfg = _config(tmp_path, {"a.yaml": _printer("x") + "default: true\n"})
+    with pytest.raises(ValueError, match="a.yaml: unknown key.*default"):
+        load_printer_catalog(cfg)
+    (cfg / "printers" / "acme" / "a.yaml").write_text(_printer("x"), encoding="utf-8")
+    (cfg / "slicers.yaml").write_text(_SLICERS + "    default: true\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="slicers.yaml: unknown key.*default"):
+        load_printer_catalog(cfg)
+
+
+def test_duplicate_slicer_id_rejected(tmp_path: Path) -> None:
+    cfg = _config(tmp_path, {"a.yaml": _printer("x")})
+    entry = _SLICERS.split("slicers:\n")[1]
+    (cfg / "slicers.yaml").write_text(_SLICERS + entry, encoding="utf-8")
+    with pytest.raises(ValueError, match="duplicate slicer id 'orcaslicer'"):
+        load_printer_catalog(cfg)
+
+
+@pytest.mark.parametrize(
+    "stray", ["printers/acme/b.yml", "printers/acme/b.txt", "printers/top.yaml"]
+)
+def test_stray_file_rejected(tmp_path: Path, stray: str) -> None:
+    cfg = _config(tmp_path, {"a.yaml": _printer("x")})
+    (cfg / stray).write_text(_printer("y"), encoding="utf-8")
+    with pytest.raises(ValueError, match=stray):
+        load_printer_catalog(cfg)
+    (cfg / stray).unlink()
+    (cfg / "printers" / "acme" / ".DS_Store").write_bytes(b"x")
+    assert len(load_printer_catalog(cfg).printers) == 1
+
+
+def test_empty_catalog_rejected(tmp_path: Path) -> None:
+    with pytest.raises(ValueError, match="no printers"):
+        load_printer_catalog(_config(tmp_path, {}))
+
+
+def test_float_key_rejected(tmp_path: Path) -> None:
+    text = _printer("x").replace("{'0.20': p}", "{0.20: p}")
+    cfg = _config(tmp_path, {"a.yaml": text})
+    with pytest.raises(ValueError, match="a.yaml: processes key 0.2 must be a string.*quote"):
+        load_printer_catalog(cfg)
