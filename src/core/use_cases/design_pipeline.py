@@ -130,7 +130,7 @@ class DesignPipeline:
 
     def describe_spec(self) -> dict[str, object]:
         """Spec v2 as JSON Schema with this host's usable printers and their materials."""
-        return describe_model_spec(self._slicing.printers())
+        return describe_model_spec(self._slicing.printers(), self._slicing.layer_ranges())
 
     async def list_artifacts(self) -> dict[str, object]:
         """Candidate ``source.root_dir`` values under the artifact roots (relative only)."""

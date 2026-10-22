@@ -75,7 +75,7 @@ def test_unknown_spec_version_error_lists_both_versions(tmp_path):
 def test_describe_model_spec_v2_example_parses(tmp_path):
     catalog = load_printer_catalog()
     printers = (catalog.printer(P2S), catalog.printer(K1C))
-    described = describe_model_spec(printers)
+    described = describe_model_spec(printers, {P2S: (0.08, 0.28), K1C: (0.08, 0.3)})
     assert described["spec_version"] == "2"
     schema = described["schema"]
     assert "print_target" in schema["required"]
@@ -89,7 +89,7 @@ def test_describe_model_spec_v2_example_parses(tmp_path):
         for rule in target["allOf"]
     }
     assert by_printer[P2S]["material"]["enum"] == ["PLA"]
-    assert by_printer[K1C]["layer_height_mm"]["enum"] == [0.2]
+    assert by_printer[K1C]["layer_height_mm"]["maximum"] == 0.3
     example = described["example"]
     assert example["print_target"] == {"printer": P2S, "material": "PLA"}
     root = tmp_path / "layout"
@@ -98,3 +98,29 @@ def test_describe_model_spec_v2_example_parses(tmp_path):
     stl_dir.mkdir(parents=True)
     spec = parse_model_spec(example, artifact_roots=(root,))
     assert spec.spec_version == "2" and spec.legacy_default is False
+
+
+def _layer_blocks(ranges):
+    catalog = load_printer_catalog()
+    printers = tuple(catalog.printer(i) for i in ranges)
+    rules = describe_model_spec(printers, ranges)["schema"]["properties"]["print_target"]["allOf"]
+    return {
+        r["if"]["properties"]["printer"]["const"]: r["then"]["properties"]["layer_height_mm"]
+        for r in rules
+    }
+
+
+def test_describe_schema_layer_height_is_machine_range():
+    blocks = _layer_blocks({P2S: (0.08, 0.28), "creality-k1-max-0.4": (0.08, 0.3)})
+    assert (blocks[P2S]["minimum"], blocks[P2S]["maximum"]) == (0.08, 0.28)
+    k1 = blocks["creality-k1-max-0.4"]
+    assert (k1["minimum"], k1["maximum"]) == (0.08, 0.3)
+    assert "enum" not in blocks[P2S]
+    assert "exact" in blocks[P2S]["description"]
+    assert "nearest base process" in blocks[P2S]["description"]
+
+
+def test_describe_schema_without_a_range_keeps_the_exact_keys():
+    block = _layer_blocks({P2S: None})[P2S]
+    assert block["enum"] == [0.2] and "minimum" not in block
+    assert "declares no layer-height range" in block["description"]

@@ -710,3 +710,11 @@ def test_machine_without_a_range_accepts_only_exact_keys(tmp_path: Path) -> None
     assert cli.check_target(K1C, 0.2, "PLA").process_profile
     with pytest.raises(LayerHeightError, match="declares no layer-height range.*0.20"):
         cli.check_target(K1C, 0.28, "PLA")
+
+
+def test_layer_ranges_come_from_the_flattened_machine_profiles(tmp_path: Path) -> None:
+    cli = _both(tmp_path, FakeRunner())
+    assert cli.layer_ranges()[K1C] is None  # the fake machine declares no range
+    _set_machine_range(tmp_path, ["0.08"], ["0.3"])
+    assert cli.layer_ranges()[K1C] == (0.08, 0.3)
+    assert set(cli.layer_ranges()) == {p.id for p in cli.printers()}

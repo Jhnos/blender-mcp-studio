@@ -201,6 +201,24 @@ class OrcaFamilyCli:
             )
         return binary
 
+    def layer_ranges(self) -> dict[str, tuple[float, float] | None]:
+        ranges: dict[str, tuple[float, float] | None] = {}
+        for printer in self.printers():
+            slicer = self._catalog.slicer(printer.slicer)
+            try:
+                profiles = self._bundle_profiles(
+                    slicer,
+                    self._usable_binary(slicer),
+                    printer,
+                    printer.processes[0][0],
+                    printer.filaments[0][0],
+                )
+            except ToolUnavailableError:
+                ranges[printer.id] = None
+            else:
+                ranges[printer.id] = layer_range(profiles["machine"])
+        return ranges
+
     def slicer_name(self, printer_id: str) -> str:
         return self._slicer_of(printer_id).name
 

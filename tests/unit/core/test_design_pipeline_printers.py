@@ -59,6 +59,9 @@ async def test_describe_spec_lists_usable_printers(tmp_path):
     target = rig.pipeline.describe_spec()["schema"]["properties"]["print_target"]["properties"]
     assert target["printer"]["enum"] == [P2S, K1C]
     assert target["material"]["enum"] == ["PLA"]
+    rules = rig.pipeline.describe_spec()["schema"]["properties"]["print_target"]["allOf"]
+    heights = {r["if"]["properties"]["printer"]["const"]: r["then"] for r in rules}
+    assert heights[K1C]["properties"]["layer_height_mm"]["maximum"] == 0.3
 
 
 def test_slice_timeout_covers_every_catalog_slicer_even_when_none_is_installed(tmp_path):

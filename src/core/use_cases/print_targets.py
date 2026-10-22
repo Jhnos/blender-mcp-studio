@@ -39,7 +39,7 @@ async def check_print_target(target: PrintTarget, slicing: SlicingPort) -> Print
     try:
         slicer_id = slicing.tool_for(target.printer).name
     except UnknownPrinterError as exc:
-        raise ModelSpecError(f"unsupported print_target.printer {target.printer!r}: {exc}") from exc
+        raise ModelSpecError(str(exc)) from exc
     usable = {p.id: p for p in slicing.printers()}
     printer = usable.get(target.printer)
     if printer is None:

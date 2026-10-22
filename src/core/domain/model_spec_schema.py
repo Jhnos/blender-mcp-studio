@@ -8,6 +8,8 @@ is still accepted but is not described here; ``V1_EXAMPLE`` is the v78 gate cont
 
 from __future__ import annotations
 
+from collections.abc import Mapping
+
 from src.core.domain.model_spec import (
     JOB_DEFAULTS as JOB,
 )
@@ -39,21 +41,45 @@ V2_EXAMPLE: dict[str, object] = {
 _PATH_RULES = "relative, no '..', no hidden ('.'-prefixed) part, must stay inside the root"
 
 
-def _per_printer(printer: PrinterProfile) -> dict[str, object]:
+def _layer_height(printer: PrinterProfile, bounds: tuple[float, float] | None) -> dict[str, object]:
+    keys = [float(h) for h, _ in printer.processes]
+    if bounds is None:
+        return {
+            "enum": keys,
+            "description": f"{printer.id}'s machine profile declares no layer-height range, so "
+            "only these exact catalog heights are accepted (mm).",
+        }
+    return {
+        "minimum": bounds[0],
+        "maximum": bounds[1],
+        "description": f"{printer.id}'s machine range in mm. An exact catalog height "
+        f"({', '.join(f'{k:g}' for k in keys)}) uses that process; any other in-range height "
+        "uses the nearest base process.",
+    }
+
+
+def _per_printer(printer: PrinterProfile, bounds: tuple[float, float] | None) -> dict[str, object]:
     """What ``printer`` accepts: its own materials and layer heights."""
     return {
         "if": {"properties": {"printer": {"const": printer.id}}, "required": ["printer"]},
         "then": {
             "properties": {
                 "material": {"enum": [m for m, _ in printer.filaments]},
-                "layer_height_mm": {"enum": [float(h) for h, _ in printer.processes]},
+                "layer_height_mm": _layer_height(printer, bounds),
             }
         },
     }
 
 
-def describe_model_spec(printers: tuple[PrinterProfile, ...]) -> dict[str, object]:
-    """JSON Schema for spec v2 plus a worked example; ``printers`` are the usable ones here."""
+def describe_model_spec(
+    printers: tuple[PrinterProfile, ...],
+    ranges: Mapping[str, tuple[float, float] | None],
+) -> dict[str, object]:
+    """JSON Schema for spec v2 plus a worked example.
+
+    ``printers`` are the usable ones here; ``ranges`` maps a printer id to the (min, max) layer
+    height of its machine profile, or ``None`` when the profile declares none.
+    """
     source = ImportedArtifact(root_dir="")
     schema: dict[str, object] = {
         "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -111,7 +137,7 @@ def describe_model_spec(printers: tuple[PrinterProfile, ...]) -> dict[str, objec
                     "support": {"type": "boolean", "default": JOB.support},
                     "brim_mm": {"type": "number", "minimum": 0, "default": JOB.brim_mm},
                 },
-                "allOf": [_per_printer(p) for p in printers],
+                "allOf": [_per_printer(p, ranges.get(p.id)) for p in printers],
             },
             "mechanism": {
                 "type": "object",

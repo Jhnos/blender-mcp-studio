@@ -5,6 +5,7 @@ Catalog-aware: one port serves every printer in the catalog, each through its ow
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from typing import Protocol
 
 from src.core.domain.packaging import ToolUse
@@ -27,6 +28,11 @@ class SlicingPort(Protocol):
 
     def max_timeout_s(self) -> float:
         """The largest per-slicer deadline in the catalog, installed or not (seconds)."""
+        ...
+
+    def layer_ranges(self) -> Mapping[str, tuple[float, float] | None]:
+        """For each usable printer id, the (min, max) layer height its machine profile declares
+        in mm, or ``None`` when it declares none (or its profiles cannot be read)."""
         ...
 
     def slicer_name(self, printer_id: str) -> str:

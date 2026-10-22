@@ -70,7 +70,7 @@ def test_unknown_key_error_lists_allowed_keys(tmp_path, section, allowed):
 @pytest.mark.parametrize(
     ("target", "message"),
     [
-        ({"printer": "x1c"}, "unsupported print_target.printer 'x1c': unknown printer 'x1c'; "),
+        ({"printer": "x1c"}, "unknown printer 'x1c'; known printers: "),
         (
             {"material": "PETG"},
             "unsupported print_target.material 'PETG' for bambu-p2s-0.4; allowed: PLA",

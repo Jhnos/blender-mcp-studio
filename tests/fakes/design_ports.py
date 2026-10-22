@@ -97,6 +97,12 @@ class FakeSlicing:
     def _process_profile(self, printer_id: str) -> str:
         return self._catalog.printer(printer_id).processes[0][1]
 
+    #: The real machine ranges read 2026-10-22 (min, max mm); other printers declare none here.
+    RANGES = {"bambu-p2s-0.4": (0.08, 0.28), "creality-k1c-0.4": (0.08, 0.3)}
+
+    def layer_ranges(self):
+        return {p.id: self.RANGES.get(p.id) for p in self._printers}
+
     def slicer_name(self, printer_id: str) -> str:
         return self._catalog.slicer(self._catalog.printer(printer_id).slicer).name
 
