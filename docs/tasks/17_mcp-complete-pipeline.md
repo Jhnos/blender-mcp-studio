@@ -1,6 +1,6 @@
 # 讓 MCP 完整——階段 1：可列印機構管線（匯入路徑）
 
-**Status:** ACTIVE
+**Status:** AWAITING-ACCEPTANCE
 
 ## Goal
 
@@ -52,15 +52,13 @@
 
 ### Open failures
 
-- 尚未在 main 上做真機驗收。部署中的 API 還是舊碼（11 項工具），合併、部署之後才算數。
-- 技術債（在 main 上修）：conda 環境 `blender-mcp` 的 editable 安裝指向已刪除的舊 worktree（`_editable_impl_blender_mcp_studio.pth`），目前只是靠 cwd 剛好 import 得到 `src`。
 - 已評估、刻意延後的項目（各附理由）：
   - manifest 的 `tools` 只依名稱排序：目前只有一個工具，等第二個工具出現再改排序鍵。
   - PathScrubber 只比對「前綴＋/」：已實測家目錄與暫存目錄都會被清掉。
   - 從沒啟動過的切片沒有 log。
   - 兩個原子寫入函式、兩份 stage 序列化，以及三處安全係數 5：之後在共用模組收斂。
   - 安裝提示只寫 Mac。
-  - `print_readiness_verify_real.py` 371 行、`design_pipeline.py` 380 行，都已到預算上限：下次加東西前先拆檔。
+  - `print_readiness_verify_real.py` 已經 371 行，接近預算上限：下次加東西前先拆檔。
   - `parse_model_spec` 的 `root_dir` 只對 `artifact_roots[0]` 解析：出貨的 `.`／`models` 根不受影響。
 - 後續任務（不在本計畫內）：
   - 把交付件搬到專屬的上層目錄，之後才能把 artifact root `.` 收窄。
@@ -68,14 +66,16 @@
   - 容器化軌：無視窗執行器 dummy run、compose。
   - 階段 2：虛擬世界匯出。
   - 階段 3：MuJoCo；機構套件要綁定 spec 的模型。
+- 印表機與廠商的解耦由任務 18 接手（[`18_printer-catalog.md`](18_printer-catalog.md)）。
 
 ### Next step
 
-- 在 main 上依序做：
-  1. 合併 `worktree-mcp-complete-phase1`。
-  2. 修 conda 的 `.pth` 指向。
-  3. 把 `tmp/lab-station-slicing-v80/mounted/BambuStudio.app` 複製到 `/Applications`。回退指令：`rm -rf /Applications/BambuStudio.app`。
-  4. 執行 `bash deploy/launchd/install.sh all`。
-  5. 經動態 FQDN 確認 21 項工具、`tool_status` 與 v78 閘門。
-  6. 不中斷地跑完 `scripts/ci.sh --real`。
-  7. checkpoint，清理 worktree。
+- 2026-10-22 在 main 上全部完成：
+  - 合併到 `3a8f081`，V01.0S.000。
+  - conda 的 `.pth` 已改指向主 checkout。
+  - Bambu Studio 02.08.02.61 已裝進 `/Applications`，公證通過。
+  - 已執行 `install.sh all`。
+  - 經動態 FQDN 驗證：v78 閘門 PASS（52 秒），報告 passed，1 盤，manifest 11 個檔。
+  - 不中斷的 `scripts/ci.sh --real`：**52 個硬閘門全綠**，包含新的 design pipeline 閘門。這一輪之前，連續兩輪因為共用 Ollama 被 `com.local.shb.ollama` 的長批次吃滿而停在 chat 前置閘門；等它空下來就過了。
+  - 已 push 到 origin/main，worktree 已清掉。
+- 剩下的事：等使用者驗收，再把這個檔案移到 `archive/`。
