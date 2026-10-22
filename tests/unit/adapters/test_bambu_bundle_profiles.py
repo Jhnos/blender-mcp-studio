@@ -165,3 +165,30 @@ def test_empty_compatible_printers_means_any(tmp_path: Path) -> None:
     check_compatible({"filament": profiles["filament"]}, "Some Other Machine")
     with pytest.raises(IncompatibleProfileError, match="0.20mm Standard @Acme"):
         check_compatible(profiles, "Some Other Machine")
+
+
+def test_unrelated_duplicate_name_does_not_break_resolution(tmp_path: Path) -> None:
+    root = make_named_bundle(tmp_path)
+    for stem in ("x1", "x2"):
+        (root / "Acme" / "filament" / f"{stem}.json").write_text(
+            json.dumps({"name": "Acme Unrelated"}), encoding="utf-8"
+        )
+    got = resolve_printer_profiles(root, _acme(), "0.20", "PLA")
+    assert got["filament"]["name"] == "Acme PLA"
+
+
+def test_unreadable_profile_named_as_unreadable(tmp_path: Path) -> None:
+    root = make_named_bundle(tmp_path)
+    (root / "Acme" / "process" / "base_file.json").write_text("{not json", encoding="utf-8")
+    with pytest.raises(ToolUnavailableError, match="unreadable") as info:
+        resolve_printer_profiles(root, _acme(), "0.20", "PLA")
+    assert "base_file.json" in str(info.value) and str(tmp_path) not in str(info.value)
+
+
+def test_unevaluated_condition_is_reported(tmp_path: Path) -> None:
+    root = make_named_bundle(tmp_path)
+    profiles = resolve_printer_profiles(root, _acme(), "0.20", "PLA")
+    assert check_compatible(profiles, "Acme Z 0.4 nozzle") == ()
+    profiles["filament"]["compatible_printers_condition"] = "printer_notes=~/.*X.*/"
+    notes = check_compatible(profiles, "Acme Z 0.4 nozzle")
+    assert len(notes) == 1 and "filament" in notes[0] and "Acme PLA" in notes[0]

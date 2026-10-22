@@ -15,7 +15,7 @@ Compatibility (measured 2026-10-22 on BambuStudio 02.08.02.61 BBL and OrcaSlicer
 profiles express it as a ``compatible_printers`` list of machine ``name`` strings (BBL 2162
 files, Creality 885); empty or absent means any machine. ``compatible_printers_condition`` is
 a string that is empty in every profile either bundle resolves to; a non-empty one is not
-evaluated here (accepted, a known gap).
+evaluated here: it is accepted and ``check_compatible`` returns a note for it.
 """
 
 from __future__ import annotations
@@ -31,7 +31,7 @@ from src.infrastructure.narrowing import as_sequence, as_str_keyed
 KINDS = ("machine", "process", "filament")
 
 Profile = dict[str, object]
-_Index = dict[str, Path]
+_Index = dict[str, list[Path]]
 
 
 class UnknownProfileError(DomainError):
@@ -59,20 +59,22 @@ def _read(path: Path) -> dict[str, object] | None:
         return None
 
 
-def _build_index(kind_dir: Path, kind: str) -> _Index:
+def _build_index(kind_dir: Path) -> tuple[_Index, list[Path]]:
+    """``name -> files declaring it`` plus the files whose JSON could not be read.
+
+    Never raises: ambiguity matters only for a name that is actually requested.
+    """
     index: _Index = {}
+    unreadable: list[Path] = []
     for path in sorted(kind_dir.glob("*.json")):
         data = _read(path)
-        name = None if data is None else data.get("name")
-        if not isinstance(name, str) or not name:
+        if data is None:
+            unreadable.append(path)
             continue
-        if name in index:
-            raise UnknownProfileError(
-                f"ambiguous {kind} profile name '{name}': declared by both "
-                f"{index[name].name} and {path.name}"
-            )
-        index[name] = path
-    return index
+        name = data.get("name")
+        if isinstance(name, str) and name:
+            index.setdefault(name, []).append(path)
+    return index, unreadable
 
 
 class _Bundle:
@@ -80,25 +82,41 @@ class _Bundle:
 
     def __init__(self, vendor_dir: Path) -> None:
         self._vendor_dir = vendor_dir
-        self._indexes: dict[str, _Index] = {}
+        self._indexes: dict[str, tuple[_Index, list[Path]]] = {}
 
-    def _index(self, kind: str) -> _Index:
+    def _index(self, kind: str) -> tuple[_Index, list[Path]]:
         if kind not in self._indexes:
-            self._indexes[kind] = _build_index(self._vendor_dir / kind, kind)
+            self._indexes[kind] = _build_index(self._vendor_dir / kind)
         return self._indexes[kind]
+
+    def _locate(self, kind: str, name: str) -> Path:
+        index, unreadable = self._index(kind)
+        paths = index.get(name, [])
+        if len(paths) > 1:
+            raise UnknownProfileError(
+                f"ambiguous {kind} profile name '{name}': declared by both "
+                f"{paths[0].name} and {paths[1].name}"
+            )
+        if paths:
+            return paths[0]
+        if unreadable:
+            files = ", ".join(p.name for p in unreadable)
+            raise ToolUnavailableError(
+                f"{kind} profile '{name}' not found, and these files are unreadable and "
+                f"may hold it: {files}"
+            )
+        raise UnknownProfileError(
+            f"{kind} profile '{name}' not found in the slicer bundle "
+            f"(vendor dir {self._vendor_dir.name}); the app may have renamed it"
+        )
 
     def flatten(self, kind: str, name: str, stack: tuple[str, ...] = ()) -> Profile:
         if name in stack:
             raise ToolUnavailableError(f"profile inheritance cycle: {' -> '.join((*stack, name))}")
-        path = self._index(kind).get(name)
-        if path is None:
-            raise UnknownProfileError(
-                f"{kind} profile '{name}' not found in the slicer bundle "
-                f"(vendor dir {self._vendor_dir.name}); the app may have renamed it"
-            )
+        path = self._locate(kind, name)
         data = _read(path)
         if data is None:
-            raise ToolUnavailableError(f"{kind} profile '{name}' is unreadable or not an object")
+            raise ToolUnavailableError(f"{kind} profile '{name}' is unreadable: {path.name}")
         result: Profile = {}
         parent = data.get("inherits")
         if isinstance(parent, str) and parent:
@@ -143,8 +161,21 @@ def _names(value: object) -> list[str]:
     return [str(item) for item in as_sequence(value) or ()]
 
 
-def check_compatible(profiles: dict[str, Profile], machine_name: str) -> None:
-    """Refuse a process or filament profile that does not declare ``machine_name`` compatible."""
+def _unevaluated(profiles: dict[str, Profile]) -> tuple[str, ...]:
+    notes: list[str] = []
+    for kind in ("process", "filament"):
+        profile = profiles.get(kind)
+        for key in ("compatible_printers_condition", "compatible_prints_condition"):
+            if profile is not None and profile.get(key):
+                notes.append(f"{kind} profile '{profile.get('name')}': {key} not evaluated")
+    return tuple(notes)
+
+
+def check_compatible(profiles: dict[str, Profile], machine_name: str) -> tuple[str, ...]:
+    """Refuse a process or filament profile that does not declare ``machine_name`` compatible.
+
+    Returns notes for every non-empty ``*_condition`` string accepted without evaluation.
+    """
     for kind in ("process", "filament"):
         profile = profiles.get(kind)
         if profile is None:
@@ -164,3 +195,4 @@ def check_compatible(profiles: dict[str, Profile], machine_name: str) -> None:
                 f"filament profile '{filament.get('name')}' does not declare process "
                 f"'{process.get('name')}' compatible"
             )
+    return _unevaluated(profiles)
