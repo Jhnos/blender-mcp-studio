@@ -23,12 +23,14 @@
 
 ## Acceptance checks
 
-- `scripts/ci.sh` 綠；`scripts/ci.sh --real` 不中斷全綠，含新閘門「design pipeline on the selected v80 deliverable」。
+- 核心 T1/T2/T3 不中斷全綠，含「design pipeline on the selected v80 deliverable」；對話 T4 獨立驗證，不作為模型／MCP／切片的前置。選取方式見 [驗證 SSOT](../30-verification.md)。
 - 透過本機自己的 Tailscale FQDN（動態取）呼叫 `run_design_pipeline` → `get_job_status` → `get_run_report`，選定 v80 的 69 件列印 STL 幾何通過、單盤 3MF 切片成功、manifest 列出全部檔案；截斷 STL 的負對照以幾何階段失敗收場。
 - `tests/unit/core/test_no_hardcoded_hosts.py` 綠（repo 無寫死主機名）。
 - Human acceptance is required before moving this file to `archive/`.
 
 ## Hand-off
+
+使用者授權核心與 Ollama 對話分開驗證，保留原對話真機檢查；結果及待辦見任務索引最新交接。
 
 工作站的共用交付入口改為 [models/lab-station](../../models/lab-station/README.md)；規格v1匯入保留v78幾何的v80切片交付，不重新建立模型。現行驗證結果與未解除事項以[任務索引](00_INDEX.md)的2026-10-23交接為準；下列舊日期事實屬歷史脈絡，不能用來選回舊版或重做已完成的合併。
 

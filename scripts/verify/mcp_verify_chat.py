@@ -183,7 +183,12 @@ def ollama_probe(base_url: str, model: str, timeout_s: float) -> float | None:
             resp.read()
             if resp.status != 200:
                 return None
-    except (urllib.error.URLError, TimeoutError, OSError):
+    except urllib.error.HTTPError as exc:
+        detail = exc.read(512).decode("utf-8", errors="replace")
+        print(f"  ollama probe HTTP {exc.code}: {detail}", flush=True)
+        return None
+    except (urllib.error.URLError, TimeoutError, OSError) as exc:
+        print(f"  ollama probe {type(exc).__name__}: {exc}", flush=True)
         return None
     return time.monotonic() - t0
 
@@ -217,14 +222,15 @@ def wait_for_ollama(
         # flush: ci.sh captures this into a log file, where block buffering would
         # hide the heartbeat until the process ends — the opposite of a heartbeat.
         print(
-            f"  ollama probe attempt {attempt}: no answer within {attempt_timeout_s:g}s "
+            f"  ollama probe attempt {attempt}: no successful response (attempt limit {attempt_timeout_s:g}s) "
             f"(waited {waited:.0f}s of {budget_s:g}s budget)",
             flush=True,
         )
         if waited >= budget_s:
             raise RuntimeError(
                 f"precondition: shared Ollama did not answer a one-token probe within "
-                f"{budget_s:g}s; it is saturated or down, not a chat-path defect"
+                f"{budget_s:g}s; cause undetermined. Check the probe errors, endpoint, model, "
+                "queue/load and connectivity; the conversation path was not exercised."
             )
         sleep(pause_s)
 

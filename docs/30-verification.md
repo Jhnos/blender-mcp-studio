@@ -15,8 +15,12 @@
 
 ```bash
 scripts/ci.sh          # T1 static + T2 unit/headless dummy run；commit 前必跑
-scripts/ci.sh --real   # T3 REST/MCP/readiness/batch + hand-v3 契約與重現差分；需要 Blender addon 已就緒
+scripts/ci.sh --real   # 核心 T1/T2/T3：模型、REST/MCP、機構、切片與包；不呼叫 Ollama
+scripts/ci.sh --chat   # 獨立 T4 對話：Ollama 前置＋WS/REST＋Blender oracle，不重跑 T1/T2/T3
+scripts/ci.sh --all    # 先核心、再對話；共用 Blender，不能並行
 ```
+
+核心與對話各自回報所選範圍；未選對話不代表對話通過。明確要求真機套件但 addon 未就緒時回傳失敗。對話前置探測會保留 HTTP 狀態／連線錯誤；超過預算只表示未取得成功回應，不能推定 Ollama 離線或飽和。
 
 真機階段任何 hard gate 失敗後立即停止，避免後續操作污染共享場景。逾時不代表 Blender 已停止；重跑前必須確認先前工作已排空。靜態與單元階段仍彙整失敗。
 
@@ -83,7 +87,9 @@ scripts/ci.sh --real   # T3 REST/MCP/readiness/batch + hand-v3 契約與重現�
 | Unit | Domain、service、tool registry | Fake Blender port | validation、routing、error 語意 |
 | ASGI e2e | FastAPI、FastMCP framing、middleware | Fake Blender port | mount、identity、Origin、protocol、client 中立性 |
 | Headless UI | React／MDR／Vite 測試 | Mock HTTP backend | 前端行為 |
-| Real machine | 對外 Tailnet MCP + API + Blender | 無 | nonce 變異、列印夾具、單次 Undo 還原整批，並以獨立 socket oracle 佐證 |
+| Core real machine | 對外 Tailnet MCP + API + Blender + 切片器（不使用即時 LLM） | 無 | nonce 變異、列印夾具、單次 Undo 還原整批，並以獨立 socket oracle 佐證 |
+
+對話 T4 另外透過 Ollama、公開 WS/REST 與獨立 Blender oracle 驗證自然語言建立物件、讀回與清理。核心 CI 中的 LLM 單元／ASGI 測試使用 fake，仍保留。
 
 Real tier 只變異帶 nonce 前綴的驗證物件，並在 `finally` 移除。它同時經 REST 與 MCP
 下指令，再獨立地從 Blender addon socket 讀真實狀態當 oracle（埠見 [[10-runtime-ssot]]）。
