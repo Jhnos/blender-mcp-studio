@@ -26,6 +26,8 @@
 
 ## Hand-off
 
+工作站的共用交付入口改為 [models/lab-station](../../models/lab-station/README.md)；規格v1匯入保留v78幾何的v80切片交付，不重新建立模型。現行驗證結果與未解除事項以[任務索引](00_INDEX.md)的2026-10-23交接為準；下列舊日期事實屬歷史脈絡，不能用來選回舊版或重做已完成的合併。
+
 ### Verified facts
 
 - 2026-10-20 本輪（未提交，版本仍 02H）：Blender 原本沒開，以 `launchctl kickstart gui/$(id -u)/com.blender-mcp.blender` 拉起，addon socket 於 10 秒內可連；API 由 adapter 在第一個真實指令時自動重撥。T1/T2 於未提交工作樹 exit 0（scratchpad `ci-t1t2.log`、`ci-t1t2-final.log`）。

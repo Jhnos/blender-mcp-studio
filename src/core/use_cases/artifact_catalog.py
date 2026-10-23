@@ -11,12 +11,15 @@ itself, counted at most ``max_stl_files`` per candidate) and the 3MF file names.
 
 from __future__ import annotations
 
+import copy
 import itertools
 import os
 from collections.abc import Iterator
 from pathlib import Path
 
 from src.core.domain.model_spec import is_hidden_path
+from src.core.domain.model_spec_schema import V1_EXAMPLE
+from src.infrastructure.narrowing import as_mapping, as_sequence
 
 MAX_ENTRIES = 200
 CANDIDATE_DEPTH = 2
@@ -103,4 +106,19 @@ def list_artifacts(roots: tuple[Path, ...], *, max_stl_files: int) -> dict[str, 
             }
         )
     truncated = next(found, None) is not None
-    return {"artifacts": rows, "truncated": truncated}
+    default_spec = copy.deepcopy(V1_EXAMPLE)
+    selected_source = as_mapping(default_spec["source"])
+    assert selected_source is not None
+    selected = next((r for r in rows if r["root_dir"] == selected_source["root_dir"]), None)
+    available = bool(
+        selected
+        and selected["stl_dirs"]
+        and selected_source["project_3mf"] in (as_sequence(selected["project_3mf"]) or ())
+    )
+    rows.sort(key=lambda r: r["root_dir"] != selected_source["root_dir"])
+    return {
+        "artifacts": rows,
+        "truncated": truncated,
+        "default_spec": default_spec,
+        "default_available": available,
+    }

@@ -169,7 +169,9 @@ def register_design_tools(
     )
     async def list_artifacts() -> dict[str, object]:
         """List deliverable directories usable as source.root_dir: each root-relative root_dir
-        with its STL count per subdirectory and its 3MF names (at most 200, no hidden dirs)."""
+        with its STL count per subdirectory and its 3MF names (at most 200, no hidden dirs).
+        Use default_spec for the shared selected delivery. If default_available is false,
+        report the missing delivery; never fall back to an archived version."""
         return await _configured(design, "design pipeline").list_artifacts()
 
     @mcp.tool(

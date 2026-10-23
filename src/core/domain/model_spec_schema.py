@@ -1,8 +1,8 @@
 """ModelSpec v1 described as JSON Schema, so a client can build a spec without reading source.
 
 The parser (``model_spec.parse_model_spec``) is the authority; this module mirrors its keys,
-types and defaults from the same constants, and ``V1_EXAMPLE`` is the v78 gate contract's spec
-(``scripts/verify/contracts/design_pipeline_v78.json``; a unit test keeps them equal).
+types and defaults from the same constants, and ``V1_EXAMPLE`` is the v80 gate contract's spec
+(``scripts/verify/contracts/design_pipeline_v80.json``; a unit test keeps them equal).
 """
 
 from __future__ import annotations
@@ -16,11 +16,18 @@ from src.core.domain.model_spec import (
 
 V1_EXAMPLE: dict[str, object] = {
     "spec_version": "1",
-    "name": "lab-station-v78",
+    "name": "lab-station-v80",
     "source": {
-        "root_dir": "雙上臂四點梯形-v78",
+        "root_dir": "models/lab-station-v80",
         "stl_glob": "STL/列印零件/*.stl",
-        "project_3mf": "整機69件-單盤排版-v78.3mf",
+        "project_3mf": "P2S-PLA-69件單盤-已切片-v80.3mf",
+    },
+    "print_target": {
+        "printer": "bambu-p2s",
+        "material": "PLA",
+        "layer_height_mm": 0.2,
+        "support": True,
+        "brim_mm": 3.0,
     },
     "mechanism": {"suites": []},
 }

@@ -15,7 +15,7 @@ from src.core.use_cases import design_stages as stages
 from tests.unit.core.test_design_pipeline import _payload, _rig, _run
 
 _CONTRACT = (
-    Path(__file__).resolve().parents[3] / "scripts/verify/contracts/design_pipeline_v78.json"
+    Path(__file__).resolve().parents[3] / "scripts/verify/contracts/design_pipeline_v80.json"
 )
 
 

@@ -1,0 +1,347 @@
+[
+  {
+    "file": "S_capillary_clamp_liner_0.stl",
+    "sha256": "694aef7fe11396d6655b5e5be10b1153cc44f9f833d48466a36ec52e63030822",
+    "identical_to_v78": true
+  },
+  {
+    "file": "TE_capillary_P_knob.stl",
+    "sha256": "42a1a8aa2c5a2781c0250d0b0cff8de6d9a7b833fe14b780062de600e49d7977",
+    "identical_to_v78": true
+  },
+  {
+    "file": "TE_pH_temp_B_clip.stl",
+    "sha256": "bdb811fc9deecfd6cc2ddd5c17f8bb5fb925917a7faa6e537ad5921284f4d9b1",
+    "identical_to_v78": true
+  },
+  {
+    "file": "TE_pH_temp_C_clip.stl",
+    "sha256": "22d64a0059d221e6afd9be6948420039655e6a4fd0fdf1fe10a4681e25134ca1",
+    "identical_to_v78": true
+  },
+  {
+    "file": "S_capillary_tip_knob.stl",
+    "sha256": "7d90ac4279f2bd59afba31cdbb072cf01c677dd7b20e921e0da214eb252808c5",
+    "identical_to_v78": true
+  },
+  {
+    "file": "S_capillary_clamp_liner_1.stl",
+    "sha256": "f75fd1b3e5d33aeb01d2fc56ffcf5b196e20fd47ce7b19c1407f6e2cc8e33103",
+    "identical_to_v78": true
+  },
+  {
+    "file": "RH_101_thumb_knob.stl",
+    "sha256": "d0249b2c07f5c846899fe4aa4d39db27e9f131f1e0012b5df3691677e7c2d021",
+    "identical_to_v78": true
+  },
+  {
+    "file": "RH_-101_thumb_knob.stl",
+    "sha256": "d0249b2c07f5c846899fe4aa4d39db27e9f131f1e0012b5df3691677e7c2d021",
+    "identical_to_v78": true
+  },
+  {
+    "file": "S_capillary_clamp_cap.stl",
+    "sha256": "68ebb17223f4dc97f1ac0b43f60849c0cb31c0ca63175c690f3eb461886ec88d",
+    "identical_to_v78": true
+  },
+  {
+    "file": "RH_-75_pin.stl",
+    "sha256": "ca1fda6a5d1d5a06ed5200eb75f6c3b38729cbce7db04660887f9426fddb621e",
+    "identical_to_v78": true
+  },
+  {
+    "file": "TE_capillary_R_pin.stl",
+    "sha256": "3a1e2ad691c90ea9aa647bb364e31231ecf101e72ee7f8457a3b51e635a5671f",
+    "identical_to_v78": true
+  },
+  {
+    "file": "LS_FIT_chassis.stl",
+    "sha256": "4d5059793695f506ae2e423625c186eda3a5ed16e4c3336f233dbd6cf4e3317c",
+    "identical_to_v78": true
+  },
+  {
+    "file": "TE_pH_temp_R_pin.stl",
+    "sha256": "b5a4435860a71166b4459b67dff35ba15adf05829250d33419b717941ed09a09",
+    "identical_to_v78": true
+  },
+  {
+    "file": "LS_ROUTE_pH_temp_lower.stl",
+    "sha256": "a5800c497ccd96e2ff7b5306393f94a7dcc43cd7757821df019a8d34f43a04da",
+    "identical_to_v78": true
+  },
+  {
+    "file": "TE_capillary_D_clip.stl",
+    "sha256": "0d6ce7e4f57adb1e68455cc972c146de9b810a2709bcf14599fa4dc172cdd7c9",
+    "identical_to_v78": true
+  },
+  {
+    "file": "S_pH_temp_clamp_liner_0.stl",
+    "sha256": "48785abfb038ed8ba8361a3703dd94eaa64c92447d5aa976f0d1ec320e12861c",
+    "identical_to_v78": true
+  },
+  {
+    "file": "RH_75_pin.stl",
+    "sha256": "070fe088f27f63543b726c895793b2415195f1784479304300f5ab58279c6cd5",
+    "identical_to_v78": true
+  },
+  {
+    "file": "LS_FIT_lcd_back.stl",
+    "sha256": "e50658fa544cc0c8a27ce17766670f606b9081ade4c1f8e5cfeb514aff60c1b9",
+    "identical_to_v78": true
+  },
+  {
+    "file": "S_pH_temp_clamp_liner_1.stl",
+    "sha256": "03824ca9ae4c37d5437d0cae5b94e15c0ff99b7fb53b23de29195c4db1ea532d",
+    "identical_to_v78": true
+  },
+  {
+    "file": "LS_FIT_lid.stl",
+    "sha256": "a29f229ef0b5e163ed12ea71b6a4db54fc1eab4e8815ab3ecff941e2d0e01cc4",
+    "identical_to_v78": true
+  },
+  {
+    "file": "S_pH_temp_clamp_liner_3.stl",
+    "sha256": "387c0a09cc589cb5e59b2aa8b22747503f381292012b2c1649e477f3c24c7cf9",
+    "identical_to_v78": true
+  },
+  {
+    "file": "S_pH_temp_follower_shoulder_pin.stl",
+    "sha256": "b5a4435860a71166b4459b67dff35ba15adf05829250d33419b717941ed09a09",
+    "identical_to_v78": true
+  },
+  {
+    "file": "TE_pH_temp_three_point_wrist.stl",
+    "sha256": "a767429a8ee2bd9ae925937302d69779efdc9203afacf58f949369f436413e2c",
+    "identical_to_v78": true
+  },
+  {
+    "file": "S_pH_temp_clamp_liner_2.stl",
+    "sha256": "7552a331b4e33410eeaeb6781521f67c6858ecabae4749fd696d63a11024e172",
+    "identical_to_v78": true
+  },
+  {
+    "file": "TE_capillary_B_clip.stl",
+    "sha256": "5eba65f5cbb18d9f15c824cb96043081990ca84ec31d4d08b155ff3cef704071",
+    "identical_to_v78": true
+  },
+  {
+    "file": "TE_capillary_C_clip.stl",
+    "sha256": "88a39d4bb065aa0cf888bf2b806f7f41ac03cb00f834feb025df60f6b48beeb1",
+    "identical_to_v78": true
+  },
+  {
+    "file": "TE_pH_temp_P_knob.stl",
+    "sha256": "aaf298293c3b8d68953a8154713068861f5511620728214143311b67e7d1eb7c",
+    "identical_to_v78": true
+  },
+  {
+    "file": "S_pH_temp_clamp_cap.stl",
+    "sha256": "8da235ec2a53ae5eece4b3875677ddefa703f5907b3b27768c166e1c9429d7a3",
+    "identical_to_v78": true
+  },
+  {
+    "file": "LS_ROUTE_pH_temp_upper.stl",
+    "sha256": "4e8f8c550bfbcc1fa73bc3b959a4e1507b16cdb2524e01729364aeb8c05f1c99",
+    "identical_to_v78": true
+  },
+  {
+    "file": "TE_pH_temp_D_clip.stl",
+    "sha256": "bdb811fc9deecfd6cc2ddd5c17f8bb5fb925917a7faa6e537ad5921284f4d9b1",
+    "identical_to_v78": true
+  },
+  {
+    "file": "TE_capillary_three_point_elbow.stl",
+    "sha256": "289f1f2859b3fe1dc78efa3c13e7d8f06948fca171977d57afada16b42d3d197",
+    "identical_to_v78": true
+  },
+  {
+    "file": "S_capillary_follower_shoulder_clip.stl",
+    "sha256": "80ffbe4a855dfd8ac5181c0b50e9b5e758a0ac77aeb5a8447560182712826012",
+    "identical_to_v78": true
+  },
+  {
+    "file": "RH_-75_clip.stl",
+    "sha256": "7d8d9992ff35be5c65381ac2eedcda7d686a5eb76ea75c4c8706450ee16a98e6",
+    "identical_to_v78": true
+  },
+  {
+    "file": "TE_capillary_D_pin.stl",
+    "sha256": "2b027efc016c8f6b81aab0b7c6ba389fa9aea7d11272e0b2d9efb051eb36daaa",
+    "identical_to_v78": true
+  },
+  {
+    "file": "TE_pH_temp_D_pin.stl",
+    "sha256": "e0e4d2a255c6036279e3da71f2c367501fbb6402c6c58569e3e9549f94bc92cf",
+    "identical_to_v78": true
+  },
+  {
+    "file": "S_capillary_shoulder_knob.stl",
+    "sha256": "3a7ec7b02a6c91757552f41ffdfa4043c95ee2eb0ffb4f94aa6bb8cb44d9b2a2",
+    "identical_to_v78": true
+  },
+  {
+    "file": "TE_capillary_three_point_wrist.stl",
+    "sha256": "a5448cfad06dd37b374d7465e1c5c85d5f867f28517ee10a9dcfd2b5bd154509",
+    "identical_to_v78": true
+  },
+  {
+    "file": "TE_pH_temp_follower.stl",
+    "sha256": "2d0789523fe5da442ecbdd37c64bdc53bb9189de85d68ac1092eed7c0bd378e9",
+    "identical_to_v78": true
+  },
+  {
+    "file": "S_pH_temp_follower_shoulder_clip.stl",
+    "sha256": "22d64a0059d221e6afd9be6948420039655e6a4fd0fdf1fe10a4681e25134ca1",
+    "identical_to_v78": true
+  },
+  {
+    "file": "LS_FIT_sample_tray.stl",
+    "sha256": "18fa97a3cfd6b9e90430bb0dae7b2f1b316ec38bc9c0732a1309f0da2aabe082",
+    "identical_to_v78": true
+  },
+  {
+    "file": "S_capillary_upper_follower.stl",
+    "sha256": "05327cbe6b096171c38352948167139018a12f808b9675ab63b4b168c77b77db",
+    "identical_to_v78": true
+  },
+  {
+    "file": "RH_rear_cover.stl",
+    "sha256": "bf220ac5a351d87703c655c2089540d349d625cd2e51451dc64cc8602354d7d4",
+    "identical_to_v78": true
+  },
+  {
+    "file": "LS_ROUTE_capillary_lower.stl",
+    "sha256": "54171c2a3fb037a315ba6564842b2820fb1fa2729c8842a95d30862ce1209f40",
+    "identical_to_v78": true
+  },
+  {
+    "file": "TE_pH_temp_A_knob.stl",
+    "sha256": "90c5f327031a105a66942f1f38e792a717aad470767be91f1cbb74a03195c25a",
+    "identical_to_v78": true
+  },
+  {
+    "file": "TE_capillary_R_clip.stl",
+    "sha256": "80ffbe4a855dfd8ac5181c0b50e9b5e758a0ac77aeb5a8447560182712826012",
+    "identical_to_v78": true
+  },
+  {
+    "file": "S_pH_temp_head.stl",
+    "sha256": "ad8f21be735cfafb9ad7e05e06adf1b3270164759b539217a62ca0442422f8f7",
+    "identical_to_v78": true
+  },
+  {
+    "file": "TE_pH_temp_three_point_elbow.stl",
+    "sha256": "018fcf8b4733f1bf8f9fbad6fc9bbedfb3467dbc959bb2aee903023fa9a717ff",
+    "identical_to_v78": true
+  },
+  {
+    "file": "S_capillary_follower_shoulder_pin.stl",
+    "sha256": "3a1e2ad691c90ea9aa647bb364e31231ecf101e72ee7f8457a3b51e635a5671f",
+    "identical_to_v78": true
+  },
+  {
+    "file": "S_pH_temp_base.stl",
+    "sha256": "bcb02c5d12af4f2a0bb8e4a959f4e3487fa0bdf4b94a102cd481247a0c6c1cd5",
+    "identical_to_v78": true
+  },
+  {
+    "file": "LS_FIT_spill_dish.stl",
+    "sha256": "1b167ef92daf9e1227b945c59ce1e6fa88034523152f46bf3a829607e38d8a60",
+    "identical_to_v78": true
+  },
+  {
+    "file": "S_pH_temp_tip_knob.stl",
+    "sha256": "8dec5136a8bcbdd1f8b2539fc2478404b009745468c2ef325c13c4e0f9564a9d",
+    "identical_to_v78": true
+  },
+  {
+    "file": "S_pH_temp_shoulder_knob.stl",
+    "sha256": "6a37b846cae57e8647c9b74e1932a817f4ebfe0937ddcdbcdb43a4fd9dfdee24",
+    "identical_to_v78": true
+  },
+  {
+    "file": "LS_ROUTE_capillary_upper.stl",
+    "sha256": "51c0ed6cffab201da4e90f503adac8be09774a185805e2b7fef9604366fd0184",
+    "identical_to_v78": true
+  },
+  {
+    "file": "S_pH_temp_upper.stl",
+    "sha256": "a2deceffef55ba9823f060d195c49f32db5503f8e208b32b665c2da4a0ae6825",
+    "identical_to_v78": true
+  },
+  {
+    "file": "TE_pH_temp_B_pin.stl",
+    "sha256": "e0e4d2a255c6036279e3da71f2c367501fbb6402c6c58569e3e9549f94bc92cf",
+    "identical_to_v78": true
+  },
+  {
+    "file": "S_capillary_upper.stl",
+    "sha256": "2d325a5d6467dbb98310257062544228819e5a0434adc70cccc8148b516737e7",
+    "identical_to_v78": true
+  },
+  {
+    "file": "S_capillary_base.stl",
+    "sha256": "f5b529cc36eb007f99c98fd7ab92a63d54e6af1e7f91ec70d5d9a5190a4033ed",
+    "identical_to_v78": true
+  },
+  {
+    "file": "TE_capillary_B_pin.stl",
+    "sha256": "b4c03788ef2936d68e9fd09c85e179410d419a32fdf2a5ec6dddfedde5470ceb",
+    "identical_to_v78": true
+  },
+  {
+    "file": "S_capillary_head.stl",
+    "sha256": "c1740fc0fbf322197a2d11803e173d05445bcd4e1f2dfde1c2207f37597c8e2d",
+    "identical_to_v78": true
+  },
+  {
+    "file": "RH_75_clip.stl",
+    "sha256": "7d8d9992ff35be5c65381ac2eedcda7d686a5eb76ea75c4c8706450ee16a98e6",
+    "identical_to_v78": true
+  },
+  {
+    "file": "S_pH_temp_upper_follower.stl",
+    "sha256": "05327cbe6b096171c38352948167139018a12f808b9675ab63b4b168c77b77db",
+    "identical_to_v78": true
+  },
+  {
+    "file": "TE_pH_temp_C_pin.stl",
+    "sha256": "94e19ea04d350a239ebd90e6a67cc740f8957d44faea64684048bcedeb64b4fd",
+    "identical_to_v78": true
+  },
+  {
+    "file": "TE_capillary_C_pin.stl",
+    "sha256": "2e8cc4f8e356b860646059bb35886d564ef6746f5fe1bd18b145b494d6799615",
+    "identical_to_v78": true
+  },
+  {
+    "file": "TE_capillary_lower.stl",
+    "sha256": "05327cbe6b096171c38352948167139018a12f808b9675ab63b4b168c77b77db",
+    "identical_to_v78": true
+  },
+  {
+    "file": "TE_pH_temp_R_clip.stl",
+    "sha256": "22d64a0059d221e6afd9be6948420039655e6a4fd0fdf1fe10a4681e25134ca1",
+    "identical_to_v78": true
+  },
+  {
+    "file": "TE_capillary_A_knob.stl",
+    "sha256": "b8be58e2be462893a640dec24122f58ec167361d9271a89e379627b45d90fa10",
+    "identical_to_v78": true
+  },
+  {
+    "file": "TE_pH_temp_lower.stl",
+    "sha256": "2d0789523fe5da442ecbdd37c64bdc53bb9189de85d68ac1092eed7c0bd378e9",
+    "identical_to_v78": true
+  },
+  {
+    "file": "TE_capillary_follower.stl",
+    "sha256": "05327cbe6b096171c38352948167139018a12f808b9675ab63b4b168c77b77db",
+    "identical_to_v78": true
+  },
+  {
+    "file": "LS_FIT_lcd_front.stl",
+    "sha256": "7f919ee1d47db947e45e88ed35b4c91a4fdb8b3478a5c8648e18e7aba9d8923f",
+    "identical_to_v78": true
+  }
+]

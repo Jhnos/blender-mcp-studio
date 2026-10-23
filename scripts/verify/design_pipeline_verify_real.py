@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Real-tier gate: the user's v78 deliverable through the public MCP URL, stage by stage.
+"""Real-tier gate: the selected user deliverable through the public MCP URL, stage by stage.
 
 Submits the contract's ModelSpec with ``run_design_pipeline``, polls ``get_job_status`` with a
 heartbeat, then asserts machine evidence for import, geometry, mechanism, print and package
@@ -146,8 +146,8 @@ def _positive_failures(
 
 
 async def _positive(client: Client[Any], contract: Mapping[str, Any]) -> list[str]:
-    job, report = await _run_spec(client, contract["spec"], "v78")
-    print(f"[v78] job ended {job.get('status')} error={job.get('error')}", flush=True)
+    job, report = await _run_spec(client, contract["spec"], str(contract["spec"]["name"]))
+    print(f"[selected] job ended {job.get('status')} error={job.get('error')}", flush=True)
     run_id = str(report["run_id"])
     early = checks.check_report(report, contract["expect"])
     try:

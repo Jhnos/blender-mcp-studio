@@ -4,7 +4,7 @@
 
 ## Goal
 
-任何 MCP host 以機器可讀的 `ModelSpec` 提交一個模型，拿回可送印的包與機器驗證證據（幾何、機構、列印切片、重現 manifest）；第一個實例是使用者交付的實驗室工作站 v78（匯入既有產物，不經產生器）。
+任何 MCP host 以機器可讀的 `ModelSpec` 提交一個模型，拿回可送印的包與機器驗證證據（幾何、機構、列印切片、重現 manifest）；目前共用實例由 models/lab-station/model-spec.json 選定實驗室工作站 v80（匯入既有產物，不經產生器）。
 
 ## Context to read
 
@@ -16,19 +16,21 @@
 ## Specification
 
 - 新 port：`MeshIntegrityPort`、`SlicingPort`、`PackagingPort`、`MechanismSimulationPort`、`JobStorePort`；use case `DesignPipeline` 五階段（import→geometry→mechanism→print→package），證據寫 `data/runs/<run_id>/`。
-- REST `/api/design/*` 與 MCP 工具（目錄由 11 增為 19）共用同一服務；證據檔經既有身分閘門下載。
+- REST `/api/design/*` 與 MCP 工具（目錄由 11 增為 21）共用同一服務；證據檔經既有身分閘門下載。
 - 主機名、二進位路徑、資料目錄只來自 `config/tools.yaml` 與環境變數；程式碼不得出現 Tailscale 網域或家目錄。
 - 切片以 Bambu Studio CLI 子行程呼叫（AGPL-3.0，manifest 明標）；缺席＝明確失敗附安裝指引。
 - 不開公開 `execute_code`；已發布包與既有 DTO 不變。
 
 ## Acceptance checks
 
-- `scripts/ci.sh` 綠；`scripts/ci.sh --real` 不中斷全綠，含新閘門「design pipeline on the v78 deliverable」。
-- 透過本機自己的 Tailscale FQDN（動態取）呼叫 `run_design_pipeline` → `get_job_status` → `get_run_report`，v78 的 113 件 STL 幾何通過、單盤 3MF 切片成功、manifest 列出全部檔案；截斷 STL 的負對照以幾何階段失敗收場。
+- `scripts/ci.sh` 綠；`scripts/ci.sh --real` 不中斷全綠，含新閘門「design pipeline on the selected v80 deliverable」。
+- 透過本機自己的 Tailscale FQDN（動態取）呼叫 `run_design_pipeline` → `get_job_status` → `get_run_report`，選定 v80 的 69 件列印 STL 幾何通過、單盤 3MF 切片成功、manifest 列出全部檔案；截斷 STL 的負對照以幾何階段失敗收場。
 - `tests/unit/core/test_no_hardcoded_hosts.py` 綠（repo 無寫死主機名）。
 - Human acceptance is required before moving this file to `archive/`.
 
 ## Hand-off
+
+工作站的共用交付入口改為 [models/lab-station](../../models/lab-station/README.md)；規格v1匯入保留v78幾何的v80切片交付，不重新建立模型。現行驗證結果與未解除事項以[任務索引](00_INDEX.md)的2026-10-23交接為準；下列舊日期事實屬歷史脈絡，不能用來選回舊版或重做已完成的合併。
 
 ### Verified facts
 
@@ -50,7 +52,7 @@
   - 報告、manifest、`import.json` 裡都沒有絕對路徑。
 - 切片器：v80 從 dmg 抽出的 app 已確認是 Bambu Lab 的 Developer ID 簽章、Apple 公證，Gatekeeper 接受，版本 02.08.02.61。
 
-### Open failures
+### Historical open failures (phase 1 pre-merge; current state is in the task index)
 
 - 尚未在 main 上做真機驗收。部署中的 API 還是舊碼（11 項工具），合併、部署之後才算數。
 - 技術債（在 main 上修）：conda 環境 `blender-mcp` 的 editable 安裝指向已刪除的舊 worktree（`_editable_impl_blender_mcp_studio.pth`），目前只是靠 cwd 剛好 import 得到 `src`。
@@ -69,7 +71,7 @@
   - 階段 2：虛擬世界匯出。
   - 階段 3：MuJoCo；機構套件要綁定 spec 的模型。
 
-### Next step
+### Historical next step (phase 1 pre-merge; not current execution instructions)
 
 - 在 main 上依序做：
   1. 合併 `worktree-mcp-complete-phase1`。

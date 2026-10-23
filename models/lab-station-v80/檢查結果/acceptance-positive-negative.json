@@ -1,0 +1,43 @@
+[
+  {
+    "case": "first-pass",
+    "expected_pass": false,
+    "passed": false,
+    "reasons": [
+      "slicer or project export failed",
+      "not exactly one sliced plate",
+      "independent path audit missing",
+      "saved model identity evidence incomplete",
+      "saved mesh independent guard incomplete"
+    ]
+  },
+  {
+    "case": "normal-support",
+    "expected_pass": false,
+    "passed": false,
+    "reasons": [
+      "slicer or project export failed",
+      "extruded line envelope outside build plate",
+      "saved model identity evidence incomplete",
+      "saved mesh independent guard incomplete"
+    ]
+  },
+  {
+    "case": "normal-support-small-knobs",
+    "expected_pass": false,
+    "passed": false,
+    "reasons": [
+      "slicer or project export failed",
+      "not exactly one sliced plate",
+      "independent path audit missing",
+      "saved model identity evidence incomplete",
+      "saved mesh independent guard incomplete"
+    ]
+  },
+  {
+    "case": "normal-support-brim3",
+    "expected_pass": true,
+    "passed": true,
+    "reasons": []
+  }
+]

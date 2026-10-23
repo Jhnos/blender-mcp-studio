@@ -87,7 +87,8 @@ async def test_list_artifacts_is_empty_without_candidates(tmp_path):
         f.unlink()
     async with Client(_server(rig)) as client:
         listed = _data(await client.call_tool("list_artifacts", {}))
-    assert listed == {"artifacts": [], "truncated": False}
+    assert listed["artifacts"] == [] and listed["truncated"] is False
+    assert listed["default_available"] is False
 
 
 async def test_run_design_pipeline_description_names_the_helpers(tmp_path):

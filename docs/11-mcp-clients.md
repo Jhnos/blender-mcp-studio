@@ -114,7 +114,7 @@ arbitrary Python.
 ### 設計管線（ModelSpec → 可列印包）
 
 LLM 供應想法與 ModelSpec，MCP 負責走到可列印包：先用 `describe_model_spec` 取得 schema 與範例、
-`list_artifacts` 找可用的 `source.root_dir`，再以 `run_design_pipeline` 送出（立即回傳
+`list_artifacts` 取得共用入口的 `default_spec`（要求 `default_available=true`；缺失時不可退回歷史版本），或找其他明確指定的 `source.root_dir`，再以 `run_design_pipeline` 送出（立即回傳
 `job_id`／`run_id`）→ `get_job_status` 輪詢 → `get_run_report` 讀逐階段證據。
 `check_mesh_integrity` 與 `slice_for_print` 可單獨使用，也接受 ModelSpec 以外的檔案。
 

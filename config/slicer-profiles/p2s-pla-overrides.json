@@ -1,5 +1,5 @@
 {
-  "_source": "tmp/lab-station-slicing-v80/slice_candidate.py mode normal-support-small-knobs (lines 7, 9, 10)",
+  "_source": "models/lab-station-v80/檢查結果/overrides.json (accepted normal-support-brim3)",
   "enable_support": "1",
   "support_type": "normal(auto)",
   "support_on_build_plate_only": "0",

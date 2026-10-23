@@ -10,7 +10,9 @@ from scripts.verify import design_pipeline_verify_real as real
 from src.infrastructure.tools_config import load_tools_config
 
 ROOT = Path(__file__).resolve().parents[3]
-CONTRACT = json.loads((ROOT / "scripts/verify/contracts/design_pipeline_v78.json").read_text())
+CONTRACT = json.loads(
+    (ROOT / "scripts/verify/contracts/archive/design_pipeline_v78.json").read_text()
+)
 EXPECT = CONTRACT["expect"]
 
 

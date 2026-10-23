@@ -19,3 +19,5 @@
 簡化基線：[12-simple-concept](12-simple-concept.md)。
 
 電極臂延伸：[13-electrode-arm](13-electrode-arm.md)。
+
+Claude存取v80交付件：[v80-claude-handoff](v80-claude-handoff.md)；管線輸入：[v80-model-spec.json](v80-model-spec.json)。

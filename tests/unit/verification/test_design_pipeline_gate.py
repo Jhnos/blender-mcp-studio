@@ -14,7 +14,7 @@ import pytest
 from scripts.verify import design_gate_checks as gate
 
 ROOT = Path(__file__).resolve().parents[3]
-CONTRACT = json.loads((ROOT / "scripts/verify/contracts/design_pipeline_v78.json").read_text())
+CONTRACT = json.loads((ROOT / "scripts/verify/contracts/design_pipeline_v80.json").read_text())
 EXPECT = CONTRACT["expect"]
 OUT_3MF = "print/整機69件-單盤排版-v78-P2S-PLA.3mf"
 BAD_REL = "STL/列印零件/x.stl"
@@ -333,7 +333,7 @@ def test_real_ci_runs_the_design_pipeline_gate_after_the_determinism_probe() -> 
     probe = ci.index("hand-compact build determinism within budget")
     line = ci.index(
         "scripts/verify/design_pipeline_verify_real.py "
-        "scripts/verify/contracts/design_pipeline_v78.json"
+        "scripts/verify/contracts/design_pipeline_v80.json"
     )
     assert probe < line
     wired = next(t for t in ci.splitlines() if "design_pipeline_verify_real.py" in t)

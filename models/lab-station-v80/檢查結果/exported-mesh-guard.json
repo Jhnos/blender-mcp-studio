@@ -1,0 +1,416 @@
+[
+  {
+    "file": "3D/Objects/object_11.model",
+    "object_id": "21",
+    "triangles": 12,
+    "surface": "pass"
+  },
+  {
+    "file": "3D/Objects/object_56.model",
+    "object_id": "111",
+    "triangles": 396,
+    "surface": "pass"
+  },
+  {
+    "file": "3D/Objects/object_61.model",
+    "object_id": "121",
+    "triangles": 324,
+    "surface": "pass"
+  },
+  {
+    "file": "3D/Objects/object_52.model",
+    "object_id": "103",
+    "triangles": 396,
+    "surface": "pass"
+  },
+  {
+    "file": "3D/Objects/object_35.model",
+    "object_id": "69",
+    "triangles": 416,
+    "surface": "pass"
+  },
+  {
+    "file": "3D/Objects/object_12.model",
+    "object_id": "23",
+    "triangles": 2046,
+    "surface": "pass"
+  },
+  {
+    "file": "3D/Objects/object_13.model",
+    "object_id": "25",
+    "triangles": 2576,
+    "surface": "pass"
+  },
+  {
+    "file": "3D/Objects/object_57.model",
+    "object_id": "113",
+    "triangles": 396,
+    "surface": "pass"
+  },
+  {
+    "file": "3D/Objects/object_62.model",
+    "object_id": "123",
+    "triangles": 324,
+    "surface": "pass"
+  },
+  {
+    "file": "3D/Objects/object_53.model",
+    "object_id": "105",
+    "triangles": 396,
+    "surface": "pass"
+  },
+  {
+    "file": "3D/Objects/object_63.model",
+    "object_id": "125",
+    "triangles": 324,
+    "surface": "pass"
+  },
+  {
+    "file": "3D/Objects/object_58.model",
+    "object_id": "115",
+    "triangles": 324,
+    "surface": "pass"
+  },
+  {
+    "file": "3D/Objects/object_64.model",
+    "object_id": "127",
+    "triangles": 324,
+    "surface": "pass"
+  },
+  {
+    "file": "3D/Objects/object_59.model",
+    "object_id": "117",
+    "triangles": 324,
+    "surface": "pass"
+  },
+  {
+    "file": "3D/Objects/object_18.model",
+    "object_id": "35",
+    "triangles": 706,
+    "surface": "pass"
+  },
+  {
+    "file": "3D/Objects/object_36.model",
+    "object_id": "71",
+    "triangles": 892,
+    "surface": "pass"
+  },
+  {
+    "file": "3D/Objects/object_65.model",
+    "object_id": "129",
+    "triangles": 324,
+    "surface": "pass"
+  },
+  {
+    "file": "3D/Objects/object_14.model",
+    "object_id": "27",
+    "triangles": 1022,
+    "surface": "pass"
+  },
+  {
+    "file": "3D/Objects/object_26.model",
+    "object_id": "51",
+    "triangles": 1304,
+    "surface": "pass"
+  },
+  {
+    "file": "3D/Objects/object_60.model",
+    "object_id": "119",
+    "triangles": 324,
+    "surface": "pass"
+  },
+  {
+    "file": "3D/Objects/object_37.model",
+    "object_id": "73",
+    "triangles": 650,
+    "surface": "pass"
+  },
+  {
+    "file": "3D/Objects/object_66.model",
+    "object_id": "131",
+    "triangles": 324,
+    "surface": "pass"
+  },
+  {
+    "file": "3D/Objects/object_54.model",
+    "object_id": "107",
+    "triangles": 764,
+    "surface": "pass"
+  },
+  {
+    "file": "3D/Objects/object_19.model",
+    "object_id": "37",
+    "triangles": 750,
+    "surface": "pass"
+  },
+  {
+    "file": "3D/Objects/object_67.model",
+    "object_id": "133",
+    "triangles": 324,
+    "surface": "pass"
+  },
+  {
+    "file": "3D/Objects/object_43.model",
+    "object_id": "85",
+    "triangles": 650,
+    "surface": "pass"
+  },
+  {
+    "file": "3D/Objects/object_68.model",
+    "object_id": "135",
+    "triangles": 324,
+    "surface": "pass"
+  },
+  {
+    "file": "3D/Objects/object_38.model",
+    "object_id": "75",
+    "triangles": 764,
+    "surface": "pass"
+  },
+  {
+    "file": "3D/Objects/object_9.model",
+    "object_id": "17",
+    "triangles": 4438,
+    "surface": "pass"
+  },
+  {
+    "file": "3D/Objects/object_69.model",
+    "object_id": "137",
+    "triangles": 324,
+    "surface": "pass"
+  },
+  {
+    "file": "3D/Objects/object_27.model",
+    "object_id": "53",
+    "triangles": 892,
+    "surface": "pass"
+  },
+  {
+    "file": "3D/Objects/object_20.model",
+    "object_id": "39",
+    "triangles": 892,
+    "surface": "pass"
+  },
+  {
+    "file": "3D/Objects/object_39.model",
+    "object_id": "77",
+    "triangles": 396,
+    "surface": "pass"
+  },
+  {
+    "file": "3D/Objects/object_10.model",
+    "object_id": "19",
+    "triangles": 380,
+    "surface": "pass"
+  },
+  {
+    "file": "3D/Objects/object_44.model",
+    "object_id": "87",
+    "triangles": 764,
+    "surface": "pass"
+  },
+  {
+    "file": "3D/Objects/object_55.model",
+    "object_id": "109",
+    "triangles": 764,
+    "surface": "pass"
+  },
+  {
+    "file": "3D/Objects/object_41.model",
+    "object_id": "81",
+    "triangles": 484,
+    "surface": "pass"
+  },
+  {
+    "file": "3D/Objects/object_28.model",
+    "object_id": "55",
+    "triangles": 814,
+    "surface": "pass"
+  },
+  {
+    "file": "3D/Objects/object_22.model",
+    "object_id": "43",
+    "triangles": 892,
+    "surface": "pass"
+  },
+  {
+    "file": "3D/Objects/object_40.model",
+    "object_id": "79",
+    "triangles": 764,
+    "surface": "pass"
+  },
+  {
+    "file": "3D/Objects/object_21.model",
+    "object_id": "41",
+    "triangles": 706,
+    "surface": "pass"
+  },
+  {
+    "file": "3D/Objects/object_45.model",
+    "object_id": "89",
+    "triangles": 764,
+    "surface": "pass"
+  },
+  {
+    "file": "3D/Objects/object_42.model",
+    "object_id": "83",
+    "triangles": 764,
+    "surface": "pass"
+  },
+  {
+    "file": "3D/Objects/object_30.model",
+    "object_id": "59",
+    "triangles": 396,
+    "surface": "pass"
+  },
+  {
+    "file": "3D/Objects/object_15.model",
+    "object_id": "29",
+    "triangles": 1992,
+    "surface": "pass"
+  },
+  {
+    "file": "3D/Objects/object_23.model",
+    "object_id": "45",
+    "triangles": 746,
+    "surface": "pass"
+  },
+  {
+    "file": "3D/Objects/object_1.model",
+    "object_id": "1",
+    "triangles": 7334,
+    "surface": "pass"
+  },
+  {
+    "file": "3D/Objects/object_46.model",
+    "object_id": "91",
+    "triangles": 764,
+    "surface": "pass"
+  },
+  {
+    "file": "3D/Objects/object_16.model",
+    "object_id": "31",
+    "triangles": 750,
+    "surface": "pass"
+  },
+  {
+    "file": "3D/Objects/object_31.model",
+    "object_id": "61",
+    "triangles": 892,
+    "surface": "pass"
+  },
+  {
+    "file": "3D/Objects/object_47.model",
+    "object_id": "93",
+    "triangles": 764,
+    "surface": "pass"
+  },
+  {
+    "file": "3D/Objects/object_17.model",
+    "object_id": "33",
+    "triangles": 746,
+    "surface": "pass"
+  },
+  {
+    "file": "3D/Objects/object_32.model",
+    "object_id": "63",
+    "triangles": 892,
+    "surface": "pass"
+  },
+  {
+    "file": "3D/Objects/object_33.model",
+    "object_id": "65",
+    "triangles": 376,
+    "surface": "pass"
+  },
+  {
+    "file": "3D/Objects/object_5.model",
+    "object_id": "9",
+    "triangles": 6370,
+    "surface": "pass"
+  },
+  {
+    "file": "3D/Objects/object_34.model",
+    "object_id": "67",
+    "triangles": 542,
+    "surface": "pass"
+  },
+  {
+    "file": "3D/Objects/object_49.model",
+    "object_id": "97",
+    "triangles": 764,
+    "surface": "pass"
+  },
+  {
+    "file": "3D/Objects/object_48.model",
+    "object_id": "95",
+    "triangles": 764,
+    "surface": "pass"
+  },
+  {
+    "file": "3D/Objects/object_8.model",
+    "object_id": "15",
+    "triangles": 3116,
+    "surface": "pass"
+  },
+  {
+    "file": "3D/Objects/object_50.model",
+    "object_id": "99",
+    "triangles": 484,
+    "surface": "pass"
+  },
+  {
+    "file": "3D/Objects/object_25.model",
+    "object_id": "49",
+    "triangles": 1572,
+    "surface": "pass"
+  },
+  {
+    "file": "3D/Objects/object_2.model",
+    "object_id": "3",
+    "triangles": 3928,
+    "surface": "pass"
+  },
+  {
+    "file": "3D/Objects/object_51.model",
+    "object_id": "101",
+    "triangles": 764,
+    "surface": "pass"
+  },
+  {
+    "file": "3D/Objects/object_7.model",
+    "object_id": "13",
+    "triangles": 4780,
+    "surface": "pass"
+  },
+  {
+    "file": "3D/Objects/object_6.model",
+    "object_id": "11",
+    "triangles": 3116,
+    "surface": "pass"
+  },
+  {
+    "file": "3D/Objects/object_4.model",
+    "object_id": "7",
+    "triangles": 6360,
+    "surface": "pass"
+  },
+  {
+    "file": "3D/Objects/object_29.model",
+    "object_id": "57",
+    "triangles": 9830,
+    "surface": "pass"
+  },
+  {
+    "file": "3D/Objects/object_24.model",
+    "object_id": "47",
+    "triangles": 9830,
+    "surface": "pass"
+  },
+  {
+    "file": "3D/Objects/object_3.model",
+    "object_id": "5",
+    "triangles": 6900,
+    "surface": "pass"
+  }
+]

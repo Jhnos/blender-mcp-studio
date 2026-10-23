@@ -36,7 +36,7 @@ def test_import_limits_are_loaded_from_yaml(tmp_path: Path) -> None:
 
 def test_shipped_yaml_carries_the_measured_limits() -> None:
     limits = load_tools_config(env={}).import_limits
-    assert limits.max_stl_files == 565 and limits.max_3mf_bytes == 7036310
+    assert limits.max_stl_files == 565 and limits.max_3mf_bytes == 5 * 23143845
 
 
 @pytest.mark.parametrize(

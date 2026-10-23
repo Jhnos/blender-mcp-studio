@@ -1,0 +1,1106 @@
+[
+  {
+    "object": "LS_FIT_lid",
+    "file": "\u5217\u5370\u96f6\u4ef6/LS_FIT_lid.stl",
+    "x": 4.0,
+    "y": 4.0,
+    "dimensions": [
+      65.9999771118164,
+      150.0,
+      230.0
+    ],
+    "perm": [
+      2,
+      1,
+      0
+    ]
+  },
+  {
+    "object": "LS_FIT_chassis",
+    "file": "\u5217\u5370\u96f6\u4ef6/LS_FIT_chassis.stl",
+    "x": 72.9999771118164,
+    "y": 4.0,
+    "dimensions": [
+      163.0,
+      76.00000762939453,
+      230.0
+    ],
+    "perm": [
+      1,
+      2,
+      0
+    ]
+  },
+  {
+    "object": "LS_FIT_lcd_back",
+    "file": "\u5217\u5370\u96f6\u4ef6/LS_FIT_lcd_back.stl",
+    "x": 4.0,
+    "y": 157.0,
+    "dimensions": [
+      127.99999237060547,
+      53.999996185302734,
+      164.99998474121094
+    ],
+    "perm": [
+      1,
+      2,
+      0
+    ]
+  },
+  {
+    "object": "S_capillary_base",
+    "file": "\u5217\u5370\u96f6\u4ef6/S_capillary_base.stl",
+    "x": 134.99999237060547,
+    "y": 83.00000762939453,
+    "dimensions": [
+      48.0,
+      48.03495788574219,
+      57.46842956542969
+    ],
+    "perm": [
+      2,
+      1,
+      0
+    ]
+  },
+  {
+    "object": "S_pH_temp_base",
+    "file": "\u5217\u5370\u96f6\u4ef6/S_pH_temp_base.stl",
+    "x": 72.9999771118164,
+    "y": 83.00000762939453,
+    "dimensions": [
+      48.0,
+      48.03498077392578,
+      57.46842956542969
+    ],
+    "perm": [
+      2,
+      1,
+      0
+    ]
+  },
+  {
+    "object": "TE_pH_temp_three_point_elbow",
+    "file": "\u5217\u5370\u96f6\u4ef6/TE_pH_temp_three_point_elbow.stl",
+    "x": 185.99999237060547,
+    "y": 83.00000762939453,
+    "dimensions": [
+      55.99999237060547,
+      18.400009155273438,
+      60.000003814697266
+    ],
+    "perm": [
+      1,
+      2,
+      0
+    ]
+  },
+  {
+    "object": "S_pH_temp_head",
+    "file": "\u5217\u5370\u96f6\u4ef6/S_pH_temp_head.stl",
+    "x": 4.0,
+    "y": 213.99999618530273,
+    "dimensions": [
+      46.00000762939453,
+      22.000003814697266,
+      58.00000762939453
+    ],
+    "perm": [
+      0,
+      2,
+      1
+    ]
+  },
+  {
+    "object": "TE_capillary_three_point_elbow",
+    "file": "\u5217\u5370\u96f6\u4ef6/TE_capillary_three_point_elbow.stl",
+    "x": 53.00000762939453,
+    "y": 213.99999618530273,
+    "dimensions": [
+      55.99999237060547,
+      18.399991989135742,
+      60.000003814697266
+    ],
+    "perm": [
+      1,
+      2,
+      0
+    ]
+  },
+  {
+    "object": "S_capillary_head",
+    "file": "\u5217\u5370\u96f6\u4ef6/S_capillary_head.stl",
+    "x": 112.0,
+    "y": 213.99999618530273,
+    "dimensions": [
+      35.40010070800781,
+      22.000003814697266,
+      40.00000762939453
+    ],
+    "perm": [
+      0,
+      2,
+      1
+    ]
+  },
+  {
+    "object": "LS_FIT_spill_dish",
+    "file": "\u5217\u5370\u96f6\u4ef6/LS_FIT_spill_dish.stl",
+    "x": 4.0,
+    "y": 239.0,
+    "dimensions": [
+      102.0,
+      9.0,
+      102.0
+    ],
+    "perm": [
+      0,
+      2,
+      1
+    ]
+  },
+  {
+    "object": "LS_FIT_sample_tray",
+    "file": "\u5217\u5370\u96f6\u4ef6/LS_FIT_sample_tray.stl",
+    "x": 72.9999771118164,
+    "y": 134.0349884033203,
+    "dimensions": [
+      150.0,
+      6.0,
+      230.0
+    ],
+    "perm": [
+      1,
+      2,
+      0
+    ]
+  },
+  {
+    "object": "TE_capillary_three_point_wrist",
+    "file": "\u5217\u5370\u96f6\u4ef6/TE_capillary_three_point_wrist.stl",
+    "x": 134.99999237060547,
+    "y": 143.0349884033203,
+    "dimensions": [
+      14.535892486572266,
+      52.0,
+      65.56293487548828
+    ],
+    "perm": [
+      2,
+      0,
+      1
+    ]
+  },
+  {
+    "object": "RH_rear_cover",
+    "file": "\u5217\u5370\u96f6\u4ef6/RH_rear_cover.stl",
+    "x": 150.4001007080078,
+    "y": 198.0349884033203,
+    "dimensions": [
+      68.5,
+      9.000003814697266,
+      210.0
+    ],
+    "perm": [
+      1,
+      2,
+      0
+    ]
+  },
+  {
+    "object": "LS_FIT_lcd_front",
+    "file": "\u5217\u5370\u96f6\u4ef6/LS_FIT_lcd_front.stl",
+    "x": 225.9999771118164,
+    "y": 104.40001678466797,
+    "dimensions": [
+      6.0,
+      110.0,
+      150.0
+    ],
+    "perm": [
+      2,
+      1,
+      0
+    ]
+  },
+  {
+    "object": "TE_pH_temp_three_point_wrist",
+    "file": "\u5217\u5370\u96f6\u4ef6/TE_pH_temp_three_point_wrist.stl",
+    "x": 150.4001007080078,
+    "y": 210.03499221801758,
+    "dimensions": [
+      52.0,
+      16.063674926757812,
+      55.24594497680664
+    ],
+    "perm": [
+      0,
+      2,
+      1
+    ]
+  },
+  {
+    "object": "TE_capillary_A_knob",
+    "file": "\u5217\u5370\u96f6\u4ef6/TE_capillary_A_knob.stl",
+    "x": 238.9999771118164,
+    "y": 4.0,
+    "dimensions": [
+      10.000000953674316,
+      21.42572593688965,
+      22.0
+    ],
+    "perm": [
+      2,
+      1,
+      0
+    ]
+  },
+  {
+    "object": "S_capillary_shoulder_knob",
+    "file": "\u5217\u5370\u96f6\u4ef6/S_capillary_shoulder_knob.stl",
+    "x": 238.9999771118164,
+    "y": 28.42572593688965,
+    "dimensions": [
+      10.000001907348633,
+      24.471824645996094,
+      25.0
+    ],
+    "perm": [
+      2,
+      1,
+      0
+    ]
+  },
+  {
+    "object": "TE_capillary_P_knob",
+    "file": "\u5217\u5370\u96f6\u4ef6/TE_capillary_P_knob.stl",
+    "x": 72.9999771118164,
+    "y": 143.0349884033203,
+    "dimensions": [
+      21.42572593688965,
+      10.000000953674316,
+      22.0
+    ],
+    "perm": [
+      1,
+      2,
+      0
+    ]
+  },
+  {
+    "object": "TE_pH_temp_A_knob",
+    "file": "\u5217\u5370\u96f6\u4ef6/TE_pH_temp_A_knob.stl",
+    "x": 109.0,
+    "y": 239.0,
+    "dimensions": [
+      21.42572593688965,
+      10.000000953674316,
+      22.0
+    ],
+    "perm": [
+      1,
+      2,
+      0
+    ]
+  },
+  {
+    "object": "TE_pH_temp_follower",
+    "file": "\u5217\u5370\u96f6\u4ef6/TE_pH_temp_follower.stl",
+    "x": 123.9999771118164,
+    "y": 83.00000762939453,
+    "dimensions": [
+      8.0,
+      20.0,
+      170.00001525878906
+    ],
+    "perm": [
+      2,
+      1,
+      0
+    ]
+  },
+  {
+    "object": "TE_pH_temp_P_knob",
+    "file": "\u5217\u5370\u96f6\u4ef6/TE_pH_temp_P_knob.stl",
+    "x": 133.42572593688965,
+    "y": 239.0,
+    "dimensions": [
+      21.42572593688965,
+      10.000000953674316,
+      22.0
+    ],
+    "perm": [
+      1,
+      2,
+      0
+    ]
+  },
+  {
+    "object": "TE_pH_temp_lower",
+    "file": "\u5217\u5370\u96f6\u4ef6/TE_pH_temp_lower.stl",
+    "x": 123.9999771118164,
+    "y": 106.00000762939453,
+    "dimensions": [
+      8.0,
+      20.0,
+      170.00001525878906
+    ],
+    "perm": [
+      2,
+      1,
+      0
+    ]
+  },
+  {
+    "object": "S_pH_temp_shoulder_knob",
+    "file": "\u5217\u5370\u96f6\u4ef6/S_pH_temp_shoulder_knob.stl",
+    "x": 185.99999237060547,
+    "y": 104.40001678466797,
+    "dimensions": [
+      10.000001907348633,
+      24.471824645996094,
+      25.0
+    ],
+    "perm": [
+      2,
+      1,
+      0
+    ]
+  },
+  {
+    "object": "S_pH_temp_upper",
+    "file": "\u5217\u5370\u96f6\u4ef6/S_pH_temp_upper.stl",
+    "x": 234.9999771118164,
+    "y": 104.40001678466797,
+    "dimensions": [
+      8.80002212524414,
+      22.000022888183594,
+      172.0000762939453
+    ],
+    "perm": [
+      2,
+      1,
+      0
+    ]
+  },
+  {
+    "object": "S_pH_temp_clamp_cap",
+    "file": "\u5217\u5370\u96f6\u4ef6/S_pH_temp_clamp_cap.stl",
+    "x": 157.8514518737793,
+    "y": 229.0986671447754,
+    "dimensions": [
+      9.600001335144043,
+      18.0,
+      46.0
+    ],
+    "perm": [
+      2,
+      1,
+      0
+    ]
+  },
+  {
+    "object": "S_capillary_clamp_cap",
+    "file": "\u5217\u5370\u96f6\u4ef6/S_capillary_clamp_cap.stl",
+    "x": 238.9999771118164,
+    "y": 55.89755058288574,
+    "dimensions": [
+      9.600001335144043,
+      18.0,
+      30.000083923339844
+    ],
+    "perm": [
+      2,
+      1,
+      0
+    ]
+  },
+  {
+    "object": "S_capillary_upper_follower",
+    "file": "\u5217\u5370\u96f6\u4ef6/S_capillary_upper_follower.stl",
+    "x": 97.42570304870605,
+    "y": 143.0349884033203,
+    "dimensions": [
+      20.0,
+      8.0,
+      170.00001525878906
+    ],
+    "perm": [
+      1,
+      2,
+      0
+    ]
+  },
+  {
+    "object": "LS_ROUTE_pH_temp_upper",
+    "file": "\u5217\u5370\u96f6\u4ef6/LS_ROUTE_pH_temp_upper.stl",
+    "x": 234.9999771118164,
+    "y": 129.40003967285156,
+    "dimensions": [
+      8.000000953674316,
+      17.600000381469727,
+      18.95692253112793
+    ],
+    "perm": [
+      2,
+      1,
+      0
+    ]
+  },
+  {
+    "object": "S_capillary_upper",
+    "file": "\u5217\u5370\u96f6\u4ef6/S_capillary_upper.stl",
+    "x": 198.9999942779541,
+    "y": 104.40001678466797,
+    "dimensions": [
+      22.000022888183594,
+      8.80002212524414,
+      172.0000762939453
+    ],
+    "perm": [
+      1,
+      2,
+      0
+    ]
+  },
+  {
+    "object": "S_pH_temp_clamp_liner_0",
+    "file": "\u5217\u5370\u96f6\u4ef6/S_pH_temp_clamp_liner_0.stl",
+    "x": 170.45145320892334,
+    "y": 229.0986671447754,
+    "dimensions": [
+      8.0,
+      16.186893463134766,
+      20.599998474121094
+    ],
+    "perm": [
+      2,
+      0,
+      1
+    ]
+  },
+  {
+    "object": "TE_capillary_follower",
+    "file": "\u5217\u5370\u96f6\u4ef6/TE_capillary_follower.stl",
+    "x": 198.9999942779541,
+    "y": 116.20003890991211,
+    "dimensions": [
+      20.0,
+      8.0,
+      170.00001525878906
+    ],
+    "perm": [
+      1,
+      2,
+      0
+    ]
+  },
+  {
+    "object": "TE_capillary_lower",
+    "file": "\u5217\u5370\u96f6\u4ef6/TE_capillary_lower.stl",
+    "x": 181.45145320892334,
+    "y": 229.0986671447754,
+    "dimensions": [
+      20.0,
+      8.0,
+      170.00001525878906
+    ],
+    "perm": [
+      1,
+      2,
+      0
+    ]
+  },
+  {
+    "object": "LS_ROUTE_capillary_upper",
+    "file": "\u5217\u5370\u96f6\u4ef6/LS_ROUTE_capillary_upper.stl",
+    "x": 205.4001007080078,
+    "y": 210.03499221801758,
+    "dimensions": [
+      15.59999942779541,
+      8.000000953674316,
+      18.95692253112793
+    ],
+    "perm": [
+      1,
+      2,
+      0
+    ]
+  },
+  {
+    "object": "LS_ROUTE_pH_temp_lower",
+    "file": "\u5217\u5370\u96f6\u4ef6/LS_ROUTE_pH_temp_lower.stl",
+    "x": 224.00010013580322,
+    "y": 217.40001678466797,
+    "dimensions": [
+      17.600000381469727,
+      8.000000953674316,
+      18.95692253112793
+    ],
+    "perm": [
+      1,
+      2,
+      0
+    ]
+  },
+  {
+    "object": "LS_ROUTE_capillary_lower",
+    "file": "\u5217\u5370\u96f6\u4ef6/LS_ROUTE_capillary_lower.stl",
+    "x": 205.4001007080078,
+    "y": 221.0349931716919,
+    "dimensions": [
+      15.59999942779541,
+      8.000000953674316,
+      18.95692253112793
+    ],
+    "perm": [
+      1,
+      2,
+      0
+    ]
+  },
+  {
+    "object": "S_pH_temp_upper_follower",
+    "file": "\u5217\u5370\u96f6\u4ef6/S_pH_temp_upper_follower.stl",
+    "x": 181.45145320892334,
+    "y": 240.0986671447754,
+    "dimensions": [
+      20.0,
+      8.0,
+      170.00001525878906
+    ],
+    "perm": [
+      1,
+      2,
+      0
+    ]
+  },
+  {
+    "object": "S_pH_temp_tip_knob",
+    "file": "\u5217\u5370\u96f6\u4ef6/S_pH_temp_tip_knob.stl",
+    "x": 234.9999771118164,
+    "y": 150.0000400543213,
+    "dimensions": [
+      7.500004768371582,
+      16.703277587890625,
+      16.992416381835938
+    ],
+    "perm": [
+      2,
+      0,
+      1
+    ]
+  },
+  {
+    "object": "RH_75_pin",
+    "file": "\u5217\u5370\u96f6\u4ef6/RH_75_pin.stl",
+    "x": 134.99999237060547,
+    "y": 198.0349884033203,
+    "dimensions": [
+      9.0,
+      9.000003814697266,
+      22.0
+    ],
+    "perm": [
+      2,
+      1,
+      0
+    ]
+  },
+  {
+    "object": "S_pH_temp_clamp_liner_1",
+    "file": "\u5217\u5370\u96f6\u4ef6/S_pH_temp_clamp_liner_1.stl",
+    "x": 204.45145320892334,
+    "y": 232.0349941253662,
+    "dimensions": [
+      8.0,
+      16.186893463134766,
+      20.599998474121094
+    ],
+    "perm": [
+      2,
+      0,
+      1
+    ]
+  },
+  {
+    "object": "TE_pH_temp_C_pin",
+    "file": "\u5217\u5370\u96f6\u4ef6/TE_pH_temp_C_pin.stl",
+    "x": 120.42570304870605,
+    "y": 143.0349884033203,
+    "dimensions": [
+      9.0,
+      9.0,
+      22.0
+    ],
+    "perm": [
+      2,
+      1,
+      0
+    ]
+  },
+  {
+    "object": "RH_101_thumb_knob",
+    "file": "\u5217\u5370\u96f6\u4ef6/RH_101_thumb_knob.stl",
+    "x": 234.9999771118164,
+    "y": 169.7033176422119,
+    "dimensions": [
+      13.0,
+      6.0,
+      13.0
+    ],
+    "perm": [
+      1,
+      2,
+      0
+    ]
+  },
+  {
+    "object": "TE_capillary_C_pin",
+    "file": "\u5217\u5370\u96f6\u4ef6/TE_capillary_C_pin.stl",
+    "x": 234.9999771118164,
+    "y": 178.7033176422119,
+    "dimensions": [
+      9.0,
+      9.0,
+      22.00005531311035
+    ],
+    "perm": [
+      1,
+      2,
+      0
+    ]
+  },
+  {
+    "object": "S_capillary_tip_knob",
+    "file": "\u5217\u5370\u96f6\u4ef6/S_capillary_tip_knob.stl",
+    "x": 224.00010013580322,
+    "y": 228.40001773834229,
+    "dimensions": [
+      7.500021934509277,
+      16.992412567138672,
+      16.70327377319336
+    ],
+    "perm": [
+      2,
+      1,
+      0
+    ]
+  },
+  {
+    "object": "TE_pH_temp_B_pin",
+    "file": "\u5217\u5370\u96f6\u4ef6/TE_pH_temp_B_pin.stl",
+    "x": 234.9999771118164,
+    "y": 190.7033176422119,
+    "dimensions": [
+      9.0,
+      9.0,
+      19.899999618530273
+    ],
+    "perm": [
+      2,
+      1,
+      0
+    ]
+  },
+  {
+    "object": "TE_pH_temp_D_pin",
+    "file": "\u5217\u5370\u96f6\u4ef6/TE_pH_temp_D_pin.stl",
+    "x": 234.9999771118164,
+    "y": 202.7033176422119,
+    "dimensions": [
+      9.0,
+      9.0,
+      19.899999618530273
+    ],
+    "perm": [
+      2,
+      1,
+      0
+    ]
+  },
+  {
+    "object": "TE_capillary_D_pin",
+    "file": "\u5217\u5370\u96f6\u4ef6/TE_capillary_D_pin.stl",
+    "x": 234.5001220703125,
+    "y": 228.40001773834229,
+    "dimensions": [
+      9.0,
+      9.0,
+      19.900049209594727
+    ],
+    "perm": [
+      2,
+      1,
+      0
+    ]
+  },
+  {
+    "object": "S_pH_temp_follower_shoulder_pin",
+    "file": "\u5217\u5370\u96f6\u4ef6/S_pH_temp_follower_shoulder_pin.stl",
+    "x": 152.53588485717773,
+    "y": 143.0349884033203,
+    "dimensions": [
+      9.0,
+      9.0,
+      32.0
+    ],
+    "perm": [
+      1,
+      2,
+      0
+    ]
+  },
+  {
+    "object": "TE_capillary_B_pin",
+    "file": "\u5217\u5370\u96f6\u4ef6/TE_capillary_B_pin.stl",
+    "x": 152.53588485717773,
+    "y": 155.0349884033203,
+    "dimensions": [
+      9.0,
+      9.0,
+      19.899999618530273
+    ],
+    "perm": [
+      2,
+      1,
+      0
+    ]
+  },
+  {
+    "object": "TE_capillary_R_pin",
+    "file": "\u5217\u5370\u96f6\u4ef6/TE_capillary_R_pin.stl",
+    "x": 152.53588485717773,
+    "y": 167.0349884033203,
+    "dimensions": [
+      9.0,
+      9.0,
+      32.0
+    ],
+    "perm": [
+      2,
+      1,
+      0
+    ]
+  },
+  {
+    "object": "RH_-101_thumb_knob",
+    "file": "\u5217\u5370\u96f6\u4ef6/RH_-101_thumb_knob.stl",
+    "x": 152.53588485717773,
+    "y": 179.0349884033203,
+    "dimensions": [
+      6.0,
+      13.0,
+      13.0
+    ],
+    "perm": [
+      2,
+      0,
+      1
+    ]
+  },
+  {
+    "object": "S_capillary_follower_shoulder_pin",
+    "file": "\u5217\u5370\u96f6\u4ef6/S_capillary_follower_shoulder_pin.stl",
+    "x": 161.53588485717773,
+    "y": 179.0349884033203,
+    "dimensions": [
+      9.0,
+      9.0,
+      32.0
+    ],
+    "perm": [
+      2,
+      1,
+      0
+    ]
+  },
+  {
+    "object": "S_capillary_clamp_liner_1",
+    "file": "\u5217\u5370\u96f6\u4ef6/S_capillary_clamp_liner_1.stl",
+    "x": 215.45145320892334,
+    "y": 232.0349941253662,
+    "dimensions": [
+      5.000000476837158,
+      10.186920166015625,
+      20.599998474121094
+    ],
+    "perm": [
+      2,
+      0,
+      1
+    ]
+  },
+  {
+    "object": "S_capillary_clamp_liner_0",
+    "file": "\u5217\u5370\u96f6\u4ef6/S_capillary_clamp_liner_0.stl",
+    "x": 234.5001220703125,
+    "y": 240.40001773834229,
+    "dimensions": [
+      10.186920166015625,
+      5.000000476837158,
+      20.599998474121094
+    ],
+    "perm": [
+      0,
+      2,
+      1
+    ]
+  },
+  {
+    "object": "RH_-75_pin",
+    "file": "\u5217\u5370\u96f6\u4ef6/RH_-75_pin.stl",
+    "x": 164.53588485717773,
+    "y": 143.0349884033203,
+    "dimensions": [
+      9.000003814697266,
+      9.0,
+      22.0
+    ],
+    "perm": [
+      1,
+      2,
+      0
+    ]
+  },
+  {
+    "object": "TE_pH_temp_R_pin",
+    "file": "\u5217\u5370\u96f6\u4ef6/TE_pH_temp_R_pin.stl",
+    "x": 164.53588485717773,
+    "y": 155.0349884033203,
+    "dimensions": [
+      9.0,
+      9.0,
+      32.0
+    ],
+    "perm": [
+      1,
+      2,
+      0
+    ]
+  },
+  {
+    "object": "S_pH_temp_clamp_liner_2",
+    "file": "\u5217\u5370\u96f6\u4ef6/S_pH_temp_clamp_liner_2.stl",
+    "x": 164.53588485717773,
+    "y": 167.0349884033203,
+    "dimensions": [
+      10.186890602111816,
+      5.000000476837158,
+      20.599998474121094
+    ],
+    "perm": [
+      0,
+      2,
+      1
+    ]
+  },
+  {
+    "object": "S_pH_temp_clamp_liner_3",
+    "file": "\u5217\u5370\u96f6\u4ef6/S_pH_temp_clamp_liner_3.stl",
+    "x": 176.53588485717773,
+    "y": 155.0349884033203,
+    "dimensions": [
+      10.186890602111816,
+      5.000000476837158,
+      20.599998474121094
+    ],
+    "perm": [
+      0,
+      2,
+      1
+    ]
+  },
+  {
+    "object": "RH_-75_clip",
+    "file": "\u5217\u5370\u96f6\u4ef6/RH_-75_clip.stl",
+    "x": 176.535888671875,
+    "y": 143.0349884033203,
+    "dimensions": [
+      8.732842445373535,
+      9.0,
+      1.399999976158142
+    ],
+    "perm": [
+      1,
+      0,
+      2
+    ]
+  },
+  {
+    "object": "TE_capillary_B_clip",
+    "file": "\u5217\u5370\u96f6\u4ef6/TE_capillary_B_clip.stl",
+    "x": 188.26873111724854,
+    "y": 143.0349884033203,
+    "dimensions": [
+      9.0,
+      8.732842445373535,
+      1.4000012874603271
+    ],
+    "perm": [
+      0,
+      1,
+      2
+    ]
+  },
+  {
+    "object": "TE_pH_temp_R_clip",
+    "file": "\u5217\u5370\u96f6\u4ef6/TE_pH_temp_R_clip.stl",
+    "x": 173.53588485717773,
+    "y": 175.03498888015747,
+    "dimensions": [
+      8.732842445373535,
+      9.0,
+      1.3999994993209839
+    ],
+    "perm": [
+      1,
+      0,
+      2
+    ]
+  },
+  {
+    "object": "S_pH_temp_follower_shoulder_clip",
+    "file": "\u5217\u5370\u96f6\u4ef6/S_pH_temp_follower_shoulder_clip.stl",
+    "x": 177.72277545928955,
+    "y": 163.03498888015747,
+    "dimensions": [
+      8.732842445373535,
+      9.0,
+      1.3999994993209839
+    ],
+    "perm": [
+      1,
+      0,
+      2
+    ]
+  },
+  {
+    "object": "TE_capillary_C_clip",
+    "file": "\u5217\u5370\u96f6\u4ef6/TE_capillary_C_clip.stl",
+    "x": 185.26872730255127,
+    "y": 175.03498888015747,
+    "dimensions": [
+      9.0,
+      8.732842445373535,
+      1.40000319480896
+    ],
+    "perm": [
+      0,
+      1,
+      2
+    ]
+  },
+  {
+    "object": "TE_pH_temp_D_clip",
+    "file": "\u5217\u5370\u96f6\u4ef6/TE_pH_temp_D_clip.stl",
+    "x": 189.4556179046631,
+    "y": 163.03498888015747,
+    "dimensions": [
+      9.0,
+      8.732842445373535,
+      1.4000012874603271
+    ],
+    "perm": [
+      0,
+      1,
+      2
+    ]
+  },
+  {
+    "object": "S_capillary_follower_shoulder_clip",
+    "file": "\u5217\u5370\u96f6\u4ef6/S_capillary_follower_shoulder_clip.stl",
+    "x": 200.26873111724854,
+    "y": 143.0349884033203,
+    "dimensions": [
+      9.0,
+      8.732842445373535,
+      1.3999994993209839
+    ],
+    "perm": [
+      0,
+      1,
+      2
+    ]
+  },
+  {
+    "object": "TE_capillary_D_clip",
+    "file": "\u5217\u5370\u96f6\u4ef6/TE_capillary_D_clip.stl",
+    "x": 212.26873111724854,
+    "y": 143.0349884033203,
+    "dimensions": [
+      8.732842445373535,
+      9.0,
+      1.4000051021575928
+    ],
+    "perm": [
+      1,
+      0,
+      2
+    ]
+  },
+  {
+    "object": "TE_pH_temp_C_clip",
+    "file": "\u5217\u5370\u96f6\u4ef6/TE_pH_temp_C_clip.stl",
+    "x": 197.26872730255127,
+    "y": 174.767831325531,
+    "dimensions": [
+      9.0,
+      8.732842445373535,
+      1.3999994993209839
+    ],
+    "perm": [
+      0,
+      1,
+      2
+    ]
+  },
+  {
+    "object": "RH_75_clip",
+    "file": "\u5217\u5370\u96f6\u4ef6/RH_75_clip.stl",
+    "x": 209.26872730255127,
+    "y": 155.0349884033203,
+    "dimensions": [
+      9.0,
+      8.732842445373535,
+      1.399999976158142
+    ],
+    "perm": [
+      0,
+      1,
+      2
+    ]
+  },
+  {
+    "object": "TE_capillary_R_clip",
+    "file": "\u5217\u5370\u96f6\u4ef6/TE_capillary_R_clip.stl",
+    "x": 209.26872730255127,
+    "y": 166.76783084869385,
+    "dimensions": [
+      8.732842445373535,
+      9.0,
+      1.3999994993209839
+    ],
+    "perm": [
+      1,
+      0,
+      2
+    ]
+  },
+  {
+    "object": "TE_pH_temp_B_clip",
+    "file": "\u5217\u5370\u96f6\u4ef6/TE_pH_temp_B_clip.stl",
+    "x": 209.26872730255127,
+    "y": 178.76783084869385,
+    "dimensions": [
+      9.0,
+      8.732842445373535,
+      1.4000012874603271
+    ],
+    "perm": [
+      0,
+      1,
+      2
+    ]
+  }
+]
