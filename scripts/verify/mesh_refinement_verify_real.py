@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 
 from scripts.verify.generated_artifact_verify_real import BlenderSocketOracle
+from scripts.verify.mesh_rebase_verify_real import verify_mesh_rebase
 from scripts.verify.serrated_joint_verify_real import verify_serrated_joint_integration
 from src.infrastructure.narrowing import as_str_keyed_exact, required
 from src.verification.mesh_integrity import require_triangle_surface
@@ -64,6 +65,7 @@ print('Eight saved arm/platform/guide meshes and collapsed-face controls passed:
 
 def verify_mesh_refinement(root: Path) -> None:
     """Exercise preservation and repair on valid, closed-degenerate and open controls."""
+    verify_mesh_rebase(root)
     verify_mesh_preservation(root)
     verify_boolean_scale(root)
     verify_axis_cylinders(root)

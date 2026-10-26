@@ -97,3 +97,11 @@ GitHub 查找 `electrode holder 3d print clamp pH probe` 與分片夾座，檢�
 布林求解與永久自交守衛前置查找（2026-10-03）：[Blender 4.5 Manifold 說明](https://developer.blender.org/docs/release_notes/4.5/modeling/)、[官方Boolean原始碼](https://github.com/blender/blender/blob/main/source/blender/geometry/intern/mesh_boolean.cc)、[CGAL官方SWIG接口](https://github.com/CGAL/cgal-swig-bindings/blob/main/SWIG_CGAL/Polygon_mesh_processing/CGAL_Polygon_mesh_processing.i)。實測EXACT選項與MANIFOLD均不能解決重複孔壁，故保持原solver。永久mesh_integrity沿用CGAL，不重寫相交算法；新增自身拓樸及轉換保真守衛。
 
 CGAL輪子載入警告：查閱[SWIG官方issue 2881](https://github.com/swig/swig/issues/2881)，問題在內建型別metadata、修復里程碑SWIG4.4；目前CGAL可安裝最新wheel仍帶舊生成碼，未以全域warning filter掩蓋其他警告。
+
+## 原件資料座標重綁與保存驗證前置查找（2026-10-27）
+
+檢視 [trimesh registration](https://github.com/mikedh/trimesh/blob/main/trimesh/registration.py) 的配準與反射參數，以及 [Blender FBX importer](https://github.com/blender/blender-addons/blob/main/io_scene_fbx/import_fbx.py) 的座標系轉換。原件與原STL已有保真讀取路徑，本案不導入ICP或第二套網格框架；`rebase_mesh` 只接受已驗證的表面與明確矩陣，保留原座標、補償從屬座標系，配準責任仍在呼叫端。未複製外部程式。
+
+另參考 [Blender官方存取回歸測試](https://github.com/blender/blender/blob/main/tests/python/bl_blendfile_io.py) 的另存後重新載入方式；既有真機驗證器以libraries.write／append讀回自己的控制件，並逐姿態檢查實際驅動結果，不另起場景運算服務。原生修訂候選的完整輸出／驗證配方仍應透過專案腳本收斂，暫態研究腳本不屬於公開交付能力。
+
+螢幕控制責任拆分前再查找GitHub，檢視 [Blender官方Rigify機構工具](https://github.com/blender/blender/blob/main/scripts/addons_core/rigify/utils/mechanism.py) 的驅動變數／屬性路徑分離方式。本案重用既有rig驅動器與領域時序；新增的 `lab_station_screen_control` 僅綁定現有零件，避免齒盤幾何模組超過職責／行數預算，不引入Rigify依賴或複製外部碼。

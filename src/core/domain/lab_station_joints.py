@@ -74,6 +74,53 @@ class ScreenHingeSpec:
 
 
 @dataclass(frozen=True, slots=True)
+class ScreenFoldSpec:
+    """Reversible screw release → tooth release → fold → reseat → screw return.
+
+    These are nominal rigid motions, not thread or holding-force qualification.
+    One ramp description drives both numerical poses and Blender expressions.
+    """
+
+    working_angle_deg: float = 60.0
+    release_mm: float = 2.0
+    screw_mm: float = 2.0
+
+    def __post_init__(self) -> None:
+        if (
+            any(
+                not isfinite(v) or v <= 0
+                for v in (self.working_angle_deg, self.release_mm, self.screw_mm)
+            )
+            or self.screw_mm < self.release_mm
+        ):
+            raise ValueError("Screen motion requires positive dimensions and screw clearance")
+        SerratedJointSpec(release_mm=self.release_mm)
+
+    def _channels(self) -> dict[str, tuple[float, tuple[tuple[int, float], ...]]]:
+        return {
+            "angle_deg": (self.working_angle_deg, ((2, -self.working_angle_deg),)),
+            "release_mm": (0.0, ((1, self.release_mm), (3, -self.release_mm))),
+            "screw_mm": (0.0, ((0, self.screw_mm), (4, -self.screw_mm))),
+        }
+
+    def pose(self, progress: float) -> dict[str, float]:
+        if not isfinite(progress) or not 0 <= progress <= 100:
+            raise ValueError("Screen fold progress must lie within 0–100")
+        return {
+            name: offset
+            + sum(weight * min(1, max(0, progress / 20 - phase)) for phase, weight in ramps)
+            for name, (offset, ramps) in self._channels().items()
+        }
+
+    def driver_expressions(self) -> dict[str, str]:
+        return {
+            name: repr(offset)
+            + "".join(f"+({weight!r})*min(1,max(0,progress/20-{phase}))" for phase, weight in ramps)
+            for name, (offset, ramps) in self._channels().items()
+        }
+
+
+@dataclass(frozen=True, slots=True)
 class ElbowClosureSpec:
     """Sequential nominal take-up only; force starts after the rigid gaps close."""
 

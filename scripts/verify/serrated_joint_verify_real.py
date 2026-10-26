@@ -22,8 +22,84 @@ from src.verification.generator_imports import reload_modules_for
 from src.verification.mesh_integrity import require_triangle_surface
 
 
+def verify_screen_fold_binding(root: Path) -> None:
+    """Real dependency-graph readback in both directions, preserving fixture ownership."""
+    code = f"""import bpy,importlib,json,math,runpy
+for name in ('src.core.domain.lab_station_joints','scripts.lab_station_rig','scripts.lab_station_joints'):
+    importlib.reload(importlib.import_module(name))
+namespace=runpy.run_path({str(root / "scripts/lab_station_screen_control.py")!r})
+objects_before=set(bpy.data.objects)
+try:
+    screen=bpy.data.objects.new('SCREEN_SEQUENCE_fixture',None);bpy.context.collection.objects.link(screen)
+    screen.location=(0,-.049,.124);screen['fold_angle_deg']=60.0
+    child=bpy.data.objects.new('SCREEN_SEQUENCE_child',None);bpy.context.collection.objects.link(child)
+    child.parent=screen;child.location=(.02,.03,.04)
+    screw=bpy.data.objects.new('SCREEN_SEQUENCE_screw',None);bpy.context.collection.objects.link(screw)
+    screw.location=(0,.008,.009)
+    namespace['driver'](screen,screen,'rotation_euler',0,'(fold_angle_deg-60)*pi/180',('fold_angle_deg',))
+    try:namespace['driver'](screw,screen,'location',0,'progress',('progress',),property_paths=())
+    except ValueError:pass
+    else:raise AssertionError('Mismatched driver variable bindings accepted')
+    assert screw.animation_data is None,'Invalid variable binding mutated the screw'
+    for invalid in ('same_part','wrong_pose','parented_screw','wrong_rotation'):
+        screen['fold_angle_deg']=30.0 if invalid=='wrong_pose' else 60.0
+        screw.parent=screen if invalid=='parented_screw' else None
+        screen.rotation_mode='QUATERNION' if invalid=='wrong_rotation' else 'XYZ'
+        try:namespace['bind_screen_fold_control'](screen,screen if invalid=='same_part' else screw)
+        except ValueError:pass
+        else:raise AssertionError('Invalid screen binding was accepted: '+invalid)
+        assert '收折進度' not in screen and screw.animation_data is None,'Rejected binding mutated parts'
+    screen.rotation_mode='XYZ';screen['fold_angle_deg']=60.0;screw.parent=None
+    namespace['bind_screen_fold_control'](screen,screw)
+    fixture_path={str(root / "tmp/lab-station-route-engine/screen-controller-fixture.blend")!r}
+    from pathlib import Path
+    Path(fixture_path).parent.mkdir(parents=True,exist_ok=True)
+    bpy.data.libraries.write(fixture_path,{{screen,screw,child}})
+    with bpy.data.libraries.load(fixture_path,link=False) as (source,destination):
+        names=tuple(source.objects);destination.objects=list(names)
+    loaded=dict(zip(names,destination.objects))
+    for obj in destination.objects:bpy.context.collection.objects.link(obj)
+    maximum=0.0;total=0
+    fixtures=((screen,screw,child),(loaded[screen.name],loaded[screw.name],loaded[child.name]))
+    for screen,screw,child in fixtures:
+     observed=[]
+     for progress in list(range(101))+list(range(100,-1,-1)):
+         screen['收折進度']=float(progress);screen.update_tag();bpy.context.view_layer.update()
+         q=progress/20
+         # Independent phase cases; do not call the production pose evaluator.
+         if q<=1:angle,release,travel=60,0,2*q
+         elif q<=2:angle,release,travel=60,2*(q-1),2
+         elif q<=3:angle,release,travel=60*(3-q),2,2
+         elif q<=4:angle,release,travel=0,2*(4-q),2
+         else:angle,release,travel=0,0,2*(5-q)
+         actual=(screen.rotation_euler.x,screen.location.x,screw.location.x,screen['fold_angle_deg'])
+         expected=(math.radians(angle-60),release/1000,travel/1000,angle)
+         maximum=max(maximum,max(abs(a-b) for a,b in zip(actual,expected)))
+         from mathutils import Matrix,Vector
+         expected_child=Matrix.Translation((expected[1],-.049,.124)) @ Matrix.Rotation(expected[0],4,'X') @ Vector((.02,.03,.04))
+         assert (child.matrix_world.translation-expected_child).length<1e-7,f'Screen child did not follow evaluated controller at {{progress}}: {{tuple(child.matrix_world.translation)}} expected {{tuple(expected_child)}} channels {{actual}}'
+         observed.append(tuple(round(v,7) for v in actual))
+     assert maximum<1e-5,f'Screen drivers disagree with the operation sequence: {{maximum}}'
+     assert observed[:101]==list(reversed(observed[101:])),'Reverse operation depends on hidden state'
+     for owner in (screen,screw):
+         for curve in owner.animation_data.drivers:
+             assert curve.driver.is_valid,'Invalid or cyclic screen driver'
+             assert not curve.keyframe_points and not curve.modifiers,'Expression output is remapped'
+             assert len(curve.driver.variables)==1,'Old driver variables were retained'
+             assert curve.driver.variables[0].targets[0].data_path=='["收折進度"]'
+     total+=len(observed)
+    print(json.dumps({{'samples':total,'maximum_channel_error':maximum,'forward_reverse_match':True}}))
+finally:
+    for obj in list(bpy.data.objects):
+        if obj not in objects_before:bpy.data.objects.remove(obj,do_unlink=True)
+"""
+    result = BlenderSocketOracle("127.0.0.1", 9876).execute_json(code)
+    print("Screen fold sequence and evaluated descendants passed:", result)
+
+
 def verify_serrated_joint_integration(root: Path) -> None:
     """Observe each formal joint Boolean on real arm geometry; reject any defect."""
+    verify_screen_fold_binding(root)
     script = root / "scripts/model_lab_station.py"
     modules = reload_modules_for(root, script)
     code = f"""import bpy, bmesh, importlib, json, math, runpy, sys

@@ -73,12 +73,27 @@ def driver(
     axis: int,
     expression: str,
     properties: Sequence[str],
+    *,
+    identity_mapping: bool = False,
+    property_paths: Sequence[str] | None = None,
 ) -> None:
+    targets = properties if property_paths is None else property_paths
+    if len(targets) != len(properties):
+        raise ValueError("Every driver variable requires one property path")
     curve = obj.driver_add(path, axis)
+    if identity_mapping:
+        # A remapping curve can quantize small displacements near its first key.
+        # These channels use the expression result directly, without remapping.
+        curve.keyframe_points.clear()
+        curve.extrapolation = "LINEAR"
+        for modifier in list(curve.modifiers):
+            curve.modifiers.remove(modifier)
     curve.driver.type = "SCRIPTED"
-    for prop in properties:
+    for variable in list(curve.driver.variables):
+        curve.driver.variables.remove(variable)
+    for name, prop in zip(properties, targets, strict=True):
         variable = curve.driver.variables.new()
-        variable.name = prop
+        variable.name = name
         variable.type = "SINGLE_PROP"
         variable.targets[0].id = control
         variable.targets[0].data_path = f'["{prop}"]'

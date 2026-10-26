@@ -109,3 +109,57 @@ def test_wrist_take_up_closes_head_carrier_chain_without_moving_carrier() -> Non
     for invalid in (-0.1, 0.71, float("nan")):
         with pytest.raises(ValueError):
             spec.offsets(invalid)
+
+
+def test_screen_fold_sequence_releases_screw_before_teeth_and_reseats_before_lock() -> None:
+    from src.core.domain.lab_station_joints import ScreenFoldSpec
+
+    spec = ScreenFoldSpec()
+    for progress, expected in (
+        (0, (60, 0, 0)),
+        (10, (60, 0, 1)),
+        (20, (60, 0, 2)),
+        (30, (60, 1, 2)),
+        (40, (60, 2, 2)),
+        (50, (30, 2, 2)),
+        (60, (0, 2, 2)),
+        (70, (0, 1, 2)),
+        (80, (0, 0, 2)),
+        (90, (0, 0, 1)),
+        (100, (0, 0, 0)),
+    ):
+        assert tuple(spec.pose(progress).values()) == pytest.approx(expected)
+    expressions = spec.driver_expressions()
+    for progress in [i / 10 for i in range(1001)]:
+        pose = spec.pose(progress)
+        if 0 < pose["angle_deg"] < 60:
+            assert pose["release_mm"] == 2 and pose["screw_mm"] == 2
+        if pose["release_mm"] > 0:
+            assert pose["screw_mm"] == 2
+        evaluated = {
+            channel: eval(
+                expression, {"__builtins__": {}, "min": min, "max": max}, {"progress": progress}
+            )
+            for channel, expression in expressions.items()
+        }
+        assert evaluated == pytest.approx(pose)
+    # Reversing progress traverses the same sequence without a hidden state machine.
+    assert [spec.pose(i) for i in range(101)] == list(
+        reversed([spec.pose(i) for i in range(100, -1, -1)])
+    )
+
+
+def test_screen_fold_rejects_invalid_travel_and_out_of_range_progress() -> None:
+    from src.core.domain.lab_station_joints import ScreenFoldSpec
+
+    for kwargs in (
+        {"working_angle_deg": 0},
+        {"release_mm": 0.5},
+        {"screw_mm": 1},
+        {"release_mm": float("nan")},
+    ):
+        with pytest.raises(ValueError):
+            ScreenFoldSpec(**kwargs)
+    for progress in (-1, 101, float("nan"), float("inf")):
+        with pytest.raises(ValueError):
+            ScreenFoldSpec().pose(progress)
