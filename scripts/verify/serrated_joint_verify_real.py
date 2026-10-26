@@ -6,15 +6,18 @@ link. Two tessellations of one cylinder produce slivers that the later distance
 weld hides but never removes. This control observes each Boolean of the formal
 `connect_serrated_joint` on the actual arm geometry and rejects any stage that
 leaves zero-area triangles, open edges or self-intersecting triangle pairs, then
-checks the integrated links with the independent CGAL solver. A deliberately
+checks the integrated links and HMI back shell with the independent CGAL solver.
+The actual screen-ear steps and radial bore probes exercise the same invariant. A deliberately
 tangent bore control must still be rejected, so a silent oracle cannot pass.
 """
 
+import hashlib
 import json
 from pathlib import Path
 
 from scripts.verify.generated_artifact_verify_real import BlenderSocketOracle
 from src.infrastructure.narrowing import as_nonempty_sequence, as_str_keyed_exact, required
+from src.verification.artifact_files import binary_stl_surface
 from src.verification.generator_imports import reload_modules_for
 from src.verification.mesh_integrity import require_triangle_surface
 
@@ -23,7 +26,9 @@ def verify_serrated_joint_integration(root: Path) -> None:
     """Observe each formal joint Boolean on real arm geometry; reject any defect."""
     script = root / "scripts/model_lab_station.py"
     modules = reload_modules_for(root, script)
-    code = f"""import bpy, bmesh, importlib, json, runpy, sys
+    code = f"""import bpy, bmesh, importlib, json, math, runpy, sys
+from pathlib import Path
+from mathutils import Vector
 from mathutils.bvhtree import BVHTree
 project = {str(root)!r}
 if project not in sys.path:
@@ -67,6 +72,8 @@ def observed(target, tool, operation):
     if target.name in tracked:
         rows.append({{'part': tracked[target.name], 'stage': stage, **inspect(target)[0]}})
 namespace['boolean'] = observed
+joints = importlib.import_module('scripts.lab_station_joints')
+original_joints_boolean = joints.boolean
 finals = {{}}
 try:
     mat = primitives.material('LS_AMBER', (0.95, 0.47, 0.10, 1))
@@ -93,6 +100,38 @@ try:
     rows.append({{'part': 'rotor', 'stage': 'yaw_spigot', **row}})
     if mesh is not None:
         finals['rotor_yaw'] = mesh
+    # Actual HMI back shell before its production ear integration; no finish/weld.
+    back = model['box']('JOINT_control_screen', (150, 110, 36), (0, 0, -18), mat)
+    original(back, model['box']('JOINT_control_cut', (144, 104, 38), (0, 0, -13), mat), 'DIFFERENCE')
+    for x in (-69.0, 69.0):
+        for y in (-49.0, 49.0):
+            original(back, model['cylinder']('JOINT_control_boss', 4, 31, (x, y, -16.5), mat), 'UNION')
+            model['hole'](back, (x, y, -5), 1.6, 12)
+    original(back, model['box']('JOINT_control_cut', (50, 10, 18), (0, -54, -16), mat), 'DIFFERENCE')
+    tracked[back.name] = 'screen'
+    rows.append({{'part': 'screen', 'stage': 'input', **inspect(back)[0]}})
+    joints.boolean = observed
+    joints.add_screen_ears(back, mat)
+    row, mesh = inspect(back)
+    rows.append({{'part': 'screen', 'stage': 'integrated', **row}})
+    if mesh is not None:
+        finals['screen'] = mesh
+    # Independent spatial probes: both bores clear at r=2.7 mm; r=2.9 hits material.
+    back.data.calc_loop_triangles()
+    tree = BVHTree.FromPolygons(
+        [back.matrix_world @ v.co for v in back.data.vertices],
+        [tuple(t.vertices) for t in back.data.loop_triangles], all_triangles=True)
+    bore_controls = []
+    for side in (-1, 1):
+        for radius, expected in ((2.7, False), (2.9, True)):
+            for index in range(16):
+                angle = index * math.tau / 16
+                origin = Vector((side * .086, (-55 + radius * math.cos(angle)) / 1000, radius * math.sin(angle) / 1000))
+                hit = tree.ray_cast(origin, Vector((-side, 0, 0)), .0144)[0] is not None
+                bore_controls.append({{'side': side, 'radius_mm': radius, 'index': index, 'hit': hit, 'expected': expected}})
+    # Exercise the production print-origin placement and millimetre STL exporter.
+    model['export_prototype'].__globals__['OUTPUT'] = Path(project) / 'tmp/lab-station-route-engine/screen-source-control'
+    model['export_prototype'](back, 'lcd_back')
     control = model['beam']('JOINT_control_tangent', necks[1], lower_end, mat)
     x, y, z = elbow
     original(control, primitives.add_cylinder('JOINT_control_hub', 14, 20, (x + 14, y, z), 'X'), 'UNION')
@@ -101,13 +140,14 @@ try:
     tangent, _ = inspect(control)
 finally:
     namespace['boolean'] = original
+    joints.boolean = original_joints_boolean
     for obj in list(bpy.data.objects):
         if obj.name not in objects_before:
             bpy.data.objects.remove(obj, do_unlink=True)
     for name in list(bpy.data.meshes.keys()):
         if name not in meshes_before and bpy.data.meshes[name].users == 0:
             bpy.data.meshes.remove(bpy.data.meshes[name])
-print(json.dumps({{'rows': rows, 'tangent_control': tangent, 'finals': finals}}))
+print(json.dumps({{'rows': rows, 'tangent_control': tangent, 'finals': finals, 'bore_controls': bore_controls}}))
 """
     result = BlenderSocketOracle("127.0.0.1", 9876, timeout=300).execute_json(code)
     rows = [
@@ -128,6 +168,19 @@ print(json.dumps({{'rows': rows, 'tangent_control': tangent, 'finals': finals}})
         message="Missing integrated meshes",
         error=ValueError,
     )
+    bore_controls = [
+        required(row, as_str_keyed_exact, message="Malformed bore probe", error=ValueError)
+        for row in required(
+            result.get("bore_controls"),
+            as_nonempty_sequence,
+            message="Missing bore probes",
+            error=ValueError,
+        )
+    ]
+    if len(bore_controls) != 64 or any(
+        row.get("hit") != row.get("expected") for row in bore_controls
+    ):
+        raise AssertionError(f"Screen bores changed: {bore_controls}")
     failures = [
         row
         for row in rows
@@ -137,7 +190,7 @@ print(json.dumps({{'rows': rows, 'tangent_control': tangent, 'finals': finals}})
         or row.get("open_edges")
         or row.get("self_pairs")
     ]
-    expected_finals = {"upper", "lower", "rotor", "rotor_yaw"}
+    expected_finals = {"upper", "lower", "rotor", "rotor_yaw", "screen"}
     if set(finals) != expected_finals:
         failures.append({"stage": "integrated", "missing": sorted(expected_finals - set(finals))})
     errors: dict[str, str] = {}
@@ -147,13 +200,37 @@ print(json.dumps({{'rows': rows, 'tangent_control': tangent, 'finals': finals}})
             require_triangle_surface(mesh)
         except ValueError as error:
             errors[part] = str(error)
+    exported_reports: dict[str, dict[str, object]] = {}
+    exported_paths = {
+        "screen_stl": root
+        / "tmp/lab-station-route-engine/screen-source-control/fit-prototypes/lcd_back_mm.stl",
+        "screen_production_stl": root / "tmp/lab-station-v10/fit-prototypes/lcd_back_mm.stl",
+    }
+    for name, path in exported_paths.items():
+        payload = path.read_bytes()
+        try:
+            measured = require_triangle_surface(binary_stl_surface(payload))
+            exported_reports[name] = {"sha256": hashlib.sha256(payload).hexdigest(), **measured}
+        except ValueError as error:
+            errors[name] = str(error)
     output = root / "tmp/lab-station-route-engine/serrated-joint-stages.json"
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(
-        json.dumps({"rows": rows, "tangent_control": tangent, "cgal_errors": errors}, indent=1)
+        json.dumps(
+            {
+                "rows": rows,
+                "tangent_control": tangent,
+                "cgal_errors": errors,
+                "bore_controls": bore_controls,
+                "exported_stl": exported_reports,
+            },
+            indent=1,
+        )
     )
     if not (tangent.get("rejected") or tangent.get("zero_area") or tangent.get("self_pairs")):
         raise AssertionError(f"Tangent bore control was accepted: {tangent}")
     if failures or errors:
         raise ValueError(f"Serrated joint Booleans left defects: stages={failures} cgal={errors}")
-    print(f"{len(rows)} serrated joint Boolean stages and tangent-bore control passed")
+    print(
+        f"{len(rows)} Boolean stages, {len(bore_controls)} bore probes, {len(exported_reports)} STL files and tangent-bore control passed"
+    )

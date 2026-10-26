@@ -1,6 +1,6 @@
 # 讓 MCP 完整——階段 1：可列印機構管線（匯入路徑）
 
-**Status:** ACTIVE
+**Status:** AWAITING-ACCEPTANCE
 
 ## Goal
 

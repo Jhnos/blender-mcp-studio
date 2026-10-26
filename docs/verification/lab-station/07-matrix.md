@@ -1,6 +1,6 @@
 # VOC 追溯
 
-Population: R1–R16 為歷史 V10 的 LS_，R17–R24 為 rotary，R25 為 simple，R26–R45 為電極臂系列，現行為 electrode-guides-aligned。每個範圍皆涵蓋其兩頭、三探頭、單杯與 HMI；排除檢測佈局副本與診斷物件，任何必要族群為零即 FAIL。歷史證據只屬於該模型，不能當成現行電極臂的製造資格；現行規格見 [01-scope](01-scope.md)。
+Population: R1–R16 為歷史 V10 的 LS_，R17–R24 為 rotary，R25 為 simple，R26–R56 為電極臂及線路／維修研究系列（electrode-guides-aligned）。每個範圍皆涵蓋其兩頭、三探頭、單杯與 HMI；排除檢測佈局副本與診斷物件，任何必要族群為零即 FAIL。本表不指定交付版本；目前交付由 [共用應用服務](../../../models/lab-station/README.md) 決定。各列證據只屬於該研究模型，不得移用為目前交付件的機構／製造資格。使用者現行要求見 [任務16規格](../../tasks/16_lab-station.md#specification)，證據範圍見 [01-scope](01-scope.md)。
 
 | ID | Requirement | Tier | User-visible | Kind | Verified-by |
 |---|---|---|---|---|---|

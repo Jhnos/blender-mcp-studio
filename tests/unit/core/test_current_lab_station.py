@@ -212,3 +212,24 @@ async def test_promotion_changes_actual_inputs_not_only_the_display_name(tmp_pat
             assert len(evidence["stls"]) == count
         assert evidence["stls"][0]["sha256"] == hashlib.sha256(mesh).hexdigest()
         assert evidence["project_3mf"]["sha256"] == hashlib.sha256(project).hexdigest()
+
+
+def test_current_stls_are_valid_without_repair_and_collapsed_face_is_rejected():
+    import struct
+
+    import pytest
+
+    from src.verification.artifact_files import binary_stl_surface
+    from src.verification.mesh_integrity import require_triangle_surface
+
+    spec = load_selected_model_spec()
+    folder = ROOT / spec["source"]["root_dir"]
+    files = sorted(folder.glob(spec["source"]["stl_glob"]))
+    assert files
+    for path in files:
+        require_triangle_surface(binary_stl_surface(path.read_bytes()))
+    corrupted = bytearray(files[0].read_bytes())
+    first = struct.unpack_from("<3f", corrupted, 84 + 12)
+    struct.pack_into("<3f", corrupted, 84 + 24, *first)
+    with pytest.raises(ValueError, match="Zero-area triangle"):
+        require_triangle_surface(binary_stl_surface(corrupted))

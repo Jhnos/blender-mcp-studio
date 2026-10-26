@@ -4,7 +4,6 @@ import math
 from collections.abc import Callable
 from typing import Literal
 
-import bmesh
 import bpy
 from mathutils import Matrix
 
@@ -15,7 +14,7 @@ from scripts.blender_mesh_primitives import (
     cleanup_mesh,
 )
 from scripts.blender_mesh_primitives import finish_arm as finish_arm
-from scripts.blender_mesh_triangulation import triangulate_faces
+from scripts.blender_mesh_triangulation import triangulate_mesh
 from scripts.lab_station_joints import placed_plate
 from src.core.domain.lab_station import Point
 
@@ -28,14 +27,7 @@ PLATE_PHASE_RAD = math.pi / 192
 
 def finish_link(obj: bpy.types.Object) -> None:
     """Chain-safe triangulation, then the shared finish; coincident vertices raise."""
-    mesh = bmesh.new()
-    try:
-        mesh.from_mesh(obj.data)
-        triangulate_faces(mesh)
-        mesh.to_mesh(obj.data)
-    finally:
-        mesh.free()
-    obj.data.update()
+    triangulate_mesh(obj.data)
     finish_arm(obj)
 
 

@@ -102,6 +102,10 @@ _run hard "web unit + dummy run (vitest)" bash -c 'cd web && npx vitest run'
 fi
 
 if (( REAL )); then
+  if (( ${#FAILED[@]} )); then
+    printf '%sCI FAILED%s — T1/T2 prerequisites failed; real suites were not started.\n' "$RED" "$RST"
+    exit 1
+  fi
   # A timed-out generator may still own Blender. Never run dependent scene gates.
   REAL_FAIL_FAST=1
   _tier "T3 · real machine (MCP↔Blender)"

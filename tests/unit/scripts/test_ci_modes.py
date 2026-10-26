@@ -91,3 +91,18 @@ def test_chat_can_pass_without_running_model_or_slicing_gates(tmp_path: Path) ->
     assert "mcp_verify_chat.py" in trace
     assert "design_pipeline_current.json" not in trace
     assert "-m pytest" not in trace
+
+
+@pytest.mark.parametrize("mode", ["--real", "--all"])
+@pytest.mark.parametrize("failure", ["-m ruff check", "-m pytest"])
+def test_static_failure_aggregates_checks_but_never_starts_real_suites(
+    tmp_path: Path, mode: str, failure: str
+) -> None:
+    result, trace = drive(tmp_path, mode, fail=failure)
+    assert result.returncode == 1
+    assert "-m pytest" in trace
+    assert "vitest run" in trace
+    assert "check_installed_plists.py" not in trace
+    assert "mcp_verify_rest.py" not in trace
+    assert "mcp_verify_chat.py" not in trace
+    assert "CI PASSED" not in result.stdout

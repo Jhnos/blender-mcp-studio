@@ -4,16 +4,17 @@ Read this file first after a new conversation, compaction, or terminal restart.
 
 ## 接手
 
-- **目前工作：任務 17 的版本選擇 SSOT 修正（2026-10-26）。** 使用者指出入口仍要記版本，並要求移除這個責任。唯一宣告保留在 `models/lab-station/model-spec.json`；新增注入式應用目錄，domain schema 不含版本，REST／MCP 都可省略 spec 使用目前模型。舊 spec 副本與 v80 實機合約已原樣移到 archive；現行合約只宣告 `selection: current`。不修改模型／STL／3MF。
-- **已取得證據：** T1/T2 已通過；替換宣告、缺失宣告不建 job、明確歷史模型、schema 預設值、掃描深度獨立、REST／MCP 預設提交等情境通過。正式介面讀回 JSON／REST／MCP／example 同選 v80，default_available=true，21 工具，預設提交不需 spec，證據 `tmp/current-selection-ssot/live-selection.json`。
-- **本輪核心實機結果（2026-10-27）：** 完整核心 CI 全綠（`tmp/current-selection-ssot/ci-real.log`）；目前模型無 spec 正向 run `8007f1d66f724ab191d737c3731bcabe`：69件幾何通過、機構not_applicable、單盤切片與打包通過，保存spec.json與服務選擇一致。截斷STL反例run `6b5507fc839b48f8baaa6a6248738bbd`在geometry失敗。驗證器最後補強另跑53項檢查；最終T1/T2全綠（`ci-final.log`）。正式API已重載，freshness通過（PID 5957）；部署後JSON／REST／MCP同選v80、spec可省略、21工具、Claude報告仍可讀，證據 `post-deploy.json`。
-- **Claude Code 實際驗證（2026-10-27）：** 正式 MCP 已Connected，CLI OAuth已恢復；實際Read／MCP讀回目前宣告一致。以原生前景等待選項執行同一個無版本參數的驗證器：53秒、終態PASS、無權限拒絕；正向run `ea52118d364d45ccb68978b200f55b1f`通過69件幾何／單盤切片／打包，保存spec與唯一宣告相等；反例run `533aae19471e470fa8e8884fb014d49f`在geometry確實失敗。工具呼叫與實際輸出在 `tmp/current-selection-ssot/claude-core-foreground.jsonl`；已另讀磁碟報告核對。第一次背景驗證被CLI結束中止，不列為通過，後端正向job已確認終態。
-- **模型／實體範圍：** 目前交付為v80（沿用v78幾何，69列印件／113原生模型）；原件與根目錄歷史副本保留。spec v1 匯入管線不重驗保存模型的機構；實印、PLA配合、黏附與負載資格尚未完成，不啟動印表機。
-- **接手：** 先確認同一個CI進程／handle是否仍在跑，勿並行操作Blender或重啟同一驗證；本輪核心CI與Claude管線均已終態、最終檢查通過，版本V01.0T.000。選版責任已收回應用服務；後續回任務16的整機工程資格與任務17其餘驗收，不需重建原模型或再指定版本。5S掃描175個候選皆以專案連結規則解析成功，DCC無斷鏈／孤兒。舊接手內容完整封存於 [歷史快照](../archive/2026-10-26-resume-history.md)，只在追溯指定事件時載入。
+- **目前工作：任務16目前交付模型的機構資格。** 本輪螢幕背殼來源／實際STL修復已完成技術驗證，版本V01.0T.001；核心與提交前CI均已通過，正式介面讀回完成；本里程碑提交後接續機構資格。下一步先核對共用服務選定的原生模型與原零件，不能拿研究模型的綠燈代替交付件資格。
+- **本輪已驗證：** 完整 `scripts/ci.sh --real` exit0，日誌 `tmp/lcd-source-boolean/ci-final-candidate.log`。30來源階段、64探測、2實際STL；精確CGAL守衛覆蓋目前69個原STL與壓扁面反例。正式MCP11套46例、5控制及場景恢復全過，獨立讀回 `tmp/lcd-source-boolean/third-mcp-readback.json`。新CI前置防線與完整文件連結檢查通過。對話T4本輪未選取，不宣稱本輪實機對話通過。
+- **目前模型：** 仍為v80、原件與歷史副本保留；共用應用服務讀唯一宣告，客戶端不選版本。原生模型已按發布SHA載入且未另存：144物件／113網格／0外部連結庫，正式MCP讀回144物件且未截斷，證據 `tmp/lcd-source-boolean/selected-native-readback.json`／`tmp/lcd-source-boolean/public-selected-scene.json`。Blender顯示目前交付的原模型，並非CI研究場景。
+- **目前交付實機管線：** 正向run `a20c5d6b66e14f76bdef8fe294e916cd`：69件幾何／單盤切片／打包通過，mechanism為not_applicable；反例run `bb85a043c35b419089756448923d6fca`在geometry失敗。服務宣告／schema／目錄／保存spec一致，21工具、spec可省略，證據 `tmp/lcd-source-boolean/final-public-readback.json`。Claude Code實際前景執行同一核心閘門的證據保留於前里程碑 `tmp/current-selection-ssot/claude-core-foreground.jsonl`。
+- **未完成資格與待輸入：** 實際機構、連續動作、電路接口、PLA配合／黏附／負載及實印仍未完成。免後加工是否允許拆支撐／brim已透過文字選項詢問、尚未回答，不推定接受；幫浦／微壓／pH前端／供電板型號及線管外徑亦未確認。繼續不依賴這些答案的機構與軟體驗證，不啟動印表機。
+- **來源待修（交付機構之後）：** V10研究manifest列出的29個試配STL中，27個精確CGAL通過；兩個舊滑座carrier自交，證據 `tmp/lcd-source-boolean/prototype-raw-audit.json`。它們不是目前v80的69件；不遺忘此來源問題，也不以舊滑座取代使用者要求的雙上臂／四點梯形結構。
+- **接手與歷史：** 本輪CI及所有排空barrier均已終態，沒有應接續的Blender驗證進程。正式UI已確認已連線、目前交付模型可見、刷新預覽成功、console零錯誤、載入production雜湊資產，畫面 `tmp/lcd-source-boolean/formal-ui.png`。提交與checkpoint後核對原生機構；不要重跑已通過的大套件。失敗／修復／CI中止原因保留於 [本輪快照](../archive/2026-10-27-lcd-source-validation-history.md)，原任務長交接在 [工作站歷史](../archive/2026-10-27-lab-station-handoff-history.md)。任務17階段1已完成量化驗收，等待使用者體驗，尚未歸檔；後續階段仍屬全體目標。
 
 | State | Task | Priority |
 |---|---|---|
-| ACTIVE | [`17_mcp-complete-pipeline.md`](17_mcp-complete-pipeline.md) | 讓 MCP 完整——階段 1：`ModelSpec` 進、可列印包與機器驗證證據出；第一實例為工作站目前交付件匯入路徑；設計與計畫在 `docs/superpowers/` |
+| AWAITING-ACCEPTANCE | [`17_mcp-complete-pipeline.md`](17_mcp-complete-pipeline.md) | 讓 MCP 完整——階段 1：`ModelSpec` 進、可列印包與機器驗證證據出；第一實例為工作站目前交付件匯入路徑；設計與計畫在 `docs/superpowers/` |
 | ACTIVE | [`16_lab-station.md`](16_lab-station.md) | 雙探頭量測工作站：250 mL 共杯、約 20 cm 伸距、P2S；獨立電極臂、齒槽與折平螢幕；全機工程資格待完成 |
 | AWAITING-ACCEPTANCE | [`15_scene-list-and-chat-gate.md`](15_scene-list-and-chat-gate.md) | **場景清單不再只有十個**——上游 addon 截斷到 10;改由 adapter 有上界地讀,碰到上界會說。H6 綠了,對話路徑第一次有真機閘門;`--real` 32 條全綠 |
 | TODO | [`14_hand-long.md`](14_hand-long.md) | **第五個實例:每指三關節**——`joint_count` 第一次建在 2 以外;主要風險是指掌比 |

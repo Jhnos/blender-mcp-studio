@@ -26,6 +26,8 @@ $HOME/miniconda3/envs/blender-mcp/bin/python scripts/verify/design_pipeline_veri
 
 單次 `claude -p` 執行驗證時，使用原生環境選項 `CLAUDE_CODE_DISABLE_BACKGROUND_TASKS=1`，讓 Bash 在前景等待到終態；依驗證預算設定足夠的工具 timeout。父 CLI 回覆成功不等於子程序通過，必須保留實際命令、終態輸出及正反例報告。若父程序中止，先確認後端工作終態才可重跑。此選項僅控制 CLI 等待方式，見 [Claude Code 官方環境選項](https://code.claude.com/docs/en/env-vars)。
 
+T1/T2仍彙整全部失敗；只要已有硬失敗，核心／完整模式在接觸Blender前終止，不能帶著已失敗的前置啟動T3。獨立對話模式維持獨立範圍。
+
 真機階段任何 hard gate 失敗後立即停止，避免後續操作污染共享場景。逾時不代表 Blender 已停止；重跑前必須確認先前工作已排空。靜態與單元階段仍彙整失敗。
 
 ### T3 裡的產出物閘門（2026-09-08 起）
@@ -74,6 +76,7 @@ $HOME/miniconda3/envs/blender-mcp/bin/python scripts/verify/design_pipeline_veri
 | `test_rest_error_ssot.py` | router 自行把 domain error 譯成 HTTP status；並凍結 endpoint 自有的守衛清單 |
 | `test_router_composition.py` | router 組裝 use case、內嵌 `bpy` 原始碼或觸碰 `execute_code` |
 | `test_docs_dcc.py` | 斷掉的 wikilink、導航孤兒、埠號寫在 SSOT 之外 |
+| `test_document_links.py` | 全部文件（含archive）的本地Markdown連結失效；搬移／封存須與DCC一起跑，僅修正相對指向，不重寫歷史事實 |
 | `test_script_primitive_ssot.py` | 產生器重新定義共用 primitive |
 | `test_contract_builder.py` | 簽入的手契約 ≠ 由規劃生成的契約(契約是生成產物,手改即紅) |
 | `test_generator_imports.py` | 產生器可達的模組沒進契約 `reload_modules`(常駐 Blender 跑舊碼還綠) |
