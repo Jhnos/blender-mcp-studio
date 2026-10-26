@@ -8,6 +8,7 @@ from collections.abc import Mapping, Sequence
 
 from CGAL.CGAL_Kernel import Point_3
 from CGAL.CGAL_Polygon_mesh_processing import (
+    Side_of_triangle_mesh,
     does_self_intersect,
     polygon_soup_to_polygon_mesh,
 )
@@ -125,6 +126,11 @@ def cgal_self_intersects(points: list[Point], faces: list[Triangle]) -> bool:
     CGAL counts degenerate (zero-area) faces as self-intersecting; such a mesh still fails
     through ``error`` (``parse_closed_surface`` rejects degenerate faces), not only here.
     """
+    return bool(does_self_intersect(_cgal_polyhedron(points, faces)))
+
+
+def _cgal_polyhedron(points: list[Point], faces: list[Triangle]) -> Polyhedron_3:
+    """Preserve the complete input surface at the independent solver boundary."""
     converted = Polyhedron_3()
     polygon_soup_to_polygon_mesh([Point_3(*point) for point in points], faces, converted)
     if converted.size_of_facets() != len(faces):
@@ -141,4 +147,19 @@ def cgal_self_intersects(points: list[Point], faces: list[Triangle]) -> bool:
     expected = Counter(tuple(sorted(points[index] for index in face)) for face in faces)
     if actual != expected:
         raise ValueError("CGAL conversion changed triangle coordinates")
-    return bool(does_self_intersect(converted))
+    return converted
+
+
+def bounded_sides(mesh: Mapping[str, object], queries: object) -> tuple[int, ...]:
+    """Classify finite points as material (1), boundary (0), or exterior/cavity (-1).
+
+    Coordinates share the target surface's units and frame. Invalid surfaces fail
+    before querying; no welding, tolerance offset, or automatic repair is applied.
+    """
+    points, faces = parse_closed_surface(mesh)
+    query_points = [_point(value) for value in _array(queries)]
+    converted = _cgal_polyhedron(points, faces)
+    if does_self_intersect(converted):
+        raise SelfIntersectionError("Self-intersecting triangle surface")
+    classifier = Side_of_triangle_mesh(converted)
+    return tuple(int(classifier.bounded_side(Point_3(*point))) for point in query_points)

@@ -50,7 +50,7 @@ T1/T2仍彙整全部失敗；只要已有硬失敗，核心／完整模式在接
 交付路徑閘門**最後**跑，因為它會清空 `tmp/hand-compact/` 再自己重建——排在前面就會抽掉別人的輸入。三條由
 `test_real_ci_gates_the_hand_contracts` 釘在 `ci.sh` 裡；`test_real_ci_runs_every_contract` 釘住 `contracts/` 下
 **每一個**檔案都在 `--real`、走對的 checker、且場景重用有先生成（[[DEFERRALS]] D-004，2026-09-09 `done`）。
-交付路徑那一條由 `test_real_ci_gates_the_hand_contracts` 一併釘住順序。整個 T3 約 85 s。
+交付路徑那一條由 `test_real_ci_gates_the_hand_contracts` 一併釘住順序。該歷史交付子集約85秒，不能用來估計目前完整T3；完整核心還含多套研究機構與線路／維修案例，耗時以同一輪終態日誌為準。觀察逾時或超過舊預估均不是重啟依據，應接續原程序handle。
 
 本專案**沒有** GitHub Actions；`scripts/ci.sh` 是唯一 CI。新行為一律從一個
 **有鑑別力的失敗測試**開始——測試要能在功能未實作時變紅，而不是靠實作細節通過。

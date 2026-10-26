@@ -105,3 +105,41 @@ def test_conversion_must_preserve_triangle_coordinates(monkeypatch: pytest.Monke
     monkeypatch.setattr(subject, "polygon_soup_to_polygon_mesh", shift_points)
     with pytest.raises(ValueError, match="triangle coordinates"):
         require_triangle_surface(tetrahedron())
+
+
+def test_bounded_sides_distinguishes_material_boundary_and_exterior() -> None:
+    from src.verification.mesh_integrity import bounded_sides
+
+    points = [[0.1, 0.1, 0.1], [0, 0, 0], [0.5, 0.5, 0], [2, 2, 2]]
+    assert bounded_sides(tetrahedron(), points) == (1, 0, 0, -1)
+    assert bounded_sides(combined(2), [[2.1, 2.1, 2.1], [1.5, 1.5, 1.5]]) == (1, -1)
+
+
+def test_bounded_sides_respects_a_closed_internal_cavity() -> None:
+    from src.verification.mesh_integrity import bounded_sides
+
+    outer, inner = tetrahedron(), tetrahedron()
+    mesh = {
+        "vertices": outer["vertices"] + [[0.1 + v * 0.3 for v in p] for p in inner["vertices"]],
+        "faces": outer["faces"] + [[i + 4 for i in reversed(f)] for f in inner["faces"]],
+    }
+    assert bounded_sides(mesh, [[0.15, 0.15, 0.15], [0.6, 0.1, 0.1]]) == (-1, 1)
+
+
+@pytest.mark.parametrize("points", [[], [[float("nan"), 0, 0]], [[0, 0]]])
+def test_bounded_sides_rejects_missing_or_invalid_queries(points) -> None:
+    from src.verification.mesh_integrity import bounded_sides
+
+    with pytest.raises(ValueError):
+        bounded_sides(tetrahedron(), points)
+
+
+def test_bounded_sides_rejects_invalid_target_before_classifying() -> None:
+    from src.verification.mesh_integrity import bounded_sides
+
+    with pytest.raises(ValueError, match="Self-intersecting"):
+        bounded_sides(combined(0.2), [[0, 0, 0]])
+    mesh = tetrahedron()
+    mesh["faces"].pop()
+    with pytest.raises(ValueError, match="edge"):
+        bounded_sides(mesh, [[0, 0, 0]])
