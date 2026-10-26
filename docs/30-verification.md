@@ -18,9 +18,13 @@ scripts/ci.sh          # T1 static + T2 unit/headless dummy run；commit 前必�
 scripts/ci.sh --real   # 核心 T1/T2/T3：模型、REST/MCP、機構、切片與包；不呼叫 Ollama
 scripts/ci.sh --chat   # 獨立 T4 對話：Ollama 前置＋WS/REST＋Blender oracle，不重跑 T1/T2/T3
 scripts/ci.sh --all    # 先核心、再對話；共用 Blender，不能並行
+# 只重驗目前交付件：同一個核心閘門，不指定版本
+$HOME/miniconda3/envs/blender-mcp/bin/python scripts/verify/design_pipeline_verify_real.py
 ```
 
 核心與對話各自回報所選範圍；未選對話不代表對話通過。明確要求真機套件但 addon 未就緒時回傳失敗。對話前置探測會保留 HTTP 狀態／連線錯誤；超過預算只表示未取得成功回應，不能推定 Ollama 離線或飽和。
+
+單次 `claude -p` 執行驗證時，使用原生環境選項 `CLAUDE_CODE_DISABLE_BACKGROUND_TASKS=1`，讓 Bash 在前景等待到終態；依驗證預算設定足夠的工具 timeout。父 CLI 回覆成功不等於子程序通過，必須保留實際命令、終態輸出及正反例報告。若父程序中止，先確認後端工作終態才可重跑。此選項僅控制 CLI 等待方式，見 [Claude Code 官方環境選項](https://code.claude.com/docs/en/env-vars)。
 
 真機階段任何 hard gate 失敗後立即停止，避免後續操作污染共享場景。逾時不代表 Blender 已停止；重跑前必須確認先前工作已排空。靜態與單元階段仍彙整失敗。
 
@@ -38,7 +42,7 @@ scripts/ci.sh --all    # 先核心、再對話；共用 Blender，不能並行
 | octopus hand V2 ×2 | 生成、同場景 tips | 26 |
 | generation delivery path | **清空** `tmp/hand-compact/`，走公開 REST endpoint 重建，比 API 回報的數字與磁碟上的位元組，再對 `models/hand-compact/manifest.json` 走同一份碎片預算 | 10 |
 | build determinism within budget | 同一零件在常駐 Blender 重建 3 次，判準是**完成品的面數差不超過碎片預算**——頂點順序幾乎每一步都不同，那是 exact solver 的性質不是缺陷，拿它當紅燈的閘門會永遠紅 | 18 |
-| design pipeline (selected v80) | `scripts/verify/design_pipeline_verify_real.py scripts/verify/contracts/design_pipeline_v80.json`：經公開 MCP URL 送共用入口選定的 v80 交付物的 ModelSpec，輪詢到終態（預算＝切片逾時＋300 s），逐階段驗證據：import 69 件且 `import.json` 列 69 個 STL＋1 個 3MF（含 sha256）、geometry 69 件 0 失敗、mechanism `not_applicable`、print 1 盤、manifest 含合約列出的檔案與 AGPL 切片器條目、所有文件無主機路徑；再以截斷表頭的 STL 副本做反例，geometry 必須 FAILED 並點名該檔。交付物根目錄取 `config/tools.yaml` 的 `artifact_roots[0]`（`--artifact-root` 可覆寫）。前置（交付物、切片器、端點）缺一即 FAIL 附原因，不 SKIP；要在部署後跑 | 真切片約 3 分鐘 |
+| design pipeline (current selection) | `scripts/verify/design_pipeline_verify_real.py scripts/verify/contracts/design_pipeline_current.json`：合約只宣告 `selection: current`；經公開 MCP 取得應用目錄的選定 ModelSpec，先拒絕不可用或 discovery／example 不一致，再提交驗證，輪詢到終態（預算＝切片逾時＋300 s），逐階段驗證據：import 69 件且 `import.json` 列 69 個 STL＋1 個 3MF（含 sha256）、geometry 69 件 0 失敗、mechanism `not_applicable`、print 1 盤、manifest 含合約列出的檔案與 AGPL 切片器條目、所有文件無主機路徑；再以截斷表頭的 STL 副本做反例，geometry 必須 FAILED 並點名該檔。交付物根目錄取 `config/tools.yaml` 的 `artifact_roots[0]`（`--artifact-root` 可覆寫）。前置（交付物、切片器、端點）缺一即 FAIL 附原因，不 SKIP；要在部署後跑 | 真切片約 3 分鐘 |
 
 順序是硬的：手指契約重用手契約生成的場景；差分讀那次生成匯出的 STL；
 交付路徑閘門**最後**跑，因為它會清空 `tmp/hand-compact/` 再自己重建——排在前面就會抽掉別人的輸入。三條由

@@ -14,7 +14,7 @@ import pytest
 from scripts.verify import design_gate_checks as gate
 
 ROOT = Path(__file__).resolve().parents[3]
-CONTRACT = json.loads((ROOT / "scripts/verify/contracts/design_pipeline_v80.json").read_text())
+CONTRACT = json.loads((ROOT / "scripts/verify/contracts/design_pipeline_current.json").read_text())
 EXPECT = CONTRACT["expect"]
 OUT_3MF = "print/整機69件-單盤排版-v78-P2S-PLA.3mf"
 BAD_REL = "STL/列印零件/x.stl"
@@ -323,8 +323,8 @@ def test_truncated_header_keeps_exactly_the_requested_bytes(tmp_path: Path) -> N
 
 
 def test_contract_is_data() -> None:
-    assert CONTRACT["spec"]["source"]["stl_glob"] == "STL/列印零件/*.stl"
-    assert CONTRACT["spec"]["mechanism"]["suites"] == []
+    assert CONTRACT["selection"] == "current"
+    assert "spec" not in CONTRACT
     assert EXPECT["stl_count"] == 69 and EXPECT["plates"] == 1
 
 
@@ -333,7 +333,7 @@ def test_real_ci_runs_the_design_pipeline_gate_after_the_determinism_probe() -> 
     probe = ci.index("hand-compact build determinism within budget")
     line = ci.index(
         "scripts/verify/design_pipeline_verify_real.py "
-        "scripts/verify/contracts/design_pipeline_v80.json"
+        "scripts/verify/contracts/design_pipeline_current.json"
     )
     assert probe < line
     wired = next(t for t in ci.splitlines() if "design_pipeline_verify_real.py" in t)
@@ -342,3 +342,52 @@ def test_real_ci_runs_the_design_pipeline_gate_after_the_determinism_probe() -> 
 
 def test_gitignore_keeps_deliverables_out_of_the_repo() -> None:
     assert "/雙上臂四點梯形-*" in (ROOT / ".gitignore").read_text().splitlines()
+
+
+async def test_current_contract_uses_discovery_and_rejects_stale_example(monkeypatch):
+    from scripts.verify import design_pipeline_verify_real as real_gate
+
+    spec = {"name": "next-release", "source": {"root_dir": "next"}}
+    responses = {
+        "list_artifacts": {"default_spec": spec, "default_available": True},
+        "describe_model_spec": {"example": spec},
+    }
+
+    async def read(_client, name):
+        return responses[name]
+
+    monkeypatch.setattr(real_gate, "_object", read)
+    resolved = await real_gate._selected_contract(None, CONTRACT)
+    assert resolved["spec"] == spec
+    assert "spec" not in CONTRACT  # Never mutate/cache the live contract.
+    responses["describe_model_spec"] = {"example": {"name": "stale"}}
+    with pytest.raises(gate.GateError, match="disagrees"):
+        await real_gate._selected_contract(None, CONTRACT)
+    responses["list_artifacts"]["default_available"] = False
+    with pytest.raises(gate.GateError, match="unavailable"):
+        await real_gate._selected_contract(None, CONTRACT)
+
+
+async def test_current_positive_submits_without_spec_and_checks_saved_selection(monkeypatch):
+    from scripts.verify import design_pipeline_verify_real as real_gate
+
+    selected = {"name": "current-model", "source": {"root_dir": "selected"}}
+    saved = dict(selected)
+
+    async def run(_client, spec, _label):
+        assert spec is None  # Exercise the real default, not a client-side copied input.
+        return {"status": "done"}, {"run_id": "r1", "spec_name": selected["name"]}
+
+    async def resource(_client, _run, name):
+        return saved if name == "spec.json" else {}
+
+    monkeypatch.setattr(real_gate, "_run_spec", run)
+    monkeypatch.setattr(real_gate, "_resource_json", resource)
+    monkeypatch.setattr(real_gate, "_positive_failures", lambda *_: [])
+    monkeypatch.setattr(real_gate.checks, "check_report", lambda *_: [])
+    monkeypatch.setattr(real_gate.checks, "output_3mf", lambda *_: None)
+    contract = {"selection": "current", "spec": selected, "expect": {}}
+    assert await real_gate._positive(None, contract) == []
+    saved["name"] = "stale-model"
+    failures = await real_gate._positive(None, contract)
+    assert any("spec.json" in failure for failure in failures)

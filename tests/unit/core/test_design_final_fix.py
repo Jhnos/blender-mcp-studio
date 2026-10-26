@@ -15,7 +15,7 @@ from src.core.use_cases import design_stages as stages
 from tests.unit.core.test_design_pipeline import _payload, _rig, _run
 
 _CONTRACT = (
-    Path(__file__).resolve().parents[3] / "scripts/verify/contracts/design_pipeline_v80.json"
+    Path(__file__).resolve().parents[3] / "scripts/verify/contracts/design_pipeline_current.json"
 )
 
 
@@ -152,8 +152,7 @@ async def test_submit_store_failure_error_is_scrubbed(tmp_path):
     assert record.error and str(tmp_path) not in record.error
 
 
-def test_contract_spec_is_the_documented_example():
-    from src.core.domain.model_spec_schema import V1_EXAMPLE
-
+def test_contract_resolves_selection_instead_of_copying_the_example():
     contract = json.loads(_CONTRACT.read_text(encoding="utf-8"))
-    assert contract["spec"] == V1_EXAMPLE
+    assert contract["selection"] == "current"
+    assert "spec" not in contract

@@ -66,7 +66,7 @@ examples, not server requirements.
 | `modify_object` | Destructive write | Change transforms or visibility |
 | `delete_object` | Destructive write | Permanently remove one object |
 | `apply_material` | Destructive write | Create/update and assign a Principled BSDF material |
-| `run_design_pipeline` | Write | Submit a ModelSpec; returns a queued job (import, geometry, mechanism, print, package) |
+| `run_design_pipeline` | Write | Submit the current model without spec, or an explicit historical/custom ModelSpec; returns a queued job |
 | `describe_model_spec` | Read | ModelSpec v1 JSON Schema, defaults, supported printers/materials and a worked example |
 | `list_artifacts` | Read | Deliverable directories usable as `source.root_dir` (STL count per subdirectory, 3MF names) |
 | `get_job_status` | Read | Poll a design job by `job_id` |
@@ -113,9 +113,10 @@ arbitrary Python.
 
 ### 設計管線（ModelSpec → 可列印包）
 
-LLM 供應想法與 ModelSpec，MCP 負責走到可列印包：先用 `describe_model_spec` 取得 schema 與範例、
-`list_artifacts` 取得共用入口的 `default_spec`（要求 `default_available=true`；缺失時不可退回歷史版本），或找其他明確指定的 `source.root_dir`，再以 `run_design_pipeline` 送出（立即回傳
-`job_id`／`run_id`）→ `get_job_status` 輪詢 → `get_run_report` 讀逐階段證據。
+驗證目前模型時，直接呼叫 `run_design_pipeline`，不提供 `spec`。應用服務從唯一宣告選版，
+立即回傳 `job_id`／`run_id` → `get_job_status` 輪詢 → `get_run_report` 讀逐階段證據。
+`describe_model_spec` 與 `list_artifacts` 可查詢服務所選模型；只有明確要求歷史／自訂模型時，
+才提供自己的 spec。客戶端不必先找路徑、選版本或複製範例。
 `check_mesh_integrity` 與 `slice_for_print` 可單獨使用，也接受 ModelSpec 以外的檔案。
 
 - **路徑規則**：`stl_paths`、`input_3mf` 一律是允許的 artifact root 底下的**相對路徑**，
@@ -162,6 +163,8 @@ tool_timeout_sec = 360
 
 Restart or open a new Codex task, then inspect `/mcp`. Codex's current config
 schema also supports stdio servers through `command`, `args`, and `env`.
+
+目前模型由共享應用服務解析：`run_design_pipeline` 省略 `spec` 即提交目前模型，REST `POST /api/design/runs` 可提交 `{}`。明確 spec 只用於歷史／自訂驗證。REST 的 `GET /api/design/spec`、`GET /api/design/artifacts` 與 MCP `describe_model_spec`、`list_artifacts` 共用同一目錄服務；客戶端沒有版本設定副本。
 
 ## Claude Code configuration example
 

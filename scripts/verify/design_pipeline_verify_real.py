@@ -91,10 +91,12 @@ async def _resource_json(client: Client[Any], run_id: str, name: str) -> Mapping
 
 
 async def _run_spec(
-    client: Client[Any], spec: Mapping[str, object], label: str
+    client: Client[Any], spec: Mapping[str, object] | None, label: str
 ) -> tuple[Mapping[str, object], Mapping[str, object]]:
     """Submit, poll to a terminal job state, return (job, report)."""
-    submitted = await _object(client, "run_design_pipeline", {"spec": dict(spec)})
+    submitted = await _object(
+        client, "run_design_pipeline", {} if spec is None else {"spec": dict(spec)}
+    )
     job_id, run_id = str(submitted["job_id"]), str(submitted["run_id"])
     print(f"[{label}] submitted job {job_id} run {run_id}", flush=True)
     loop = asyncio.get_running_loop()
@@ -146,11 +148,13 @@ def _positive_failures(
 
 
 async def _positive(client: Client[Any], contract: Mapping[str, Any]) -> list[str]:
-    job, report = await _run_spec(client, contract["spec"], str(contract["spec"]["name"]))
+    supplied = None if contract.get("selection") == "current" else contract["spec"]
+    job, report = await _run_spec(client, supplied, str(contract["spec"]["name"]))
     print(f"[selected] job ended {job.get('status')} error={job.get('error')}", flush=True)
     run_id = str(report["run_id"])
     early = checks.check_report(report, contract["expect"])
     try:
+        saved_spec = await _resource_json(client, run_id, "spec.json")
         manifest = await _resource_json(client, run_id, "manifest.json")
         report_json = await _resource_json(client, run_id, "report.json")
         import_json = await _resource_json(client, run_id, "import.json")
@@ -163,9 +167,12 @@ async def _positive(client: Client[Any], contract: Mapping[str, Any]) -> list[st
     except (ValueError, zipfile.BadZipFile, ToolError, McpError) as exc:
         detail = f"{type(exc).__name__}: {exc}"
         return [*early, f"evidence files unreadable from run {run_id}: {detail}"]
-    return _positive_failures(
+    failures = _positive_failures(
         report, manifest, report_json, import_json, plates, contract["expect"]
     )
+    if saved_spec != contract["spec"] or report.get("spec_name") != contract["spec"]["name"]:
+        failures.append("run spec.json disagrees with the selected ModelSpec")
+    return failures
 
 
 async def _negative(client: Client[Any], contract: Mapping[str, Any], root: Path) -> list[str]:
@@ -193,17 +200,39 @@ async def _negative(client: Client[Any], contract: Mapping[str, Any], root: Path
         shutil.rmtree(work, ignore_errors=True)
 
 
+async def _selected_contract(client: Client[Any], contract: Mapping[str, Any]) -> Mapping[str, Any]:
+    """Resolve a live selection at the service, not in a client-specific copy."""
+    if "selection" not in contract:
+        return contract  # Deliberately supplied historical/custom contract.
+    if contract["selection"] != "current" or "spec" in contract:
+        raise checks.GateError("selection contract must request current without an embedded spec")
+    catalog = await _object(client, "list_artifacts")
+    described = await _object(client, "describe_model_spec")
+    if catalog.get("default_available") is not True:
+        raise checks.GateError("selected delivery is unavailable; no historical fallback")
+    spec = _as_object(catalog.get("default_spec"), "default_spec")
+    if spec != described.get("example"):
+        raise checks.GateError("selected delivery disagrees between discovery and schema example")
+    print(f"selected delivery: {spec.get('name')}", flush=True)
+    return {**contract, "spec": spec}
+
+
 async def _session(contract: Mapping[str, Any], url: str, root: Path) -> list[str]:
     failures: list[str] = []
     for attempt in (1, 2):
         try:
             async with Client(url) as client:
+                resolved = await _selected_contract(client, contract)
+                source = _as_object(resolved["spec"]["source"], "source")
+                failures += checks.check_deliverable(root, str(source["root_dir"]))
+                if failures:
+                    return failures
                 rows = await _tool(client, "tool_status")
                 failures += checks.check_slicer(rows or [], contract["expect"]["slicer_tool"])
                 if failures:
                     return failures
-                failures += await _positive(client, contract)
-                failures += await _negative(client, contract, root)
+                failures += await _positive(client, resolved)
+                failures += await _negative(client, resolved, root)
             return failures
         except TRANSPORT_ERRORS as exc:
             if attempt == 1 and not failures:
@@ -218,7 +247,11 @@ async def _session(contract: Mapping[str, Any], url: str, root: Path) -> list[st
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     parser.add_argument(
-        "contract", type=Path, help="scripts/verify/contracts/design_pipeline_*.json"
+        "contract",
+        type=Path,
+        nargs="?",
+        default=PROJECT_ROOT / "scripts/verify/contracts/design_pipeline_current.json",
+        help="contract (default: current selected delivery)",
     )
     parser.add_argument(
         "--artifact-root",
@@ -229,7 +262,7 @@ def main() -> int:
     args = parser.parse_args()
     contract = json.loads(args.contract.read_text(encoding="utf-8"))
     root = artifact_root(args.artifact_root)
-    failures = checks.check_deliverable(root, contract["spec"]["source"]["root_dir"])
+    failures: list[str] = []
     if not failures:
         try:
             url = os.environ.get("BLENDER_MCP_URL") or default_mcp_url()

@@ -26,8 +26,9 @@
 
 - FastAPI、REST、WebSocket 與 MCP 共用同一 `BlenderPort` instance。
 - API lifespan 只 connect/disconnect 一次；stdio proxy 不擁有 backend。
-- MCP 是 inbound adapter，只依賴 `SceneQueryPort` / `SceneCommandPort` / `PrintReadinessQueryPort`。
+- MCP 是 inbound adapter，只呼叫注入的 ports 與應用服務；不組裝 runtime，也不擁有另一條 Blender 連線。
 - REST 與 MCP 注入同一個 `PrintReadinessService`；它依賴窄化的 `PrintReadinessPort`，不併入 scene commands。
+- `ArtifactCatalog` 由 composition root 注入唯一版本宣告的 provider；`DesignPipeline` 共用它提供 discovery、schema example 與省略 spec 的提交。REST／MCP／CLI 不自行選版，domain schema 不讀設定檔。
 - WebUI 的批次變形經獨立 `BatchTransformService` 與 `SceneBatchCommandPort`；REST 只是 delivery adapter，沒有把 HTTP 概念放進 use case。
 - WebUI 指令面板只依賴純 `CommandDefinition` registry 與注入 callbacks；它不 import REST action、Zustand store 或 Blender 名稱。
 - `operationStore` 是 UI 操作 lifecycle SSOT，最多保留五筆；retry callback 只有來源明確宣告安全時才存在，批次變形與 Undo/Redo 永不自動重試。

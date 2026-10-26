@@ -14,11 +14,16 @@ from __future__ import annotations
 import copy
 import itertools
 import os
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator, Mapping
 from pathlib import Path
 
-from src.core.domain.model_spec import is_hidden_path
-from src.core.domain.model_spec_schema import V1_EXAMPLE
+from src.core.domain.model_spec import (
+    ImportedArtifact,
+    ModelSpecError,
+    is_hidden_path,
+    parse_model_spec,
+)
+from src.core.domain.model_spec_schema import describe_model_spec
 from src.infrastructure.narrowing import as_mapping, as_sequence
 
 MAX_ENTRIES = 200
@@ -90,7 +95,15 @@ def _candidates(anchors: list[Path]) -> Iterator[tuple[Path, Path, list[Path]]]:
             level = nxt
 
 
-def list_artifacts(roots: tuple[Path, ...], *, max_stl_files: int) -> dict[str, object]:
+def _is_selected_file(path: Path, root: Path) -> bool:
+    return (
+        path.is_file() and not path.is_symlink() and path.resolve().is_relative_to(root.resolve())
+    )
+
+
+def list_artifacts(
+    roots: tuple[Path, ...], *, max_stl_files: int, selected_spec: Mapping[str, object]
+) -> dict[str, object]:
     """Blocking directory scan; see the module docstring for what is listed."""
     anchors = [root.resolve() for root in roots]
     rows: list[dict[str, object]] = []
@@ -106,14 +119,42 @@ def list_artifacts(roots: tuple[Path, ...], *, max_stl_files: int) -> dict[str, 
             }
         )
     truncated = next(found, None) is not None
-    default_spec = copy.deepcopy(V1_EXAMPLE)
+    default_spec = copy.deepcopy(dict(selected_spec))
     selected_source = as_mapping(default_spec["source"])
     assert selected_source is not None
     selected = next((r for r in rows if r["root_dir"] == selected_source["root_dir"]), None)
+    target = anchors[0] / str(selected_source["root_dir"])
+    project = target / str(selected_source["project_3mf"])
+    stl_glob = str(selected_source.get("stl_glob", ImportedArtifact(root_dir="").stl_glob))
+    if selected is None:
+        _, files = _entries(target)
+        if (
+            target.is_dir()
+            and not target.is_symlink()
+            and (
+                any(_is_selected_file(path, target) for path in target.glob(stl_glob))
+                or _is_selected_file(project, target)
+            )
+        ):
+            counts, capped = _stl_dirs(target, max_stl_files)
+            selected = {
+                "root_dir": selected_source["root_dir"],
+                "stl_dirs": counts,
+                "stl_count_capped": capped,
+                "project_3mf": [f.name for f in files if f.suffix.lower() == ".3mf"],
+            }
+            rows.insert(0, selected)
+            truncated = truncated or len(rows) > MAX_ENTRIES
+            rows = rows[:MAX_ENTRIES]
+    if selected is not None and _is_selected_file(project, target):
+        projects = list(as_sequence(selected["project_3mf"]) or ())
+        if selected_source["project_3mf"] not in projects:
+            projects.append(selected_source["project_3mf"])
+        selected["project_3mf"] = projects
     available = bool(
         selected
-        and selected["stl_dirs"]
-        and selected_source["project_3mf"] in (as_sequence(selected["project_3mf"]) or ())
+        and _is_selected_file(project, target)
+        and any(_is_selected_file(path, target) for path in target.glob(stl_glob))
     )
     rows.sort(key=lambda r: r["root_dir"] != selected_source["root_dir"])
     return {
@@ -122,3 +163,34 @@ def list_artifacts(roots: tuple[Path, ...], *, max_stl_files: int) -> dict[str, 
         "default_spec": default_spec,
         "default_available": available,
     }
+
+
+class ArtifactCatalog:
+    """One injected current-selection policy, shared by all delivery paths."""
+
+    def __init__(
+        self,
+        roots: tuple[Path, ...],
+        max_stl_files: int,
+        selected_spec: Callable[[], Mapping[str, object]],
+    ) -> None:
+        self._roots = roots
+        self._cap = max_stl_files
+        self._selected_spec = selected_spec
+
+    def current(self) -> dict[str, object]:
+        selected = copy.deepcopy(dict(self._selected_spec()))
+        parsed = parse_model_spec(selected, artifact_roots=self._roots)
+        source = as_mapping(selected["source"])
+        assert source is not None
+        if Path(str(source["root_dir"])).is_absolute():
+            raise ModelSpecError("selected model root_dir must be relative")
+        if not parsed.source.project_3mf:
+            raise ModelSpecError("selected model must declare project_3mf")
+        return selected
+
+    def describe(self, printers: tuple[str, ...], materials: tuple[str, ...]) -> dict[str, object]:
+        return describe_model_spec(printers, materials, self.current())
+
+    def list(self) -> dict[str, object]:
+        return list_artifacts(self._roots, max_stl_files=self._cap, selected_spec=self.current())

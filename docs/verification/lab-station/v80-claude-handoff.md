@@ -1,22 +1,16 @@
-# Claude Code 與 MCP 的 v80 共用入口
+# Claude Code 與 MCP 的工作站交付契約
 
-先讀 [models/lab-station/README.md](../../../models/lab-station/README.md)，使用 [共用ModelSpec](../../../models/lab-station/model-spec.json)。任務進度只讀[索引](../../tasks/00_INDEX.md)。
+版本由應用服務選擇，不由 Claude Code、文件入口或檔名選擇。宣告與規則見 [工作站](../../../models/lab-station/README.md)，任務結果只讀 [索引](../../tasks/00_INDEX.md)。
 
-## Claude Code
+## 使用
 
-主專案為 `/Users/bearmacmini/Blender_MCP_drawer`。在此工作目錄重新讀CLAUDE.md後，使用 `models/lab-station/model-spec.json` 指定的 `models/lab-station-v80`，不要依檔名時間猜版本。正式目錄的69 STL、原生模型、切片檔及證據納入Git；另一份clone必須包含此修訂才會取得。
+1. Claude Code 連接專案的同一個正式 MCP 服務，設定方式見 [客戶端](../../11-mcp-clients.md)。它不是另一份 Blender 或另一套模型目錄。
+2. 要驗證目前模型，呼叫 `run_design_pipeline`，不帶 `spec`。服務從唯一宣告解析輸入，保存新工作的 `spec.json`；再用 `get_job_status`／`get_run_report` 讀新證據。
+3. `list_artifacts` 與 `describe_model_spec` 由同一個應用目錄提供目前選擇；缺失或錯誤必須回報，不改用歷史版本。只有明確要求歷史／自訂模型時才提供 spec。
+4. 核心 MCP、模型與切片的腳本和判準只有 [驗證 SSOT](../../30-verification.md) 一份；所有客戶端共用，無 Claude 專用驗證管線。
 
-組裝模型檔名仍含v78，是v80沿用的原幾何；正式切片檔為 `P2S-PLA-69件單盤-已切片-v80.3mf`。原生模型中的44個參考物件不加入列印。
+## 原件與證據
 
-## MCP
+原交付件、歷史版本及 ZIP 均保留。舊版 ModelSpec 副本封存於 `docs/archive/` 作追溯，不作目前選擇。正式交付的 SHA256 清單可獨立核對；舊模型檔名保留幾何來源版本，不能用它反推目前切片版本。
 
-1. 呼叫 `list_artifacts`，取 `default_spec` 並要求 `default_available=true`。預設root_dir必須為 `models/lab-station-v80`；缺失時報錯，不退回v78或tmp候選。
-2. `describe_model_spec` 的example必須與共用ModelSpec相同。
-3. 要重跑驗證時才呼叫 `run_design_pipeline`，將共用JSON放入spec引數；再用 `get_job_status`／`get_run_report`讀新run證據。這會重新切片，不能把舊交付報告當成新run結果。
-4. spec v1的`mechanism.suites`留空，不會替保存的模型重驗運動機構。歷史機構證據留在原交付件，不等於新管線已執行機構驗證。
-
-## 保留的原交付件
-
-根目錄 `雙上臂四點梯形-v80-單盤切片檢查/` 及其ZIP，還有v78/v79原件皆保留，不作預設入口。正式版本從原SHA256清單明確列出的檔案逐位元複製；以 `models/lab-station-v80/SHA256.json`核對，任何修改另存修訂。
-
-設定、支撐／brim、用料及尚未實印的限制以正式交付README為準；能存取或重切片通過，都不代表物理黏附／負載已驗證。不得啟動列印。
+每次管線都建立新 run，不覆寫原交付證據。spec v1 的機構階段是 `not_applicable`；能讀取／重切片通過，不等於物理黏附與負載已驗證。不得啟動列印。

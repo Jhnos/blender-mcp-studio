@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import tempfile
+from collections.abc import Callable, Mapping
 from pathlib import Path
 from unittest.mock import MagicMock
 
@@ -16,6 +17,7 @@ from src.core.domain.import_limits import ImportLimits
 from src.core.domain.scene_operations import ObjectDetails, SceneSummary, ViewportImage
 from src.core.ports.blender_port import BlenderPort
 from src.core.ports.mcp_port import ToolResult
+from src.core.use_cases.artifact_catalog import ArtifactCatalog
 from src.core.use_cases.batch_transform import BatchTransformService
 from src.core.use_cases.blender_lease import BlenderLease
 from src.core.use_cases.design_pipeline import DesignPipeline
@@ -110,7 +112,10 @@ class CountingBlender(BlenderPort):
 
 
 def make_fake_runtime(
-    design_dir: Path | None = None, *, integrity: FakeIntegrity | None = None
+    design_dir: Path | None = None,
+    *,
+    integrity: FakeIntegrity | None = None,
+    selected_spec: Callable[[], Mapping[str, object]] | None = None,
 ) -> AppRuntime:
     """Use real application services and replace only the outer ports.
 
@@ -149,6 +154,22 @@ def make_fake_runtime(
         modeling_pipeline=marker,
         iterative_refinement=None,
         design_pipeline=DesignPipeline(
+            artifacts=ArtifactCatalog(
+                tools.artifact_roots,
+                tools.import_limits.max_stl_files,
+                selected_spec
+                or (
+                    lambda: {
+                        "spec_version": "1",
+                        "name": "selected-fixture",
+                        "source": {
+                            "root_dir": "artifact",
+                            "stl_glob": "STL/*.stl",
+                            "project_3mf": "p.3mf",
+                        },
+                    }
+                ),
+            ),
             integrity=integrity or FakeIntegrity(),
             simulation=FakeSimulation(),
             slicing=FakeSlicing(lease),

@@ -1,0 +1,27 @@
+{
+  "description": "Current selected delivery through the shared application catalog",
+  "selection": "current",
+  "expect": {
+    "stl_count": 69,
+    "import_3mf": 1,
+    "skipped": 0,
+    "geometry_checked": 69,
+    "geometry_failing": 0,
+    "plates": 1,
+    "slicer_tool": "bambu-studio",
+    "slicer_license": "AGPL-3.0-only",
+    "manifest_files": [
+      "spec.json",
+      "import.json",
+      "geometry.json",
+      "print/effective-settings.json",
+      "print/slicer.log",
+      "print/machine.json",
+      "print/process.json",
+      "print/filament.json"
+    ]
+  },
+  "negative_control": {
+    "keep_header_bytes": 40
+  }
+}

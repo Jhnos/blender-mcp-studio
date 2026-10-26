@@ -53,6 +53,6 @@ class UndoRedoResponse(BaseModel):
 
 
 class DesignRunRequest(BaseModel):
-    """A ModelSpec payload; the use case parses it and raises ModelSpecError (-> 422)."""
+    """Omit spec to use the current model; explicit specs are parsed by the use case (-> 422)."""
 
-    spec: dict[str, object]
+    spec: dict[str, object] | None = None

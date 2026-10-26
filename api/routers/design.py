@@ -59,3 +59,13 @@ async def download_design_file(run_id: str, name: str, request: Request) -> File
 @router.get("/tools")
 async def list_design_tools(request: Request) -> list[dict[str, object]]:
     return [tool_dict(tool) for tool in await _pipeline(request).tools()]
+
+
+@router.get("/spec")
+async def describe_design_spec(request: Request) -> dict[str, object]:
+    return await _pipeline(request).describe_spec()
+
+
+@router.get("/artifacts")
+async def list_design_artifacts(request: Request) -> dict[str, object]:
+    return await _pipeline(request).list_artifacts()

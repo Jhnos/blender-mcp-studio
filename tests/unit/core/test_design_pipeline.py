@@ -18,6 +18,7 @@ from src.core.domain.model_spec import (
 )
 from src.core.domain.slicing import ToolUnavailableError
 from src.core.use_cases import design_stages as stages
+from src.core.use_cases.artifact_catalog import ArtifactCatalog
 from src.core.use_cases.blender_lease import BlenderLease
 from src.core.use_cases.design_pipeline import DesignPipeline
 from tests.fakes.design_ports import (
@@ -43,7 +44,9 @@ class Rig:
     log: list = field(default_factory=list)
 
 
-def _rig(tmp_path, *, geometry_ok=True, sim_ok=True, delay=0.0, pack_error=None) -> Rig:
+def _rig(
+    tmp_path, *, geometry_ok=True, sim_ok=True, delay=0.0, pack_error=None, selected_spec=None
+) -> Rig:
     root = tmp_path / "artifact"
     (root / "STL").mkdir(parents=True)
     for name in ("a.stl", "b.stl"):
@@ -54,6 +57,22 @@ def _rig(tmp_path, *, geometry_ok=True, sim_ok=True, delay=0.0, pack_error=None)
     jobs, integrity, simulation = FakeJobs(), FakeIntegrity(geometry_ok), FakeSimulation(sim_ok)
     slicing, packaging = FakeSlicing(lease, delay, log), FakePackaging(pack_error)
     pipeline = DesignPipeline(
+        artifacts=ArtifactCatalog(
+            (tmp_path,),
+            565,
+            selected_spec
+            or (
+                lambda: {
+                    "spec_version": "1",
+                    "name": "selected-fixture",
+                    "source": {
+                        "root_dir": "artifact",
+                        "stl_glob": "STL/*.stl",
+                        "project_3mf": "p.3mf",
+                    },
+                }
+            ),
+        ),
         integrity=integrity,
         simulation=simulation,
         slicing=slicing,

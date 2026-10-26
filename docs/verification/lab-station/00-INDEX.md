@@ -20,4 +20,4 @@
 
 電極臂延伸：[13-electrode-arm](13-electrode-arm.md)。
 
-Claude存取v80交付件：[v80-claude-handoff](v80-claude-handoff.md)；管線輸入：[v80-model-spec.json](v80-model-spec.json)。
+Claude存取v80交付件：[v80-claude-handoff](v80-claude-handoff.md)；管線輸入：[唯一版本宣告](../../../models/lab-station/model-spec.json)。

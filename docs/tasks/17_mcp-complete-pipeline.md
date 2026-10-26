@@ -4,7 +4,7 @@
 
 ## Goal
 
-任何 MCP host 以機器可讀的 `ModelSpec` 提交一個模型，拿回可送印的包與機器驗證證據（幾何、機構、列印切片、重現 manifest）；目前共用實例由 models/lab-station/model-spec.json 選定實驗室工作站 v80（匯入既有產物，不經產生器）。
+任何 MCP host 以機器可讀的 `ModelSpec` 提交一個模型，拿回可送印的包與機器驗證證據（幾何、機構、列印切片、重現 manifest）；目前共用實例由 models/lab-station/model-spec.json 選定實驗室工作站（匯入既有產物，不經產生器）。
 
 ## Context to read
 
@@ -21,10 +21,19 @@
 - 切片以 Bambu Studio CLI 子行程呼叫（AGPL-3.0，manifest 明標）；缺席＝明確失敗附安裝指引。
 - 不開公開 `execute_code`；已發布包與既有 DTO 不變。
 
+## Current-selection contract (2026-10-26)
+
+- The selected delivery is declared only in `models/lab-station/model-spec.json`. Transport adapters, schema examples and real-verification contracts must not carry a second live ModelSpec.
+- A narrow injected provider supplies that declaration to the shared application catalog. The domain schema remains pure. Replacing the declaration changes discovery, the example and default submission without editing Python or the verifier.
+- REST and MCP both support submission without a spec: the application selects the current delivery. Explicit specs remain supported for deliberate historical/custom runs. A missing or malformed declaration fails before a job is created, never chooses an archive.
+- The real gate resolves `selection: current` through public MCP, verifies discovery/example agreement and availability, then reuses the existing positive/negative checker. No new verification pipeline or model generation.
+- BDD checks: given a changed declaration, all consumers observe it; given no declaration, default submission creates no job; given an explicit historical spec, that spec is used; given a stale discovery/example pair, the real gate rejects it before slicing.
+- Reuse: existing config loader, application catalog, composition root and real gate. New modules: none. Prior art queried `site:github.com/python-injector/injector dependency injection python configuration provider` and `site:github.com/pydantic/pydantic-settings JSON config settings source`: both cover generic DI/config loading, already present here; reuse the local seams and standard JSON rather than add another framework.
+
 ## Acceptance checks
 
-- 核心 T1/T2/T3 不中斷全綠，含「design pipeline on the selected v80 deliverable」；對話 T4 獨立驗證，不作為模型／MCP／切片的前置。選取方式見 [驗證 SSOT](../30-verification.md)。
-- 透過本機自己的 Tailscale FQDN（動態取）呼叫 `run_design_pipeline` → `get_job_status` → `get_run_report`，選定 v80 的 69 件列印 STL 幾何通過、單盤 3MF 切片成功、manifest 列出全部檔案；截斷 STL 的負對照以幾何階段失敗收場。
+- 核心 T1/T2/T3 不中斷全綠，含「design pipeline on the current selected deliverable」；對話 T4 獨立驗證，不作為模型／MCP／切片的前置。選取方式見 [驗證 SSOT](../30-verification.md)。
+- 透過本機自己的 Tailscale FQDN（動態取）呼叫 `run_design_pipeline` → `get_job_status` → `get_run_report`，選定交付件的 69 件列印 STL 幾何通過、單盤 3MF 切片成功、manifest 列出全部檔案；截斷 STL 的負對照以幾何階段失敗收場。
 - `tests/unit/core/test_no_hardcoded_hosts.py` 綠（repo 無寫死主機名）。
 - Human acceptance is required before moving this file to `archive/`.
 
@@ -32,7 +41,7 @@
 
 使用者授權核心與 Ollama 對話分開驗證，保留原對話真機檢查；結果及待辦見任務索引最新交接。
 
-工作站的共用交付入口改為 [models/lab-station](../../models/lab-station/README.md)；規格v1匯入保留v78幾何的v80切片交付，不重新建立模型。現行驗證結果與未解除事項以[任務索引](00_INDEX.md)的2026-10-23交接為準；下列舊日期事實屬歷史脈絡，不能用來選回舊版或重做已完成的合併。
+工作站的共用交付入口改為 [models/lab-station](../../models/lab-station/README.md)；規格v1匯入保留v78幾何的v80切片交付，不重新建立模型。現行驗證結果與未解除事項以[任務索引](00_INDEX.md)的最新交接為準；下列舊日期事實屬歷史脈絡，不能用來選回舊版或重做已完成的合併。
 
 ### Verified facts
 

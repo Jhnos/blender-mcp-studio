@@ -47,14 +47,14 @@ def test_core_never_invokes_ollama_chat(tmp_path: Path, args: tuple[str, ...]) -
     assert "-m pytest" in trace
     if args:
         assert "mcp_verify_real.py" in trace
-        assert "design_pipeline_v80.json" in trace
+        assert "design_pipeline_current.json" in trace
 
 
 def test_chat_is_independent_and_failure_is_fatal(tmp_path: Path) -> None:
     result, trace = drive(tmp_path, "--chat", fail="mcp_verify_chat.py")
     assert result.returncode == 1
     assert "mcp_verify_chat.py" in trace
-    assert "design_pipeline_v80.json" not in trace
+    assert "design_pipeline_current.json" not in trace
     assert "-m pytest" not in trace
     assert "CI PASSED" not in result.stdout
 
@@ -62,7 +62,7 @@ def test_chat_is_independent_and_failure_is_fatal(tmp_path: Path) -> None:
 def test_all_runs_core_before_chat(tmp_path: Path) -> None:
     result, trace = drive(tmp_path, "--all")
     assert result.returncode == 0, result.stdout
-    assert trace.index("design_pipeline_v80.json") < trace.index("mcp_verify_chat.py")
+    assert trace.index("design_pipeline_current.json") < trace.index("mcp_verify_chat.py")
     assert trace.count("mcp_verify_chat.py") == 1
 
 
@@ -89,5 +89,5 @@ def test_chat_can_pass_without_running_model_or_slicing_gates(tmp_path: Path) ->
     result, trace = drive(tmp_path, "--chat")
     assert result.returncode == 0, result.stdout
     assert "mcp_verify_chat.py" in trace
-    assert "design_pipeline_v80.json" not in trace
+    assert "design_pipeline_current.json" not in trace
     assert "-m pytest" not in trace

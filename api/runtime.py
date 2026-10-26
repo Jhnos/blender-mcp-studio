@@ -95,8 +95,9 @@ def build_runtime(env_file: Path | None = None) -> AppRuntime:
     )
     from src.adapters.verification.blender_verification import BlenderVerificationAdapter
     from src.adapters.vision.factory import build_vision_adapter
+    from src.core.use_cases.artifact_catalog import ArtifactCatalog
     from src.core.use_cases.blender_lease import BlenderLease
-    from src.infrastructure.config_loader import default_config_dir
+    from src.infrastructure.config_loader import default_config_dir, load_selected_model_spec
     from src.infrastructure.env_loader import load_env
     from src.infrastructure.tools_config import load_tools_config
     from src.verification.cable_route_cases import registered_suites
@@ -131,6 +132,9 @@ def build_runtime(env_file: Path | None = None) -> AppRuntime:
         runs_dir=tools.design_runs_dir,
         artifact_roots=tools.artifact_roots,
         limits=tools.import_limits,
+        artifacts=ArtifactCatalog(
+            tools.artifact_roots, tools.import_limits.max_stl_files, load_selected_model_spec
+        ),
     )
     return AppRuntime(
         blender=blender,

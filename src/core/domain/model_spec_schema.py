@@ -1,11 +1,14 @@
 """ModelSpec v1 described as JSON Schema, so a client can build a spec without reading source.
 
 The parser (``model_spec.parse_model_spec``) is the authority; this module mirrors its keys,
-types and defaults from the same constants, and ``V1_EXAMPLE`` is the v80 gate contract's spec
-(``scripts/verify/contracts/design_pipeline_v80.json``; a unit test keeps them equal).
+types and defaults from the same constants. The selected example is injected by the application;
+this pure schema owns no deployed model/version or filesystem path.
 """
 
 from __future__ import annotations
+
+import copy
+from collections.abc import Mapping
 
 from src.core.domain.model_spec import (
     MECHANISM_V1_UNSUPPORTED,
@@ -14,28 +17,12 @@ from src.core.domain.model_spec import (
     PrintTarget,
 )
 
-V1_EXAMPLE: dict[str, object] = {
-    "spec_version": "1",
-    "name": "lab-station-v80",
-    "source": {
-        "root_dir": "models/lab-station-v80",
-        "stl_glob": "STL/列印零件/*.stl",
-        "project_3mf": "P2S-PLA-69件單盤-已切片-v80.3mf",
-    },
-    "print_target": {
-        "printer": "bambu-p2s",
-        "material": "PLA",
-        "layer_height_mm": 0.2,
-        "support": True,
-        "brim_mm": 3.0,
-    },
-    "mechanism": {"suites": []},
-}
-
 _PATH_RULES = "relative, no '..', no hidden ('.'-prefixed) part, must stay inside the root"
 
 
-def describe_model_spec(printers: tuple[str, ...], materials: tuple[str, ...]) -> dict[str, object]:
+def describe_model_spec(
+    printers: tuple[str, ...], materials: tuple[str, ...], example: Mapping[str, object]
+) -> dict[str, object]:
     """JSON Schema for spec v1 plus a complete worked example; printers/materials from the slicer."""
     source, target = ImportedArtifact(root_dir=""), PrintTarget()
     schema: dict[str, object] = {
@@ -105,4 +92,8 @@ def describe_model_spec(printers: tuple[str, ...], materials: tuple[str, ...]) -
             },
         },
     }
-    return {"spec_version": SUPPORTED_SPEC_VERSION, "schema": schema, "example": V1_EXAMPLE}
+    return {
+        "spec_version": SUPPORTED_SPEC_VERSION,
+        "schema": schema,
+        "example": copy.deepcopy(dict(example)),
+    }

@@ -183,7 +183,7 @@ if (( REAL )); then
     _run hard "hand-compact build determinism within budget" "$PY" scripts/verify/build_determinism_probe.py --instance hand-compact --runs 3 --against-budget
     # The selected v80 deliverable through the public MCP URL: import, geometry, print, package,
     # plus a truncated-header negative control. Needs Bambu Studio and a service running this code.
-    _run hard "design pipeline on the selected v80 deliverable (import → geometry → print → package)" "$PY" scripts/verify/design_pipeline_verify_real.py scripts/verify/contracts/design_pipeline_v80.json
+    _run hard "design pipeline on the current selected deliverable (import → geometry → print → package)" "$PY" scripts/verify/design_pipeline_verify_real.py scripts/verify/contracts/design_pipeline_current.json
   else
     # A requested real suite cannot succeed without its real dependency.
     printf '  FAIL core: Blender addon is not listening (see docs/10-runtime-ssot.md).\n'

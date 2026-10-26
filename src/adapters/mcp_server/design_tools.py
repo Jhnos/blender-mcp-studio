@@ -137,8 +137,10 @@ def register_design_tools(
         timeout=SUBMIT_TIMEOUT_S,
         annotations=_annotations("Run design pipeline", read_only=False, idempotent=False),
     )
-    async def run_design_pipeline(spec: dict[str, object]) -> dict[str, object]:
-        """Submit a ModelSpec (spec_version 1) and return its queued job; poll get_job_status.
+    async def run_design_pipeline(spec: dict[str, object] | None = None) -> dict[str, object]:
+        """Submit the current selected model when spec is omitted, or an explicit ModelSpec.
+
+        Return its queued job; poll get_job_status.
 
         Minimal spec: {"spec_version": "1", "name": ..., "source": {"root_dir": ...,
         "project_3mf": ...}}. Call describe_model_spec for the full schema, defaults and a worked
@@ -161,7 +163,10 @@ def register_design_tools(
     async def describe_model_spec() -> dict[str, object]:
         """Return the ModelSpec v1 JSON Schema (fields, types, defaults, supported printers and
         materials) and a complete worked example for run_design_pipeline."""
-        return _configured(design, "design pipeline").describe_spec()
+        try:
+            return await _configured(design, "design pipeline").describe_spec()
+        except DomainError as exc:
+            raise await fail(exc) from exc
 
     @mcp.tool(
         timeout=QUERY_TIMEOUT_S,
@@ -172,7 +177,10 @@ def register_design_tools(
         with its STL count per subdirectory and its 3MF names (at most 200, no hidden dirs).
         Use default_spec for the shared selected delivery. If default_available is false,
         report the missing delivery; never fall back to an archived version."""
-        return await _configured(design, "design pipeline").list_artifacts()
+        try:
+            return await _configured(design, "design pipeline").list_artifacts()
+        except DomainError as exc:
+            raise await fail(exc) from exc
 
     @mcp.tool(
         timeout=QUERY_TIMEOUT_S,

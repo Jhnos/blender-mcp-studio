@@ -170,3 +170,24 @@ def test_rest_report_has_no_absolute_paths(tmp_path: Path) -> None:
     assert "STL/a.stl: open" in text
     assert str(tmp_path) not in text and str(Path.home()) not in text
     assert "run_dir" not in json.loads(text)
+
+
+def test_rest_default_uses_the_same_declaration_for_discovery_and_submission(
+    tmp_path: Path,
+) -> None:
+    spec = _artifact(tmp_path)
+    spec["source"]["root_dir"] = "artifact"
+    spec["source"]["stl_glob"] = "STL/*.stl"
+    runtime = make_fake_runtime(tmp_path, selected_spec=lambda: spec)
+    app = create_app(runtime=runtime, require_identity=False)
+    with TestClient(app, base_url="http://localhost") as client:
+        for name in ("first", "second"):
+            spec["name"] = name
+            assert client.get("/api/design/spec").json()["example"] == spec
+            assert client.get("/api/design/artifacts").json()["default_spec"] == spec
+            response = client.post("/api/design/runs", json={})
+            assert response.status_code == 202
+            job = response.json()
+            assert _wait_done(client, job["job_id"])["status"] == "done"
+            report = client.get(f"/api/design/runs/{job['run_id']}/report").json()
+            assert report["spec_name"] == name and report["passed"]
