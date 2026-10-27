@@ -84,6 +84,7 @@ class ScreenFoldSpec:
     working_angle_deg: float = 60.0
     release_mm: float = 2.0
     screw_mm: float = 2.0
+    target_angle_deg: float = 0.0
 
     def __post_init__(self) -> None:
         if (
@@ -92,13 +93,18 @@ class ScreenFoldSpec:
                 for v in (self.working_angle_deg, self.release_mm, self.screw_mm)
             )
             or self.screw_mm < self.release_mm
+            or not isfinite(self.target_angle_deg)
+            or not 0 <= self.target_angle_deg <= self.working_angle_deg
         ):
             raise ValueError("Screen motion requires positive dimensions and screw clearance")
         SerratedJointSpec(release_mm=self.release_mm)
 
     def _channels(self) -> dict[str, tuple[float, tuple[tuple[int, float], ...]]]:
         return {
-            "angle_deg": (self.working_angle_deg, ((2, -self.working_angle_deg),)),
+            "angle_deg": (
+                self.working_angle_deg,
+                ((2, self.target_angle_deg - self.working_angle_deg),),
+            ),
             "release_mm": (0.0, ((1, self.release_mm), (3, -self.release_mm))),
             "screw_mm": (0.0, ((0, self.screw_mm), (4, -self.screw_mm))),
         }

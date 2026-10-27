@@ -55,4 +55,22 @@
 
 ### Next step
 
-接續任務索引指定的同一個工作及其實際 handle；若真機程序仍在執行，不得並行操作 Blender、修改其驗證來源或重啟驗證。原模型／STL／3MF 保留，後續修改另存修訂。
+接續任務索引指定的同一個工作及其實際 handle；若真機程序仍在執行，不得並行操作 Blender、修改其驗證來源或重啟驗證；確認終態後才進行同輪公開讀回、恢復選定原生模型與checkpoint。原模型／STL／3MF 保留，後續修改另存修訂。
+
+## Screen clamp control contract (2026-10-27)
+
+- Shared immutable clamp values own pitch, axial seating, target tooth angle and passive-pin float. Reuse the existing five-phase motion; do not duplicate its ramps in Blender bindings.
+- Existing fold behavior defaults to a zero-degree target. An explicit target is finite and within the starting angle; physical clamp endpoints must lie on the joint's indexed tooth angles.
+- Active screw follows body rotation and subtracts screw lead; passive pin and retainer follow body rotation and the same axial float. Preserve all five original rigid identities and mesh data.
+- BDD: given each indexed target from 0 through 60 degrees, forward/reverse numerical and evaluated-driver poses agree, including after save/reload; removing rotation-follow or retainer-float must fail. Invalid geometry roles or binding state are rejected before mutation.
+- This contract is a dependency of the shared native-revision service. Control fixtures do not qualify full model collisions, complete hardware tolerances, printing or holding force; no public revision capability is claimed before its adapter and delivery paths are integrated.
+
+## Native revision service contract
+
+- Input is a registered recipe identifier and validated mechanical parameters. No caller-supplied Python, native path, output path or client-specific version selector. The shared application catalog resolves the current selection; a narrow artifact port resolves its unique native file from the verified checksum manifest and returns typed provenance.
+- One injected application service orchestrates the existing Blender lease and socket adapter for every client. An isolated factory process used for research is not a second public runtime or acceptance path.
+- Source hash mismatch, unknown recipe, ambiguous native source or invalid parameters fail before Blender mutation. No fallback to an older directory. Revisions use exclusive new output directories; source files and the selected delivery are not overwritten or promoted automatically.
+- Any required input triangulation or coordinate rebase is an explicit registered preparation step with named owners and preservation evidence. Invalid source surfaces cannot be silently repaired or relabelled as validated geometry.
+- After each source operation, validate the affected surface independently. Save/reopen checks include original object identities, descendants, all rigid controls, external-library absence and unchanged unrelated surfaces. Actual binary STL bytes must pass topology and strict geometry checks.
+- Complete the same-identity STL set before deriving a new 3MF. Unchanged parts retain source bytes; changed parts carry source/native/export provenance. Reuse the existing slicing and packaging services for single-plate qualification; a successful imported-v80 run does not qualify a revised candidate.
+- BDD rejection cases: missing/malformed selection; stale source hash; multiple native candidates; unknown recipe; pre-existing destination; failed intermediate geometry; missing/extra/replaced part identity; unsaved driver mismatch; failed source restoration. Each failure retains diagnostic evidence and cannot publish a successful result or update the current selection.

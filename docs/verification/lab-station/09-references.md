@@ -112,3 +112,11 @@ CGAL輪子載入警告：查閱[SWIG官方issue 2881](https://github.com/swig/sw
 - [Blender Boolean API](https://docs.staging.blender.org/api/current/bpy.types.BooleanModifier.html)、[原生Manifold接合程式](https://github.com/blender/blender/blob/main/source/blender/geometry/intern/mesh_boolean_manifold.cc)：查找封閉來源的布林替代求解器。更換求解器本身不是精度／拓樸通過證據，仍須每步保真三角化及獨立閉合／自交檢查；未變更本專案共用求解器。
 
 - [SPM原廠DIN931／ISO4014尺寸參考](https://spmetalparts.com/products/bolts/partially-threaded-hex-bolts/) 的M5名義頭高3.5／對邊8mm用於現有六角口袋方案；實際包絡採3.7mm，不推定已涵蓋全部公差。[norelem 07170_ST原廠表](https://www.norelem.fr/medias/07170-ST-Datasheet-19858-Hexagon-head-bolts-DIN-931-ISO-4014-steel-en.pdf?context=bWFzdGVyfHJvb3R8MTg1NTE4fGFwcGxpY2F0aW9uL3BkZnxoYjMvaDQxLzkwMDU3ODYzMDA0NDYvMDcxNzBfU1RfRGF0YXNoZWV0XzE5ODU4X0hleGFnb25faGVhZF9ib2x0c19ESU5fOTMxX0lTT180MDE0X3N0ZWVsLS1lbi5wZGZ8NTE1ZWNkNzc0N2VkYTVkNmIxMGZlNmNhZGRmZjFiYTRiNjcwMDkyMDQ5ZDY0ODI0MjVjYjg0NThlZWQzZGQwYQ) 明列07170-05X35的Ls最小15／Lg最大19mm、07170-05X40的20／24mm；光桿覆蓋與螺母完整牙段應分別驗證，不能用標稱總長減參考牙長代替保證尺寸。
+
+## 共用原件修訂與控制介面前置查找（2026-10-27）
+
+查閱 [Blender原廠存取回歸](https://github.com/blender/blender/blob/main/tests/python/bl_blendfile_io.py)、[BlenderProc](https://github.com/DLR-RM/BlenderProc) 的流程／檔案輸出邊界與 [Rigify父關係切換](https://github.com/blender/blender-addons/blob/main/rigify/utils/switch_parent.py) 的控制屬性／驅動變數分離。本案已有序列、矩陣、序列化socket與保存檢查器；沿用原件及既有工具，不引入第二套Blender執行框架。新增規格只描述本案主動螺紋導程與被動間隙，未複製外部碼。
+
+另查 [Blender原廠evaluated ID範例](https://github.com/blender/blender/blob/main/doc/python_api/examples/bpy.types.Depsgraph.1.py)。原始ID欄位或單一動畫公式不能取代實際依賴圖讀回；五齒位fixture包含保存重載與中途角度，角度顯示由實際RNA轉角派生，不依賴重複的顯示時序。
+
+五金公差後續核對：[NuFast ISO4014原廠生產圖](https://www.nufast.co.uk/uploads/ISO4014.pdf) 列M5頭高3.35..3.65mm、對邊7.78..8.00mm；既有3.7mm參考外包絡與±0.28mm樣本不能證明完整軸向間隙。頭高與口袋可用軸向位置必須耦合處理。[Böllhoff DIN986原廠表](https://eshop.boellhoff.de/out/media/pdf/DIN_986_Edelstahl_A2___en.pdf) 提供外形、六角與最小螺母高度，但未據此建立保證盲牙深度，因此尚未選定端部封帽方案。

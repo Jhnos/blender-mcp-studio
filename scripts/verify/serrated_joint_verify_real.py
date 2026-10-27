@@ -16,6 +16,7 @@ import json
 from pathlib import Path
 
 from scripts.verify.generated_artifact_verify_real import BlenderSocketOracle
+from scripts.verify.screen_clamp_verify_real import verify_screen_clamp_control
 from scripts.verify.serrated_contact_verify_real import verify_serrated_contact_plan
 from src.infrastructure.narrowing import as_nonempty_sequence, as_str_keyed_exact, required
 from src.verification.artifact_files import binary_stl_surface
@@ -51,6 +52,7 @@ try:
         else:raise AssertionError('Invalid screen binding was accepted: '+invalid)
         assert '收折進度' not in screen and screw.animation_data is None,'Rejected binding mutated parts'
     screen.rotation_mode='XYZ';screen['fold_angle_deg']=60.0;screw.parent=None
+    screen['fold_angle_deg']=60  # Integer storage must become continuous, not truncate poses.
     namespace['bind_screen_fold_control'](screen,screw)
     fixture_path={str(root / "tmp/lab-station-route-engine/screen-controller-fixture.blend")!r}
     from pathlib import Path
@@ -87,7 +89,8 @@ try:
              assert curve.driver.is_valid,'Invalid or cyclic screen driver'
              assert not curve.keyframe_points and not curve.modifiers,'Expression output is remapped'
              assert len(curve.driver.variables)==1,'Old driver variables were retained'
-             assert curve.driver.variables[0].targets[0].data_path=='["收折進度"]'
+             expected_path='rotation_euler[0]' if curve.data_path=='["fold_angle_deg"]' else '["收折進度"]'
+             assert curve.driver.variables[0].targets[0].data_path==expected_path
      total+=len(observed)
     print(json.dumps({{'samples':total,'maximum_channel_error':maximum,'forward_reverse_match':True}}))
 finally:
@@ -101,6 +104,7 @@ finally:
 def verify_serrated_joint_integration(root: Path) -> None:
     """Observe each formal joint Boolean on real arm geometry; reject any defect."""
     verify_serrated_contact_plan(root)
+    verify_screen_clamp_control(root)
     verify_screen_fold_binding(root)
     script = root / "scripts/model_lab_station.py"
     modules = reload_modules_for(root, script)

@@ -4,7 +4,7 @@ import math
 
 import bpy
 
-from scripts.lab_station_rig import driver
+from scripts.lab_station_rig import continuous_property, driver
 from src.core.domain.lab_station_joints import ScreenFoldSpec
 
 
@@ -27,6 +27,7 @@ def bind_screen_fold_control(
         raise ValueError("Screen binding requires an unbound working pose and independent screw")
     expressions = spec.driver_expressions()
     origin_x, screw_x, angle = screen.location.x, right_screw.location.x, screen.rotation_euler.x
+    continuous_property(screen, "fold_angle_deg", spec.working_angle_deg)
     screen["收折進度"] = 0.0
     screen.id_properties_ui("收折進度").update(
         min=0.0,
@@ -36,16 +37,6 @@ def bind_screen_fold_control(
         description="0 展開 → 鬆右螺栓 → 退齒 → 收折 → 就座 → 鎖回 → 100 收起；名義動作，尚未驗證實體鎖緊力",
     )
     bindings = ("progress",)
-    driver(
-        screen,
-        screen,
-        '["fold_angle_deg"]',
-        -1,
-        expressions["angle_deg"],
-        bindings,
-        identity_mapping=True,
-        property_paths=("收折進度",),
-    )
     driver(
         screen,
         screen,
@@ -75,6 +66,16 @@ def bind_screen_fold_control(
         bindings,
         identity_mapping=True,
         property_paths=("收折進度",),
+    )
+    driver(
+        screen,
+        screen,
+        '["fold_angle_deg"]',
+        -1,
+        f"(body_angle-{angle!r})*180/pi+{spec.working_angle_deg!r}",
+        ("body_angle",),
+        identity_mapping=True,
+        rna_paths=("rotation_euler[0]",),
     )
     screen.update_tag()
     bpy.context.view_layer.update()
