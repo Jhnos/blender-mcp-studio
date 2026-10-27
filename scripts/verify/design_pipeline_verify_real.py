@@ -40,6 +40,18 @@ from scripts.verify.mcp_verify_real import TRANSPORT_ERRORS, default_mcp_url  # 
 from src.infrastructure.narrowing import as_mapping  # noqa: E402
 from src.infrastructure.tools_config import load_tools_config  # noqa: E402
 
+
+def job_budget_s(*, native: bool = False) -> float:
+    from src.adapters.generation.native_runner import (
+        NATIVE_COMMAND_TIMEOUT_S,
+        NATIVE_COMPLETION_TIMEOUT_S,
+    )
+
+    return checks.poll_budget_s() + (
+        NATIVE_COMMAND_TIMEOUT_S + NATIVE_COMPLETION_TIMEOUT_S if native else 0
+    )
+
+
 POLL_PAUSE_S = 10.0
 NEGATIVE_DIR = "tmp"  # git-ignored, under the artifact root the deployed API reads
 
@@ -90,13 +102,22 @@ async def _resource_json(client: Client[Any], run_id: str, name: str) -> Mapping
     return _as_object(json.loads(await _resource_bytes(client, run_id, name)), name)
 
 
-async def _run_spec(
-    client: Client[Any], spec: Mapping[str, object] | None, label: str
+async def run_job(
+    client: Client[Any],
+    spec: Mapping[str, object] | None,
+    label: str,
+    *,
+    revision: Mapping[str, object] | None = None,
 ) -> tuple[Mapping[str, object], Mapping[str, object]]:
     """Submit, poll to a terminal job state, return (job, report)."""
-    submitted = await _object(
-        client, "run_design_pipeline", {} if spec is None else {"spec": dict(spec)}
+    if revision is not None and spec is not None:
+        raise checks.GateError("native revision cannot supply an alternate spec")
+    arguments = (
+        {"revision": dict(revision)}
+        if revision is not None
+        else ({} if spec is None else {"spec": dict(spec)})
     )
+    submitted = await _object(client, "run_design_pipeline", arguments)
     job_id, run_id = str(submitted["job_id"]), str(submitted["run_id"])
     print(f"[{label}] submitted job {job_id} run {run_id}", flush=True)
     loop = asyncio.get_running_loop()
@@ -113,7 +134,7 @@ async def _run_spec(
         checks.poll_job,
         status,
         job_id,
-        budget_s=checks.poll_budget_s(),
+        budget_s=job_budget_s(native=revision is not None),
         pause_s=POLL_PAUSE_S,
     )
     report = await _object(client, "get_run_report", {"run_id": run_id})
@@ -149,7 +170,7 @@ def _positive_failures(
 
 async def _positive(client: Client[Any], contract: Mapping[str, Any]) -> list[str]:
     supplied = None if contract.get("selection") == "current" else contract["spec"]
-    job, report = await _run_spec(client, supplied, str(contract["spec"]["name"]))
+    job, report = await run_job(client, supplied, str(contract["spec"]["name"]))
     print(f"[selected] job ended {job.get('status')} error={job.get('error')}", flush=True)
     run_id = str(report["run_id"])
     early = checks.check_report(report, contract["expect"])
@@ -194,7 +215,7 @@ async def _negative(client: Client[Any], contract: Mapping[str, Any], root: Path
         source["root_dir"] = copy_root.relative_to(root).as_posix()
         source.pop("project_3mf", None)
         spec["name"] = "negative-control-truncated-header"
-        _, report = await _run_spec(client, spec, "negative")
+        _, report = await run_job(client, spec, "negative")
         return checks.check_negative(report, target.as_posix())
     finally:
         shutil.rmtree(work, ignore_errors=True)
@@ -219,6 +240,7 @@ async def _selected_contract(client: Client[Any], contract: Mapping[str, Any]) -
 
 async def _session(contract: Mapping[str, Any], url: str, root: Path) -> list[str]:
     failures: list[str] = []
+    submission_started = False
     for attempt in (1, 2):
         try:
             async with Client(url) as client:
@@ -232,11 +254,12 @@ async def _session(contract: Mapping[str, Any], url: str, root: Path) -> list[st
                 failures += checks.check_slicer(rows or [], contract["expect"]["slicer_tool"])
                 if failures:
                     return failures
+                submission_started = True
                 failures += await _positive(client, resolved)
                 failures += await _negative(client, resolved, root)
             return failures
         except TRANSPORT_ERRORS as exc:
-            if attempt == 1 and not failures:
+            if attempt == 1 and not failures and not submission_started:
                 print(f"transport reset ({type(exc).__name__}: {exc}); retrying once", flush=True)
                 continue
             return [*failures, checks.unreachable_message(url, exc)]

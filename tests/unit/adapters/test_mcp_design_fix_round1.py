@@ -20,7 +20,12 @@ from tests.unit.core.test_design_pipeline import _payload, _rig
 
 async def test_slice_for_print_missing_binary_is_failed_result_without_path(tmp_path):
     rig = _rig(tmp_path)
-    rig.pipeline._slicing = BambuStudioCli(tmp_path / "nope" / "BambuStudio", profiles_dir=tmp_path)
+    rig.pipeline._stages = replace(
+        rig.pipeline._stages,
+        slicing=BambuStudioCli(
+            tmp_path / "nope" / "BambuStudio", profiles_dir=tmp_path, limits=rig.pipeline.limits
+        ),
+    )
     async with Client(_server(rig)) as client:
         res = await client.call_tool("slice_for_print", {"input_3mf": "artifact/p.3mf"})
     data = res.structured_content
@@ -36,7 +41,7 @@ async def test_design_tool_errors_are_scrubbed(tmp_path):
     async def boom(paths):
         raise DomainError(f"cannot read {tmp_path}/artifact/STL/a.stl for {Path.home()}/x")
 
-    rig.pipeline._integrity.check = boom
+    rig.pipeline._stages.integrity.check = boom
     async with Client(_server(rig)) as client:
         res = await client.call_tool(
             "check_mesh_integrity", {"stl_paths": ["artifact/STL/a.stl"]}, raise_on_error=False
@@ -65,7 +70,9 @@ async def test_slice_for_print_returns_busy_when_lease_held(tmp_path):
 async def test_check_mesh_integrity_rejects_total_bytes_over_cap(tmp_path):
     rig = _rig(tmp_path)  # two 1-byte STLs
     server = _server(rig)  # tool timeout is derived at build time from the real caps
-    rig.pipeline._limits = replace(rig.pipeline._limits, max_total_stl_bytes=1)
+    rig.pipeline._stages = replace(
+        rig.pipeline._stages, limits=replace(rig.pipeline._stages.limits, max_total_stl_bytes=1)
+    )
     async with Client(server) as client:
         res = await client.call_tool(
             "check_mesh_integrity",

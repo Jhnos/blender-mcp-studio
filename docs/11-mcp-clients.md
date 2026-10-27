@@ -66,7 +66,7 @@ examples, not server requirements.
 | `modify_object` | Destructive write | Change transforms or visibility |
 | `delete_object` | Destructive write | Permanently remove one object |
 | `apply_material` | Destructive write | Create/update and assign a Principled BSDF material |
-| `run_design_pipeline` | Write | Submit the current model without spec, or an explicit historical/custom ModelSpec; returns a queued job |
+| `run_design_pipeline` | Write | Submit the current model, a registered native revision, or an explicit historical/custom ModelSpec; returns a queued job |
 | `describe_model_spec` | Read | ModelSpec v1 JSON Schema, defaults, supported printers/materials and a worked example |
 | `list_artifacts` | Read | Deliverable directories usable as `source.root_dir` (STL count per subdirectory, 3MF names) |
 | `get_job_status` | Read | Poll a design job by `job_id` |
@@ -118,6 +118,15 @@ arbitrary Python.
 `describe_model_spec` 與 `list_artifacts` 可查詢服務所選模型；只有明確要求歷史／自訂模型時，
 才提供自己的 spec。客戶端不必先找路徑、選版本或複製範例。
 `check_mesh_integrity` 與 `slice_for_print` 可單獨使用，也接受 ModelSpec 以外的檔案。
+
+原件修訂仍使用同一個工具：`run_design_pipeline` 傳入
+`{"revision":{"recipe_id":"screen-clamp","target_angle_deg":30}}`，REST 的相同參數傳給
+`POST /api/design/runs`。修訂時省略 `spec`；目標角僅接受 0、15、30、45、60 度。
+服務在排隊前固定目前選版與列印條件，另存完整 STL，再由同一批零件衍生 3MF，沿用原有
+幾何、切片與封裝階段。原檔與目前選版不會自動改變；同一工作只提供正式產物、報告與切片證據，
+來源副本、執行程式及內部收據不提供下載或封裝。完成待確認的工作保持隔離；晚到收據驗證後，
+若資格流程未繼續，工作會明示中斷，不自動重送修改。工具可用性以當前已載入版本為準。
+
 
 - **路徑規則**：`stl_paths`、`input_3mf` 一律是允許的 artifact root 底下的**相對路徑**，
   與 ModelSpec 同一道關卡（無 `..`、無隱藏段、副檔名須為 `.stl`／`.3mf`、符號連結不得逃出 root），

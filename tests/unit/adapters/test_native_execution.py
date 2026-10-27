@@ -115,3 +115,77 @@ def test_missing_pending_cannot_hide_a_started_or_terminal_callback(tmp_path):
     (journal.directory / "pending.json").unlink()
     with pytest.raises(NativeSceneError):
         journal.unfinished()
+
+
+@pytest.mark.parametrize(
+    "fault",
+    [
+        None,
+        "different-state",
+        "source",
+        "missing-backup",
+        "late-change",
+        "not-terminal",
+        "restored",
+    ],
+)
+def test_verified_reset_closes_failed_execution_without_rewriting_failure(tmp_path, fault):
+    directory = tmp_path / "reset-execution"
+    journal = NativeExecutionJournal(directory)
+    source_bytes = b"verified selected original native"
+    source_sha = hashlib.sha256(source_bytes).hexdigest()
+    identity = journal.reserve("a" * 32, "closed failed callback", source_sha)
+    terminal = {
+        **identity,
+        "status": "failed",
+        "restored": False,
+        "output": None,
+        "surfaces": None,
+        "error": "failed original restoration",
+    }
+    if fault == "restored":
+        terminal["restored"] = True
+    if fault != "not-terminal":
+        journal.publish_terminal(terminal)
+    expected = {
+        "source_sha256": source_sha,
+        "objects": {"part": {"type": "MESH", "geometry": "c" * 64, "state_sha256": "e" * 64}},
+        "active_objects": ["part"],
+        "external_libraries": 0,
+    }
+    observed = json.loads(json.dumps(expected))
+    if fault == "different-state":
+        observed["objects"]["part"]["geometry"] = "d" * 64
+    if fault == "source":
+        expected["source_sha256"] = observed["source_sha256"] = "f" * 64
+
+    def asset(name, data):
+        path = directory / name
+        path.write_bytes(data)
+        return asdict(SourceArtifact(name, hashlib.sha256(data).hexdigest(), len(data)))
+
+    evidence = dict(
+        source=asset("reset-source.blend", source_bytes),
+        backup=asset("reset-backup.blend", b"preserved failed live scene"),
+        expected=asset("reset-expected.json", json.dumps(expected).encode()),
+        observed=asset("reset-observed.json", json.dumps(observed).encode()),
+    )
+    if fault == "missing-backup":
+        (directory / "reset-backup.blend").unlink()
+    before = (directory / "terminal.json").read_bytes() if fault != "not-terminal" else None
+    if fault is not None and fault != "late-change":
+        with pytest.raises(NativeSceneError):
+            journal.acknowledge_reset(**evidence)
+        assert not (directory / "reset-acknowledged.json").exists()
+    else:
+        journal.acknowledge_reset(**evidence)
+        if fault == "late-change":
+            (directory / "reset-observed.json").write_bytes(b"tampered")
+            with pytest.raises(NativeSceneError):
+                NativeExecutionJournal(directory).unfinished()
+        else:
+            assert not NativeExecutionJournal(directory).unfinished()
+            assert not (directory / "acknowledged.json").exists()
+            assert journal.read_terminal()["restored"] is False
+    if before is not None:
+        assert (directory / "terminal.json").read_bytes() == before

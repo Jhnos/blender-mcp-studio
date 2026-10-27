@@ -137,9 +137,15 @@ def register_design_tools(
         timeout=SUBMIT_TIMEOUT_S,
         annotations=_annotations("Run design pipeline", read_only=False, idempotent=False),
     )
-    async def run_design_pipeline(spec: dict[str, object] | None = None) -> dict[str, object]:
+    async def run_design_pipeline(
+        spec: dict[str, object] | None = None, revision: dict[str, object] | None = None
+    ) -> dict[str, object]:
         """Submit the current selected model when spec is omitted, or an explicit ModelSpec.
 
+        Optional revision={"recipe_id":"screen-clamp","target_angle_deg":30} revises the
+        current native model, exports the complete same-part STL set, then derives and slices
+        its plate in this same job. Omit spec when revising; only indexed angles 0/15/30/45/60
+        are accepted. Original files and current selection stay intact. No code or path inputs.
         Return its queued job; poll get_job_status.
 
         Minimal spec: {"spec_version": "1", "name": ..., "source": {"root_dir": ...,
@@ -152,7 +158,7 @@ def register_design_tools(
         """
         pipeline = _configured(design, "design pipeline")
         try:
-            return job_dict(await pipeline.submit(spec))
+            return job_dict(await pipeline.submit(spec, revision=revision))
         except DomainError as exc:
             raise await fail(exc) from exc
 

@@ -8,6 +8,8 @@ Doctrine consulted: `ddd-solid`（pure frozen domain）、`tdd`（先紅後綠�
 
 目前交付由 [共用應用服務](../../../models/lab-station/README.md) 決定；使用者已確認的操作與製造要求以 [任務16規格](../../tasks/16_lab-station.md#specification) 為準。本目錄下列基線與各套測試只證明其明列的研究模型，不指定交付版本，也不能替目前交付件取得機構資格。
 
+目前交付件逐項驗收必須依 [目前交付需求對照](14-current-delivery-contract.md) 取得產物層證據；研究矩陣不替它解除要求。
+
 ## 研究基線：緊湊電極臂
 
 此研究基線採用 [13-electrode-arm](13-electrode-arm.md) 的肩鉸鍊、平行雙桿前臂與三角末端。兩頭各自定位；肩與前臂角度共同提供前後及上下調整，探頭角度另行手調。目標伸距約 200 mm，保留可調／可折平 HMI 與電路空間，減少外掛五金。

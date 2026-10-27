@@ -7,6 +7,7 @@ identity component transforms and millimetres. Other forms require a new contrac
 from __future__ import annotations
 
 import io
+import math
 import posixpath
 import zipfile
 from collections.abc import Mapping
@@ -15,7 +16,23 @@ from pathlib import PurePosixPath
 from xml.dom import minidom
 from xml.etree import ElementTree as ET
 
-from src.verification.mesh_binding import MeshFrameBinding, bind_axis_frame
+from src.adapters.artifacts.plate_metadata import (
+    object_name as _name,
+)
+from src.adapters.artifacts.plate_metadata import (
+    parse_plate_xml as parse_plate_xml,
+)
+from src.adapters.artifacts.plate_metadata import (
+    plate_object_labels as plate_object_labels,
+)
+from src.adapters.artifacts.plate_metadata import (
+    require_one as _one,
+)
+from src.verification.mesh_binding import (
+    MeshFrameBinding,
+    bind_axis_frame,
+    require_same_oriented_surface,
+)
 from src.verification.mesh_integrity import parse_closed_surface
 
 _NS = {"m": "http://schemas.microsoft.com/3dmanufacturing/core/2015/02"}
@@ -29,6 +46,7 @@ class _Part:
     member: str
     element: ET.Element
     settings: ET.Element
+    build: ET.Element
 
     def surface(self) -> dict[str, object]:
         return {
@@ -42,25 +60,23 @@ class _Part:
             ],
         }
 
-
-def _one(elements: list[ET.Element]) -> ET.Element:
-    if len(elements) != 1:
-        raise ValueError("plate requires one unique object, component and mesh")
-    return elements[0]
-
-
-def _name(element: ET.Element) -> str:
-    meta = _one([m for m in element.findall("metadata") if m.get("key") == "name"])
-    name = meta.get("value", "")
-    if not name:
-        raise ValueError("plate owner must have a name")
-    return name
-
-
-def _xml(payload: bytes) -> ET.Element:
-    if b"<!DOCTYPE" in payload or b"<!ENTITY" in payload:
-        raise ValueError("plate XML entity declarations are unsupported")
-    return ET.fromstring(payload)
+    def world_surface(self) -> dict[str, object]:
+        if self.build.get("printable", "1") not in ("1", "true"):
+            raise ValueError("plate contains a disabled original part")
+        transform = tuple(float(v) for v in self.build.get("transform", _IDENTITY).split())
+        if len(transform) != 12 or not all(math.isfinite(v) for v in transform):
+            raise ValueError("plate build transform must contain twelve finite numbers")
+        points, faces = parse_closed_surface(self.surface())
+        return {
+            "vertices": [
+                tuple(
+                    sum(point[j] * transform[j * 3 + axis] for j in range(3)) + transform[9 + axis]
+                    for axis in range(3)
+                )
+                for point in points
+            ],
+            "faces": faces,
+        }
 
 
 def _stale(name: str) -> bool:
@@ -100,8 +116,8 @@ class PlateProject:
                     raise ValueError("plate archive contains a noncanonical member")
             self._entries = {name: archive.read(name) for name in names}
         self._max_bytes = max_bytes
-        self._settings = _xml(self._entries["Metadata/model_settings.config"])
-        wrapper = _xml(self._entries["3D/3dmodel.model"])
+        self._settings = parse_plate_xml(self._entries["Metadata/model_settings.config"])
+        wrapper = parse_plate_xml(self._entries["3D/3dmodel.model"])
         if wrapper.get("unit") != "millimeter":
             raise ValueError("plate must use explicit millimetres")
         configurations = self._settings.findall("object")
@@ -121,7 +137,7 @@ class PlateProject:
             if comp.get("transform") != _IDENTITY:
                 raise ValueError("plate requires identity component transforms")
             member = comp.get(_PRODUCTION + "path", "").lstrip("/")
-            model = _xml(self._entries[member])
+            model = parse_plate_xml(self._entries[member])
             if model.get("unit") != "millimeter":
                 raise ValueError("plate mesh must use explicit millimetres")
             obj = _one(model.findall("m:resources/m:object", _NS))
@@ -131,7 +147,14 @@ class PlateProject:
             part = _one(config.findall("part"))
             if part.get("id") != obj.get("id") or _name(part) != _name(config):
                 raise ValueError("plate part identity differs from its owner")
-            self._parts[_name(config)] = _Part(member, obj, config)
+            build = _one(
+                [
+                    item
+                    for item in wrapper.findall("m:build/m:item", _NS)
+                    if item.get("objectid") == config.get("id")
+                ]
+            )
+            self._parts[_name(config)] = _Part(member, obj, config, build)
         members = {p.member for p in self._parts.values()}
         if len(members) != len(owners) or {
             n for n in self._entries if n.endswith(".model")
@@ -157,13 +180,23 @@ class PlateProject:
             }
         return report
 
+    def require_same_layout(self, payload: bytes) -> dict[str, float]:
+        """Require every enabled original part at its existing world-frame surface after slicing."""
+        other = PlateProject(payload, tuple(self._parts), max_bytes=self._max_bytes)
+        return {
+            owner: require_same_oriented_surface(
+                part.world_surface(), other._parts[owner].world_surface()
+            )
+            for owner, part in self._parts.items()
+        }
+
     def revise(
         self, changes: Mapping[str, tuple[Surface, Surface]]
     ) -> tuple[bytes, dict[str, object]]:
         if not changes or set(changes) - set(self._parts):
             raise ValueError("plate changes require known nonempty original owners")
         entries = dict(self._entries)
-        settings = _xml(entries["Metadata/model_settings.config"])
+        settings = parse_plate_xml(entries["Metadata/model_settings.config"])
         configurations = {_name(o): o for o in settings.findall("object")}
         bindings: dict[str, object] = {}
         for owner, (original, revised) in changes.items():
@@ -201,7 +234,9 @@ class PlateProject:
         for name, data in list(entries.items()):
             if not name.endswith(".rels"):
                 continue
-            _xml(data)  # Reject entity declarations before using the preserving DOM serializer.
+            parse_plate_xml(
+                data
+            )  # Reject entity declarations before using the preserving DOM serializer.
             relationships = minidom.parseString(data)
             base = posixpath.dirname(posixpath.dirname(name))
             changed = False

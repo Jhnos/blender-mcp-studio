@@ -159,3 +159,38 @@ async def test_execute_revision_passes_the_same_capture_to_its_injected_runner(t
     result = await service.execute_revision("a" * 32, request)
     assert calls == 1 and result.prepared.request is request
     assert runner.execute.call_args.args[0] is result.prepared
+
+
+async def test_queued_native_capture_never_reselects_or_reparses_later_defaults(tmp_path):
+    from src.core.domain.native_revision import NativeRevisionRequest
+
+    _, _, spec, reader = fixture(tmp_path)
+    selected = {
+        "spec_version": "1",
+        "name": "selected",
+        "source": {
+            "root_dir": "models/selected",
+            "stl_glob": spec.source.stl_glob,
+            "project_3mf": "plate.3mf",
+        },
+        "print_target": {"layer_height_mm": 0.2, "support": True, "brim_mm": 3},
+    }
+    calls = 0
+
+    def current():
+        nonlocal calls
+        calls += 1
+        return selected
+
+    catalog = ArtifactCatalog((tmp_path,), 10, current, native_sources=reader)
+    service = NativeRevisionService(catalog, FilesystemNativeStaging(reader, tmp_path / "runs"))
+    intent = NativeRevisionRequest("screen-clamp", 30)
+    captured = await service.capture_revision(catalog.current(), intent)
+    assert calls == 1 and not (tmp_path / "runs").exists()
+    selected["name"] = "later"
+    selected["print_target"] = {"layer_height_mm": 0.3, "support": False, "brim_mm": 0}
+    prepared = await service.prepare_captured("d" * 32, captured)
+    assert calls == 1 and prepared.spec is captured.spec and prepared.request is intent
+    assert prepared.staged.source == captured.source
+    assert prepared.spec.print_target.layer_height_mm == 0.2
+    assert prepared.spec.print_target.support and prepared.spec.print_target.brim_mm == 3

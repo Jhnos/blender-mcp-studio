@@ -11,7 +11,9 @@ from tests.unit.core.test_design_pipeline import _payload, _rig, _run
 
 
 def _tight(rig, **kw):
-    rig.pipeline._limits = replace(rig.pipeline._limits, **kw)
+    rig.pipeline._stages = replace(
+        rig.pipeline._stages, limits=replace(rig.pipeline._stages.limits, **kw)
+    )
 
 
 def _import_json(rig, job) -> dict:
@@ -148,7 +150,7 @@ async def test_report_json_has_no_absolute_paths(tmp_path):
             verdicts=tuple(replace(v, error=f"{v.path}: open edges") for v in verdicts.verdicts),
         )
 
-    rig.pipeline._integrity.check = check
+    rig.pipeline._stages.integrity.check = check
     job, _, report = await _run(rig, _payload(rig))
     text = (rig.runs / job.run_id / "report.json").read_text()
     assert _leaks(text, tmp_path) == [] and abs_a not in text

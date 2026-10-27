@@ -45,7 +45,15 @@ class Rig:
 
 
 def _rig(
-    tmp_path, *, geometry_ok=True, sim_ok=True, delay=0.0, pack_error=None, selected_spec=None
+    tmp_path,
+    *,
+    geometry_ok=True,
+    sim_ok=True,
+    delay=0.0,
+    pack_error=None,
+    selected_spec=None,
+    native=None,
+    native_products=None,
 ) -> Rig:
     root = tmp_path / "artifact"
     (root / "STL").mkdir(parents=True)
@@ -73,6 +81,8 @@ def _rig(
                 }
             ),
         ),
+        native=native,
+        native_products=native_products,
         integrity=integrity,
         simulation=simulation,
         slicing=slicing,
@@ -502,3 +512,156 @@ async def test_startup_recovery_does_not_fail_a_job_with_unresolved_remote_nativ
     assert await rig.pipeline.recover_interrupted(unresolved_run_ids=(native.run_id,)) == 1
     assert (await rig.pipeline.status(native.job_id)).status is JobStatus.RUNNING
     assert (await rig.pipeline.status(ordinary.job_id)).status is JobStatus.FAILED
+
+
+def test_native_job_download_and_package_share_closed_public_file_policy(tmp_path):
+    rig = _rig(tmp_path)
+    run_id = "c" * 32
+    run_dir = rig.runs / run_id
+    public = (
+        "spec.json",
+        "native-request.json",
+        "report.json",
+        "import.json",
+        "geometry.json",
+        "manifest.json",
+        "native-product/parts/STL/part.stl",
+        "native-product/project.3mf",
+        "print/plate_1.gcode",
+    )
+    private = (
+        "native-source/old.blend",
+        "native-execution/program.py",
+        "native-execution/pending.json",
+        "future-private/secret.json",
+        "native-product/.private/key.json",
+    )
+    for name in (*public, *private):
+        path = run_dir / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("fixture")
+    (run_dir / "native-product/alias.json").symlink_to(run_dir / private[1])
+    for name in (*private, "native-product/alias.json"):
+        with pytest.raises(ValueError):
+            rig.pipeline.run_file(run_id, name)
+    for name in public:
+        assert rig.pipeline.run_file(run_id, name) == (run_dir / name).resolve()
+    assert set(stages._run_files(run_dir)) == set(public) - {"report.json"}
+
+
+async def test_native_pipeline_captures_once_and_slices_only_derived_same_job_product(tmp_path):
+    from types import SimpleNamespace
+    from unittest.mock import AsyncMock
+
+    from src.core.domain.model_spec import parse_model_spec
+    from src.core.domain.native_revision import CapturedNativeRevision
+
+    calls = []
+    current = {
+        "spec_version": "1",
+        "name": "original",
+        "source": {"root_dir": "artifact", "project_3mf": "p.3mf"},
+        "print_target": {"support": True, "brim_mm": 3},
+    }
+
+    def selected():
+        calls.append("select")
+        return current
+
+    native = SimpleNamespace()
+
+    async def capture(payload, request):
+        return CapturedNativeRevision(
+            parse_model_spec(payload, artifact_roots=(tmp_path,)), request, None
+        )
+
+    native.capture_revision = AsyncMock(side_effect=capture)
+    native.execute_captured = AsyncMock(return_value=object())
+
+    async def build(result):
+        run_id = next(iter(rig.jobs.records.values())).run_id
+        directory = rig.runs / run_id / "native-product"
+        (directory / "parts/STL").mkdir(parents=True)
+        (directory / "parts/STL/revised.stl").write_bytes(b"revised")
+        (directory / "project.3mf").write_bytes(b"revised plate")
+        return SimpleNamespace(
+            directory=f"{run_id}/native-product", project=SimpleNamespace(path="project.3mf")
+        )
+
+    products = SimpleNamespace(build=AsyncMock(side_effect=build))
+    rig = _rig(tmp_path, selected_spec=selected, native=native, native_products=products)
+    job = await rig.pipeline.submit(revision={"recipe_id": "screen-clamp", "target_angle_deg": 30})
+    current["name"] = "later"
+    current["print_target"] = {"support": False, "brim_mm": 0}
+    await rig.pipeline.wait_idle()
+    assert calls == ["select"]
+    assert (await rig.pipeline.status(job.job_id)).status is JobStatus.DONE
+    captured = native.execute_captured.await_args.args[1]
+    assert captured.spec.name == "original" and captured.request.target_angle_deg == 30
+    assert captured.spec.print_target.support and captured.spec.print_target.brim_mm == 3
+    report = await rig.pipeline.report(job.run_id)
+    assert report.passed and report.spec_name == "original"
+    assert dict(report.stages[0].metrics)["stl_count"] == "1"
+    request = rig.slicing.requests[0]
+    assert request.input_3mf == str(rig.runs / job.run_id / "native-product/project.3mf")
+    assert request.support and request.brim_mm == 3
+    assert (
+        json.loads((rig.runs / job.run_id / "native-request.json").read_text())["target_angle_deg"]
+        == 30
+    )
+    assert "native-request.json" in rig.packaging.calls[0][3]
+
+
+async def test_native_unresolved_completion_is_neither_failed_nor_sliced(tmp_path):
+    from types import SimpleNamespace
+    from unittest.mock import AsyncMock
+
+    from src.core.domain.exceptions import BlenderExecutionUncertainError
+    from src.core.domain.model_spec import parse_model_spec
+    from src.core.domain.native_revision import CapturedNativeRevision
+
+    async def capture(payload, request):
+        return CapturedNativeRevision(
+            parse_model_spec(payload, artifact_roots=(tmp_path,)), request, None
+        )
+
+    native = SimpleNamespace(
+        capture_revision=AsyncMock(side_effect=capture),
+        execute_captured=AsyncMock(
+            side_effect=BlenderExecutionUncertainError("remote callback unresolved")
+        ),
+        reconcile_execution=AsyncMock(return_value=False),
+    )
+    products = SimpleNamespace(build=AsyncMock())
+    rig = _rig(tmp_path, native=native, native_products=products)
+    job = await rig.pipeline.submit(revision={"recipe_id": "screen-clamp"})
+    await rig.pipeline.wait_idle()
+    status = await rig.pipeline.status(job.job_id)
+    assert status.status is JobStatus.RUNNING and "unconfirmed" in status.error
+    assert status.stage is StageName.IMPORT
+    assert not rig.slicing.requests and not rig.packaging.calls
+    products.build.assert_not_awaited()
+    assert not (await rig.pipeline.report(job.run_id)).stages
+    native.reconcile_execution.return_value = True
+    status = await rig.pipeline.status(job.job_id)
+    assert status.status is JobStatus.FAILED and "terminal verified" in status.error
+    assert (await rig.pipeline.report(job.run_id)).stages[-1].outcome is StageOutcome.FAILED
+    native.execute_captured.assert_awaited_once()
+    assert not rig.slicing.requests
+
+
+@pytest.mark.parametrize(
+    "revision",
+    [
+        {"recipe_id": "unknown"},
+        {"recipe_id": "screen-clamp", "code": "pass"},
+        {"recipe_id": "screen-clamp", "target_angle_deg": 12},
+    ],
+)
+async def test_native_invalid_intent_creates_no_job(tmp_path, revision):
+    from src.core.domain.native_revision import NativeRevisionError
+
+    rig = _rig(tmp_path)
+    with pytest.raises(NativeRevisionError):
+        await rig.pipeline.submit(revision=revision)
+    assert not rig.jobs.records

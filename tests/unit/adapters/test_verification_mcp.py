@@ -49,3 +49,40 @@ async def test_unknown_suite_and_extra_code_are_not_executable() -> None:
         )
         assert result.is_error
         service.run.assert_not_called()
+
+
+def test_independent_scene_oracle_observes_topology_changes_with_identical_vertices(
+    monkeypatch, capsys
+):
+    import json
+    import sys
+    from types import SimpleNamespace
+
+    from scripts.verify.verification_mcp_verify_real import SNAPSHOT
+
+    mesh = SimpleNamespace(
+        name="mesh",
+        vertices=[
+            SimpleNamespace(co=(0, 0, 0)),
+            SimpleNamespace(co=(1, 0, 0)),
+            SimpleNamespace(co=(0, 1, 0)),
+        ],
+        edges=[SimpleNamespace(vertices=(0, 1))],
+        polygons=[SimpleNamespace(vertices=(0, 1, 2))],
+    )
+    bpy = SimpleNamespace(
+        data=SimpleNamespace(objects=[], meshes=[mesh], filepath=""),
+        context=SimpleNamespace(
+            view_layer=SimpleNamespace(objects=SimpleNamespace(active=None)),
+            scene=SimpleNamespace(render=SimpleNamespace(filepath="render.png")),
+        ),
+    )
+    monkeypatch.setitem(sys.modules, "bpy", bpy)
+
+    def read():
+        exec(SNAPSHOT, {})
+        return json.loads(capsys.readouterr().out.split("SCENE_STATE_JSON:", 1)[1])
+
+    before = read()
+    mesh.polygons[0].vertices = (0, 2, 1)
+    assert read() != before

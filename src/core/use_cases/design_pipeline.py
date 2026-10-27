@@ -1,12 +1,8 @@
 """DesignPipeline - import -> geometry -> mechanism -> print -> package for one ModelSpec.
 
-REST and MCP both call this one service. Every run owns ``runs_dir/<run_id>/``; ``spec.json``
-(the raw payload, a reproduction input) is written at submit and re-parsed at run time, and
-``report.json`` is rewritten atomically after each stage. A job never stays QUEUED/RUNNING
-after ``run()`` ends (finally), and ``recover_interrupted`` fails orphans after a restart.
-
-Lease note (Phase 1b): mechanism and print take the Blender lease separately. Once print
-loads STLs into Blender, Phase 1b must hold a single lease across both stages.
+REST and MCP share jobs, evidence and stage execution. Native jobs capture selection before
+queueing and retain RUNNING when remote completion is unknown; startup preserves their
+quarantine until durable terminal/restoration receipts are verified.
 """
 
 from __future__ import annotations
@@ -14,7 +10,6 @@ from __future__ import annotations
 import asyncio
 import contextlib
 import logging
-import re
 import uuid
 from collections.abc import AsyncIterator, Awaitable, Callable, Mapping
 from dataclasses import replace
@@ -28,9 +23,15 @@ from src.core.domain.design_run import (
     StageOutcome,
     StageReport,
 )
+from src.core.domain.exceptions import BlenderExecutionUncertainError
 from src.core.domain.import_limits import ImportLimits
 from src.core.domain.mesh_integrity import MeshIntegrityReport
-from src.core.domain.model_spec import ModelSpec, ModelSpecError, PrintTarget, parse_model_spec
+from src.core.domain.model_spec import PrintTarget, parse_model_spec
+from src.core.domain.native_revision import (
+    CapturedNativeRevision,
+    NativeRevisionError,
+    parse_native_revision,
+)
 from src.core.domain.slicing import (
     SliceRequest,
     SliceResult,
@@ -40,6 +41,7 @@ from src.core.domain.slicing import (
 from src.core.ports.job_store_port import JobStorePort
 from src.core.ports.mechanism_simulation_port import MechanismSimulationPort
 from src.core.ports.mesh_integrity_port import MeshIntegrityPort
+from src.core.ports.native_product_port import NativeProductPort
 from src.core.ports.packaging_port import PackagingPort
 from src.core.ports.slicing_port import SlicingPort
 from src.core.use_cases import design_files as files
@@ -47,12 +49,13 @@ from src.core.use_cases import design_reports as reports
 from src.core.use_cases import design_stages as stages
 from src.core.use_cases.artifact_catalog import ArtifactCatalog
 from src.core.use_cases.blender_lease import BlenderLease, run_to_completion
+from src.core.use_cases.native_revision import NativeRevisionService
 
 logger = logging.getLogger(__name__)
 
-_RUN_ID = re.compile(r"[0-9a-f]{32}")
 _LEASED = frozenset({StageName.MECHANISM, StageName.PRINT})
 INTERRUPTED = "interrupted: service restarted"
+NATIVE_UNCONFIRMED = "native execution completion unconfirmed; verified recovery is required"
 SLICER_BUSY = "slicer busy: another print job is running; retry later"
 
 
@@ -70,23 +73,30 @@ class DesignPipeline:
         artifact_roots: tuple[Path, ...],
         limits: ImportLimits,
         artifacts: ArtifactCatalog,
+        native: NativeRevisionService | None = None,
+        native_products: NativeProductPort | None = None,
     ) -> None:
         self._artifacts = artifacts
-        self._integrity = integrity
-        self._simulation = simulation
-        self._slicing = slicing
-        self._packaging = packaging
         self._jobs = jobs
         self._lease = lease
         self._runs_dir = Path(runs_dir)
         self._roots = artifact_roots
-        self._limits = limits
         self._scrub = files.PathScrubber(artifact_roots, Path(runs_dir))
+        self._stages = stages.DesignStages(
+            limits,
+            integrity,
+            simulation,
+            slicing,
+            packaging,
+            self._scrub.text,
+            native,
+            native_products,
+        )
         self._tasks: set[asyncio.Task[DesignRunReport]] = set()
 
     @property
     def limits(self) -> ImportLimits:
-        return self._limits
+        return self._stages.limits
 
     @property
     def lease(self) -> BlenderLease:
@@ -96,44 +106,53 @@ class DesignPipeline:
     @property
     def slice_timeout_s(self) -> float:
         """The slicing port's own deadline (delivery adapters add their transport margin)."""
-        return self._slicing.timeout_s
+        return self._stages.slicing.timeout_s
 
-    async def submit(self, payload: Mapping[str, object] | None = None) -> JobRecord:
+    async def submit(
+        self,
+        payload: Mapping[str, object] | None = None,
+        *,
+        revision: Mapping[str, object] | None = None,
+    ) -> JobRecord:
         """Parse (ModelSpecError, no side effects), create job + run dir + spec.json, schedule.
 
         An unsupported printer or material is rejected here, before any job exists.
         """
+        if revision is not None and payload is not None:
+            raise NativeRevisionError("native revision uses the current selected model; omit spec")
+        request = parse_native_revision(revision) if revision is not None else None
+        if request is not None and (self._stages.native is None or self._stages.products is None):
+            raise NativeRevisionError("native print pipeline is not configured")
         selected = await asyncio.to_thread(self._artifacts.current) if payload is None else payload
-        self._check_target(parse_model_spec(selected, artifact_roots=self._roots).print_target)
+        stages.check_target(
+            parse_model_spec(selected, artifact_roots=self._roots).print_target,
+            self._stages.slicing,
+        )
+        captured = (
+            await self._stages.native.capture_revision(selected, request)
+            if request is not None and self._stages.native is not None
+            else None
+        )
         run_id = uuid.uuid4().hex
         job = await self._jobs.create(run_id)
         try:
             run_dir = self._runs_dir / run_id
             run_dir.mkdir(parents=True)
             reports.write_spec(run_dir, selected)
+            if captured is not None:
+                reports.write_native_request(run_dir, captured.request)
         except Exception as exc:
             error = await self.clean(f"{type(exc).__name__}: {exc}")
             await self._jobs.update(job.job_id, status=JobStatus.FAILED, error=error)
             raise
-        task = asyncio.create_task(self.run(job.job_id))
+        task = asyncio.create_task(self.run(job.job_id, native=captured))
         self._tasks.add(task)
         task.add_done_callback(self._finished)
         return job
 
-    def _check_target(self, target: PrintTarget) -> None:
-        supported = self._slicing.supported()
-        for label, value, allowed in (
-            ("printer", target.printer, supported.printers),
-            ("material", target.material, supported.materials),
-        ):
-            if value not in allowed:
-                raise ModelSpecError(
-                    f"unsupported print_target.{label} {value!r}; supported: {', '.join(allowed)}"
-                )
-
     async def describe_spec(self) -> dict[str, object]:
         """Spec v1 as JSON Schema with this host's supported printers and materials."""
-        supported = self._slicing.supported()
+        supported = self._stages.slicing.supported()
         return await asyncio.to_thread(
             self._artifacts.describe, supported.printers, supported.materials
         )
@@ -164,7 +183,7 @@ class DesignPipeline:
 
     async def tools(self) -> tuple[ToolAvailability, ...]:
         """External tools the pipeline depends on (currently the slicer)."""
-        return (await self._slicing.availability(),)
+        return (await self._stages.slicing.availability(),)
 
     async def check_meshes(self, paths: tuple[str, ...]) -> MeshIntegrityReport:
         """Integrity-check STLs named relative to an artifact root (no run, no Blender lease).
@@ -176,11 +195,11 @@ class DesignPipeline:
             tuple(paths),
             suffix=".stl",
             roots=self._roots,
-            max_count=self._limits.max_stl_files,
-            max_bytes=self._limits.max_stl_bytes,
-            max_total_bytes=self._limits.max_total_stl_bytes,
+            max_count=self._stages.limits.max_stl_files,
+            max_bytes=self._stages.limits.max_stl_bytes,
+            max_total_bytes=self._stages.limits.max_total_stl_bytes,
         )
-        report = await self._integrity.check(tuple(str(f.absolute) for f in found))
+        report = await self._stages.integrity.check(tuple(str(f.absolute) for f in found))
         return files.relative_report(report, found, self._scrub)
 
     async def slice_file(self, input_3mf: str, printer: str, *, queue: bool = True) -> SliceResult:
@@ -197,7 +216,7 @@ class DesignPipeline:
             suffix=".3mf",
             roots=self._roots,
             max_count=1,
-            max_bytes=self._limits.max_3mf_bytes,
+            max_bytes=self._stages.limits.max_3mf_bytes,
         )
         run_dir = self._runs_dir / uuid.uuid4().hex
         try:
@@ -209,7 +228,7 @@ class DesignPipeline:
                     str(found.absolute), str(run_dir / "print"), PrintTarget(printer=printer)
                 )
                 try:
-                    result = await run_to_completion(self._slicing.slice(request))
+                    result = await run_to_completion(self._stages.slicing.slice(request))
                 except ToolUnavailableError as exc:
                     result = SliceResult(False, None, None, "", -1, str(exc))
         finally:
@@ -232,20 +251,16 @@ class DesignPipeline:
         """Strip host paths from free text, including the slicer binary's directory."""
         extra: tuple[str, ...] = ()
         try:
-            tool = await self._slicing.availability()
+            tool = await self._stages.slicing.availability()
         except Exception:  # noqa: BLE001 - scrubbing must never fail a run
             tool = None
         if tool is not None and tool.path:
             extra = (str(Path(tool.path).parent),)
         return self._scrub.text(text, extra)
 
-    def _load_spec(self, run_dir: Path) -> ModelSpec:
-        raw = reports.read_spec(run_dir)
-        if not isinstance(raw, Mapping):  # narrow-ok: spec.json is untrusted disk input
-            raise ValueError("spec.json is not an object")
-        return parse_model_spec(raw, artifact_roots=self._roots)
-
-    async def run(self, job_id: str) -> DesignRunReport:
+    async def run(
+        self, job_id: str, *, native: CapturedNativeRevision | None = None
+    ) -> DesignRunReport:
         job: JobRecord | None = None
         run_id, run_dir = "", self._runs_dir
         done: list[StageReport] = []
@@ -262,10 +277,10 @@ class DesignPipeline:
                 raise KeyError(f"unknown job: {job_id}")
             run_id = job.run_id
             run_dir = self._runs_dir / run_id
-            spec = self._load_spec(run_dir)
+            spec = native.spec if native is not None else reports.load_spec(run_dir, self._roots)
             spec_name = spec.name
             state = stages.RunState()
-            for name, step in self._plan(run_id, spec, state, run_dir):
+            for name, step in self._stages.plan(run_id, spec, state, run_dir, native):
                 current = name
                 await self._jobs.update(job_id, status=JobStatus.RUNNING, stage=name)
                 done.append(await self._execute(name, step))
@@ -278,7 +293,21 @@ class DesignPipeline:
             else:
                 error = f"{done[-1].name.value}: {done[-1].message}"
             return report
+        except BlenderExecutionUncertainError:
+            if native is None:
+                raise
+            status, error = JobStatus.RUNNING, NATIVE_UNCONFIRMED
+            reports.write_report(snapshot())
+            return snapshot()
         except asyncio.CancelledError:
+            if (
+                native is not None
+                and self._stages.native is not None
+                and run_id in self._stages.native.unresolved_run_ids
+            ):
+                status, error = JobStatus.RUNNING, NATIVE_UNCONFIRMED
+                reports.write_report(snapshot())
+                raise
             status, error = JobStatus.CANCELLED, "cancelled"
             if current is not None and (not done or done[-1].name is not current):
                 done.append(stages.failed(current, "cancelled"))
@@ -293,23 +322,6 @@ class DesignPipeline:
                     error = await self.clean(error)
                 await self._jobs.update(job_id, status=status, stage=current, error=error)
 
-    def _plan(
-        self, run_id: str, spec: ModelSpec, state: stages.RunState, run_dir: Path
-    ) -> list[tuple[StageName, Callable[[], Awaitable[StageReport]]]]:
-        return [
-            (StageName.IMPORT, lambda: stages.import_stage(spec, state, self._limits, run_dir)),
-            (
-                StageName.GEOMETRY,
-                lambda: stages.geometry_stage(self._integrity, state, run_dir, self._scrub.text),
-            ),
-            (StageName.MECHANISM, lambda: stages.mechanism_stage(spec, self._simulation)),
-            (StageName.PRINT, lambda: stages.print_stage(spec, self._slicing, state, run_dir)),
-            (
-                StageName.PACKAGE,
-                lambda: stages.package_stage(run_id, spec, self._packaging, state, run_dir),
-            ),
-        ]
-
     async def _execute(
         self, name: StageName, step: Callable[[], Awaitable[StageReport]]
     ) -> StageReport:
@@ -319,6 +331,8 @@ class DesignPipeline:
                     report = await step()
             else:
                 report = await step()
+        except BlenderExecutionUncertainError:
+            raise  # A possibly active native callback is not a definitive failed stage.
         except Exception as exc:  # noqa: BLE001 - any stage error is a FAILED stage, not a crash
             report = stages.failed(name, f"{type(exc).__name__}: {exc}")
         if report.message:  # choke point: no stage message leaves with a host path
@@ -326,38 +340,34 @@ class DesignPipeline:
         return report
 
     async def recover_interrupted(self, *, unresolved_run_ids: tuple[str, ...] = ()) -> int:
-        """Fail every QUEUED/RUNNING job left by a dead process; returns how many.
-
-        Startup only, before any submit: it cannot tell an orphan from a live run.
-        """
+        """Startup-only orphan recovery; unresolved native executions remain quarantined."""
         if self._tasks:
             raise RuntimeError("recover_interrupted is startup-only: runs are in flight")
-        orphans = tuple(
-            job
-            for job in await self._jobs.list_unfinished()
-            if job.run_id not in unresolved_run_ids
+        return await reports.recover_interrupted(
+            self._jobs, self._runs_dir, unresolved_run_ids, INTERRUPTED
         )
-        for job in orphans:
-            await self._jobs.update(
-                job.job_id, status=JobStatus.FAILED, stage=job.stage, error=INTERRUPTED
-            )
-            reports.record_interruption(self._runs_dir / job.run_id, job, INTERRUPTED)
-        return len(orphans)
 
     async def status(self, job_id: str) -> JobRecord | None:
-        return await self._jobs.get(job_id)
+        job = await self._jobs.get(job_id)
+        if (
+            job is not None
+            and job.error == NATIVE_UNCONFIRMED
+            and not self._tasks
+            and self._stages.native is not None
+            and await self._stages.native.reconcile_execution(job.run_id)
+        ):
+            message = "native terminal verified; pipeline interrupted before qualification finished"
+            job = await self._jobs.update(
+                job_id, status=JobStatus.FAILED, stage=job.stage, error=message
+            )
+            reports.record_interruption(self._runs_dir / job.run_id, job, message)
+        return job
 
     async def report(self, run_id: str) -> DesignRunReport | None:
-        if not _RUN_ID.fullmatch(run_id):
+        if not files.RUN_ID.fullmatch(run_id):
             return None
         return reports.read_report(self._runs_dir / run_id)
 
     def run_file(self, run_id: str, name: str) -> Path:
         """Resolve a file inside one run directory; anything escaping it raises ValueError."""
-        if not _RUN_ID.fullmatch(run_id):
-            raise ValueError("run_id must be 32 lowercase hex characters")
-        run_dir = (self._runs_dir / run_id).resolve()
-        target = (run_dir / name).resolve()
-        if not target.is_relative_to(run_dir):
-            raise ValueError(f"{name}: outside the run directory")
-        return target
+        return files.resolve_run_file(self._runs_dir, run_id, name)

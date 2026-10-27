@@ -11,7 +11,7 @@ from pathlib import Path
 
 from src.adapters.artifacts.native_source import read_source_asset, unique_native_object
 from src.core.domain.native_revision import NativeSceneError, NativeSourceError, SourceArtifact
-from src.infrastructure.narrowing import as_str_keyed_exact
+from src.infrastructure.narrowing import as_sequence, as_str_keyed_exact
 
 _BUDGET = 65536
 _ID_KEYS = {"protocol", "nonce", "program_sha256", "source_sha256"}
@@ -188,9 +188,102 @@ class NativeExecutionJournal:
                 raise NativeSceneError("native execution files exist without a pending identity")
             return False
         self.identity()
+        reset = self.directory / "reset-acknowledged.json"
+        _safe(reset)
+        if reset.exists():
+            value = _read(reset)
+            if set(value) != _ID_KEYS | {
+                "mode",
+                "terminal_sha256",
+                "source",
+                "backup",
+                "expected",
+                "observed",
+            }:
+                raise NativeSceneError("invalid native reset acknowledgement")
+            expected = self._validated_reset(
+                **{key: value[key] for key in ("source", "backup", "expected", "observed")}
+            )
+            if value != expected:
+                raise NativeSceneError("native reset acknowledgement does not match its evidence")
+            return False
         ack = self.directory / "acknowledged.json"
         _safe(ack)
         if not ack.exists():
             return True
         self.acknowledge()
         return False
+
+    def _validated_reset(
+        self, *, source: object, backup: object, expected: object, observed: object
+    ) -> dict[str, object]:
+        """Local maintenance evidence; never a caller-controlled recovery ticket or success."""
+        terminal = self.read_terminal()
+        if terminal is None or terminal["status"] != "failed" or terminal["restored"] is not False:
+            raise NativeSceneError("verified reset requires a terminal failed restoration")
+        assets = {}
+        for key, raw, suffix, budget in (
+            ("source", source, "blend", 512 * 1024 * 1024),
+            ("backup", backup, "blend", 512 * 1024 * 1024),
+            ("expected", expected, "json", _BUDGET),
+            ("observed", observed, "json", _BUDGET),
+        ):
+            self.artifact(raw, f"reset-{key}.{suffix}", budget)
+            assets[key] = raw
+        source_value = as_str_keyed_exact(source)
+        assert source_value is not None
+        identity = self.identity()
+        if source_value["sha256"] != identity["source_sha256"]:
+            raise NativeSceneError("reset source differs from the failed native execution")
+        baseline = _read(self.directory / "reset-expected.json")
+        loaded = _read(self.directory / "reset-observed.json")
+        objects = as_str_keyed_exact(baseline.get("objects"))
+        active = as_sequence(baseline.get("active_objects"))
+        if (
+            set(baseline) != {"source_sha256", "objects", "active_objects", "external_libraries"}
+            or baseline != loaded
+            or baseline.get("source_sha256") != identity["source_sha256"]
+            or type(baseline.get("external_libraries")) is not int
+            or baseline["external_libraries"] != 0
+            or not objects
+            or len(objects) > 10000
+            or active is None
+            or len(active) != len(objects)
+            or any(not isinstance(name, str) or name not in objects for name in active)
+            or len(set(active)) != len(objects)
+        ):
+            raise NativeSceneError("independent reset baseline and loaded native state disagree")
+        for obj in objects.values():
+            row = as_str_keyed_exact(obj)
+            if row is None or set(row) != {"type", "geometry", "state_sha256"}:
+                raise NativeSceneError("reset object evidence is incomplete")
+            if (
+                not isinstance(row["type"], str)
+                or re.fullmatch(r"[A-Z_]{1,32}", row["type"]) is None
+            ):
+                raise NativeSceneError("reset object type is invalid")
+            for value in (
+                row["state_sha256"],
+                *([row["geometry"]] if row["type"] == "MESH" else []),
+            ):
+                if not isinstance(value, str) or re.fullmatch(r"[0-9a-f]{64}", value) is None:
+                    raise NativeSceneError("reset object fingerprint is invalid")
+            if row["type"] != "MESH" and row["geometry"] is not None:
+                raise NativeSceneError("reset non-mesh geometry is invalid")
+        return {
+            **identity,
+            "mode": "verified-selected-source-reset",
+            "terminal_sha256": hashlib.sha256(
+                (self.directory / "terminal.json").read_bytes()
+            ).hexdigest(),
+            **assets,
+        }
+
+    def acknowledge_reset(
+        self, *, source: object, backup: object, expected: object, observed: object
+    ) -> None:
+        """Seal an independently verified operator reset; preserve the failed terminal forever."""
+        value = self._validated_reset(
+            source=source, backup=backup, expected=expected, observed=observed
+        )
+        _publish(self.directory / "reset-acknowledged.json", value)

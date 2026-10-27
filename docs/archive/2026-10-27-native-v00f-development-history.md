@@ -1,0 +1,17 @@
+# Native revision F — development history
+
+Historical hand-off entries moved verbatim from the task index. Words such as “目前” refer to the time of their original entry; read [the task index](../tasks/00_INDEX.md) for live state. This is not a completed full-core checkpoint.
+
+- **Verified facts — B已封存：** 主提交1cb9e51505f7931f01a857f3c04132c8172f0515與origin/main相同，工作樹乾淨，14077 exit0，checkpoint C1–C5全過。16045完整core exit0、98644 seal-static exit0，父11693已退出；未選Ollama對話測試。本輪新正例aac00a9f74e0426e80cbdda0cab868de通過69件geometry零失敗、單盤plate_1.gcode與package；反例704f7a75bfed4cacbc4644532b381431在geometry拒絕，未進print。706來源與104原資產前後未變；native-v00b-final-public-readback.json核REST／MCP／schema／本機同v80，公開報告等磁碟、獨立原件oracle零差，registered MCP全套與5控制過。
+
+- **原態與載入：** native-v00b-final-native-restoration.json核144物件／113mesh／active144／0外部庫，raw geometry等原factory，原native SHA afe3afec6f72ce3e9ae7209c2736c5d1f409f5778a2d86f0096a3b0ba10edefc不變。選版仍models/lab-station/model-spec.json指定v80，原STL／3MF保留、沒有提升候選或啟動實體列印。B官方冷啟部署與控制復驗、隔離9例、完整source freeze及原始失敗／修復均保留在主tmp/current-native-qualification/native-v00b-*與native-v00a-shared-executor；不以早先008資格冒稱本輪。
+
+- **D核心已失敗終止，不是live：** session10899 exit1／父91522已退出。全T1／T2、registered MCP與既有機構／手模型／delivery／determinism及normal current-import正反例均過；最後native公開job af4e97385bf44af49092f09607582616的可信terminal status=failed／restored=false，VectorFont內建字型name唯讀，隔離rename與restore同時觸發AttributeError。已核terminal並只SIGINT輪詢client58723，finally獨立觀測確認scene changed，主CI如實FAIL；非觀察timeout、不重送callback。錯誤與中止依據在主native-v00d-failed-terminal-observation.json，原terminal與來源保留。主runtime目前隔離，尚未解除或重啟；主713來源仍未動。不可沿用成功final-readback腳本或冒稱D通過。
+
+- **D已整合並冷啟載入：** 95752主完整static與官方all installer exit0；Blender89122／API89173／Web89199，installed／freshness gate過。41775初始公開讀回核新版revision schema可見、21工具無public execute_code、REST／MCP／schema／本機同v80、native獨立oracle零差；初始原態144／113／active144／0庫，原SHA不變。部署前pre-deploy-session.blend另存原生場景、原active檔路徑不變。全部在主native-v00d-public-gate與native-v00d-*；目前只是載入／初始讀回，完整core見頂端本輪live。
+
+- **D整合來源與隔離證據：** 附掛已mixed reset對齊B提交1cb9e51，對齊前76份working bytes另存並逐SHA保留；713來源前後不變。1992 static-r2及86672全9例隔離factory exit0（6次完整69 STL／2改動與Bambu loader），109相鄰例過。新公開gate／提交後不重送／同frame全件面與單盤歸屬及跳過旗標／面拓樸觀測皆有RED／GREEN。10754對原B API真負控制正確拒絕舊schema、job數31不變。45個C／D差異先另存before／after，再逐SHA整合主，模型資產未動。C的63份備份與341746680-byte evidence ZIP保留；D來源備份與整合清單在主native-v00d-public-gate，附掛raw tests在tmp/native-revision-v009/native-v00d-*。
+
+- **F修復與恢復：** 原VectorFont真RED後修復，synthetic／current全部37 lifetime cases及9 recipe cases過；觀測函式抽為native_scene_oracle（先參考Blender upstream test_utils，不複製其程式），拆分後37例與真callback重開亦過。root final static65660 exit0；早期budget失敗保留、已拆分。reset7控制＋Runner恢復共31例過；實際維護先保存491物件現場，再以獨立factory基準核共享重設後144物件／active144／0庫／原SHA未變。失敗terminal仍restored=false；另存reset-acknowledged.json綁定備份、來源、expected／observed與舊terminal hash。主舊API在重啟前仍隔離，不能假稱已解除。證據附掛tmp/native-revision-v009/native-v00f-*，主native-v00f-failed-live-scene.blend/json及舊job private journal保留。
+
+- **E歷史開發證據（現已併入F）：** VERSION V01.0T.00E，D原45份working bytes先備份在主native-v00e-extrusion/root-before-00e及SHA清單。共用切片 adapter 已加串流G-code線寬／圓弧／機器包絡與每件床面接觸，print/extrusion.json 綁定新3MF；純metadata抽出避免拉入CGAL；port期限=855s切片+135s檢查。155相鄰例與31公開收據例過，含真RED數值溢位／失效指紋等反例。readonly既有B產物控制2179206路徑／69件皆接床／越界0、26.51s、28.6MB；不是新E切片或公開驗收。第一輪static型別匯出失敗已修正；第二輪完整static（38078）exit0，全T1／T2過。隔離真Bambu切片38565 exit0：原v80同件單盤2174057路徑／69件皆接床／越界0，support368577／brim15754且各有接床路徑；105原檔前後SHA全同，52.99s，公開收據checker拒絕項零。結果在附掛native-v00e-isolated-slice/result.json與print/extrusion.json；這是E命令adapter證據，未部署／非公開E整套資格。E在D執行期間保持隔離；D終止後以F整合，原模型未改。raw logs保留在附掛tmp/native-revision-v009/native-v00e-*。

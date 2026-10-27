@@ -87,6 +87,13 @@ class StagedNativeSource:
 
 
 @dataclass(frozen=True, slots=True)
+class CapturedNativeRevision:
+    spec: ModelSpec
+    request: NativeRevisionRequest
+    source: NativeModelSource
+
+
+@dataclass(frozen=True, slots=True)
 class PreparedNativeRevision:
     spec: ModelSpec
     request: NativeRevisionRequest
@@ -115,3 +122,10 @@ class NativeRevisionResult:
     directory: str
     native: SourceArtifact
     surfaces: SourceArtifact
+
+
+@dataclass(frozen=True, slots=True)
+class NativePrintProduct:
+    directory: str  # relative to the configured job root
+    stls: NativeStlSet
+    project: SourceArtifact  # relative to directory

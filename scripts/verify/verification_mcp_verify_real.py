@@ -25,7 +25,7 @@ def property_value(value):
 rows={obj.name:{'basis':[[round(v,6) for v in row] for row in obj.matrix_basis],
  'props':dict(obj.items()),
  'selected':obj.select_get()} for obj in bpy.data.objects}
-meshes={m.name:hashlib.sha256(str([(tuple(v.co)) for v in m.vertices]).encode()).hexdigest() for m in bpy.data.meshes}
+meshes={m.name:hashlib.sha256(repr(([(tuple(v.co)) for v in m.vertices],[tuple(e.vertices) for e in m.edges],[tuple(p.vertices) for p in m.polygons])).encode()).hexdigest() for m in bpy.data.meshes}
 print('SCENE_STATE_JSON:'+json.dumps({'objects':rows,'meshes':meshes,'active':bpy.context.view_layer.objects.active.name if bpy.context.view_layer.objects.active else None,'file':bpy.data.filepath,'render':bpy.context.scene.render.filepath},default=property_value))
 """
 

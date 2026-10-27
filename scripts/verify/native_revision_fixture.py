@@ -120,7 +120,7 @@ def worker(work: Path, host_python: Path, control: str = "none") -> None:
         prepare_screen_source,
         surface,
     )
-    from scripts.verify.native_scene_session_fixture import original_state, relations
+    from scripts.verify.native_scene_oracle import original_state, relations
     from src.adapters.artifacts.native_source import source_asset_path
     from src.core.domain.native_revision import SourceArtifact, parse_native_revision
     from src.core.planning.screen_revision_plan import plan_screen_revision
@@ -251,7 +251,7 @@ def reopen(work: Path) -> None:
     import bpy
 
     from scripts.lab_station_native_revision import surface
-    from scripts.verify.native_scene_session_fixture import relations
+    from scripts.verify.native_scene_oracle import relations
     from src.core.domain.native_revision import parse_native_revision
     from src.core.planning.screen_revision_plan import plan_screen_revision
 
@@ -300,11 +300,13 @@ def reopen(work: Path) -> None:
 def callback(work: Path) -> None:
     import bpy
 
-    from scripts.verify.native_scene_session_fixture import original_state
+    from scripts.verify.native_scene_oracle import original_state
+    from scripts.verify.native_scene_session_fixture import add_text_fixture
 
     assert_factory_isolated()
-    before = original_state()
     original_types = {obj.name: obj.type for obj in bpy.data.objects}
+    add_text_fixture("original_callback_text")
+    before = original_state()
     exec((work / "native-program.py").read_text())
     assert original_state() == before
     (work / "worker.json").write_text(

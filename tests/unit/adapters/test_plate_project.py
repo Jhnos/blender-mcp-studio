@@ -164,3 +164,48 @@ def test_invalid_archive_cannot_become_a_revision(fault):
         payload = buffer.getvalue()
     with pytest.raises(ValueError):
         PlateProject(payload, ("lid",), max_bytes=100000).revise({"lid": (original(), original())})
+
+
+def test_same_layout_compares_all_oriented_surfaces_in_existing_build_frames():
+    source = template()
+    plate = PlateProject(source, ("lid",), max_bytes=100000)
+    assert plate.require_same_layout(source) == {"lid": 0.0}
+
+
+@pytest.mark.parametrize("fault", ["moved", "disabled", "reversed", "nan-transform"])
+def test_same_layout_rejects_movement_disabled_parts_or_reversed_triangles(fault):
+    source = template()
+    output = io.BytesIO()
+    with zipfile.ZipFile(io.BytesIO(source)) as old, zipfile.ZipFile(output, "w") as new:
+        for name in old.namelist():
+            payload = old.read(name)
+            if name == "3D/3dmodel.model":
+                if fault == "moved":
+                    payload = payload.replace(b"90 80 0", b"91 80 0")
+                elif fault == "disabled":
+                    payload = payload.replace(b"<item ", b'<item printable="0" ')
+                elif fault == "nan-transform":
+                    payload = payload.replace(b"90 80 0", b"nan 80 0")
+            if name == "3D/Objects/lid.model" and fault == "reversed":
+                payload = payload.replace(b'v1="0" v2="2" v3="1"', b'v1="0" v2="1" v3="2"')
+            new.writestr(name, payload)
+    with pytest.raises(ValueError):
+        PlateProject(source, ("lid",), max_bytes=100000).require_same_layout(output.getvalue())
+
+
+def test_plate_labels_bind_runtime_gcode_identity_to_each_named_instance():
+    from src.adapters.artifacts.plate_project import parse_plate_xml, plate_object_labels
+
+    instance = b'<model_instance><metadata key="object_id" value="2"/><metadata key="instance_id" value="0"/><metadata key="identify_id" value="8"/></model_instance>'
+    payload = (
+        b'<config><object id="2"><metadata key="name" value="lid"/></object><plate><metadata key="plater_id" value="1"/>'
+        + instance
+        + b"</plate></config>"
+    )
+    assert plate_object_labels(parse_plate_xml(payload), 1) == {8: "lid"}
+    for broken in (
+        payload.replace(b'key="identify_id"', b'key="missing"'),
+        payload.replace(b"</plate>", instance + b"</plate>"),
+    ):
+        with pytest.raises(ValueError):
+            plate_object_labels(parse_plate_xml(broken), 1)

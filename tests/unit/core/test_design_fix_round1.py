@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
@@ -15,8 +16,10 @@ from tests.unit.core.test_design_pipeline import _payload, _rig, _run
 
 
 def _real_missing_slicer(rig, tmp_path: Path) -> None:
-    rig.slicing = BambuStudioCli(tmp_path / "nope" / "BambuStudio", profiles_dir=tmp_path)
-    rig.pipeline._slicing = rig.slicing
+    rig.slicing = BambuStudioCli(
+        tmp_path / "nope" / "BambuStudio", profiles_dir=tmp_path, limits=rig.pipeline.limits
+    )
+    rig.pipeline._stages = replace(rig.pipeline._stages, slicing=rig.slicing)
 
 
 def _leaks(text: str, tmp_path: Path) -> list[str]:
@@ -86,7 +89,7 @@ class BlockingSlicing:
 async def test_cancelled_slice_holds_lease_until_slicer_returns(tmp_path, cancellations):
     rig = _rig(tmp_path)
     blocking = BlockingSlicing()
-    rig.pipeline._slicing = blocking
+    rig.pipeline._stages = replace(rig.pipeline._stages, slicing=blocking)
     task = asyncio.create_task(rig.pipeline.slice_file("artifact/p.3mf", "bambu-p2s"))
     await asyncio.wait_for(blocking.started.wait(), 2)
     try:
@@ -104,7 +107,7 @@ async def test_cancelled_slice_holds_lease_until_slicer_returns(tmp_path, cancel
 async def test_cancelled_print_stage_holds_lease_until_slicer_returns(tmp_path):
     rig = _rig(tmp_path)
     blocking = BlockingSlicing()
-    rig.pipeline._slicing = blocking
+    rig.pipeline._stages = replace(rig.pipeline._stages, slicing=blocking)
     job = await rig.pipeline.submit(_payload(rig))
     await asyncio.wait_for(blocking.started.wait(), 2)
     (task,) = list(rig.pipeline._tasks)

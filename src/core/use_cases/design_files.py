@@ -7,12 +7,13 @@ everything handed back is relative to an artifact root or the runs directory.
 
 from __future__ import annotations
 
+import re
 import tempfile
 from dataclasses import dataclass, replace
 from pathlib import Path
 
 from src.core.domain.mesh_integrity import MeshIntegrityReport
-from src.core.domain.model_spec import ModelSpecError, resolve_artifact_file
+from src.core.domain.model_spec import ModelSpecError, is_hidden_path, resolve_artifact_file
 from src.core.domain.slicing import SliceResult
 
 
@@ -129,3 +130,46 @@ def relative_slice(result: SliceResult, runs_dir: Path, scrub: PathScrubber) -> 
         log_path=rel(result.log_path) or "",
         message=scrub.text(result.message),
     )
+
+
+_NATIVE_PUBLIC_FILES = frozenset(
+    {
+        "spec.json",
+        "native-request.json",
+        "report.json",
+        "import.json",
+        "geometry.json",
+        "manifest.json",
+    }
+)
+_NATIVE_PUBLIC_DIRS = frozenset({"native-product", "print"})
+
+
+def public_run_file(run_dir: Path, path: Path) -> bool:
+    """Native jobs expose delivery artifacts, never execution inputs or private receipts."""
+    root = run_dir.resolve()
+    target = path.resolve()
+    if not target.is_relative_to(root):
+        return False
+    if not (root / "native-request.json").exists():
+        return True  # Existing imported jobs retain their established download contract.
+    relative = target.relative_to(root)
+    if not relative.parts or is_hidden_path(relative.parts):
+        return False
+    return relative.as_posix() in _NATIVE_PUBLIC_FILES or relative.parts[0] in _NATIVE_PUBLIC_DIRS
+
+
+RUN_ID = re.compile(r"[0-9a-f]{32}")
+
+
+def resolve_run_file(runs_dir: Path, run_id: str, name: str) -> Path:
+    """One download boundary for both delivery protocols and all job types."""
+    if not RUN_ID.fullmatch(run_id):
+        raise ValueError("run_id must be 32 lowercase hex characters")
+    run_dir = (runs_dir / run_id).resolve()
+    target = (run_dir / name).resolve()
+    if not target.is_relative_to(run_dir):
+        raise ValueError(f"{name}: outside the run directory")
+    if not public_run_file(run_dir, target):
+        raise ValueError(f"{name}: outside the public run files")
+    return target

@@ -185,7 +185,7 @@ def verify_callback(blender: Path, work: Path) -> dict[str, object]:
     from scripts.verify.native_revision_verify_factory import complete_outputs, stage_current
     from src.adapters.artifacts.native_execution import NativeExecutionJournal
     from src.adapters.generation.native_runner import NativeRunner, build_native_program
-    from src.core.domain.native_revision import NativeRevisionRequest
+    from src.core.domain.native_revision import NativeRevisionRequest, NativeRevisionResult
 
     work = work.resolve()
     work.mkdir(parents=True, exist_ok=False)
@@ -242,7 +242,13 @@ def verify_callback(blender: Path, work: Path) -> dict[str, object]:
             terminal = journal.acknowledge()
             assert terminal["status"] == "completed" and terminal["restored"] is True
     assert sha256(work / "original-scene.blend") == captured.staged.source.native.sha256
-    complete_outputs(work, captured, execution / "candidate.blend", execution / "stages")
+    executed = NativeRevisionResult(
+        captured,
+        execution.relative_to(work / "snapshots").as_posix(),
+        journal.artifact(terminal["output"], "candidate.blend", 512 * 1024 * 1024),
+        journal.artifact(terminal["surfaces"], "changed-surfaces.json", 128 * 1024 * 1024),
+    )
+    complete_outputs(work, captured, execution / "candidate.blend", execution / "stages", executed)
     from src.infrastructure.narrowing import as_str_keyed_exact, required
 
     return required(

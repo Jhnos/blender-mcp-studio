@@ -50,6 +50,11 @@ async def test_production_composition_checks_the_selected_native_without_blender
     assert reply["default_native"]["verified_files"] == 5
     assert reply["default_native"]["native"]["sha256"] == manifest["native.blend"]
     assert runtime.native_revisions._artifacts is runtime.design_pipeline._artifacts
+    assert runtime.design_pipeline._stages.native is runtime.native_revisions
+    assert (
+        runtime.design_pipeline._stages.products._stls._integrity
+        is runtime.design_pipeline._stages.integrity
+    )
     prepared = await runtime.native_revisions.prepare_source("c" * 32)
     assert prepared.source.native.sha256 == manifest["native.blend"]
     assert (

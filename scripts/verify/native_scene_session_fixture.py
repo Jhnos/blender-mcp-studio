@@ -20,70 +20,17 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 
+from scripts.verify.native_scene_oracle import (  # noqa: E402
+    mesh_geometry,
+    original_state,
+    relations,
+)
 from scripts.verify.native_session_verify_factory import CASES  # noqa: E402
 
 
 def digest(path: Path) -> str:
     with path.open("rb") as handle:
         return hashlib.file_digest(handle, "sha256").hexdigest()
-
-
-def mesh_geometry(obj: bpy.types.Object) -> str | None:
-    if obj.type != "MESH":
-        return None
-    values = [
-        [tuple(vertex.co) for vertex in obj.data.vertices],
-        [tuple(edge.vertices) for edge in obj.data.edges],
-        [tuple(face.vertices) for face in obj.data.polygons],
-    ]
-    return hashlib.sha256(json.dumps(values).encode()).hexdigest()
-
-
-def oracle_property(value: object) -> object:
-    convert = getattr(value, "to_dict", None) or getattr(value, "to_list", None)
-    if callable(convert):
-        return convert()
-    if isinstance(value, bpy.types.ID):
-        return {"type": value.bl_rna.identifier, "name": value.name}
-    raise TypeError("unsupported fixture property")
-
-
-def oracle_ui(obj: bpy.types.ID) -> dict[str, object]:
-    values = {}
-    keys = obj.keys()
-    for key in keys:
-        try:
-            values[key] = obj.id_properties_ui(key).as_dict()
-        except TypeError:
-            values[key] = None
-    return values
-
-
-def relations(obj: bpy.types.Object) -> dict[str, object]:
-    animation = obj.animation_data
-    return {
-        "parent": obj.parent.name if obj.parent else None,
-        "data": obj.data.name if obj.data else None,
-        "drivers": [
-            [
-                curve.data_path,
-                curve.array_index,
-                curve.driver.type,
-                curve.driver.expression,
-                [
-                    [
-                        v.name,
-                        v.type,
-                        [[t.id.name if t.id else None, t.data_path] for t in v.targets],
-                    ]
-                    for v in curve.driver.variables
-                ],
-            ]
-            for curve in animation.drivers
-        ]
-        if animation
-        else [],
-    }
 
 
 def record(work: Path) -> None:
@@ -95,45 +42,16 @@ def record(work: Path) -> None:
     )
 
 
-def original_state() -> str:
-    """Independent observer: raw originals, not the session's own report."""
-    rows = {
-        obj.name: {
-            "pointer": obj.as_pointer(),
-            "parent": obj.parent.name if obj.parent else None,
-            "basis": [tuple(row) for row in obj.matrix_basis],
-            "props": dict(obj.items()),
-            "ui": oracle_ui(obj),
-            "geometry": mesh_geometry(obj),
-            "drivers": [
-                (curve.data_path, curve.array_index, curve.driver.expression)
-                for curve in obj.animation_data.drivers
-            ]
-            if obj.animation_data
-            else [],
-            "selected": obj.select_get(),
-            "hidden": obj.hide_viewport,
-        }
-        for obj in bpy.data.objects
-    }
-    value = {
-        "ids": sorted(
-            (item.bl_rna.identifier, item.name, item.as_pointer()) for item in bpy.data.user_map()
-        ),
-        "objects": rows,
-        "scene": bpy.context.scene.name,
-        "active": bpy.context.view_layer.objects.active.name
-        if bpy.context.view_layer.objects.active
-        else None,
-        "file": bpy.data.filepath,
-    }
-    return hashlib.sha256(
-        json.dumps(value, sort_keys=True, default=oracle_property).encode()
-    ).hexdigest()
+def add_text_fixture(name: str) -> None:
+    curve = bpy.data.curves.new(name + "_curve", "FONT")
+    text = bpy.data.objects.new(name, curve)
+    bpy.context.scene.collection.objects.link(text)
+    assert curve.font.filepath == "<builtin>" and curve.font.is_property_readonly("name")
 
 
 def source(work: Path) -> None:
     assert not (work / "source.blend").exists()
+    add_text_fixture("fixture_source_text")
     root = bpy.data.objects.new("fixture_control", None)
     bpy.context.scene.collection.objects.link(root)
     root["progress"] = 0.0
@@ -173,6 +91,7 @@ def exercise(work: Path, case: str) -> None:
         incoming.name, "0" * 64 if case == "hash" else source_before, incoming.stat().st_size
     )
     original_cube = next(obj for obj in bpy.data.objects if obj.type == "MESH")
+    add_text_fixture("fixture_original_text")
     original_mesh = original_cube.data
     original_cube["original_sentinel"] = 123
     original_control = bpy.data.objects.new("fixture_control", None)

@@ -12,6 +12,8 @@ from src.core.domain.lab_station import Point
 from src.core.domain.native_revision import NativeRevisionError
 from src.core.planning.csg import Cylinder
 
+SCREEN_MODIFIED_OWNERS = ("LS_FIT_lcd_back", "LS_FIT_lid")
+
 
 @dataclass(frozen=True, slots=True)
 class ScreenRevisionPlan:
@@ -19,7 +21,7 @@ class ScreenRevisionPlan:
     bore: Cylinder
     bore_phase_rad: float
     stop_rings_mm: tuple[tuple[Point, ...], ...]
-    modified_owners: tuple[str, str] = ("LS_FIT_lcd_back", "LS_FIT_lid")
+    modified_owners: tuple[str, str] = SCREEN_MODIFIED_OWNERS
     triangulate_owners: tuple[str, ...] = (
         "RH_-101_M3_screw",
         "RH_101_M3_screw",

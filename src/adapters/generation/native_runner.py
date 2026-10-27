@@ -24,6 +24,9 @@ from src.core.ports.blender_port import BlenderPort
 from src.core.use_cases.blender_lease import BlenderLease, run_to_completion
 from src.verification.generator_imports import module_file_for, reload_modules_for
 
+NATIVE_COMMAND_TIMEOUT_S = 300.0
+NATIVE_COMPLETION_TIMEOUT_S = 600.0
+
 ROOT = Path(__file__).resolve().parents[3]
 _OWNERS = ("LS_FIT_lcd_back", "LS_FIT_lid", "TE_pH_temp_three_point_wrist")
 
@@ -83,7 +86,7 @@ class NativeRunner:
         authority: RequestScriptAuthority,
         runs_dir: Path,
         *,
-        completion_timeout: float = 600,
+        completion_timeout: float = NATIVE_COMPLETION_TIMEOUT_S,
         poll_interval: float = 0.1,
     ) -> None:
         if any(
@@ -120,9 +123,11 @@ class NativeRunner:
             journal = NativeExecutionJournal(directory)
             started.set()  # Reservation and dispatch now require a terminal drain.
             identity = journal.reserve(uuid.uuid4().hex, body, prepared.staged.source.native.sha256)
+            run_id = directory.parent.name
+            self._unresolved_run_ids = (*self._unresolved_run_ids, run_id)
             code = self.dispatch_program(body)
             try:
-                with self._authority.scope(code, timeout=300):
+                with self._authority.scope(code, timeout=NATIVE_COMMAND_TIMEOUT_S):
                     await self._blender.execute(
                         Command(tool_name="execute_code", arguments={"code": code})
                     )
@@ -153,6 +158,7 @@ class NativeRunner:
                         )
                     await asyncio.sleep(self._poll)
                 terminal = journal.acknowledge()
+                self._unresolved_run_ids = tuple(r for r in self._unresolved_run_ids if r != run_id)
             except BaseException:
                 self._lease.quarantine()
                 self._owned_ticket = self._lease.recovery_ticket

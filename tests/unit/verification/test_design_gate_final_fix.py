@@ -131,3 +131,31 @@ async def test_real_session_rejects_native_provenance_before_submitting(monkeypa
     failures = await real._session({}, "https://unused", tmp_path)
     assert failures == ["native source rejected"]
     submit.assert_not_awaited()
+
+
+async def test_public_job_observation_failure_never_replays_a_submission(monkeypatch, tmp_path):
+    from unittest.mock import AsyncMock
+
+    class Context:
+        async def __aenter__(self):
+            return object()
+
+        async def __aexit__(self, *_):
+            pass
+
+    monkeypatch.setattr(real, "Client", lambda _: Context())
+    monkeypatch.setattr(
+        real,
+        "_selected_contract",
+        AsyncMock(return_value={"spec": {"source": {"root_dir": "selected"}}, "native": {}}),
+    )
+    monkeypatch.setattr(gate, "check_deliverable", lambda *_: [])
+    monkeypatch.setattr(gate, "check_native_source", lambda *_: [])
+    monkeypatch.setattr(gate, "check_slicer", lambda *_: [])
+    monkeypatch.setattr(real, "_tool", AsyncMock(return_value=[]))
+    submitted = AsyncMock(side_effect=ConnectionError("job reply lost after submission"))
+    monkeypatch.setattr(real, "_positive", submitted)
+    failures = await real._session(
+        {"expect": {"slicer_tool": "slicer"}}, "https://unused", tmp_path
+    )
+    assert failures and submitted.await_count == 1

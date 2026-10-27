@@ -191,3 +191,17 @@ def test_rest_default_uses_the_same_declaration_for_discovery_and_submission(
             assert _wait_done(client, job["job_id"])["status"] == "done"
             report = client.get(f"/api/design/runs/{job['run_id']}/report").json()
             assert report["spec_name"] == name and report["passed"]
+
+
+def test_native_intent_uses_existing_rest_job_endpoint_and_shared_submit(tmp_path):
+    from src.core.domain.design_run import JobRecord, JobStatus
+
+    runtime = make_fake_runtime(tmp_path)
+    runtime.design_pipeline.submit = AsyncMock(
+        return_value=JobRecord("job0", "a" * 32, JobStatus.QUEUED, None, None, 0, 0)
+    )
+    revision = {"recipe_id": "screen-clamp", "target_angle_deg": 30}
+    with TestClient(create_app(runtime=runtime), base_url="http://localhost") as client:
+        response = client.post("/api/design/runs", json={"revision": revision})
+        assert response.status_code == 202
+    runtime.design_pipeline.submit.assert_awaited_once_with(None, revision=revision)

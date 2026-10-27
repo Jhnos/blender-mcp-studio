@@ -20,7 +20,11 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from src.core.domain.native_revision import NativeRevisionRequest, PreparedNativeRevision
+    from src.core.domain.native_revision import (
+        NativeRevisionRequest,
+        NativeRevisionResult,
+        PreparedNativeRevision,
+    )
 
 ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
@@ -171,11 +175,15 @@ def host(work: Path, blender: Path, control: str = "none", target_angle_deg: flo
 
 
 def complete_outputs(
-    work: Path, captured: PreparedNativeRevision, native: Path, stages: Path
+    work: Path,
+    captured: PreparedNativeRevision,
+    native: Path,
+    stages: Path,
+    executed: NativeRevisionResult | None = None,
 ) -> None:
     """One complete-STL and same-template check for both direct and callback fixtures."""
     prepared = captured.staged
-    from src.adapters.artifacts.native_stl_writer import NativeStlWriter
+    from src.adapters.artifacts.native_product import NativeProductWriter
     from src.adapters.mesh.trimesh_cgal_integrity import TrimeshCgalIntegrity
     from src.core.domain.native_revision import SourceArtifact
     from src.infrastructure.tools_config import load_tools_config
@@ -186,55 +194,29 @@ def complete_outputs(
     changed = {owner: surfaces[owner] for owner in ("LS_FIT_lcd_back", "LS_FIT_lid")}
     native_receipt = SourceArtifact(native.name, digest(native), native.stat().st_size)
     tools = load_tools_config()
-    writer = NativeStlWriter(TrimeshCgalIntegrity(), tools.import_limits)
-    stls = asyncio.run(
-        writer.write(
-            prepared.source,
-            work / "snapshots" / prepared.directory,
-            native,
-            native_receipt,
-            changed,
-            tuple(changed),
-            work / "complete-stl",
+    runs_dir = work if executed is None else work / "snapshots"
+    writer = NativeProductWriter(TrimeshCgalIntegrity(), tools.import_limits, runs_dir)
+    if executed is not None:
+        product = asyncio.run(writer.build(executed))
+    else:
+        product = asyncio.run(
+            writer.write(
+                prepared.source,
+                work / "snapshots" / prepared.directory,
+                native,
+                native_receipt,
+                changed,
+                tuple(changed),
+                work / "native-product",
+            )
         )
-    )
+    stls = product.stls
     from scripts.verify.native_revision_checks import check_plate_bindings
 
     bindings = check_plate_bindings(
         prepared.source, work / "snapshots" / prepared.directory, tuple(changed)
     )
-    from src.adapters.artifacts.native_source import read_source_asset
-    from src.adapters.artifacts.plate_project import PlateProject
-    from src.verification.artifact_files import binary_stl_surface
-
-    snapshot = work / "snapshots" / prepared.directory
-    project_receipt = prepared.source.project_3mf
-    if project_receipt is None:
-        raise ValueError("current native revision requires its captured plate template")
-    project = PlateProject(
-        read_source_asset(snapshot, project_receipt, tools.import_limits.max_3mf_bytes),
-        tuple(Path(p.path).stem for p in prepared.source.parts),
-        max_bytes=tools.import_limits.max_3mf_bytes,
-    )
-    original_parts = {p.path: p for p in prepared.source.parts}
-    revised_parts = {p.path: p for p in stls.parts}
-    changes = {
-        Path(name).stem: (
-            binary_stl_surface(
-                read_source_asset(snapshot, original_parts[name], tools.import_limits.max_stl_bytes)
-            ),
-            binary_stl_surface(
-                read_source_asset(
-                    work / "complete-stl", revised_parts[name], tools.import_limits.max_stl_bytes
-                )
-            ),
-        )
-        for name in stls.changed_paths
-    }
-    payload, _ = project.revise(changes)
-    candidate = work / "candidate-unsliced.3mf"
-    with candidate.open("xb") as handle:
-        handle.write(payload)
+    candidate = runs_dir / product.directory / product.project.path
     with (
         tempfile.TemporaryDirectory(prefix="bambu-info-") as datadir,
         (work / "bambu-info.log").open("x") as log,

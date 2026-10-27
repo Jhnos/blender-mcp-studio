@@ -21,7 +21,7 @@ def _pipeline(request: Request) -> DesignPipeline:
 
 @router.post("/runs", status_code=202)
 async def submit_design_run(body: DesignRunRequest, request: Request) -> dict[str, object]:
-    return job_dict(await _pipeline(request).submit(body.spec))
+    return job_dict(await _pipeline(request).submit(body.spec, revision=body.revision))
 
 
 @router.get("/jobs/{job_id}")

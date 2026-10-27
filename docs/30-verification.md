@@ -92,6 +92,16 @@ T1/T2仍彙整全部失敗；只要已有硬失敗，核心／完整模式在接
 **每一個都附 should-fire 與 should-pass fixture。** 只有前者的閘門，
 與「永遠報錯」在外觀上完全相同。
 
+### 切片路徑收據
+
+共用 `BambuStudioCli` 在命令成功後，讀取該次 machine profile 與新 3MF，產生 `print/extrusion.json`。檢查包含完整線寬、指向圓弧極值、Z 沉積厚度、機器矩形包絡，以及 fresh `identify_id` 對應的每件床面接觸；未知列印幾何命令、缺失 metadata、漏件、無標籤、懸空與越界必須拒絕成功。支撐／brim 關閉時不得仍有相關沉積；一般零件不強制需要支撐，工作站原件公開 gate 則要求兩者的接床路徑。收據綁定完整切片與 G-code SHA256，不能拿舊成功 JSON 替新產物背書。
+
+語法語意參考 [BambuStudio GCodeProcessor 固定提交](https://github.com/bambulab/BambuStudio/blob/79df7ae309be398ed30c9f397c13c9911c2edc57/src/libslic3r/GCode/GCodeProcessor.cpp)：G90／G91 與 M82／M83 的 E 模式、相對 IJ 圓心另行解讀。解析器是本專案窄範圍實作，未引入或連結上游 parser。合作式檢查期限由同一讀取器停止，外層 port 期限包含切片與檢查，不能以放棄背景執行緒冒稱工作已結束。
+
+此收據只證明所宣告的軟體路徑與接觸；物理黏附、支撐可移除、免鑽孔／研磨／修面配合及承載仍須各自取得證據。使用者的免後加工界線以 [任務16驗收](tasks/16_lab-station.md#acceptance-checks) 為準。
+
+目前工作站的整機要求另由 [交付需求對照](verification/lab-station/14-current-delivery-contract.md) 追溯到產物檢查；核心軟體流程通過不自動解除該表的機械或實體要求。
+
 ## 驗證矩陣
 
 | Tier | 真實元件 | 被替換的邊界 | 這一層能宣稱什麼 |

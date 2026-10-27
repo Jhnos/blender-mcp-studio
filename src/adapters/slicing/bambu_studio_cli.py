@@ -24,6 +24,11 @@ from collections.abc import Callable
 from pathlib import Path
 
 from src.adapters.slicing.bundle_profiles import app_bundle, bundle_profiles
+from src.adapters.slicing.toolpath_evidence import (
+    TOOLPATH_INSPECTION_TIMEOUT_S,
+    inspect_sliced_project,
+)
+from src.core.domain.import_limits import ImportLimits
 from src.core.domain.slicing import (
     SliceRequest,
     SliceResult,
@@ -31,10 +36,11 @@ from src.core.domain.slicing import (
     ToolAvailability,
     ToolUnavailableError,
 )
-from src.infrastructure.narrowing import as_str_keyed
+from src.infrastructure.narrowing import as_mapping, as_str_keyed
 
 SLOWEST_SLICE_MEASURED_S = 171
-SLICE_TIMEOUT_S = 5 * SLOWEST_SLICE_MEASURED_S
+SLICE_COMMAND_TIMEOUT_S = 5 * SLOWEST_SLICE_MEASURED_S
+SLICE_TIMEOUT_S = SLICE_COMMAND_TIMEOUT_S + TOOLPATH_INSPECTION_TIMEOUT_S
 
 _INSTALL_HINT = (
     "Install BambuStudio.app (https://bambulab.com/download/studio) and set BAMBU_STUDIO_BIN "
@@ -73,18 +79,20 @@ class BambuStudioCli:
         binary: Path,
         *,
         profiles_dir: Path,
-        timeout_s: float = SLICE_TIMEOUT_S,
+        limits: ImportLimits,
+        timeout_s: float = SLICE_COMMAND_TIMEOUT_S,
         runner: Runner = subprocess.run,
     ) -> None:
         self._binary = binary
         self._profiles_dir = profiles_dir
+        self._limits = limits
         self._timeout_s = timeout_s
         self._runner = runner
 
     @property
     def timeout_s(self) -> float:
         """The subprocess deadline; delivery adapters derive their own timeouts from it."""
-        return self._timeout_s
+        return self._timeout_s + TOOLPATH_INSPECTION_TIMEOUT_S
 
     def supported(self) -> SupportedTargets:
         return SupportedTargets(
@@ -186,6 +194,7 @@ class BambuStudioCli:
         # A slicer that exits 0 without writing must not pass on a previous run's files.
         (out / export_name).unlink(missing_ok=True)
         (out / "effective-settings.json").unlink(missing_ok=True)
+        (out / "extrusion.json").unlink(missing_ok=True)
         try:
             with tempfile.TemporaryDirectory(prefix="bambu-data-") as datadir:
                 argv = self._argv(request, out, export_name, datadir)
@@ -202,6 +211,11 @@ class BambuStudioCli:
         else:
             msg = "sliced"
         passed = proc.returncode == 0 and output.is_file()
+        if passed:
+            evidence = await asyncio.to_thread(self._inspect_output, output, out, request)
+            if evidence.get("passed") is not True:
+                passed = False
+                msg = "toolpath inspection rejected sliced output; see print/extrusion.json"
         return SliceResult(
             passed,
             str(output) if output.is_file() else None,
@@ -210,3 +224,12 @@ class BambuStudioCli:
             proc.returncode,
             msg,
         )
+
+    def _inspect_output(self, output: Path, out: Path, request: SliceRequest) -> dict[str, object]:
+        machine = as_mapping(json.loads((out / "machine.json").read_text(encoding="utf-8")))
+        if machine is None:
+            raise ToolUnavailableError("machine profile is not an object")
+        report = inspect_sliced_project(output, machine, self._limits, request=request)
+        with (out / "extrusion.json").open("x", encoding="utf-8") as handle:
+            json.dump(report, handle, ensure_ascii=False, sort_keys=True, indent=2, allow_nan=False)
+        return report

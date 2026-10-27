@@ -56,3 +56,4 @@ class DesignRunRequest(BaseModel):
     """Omit spec to use the current model; explicit specs are parsed by the use case (-> 422)."""
 
     spec: dict[str, object] | None = None
+    revision: dict[str, object] | None = None

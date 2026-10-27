@@ -137,7 +137,9 @@ async def test_check_mesh_integrity_rejects_escape_and_hidden(tmp_path):
 
 async def test_check_mesh_integrity_respects_count_cap(tmp_path):
     rig = _rig(tmp_path)
-    rig.pipeline._limits = replace(rig.pipeline._limits, max_stl_files=1)
+    rig.pipeline._stages = replace(
+        rig.pipeline._stages, limits=replace(rig.pipeline._stages.limits, max_stl_files=1)
+    )
     async with Client(_server(rig)) as client:
         res = await client.call_tool(
             "check_mesh_integrity",
@@ -264,3 +266,17 @@ async def test_tool_timeouts_derive_from_existing_constants(tmp_path):
         design_tools.integrity_timeout_s(rig.pipeline.limits)
     )
     assert (await mcp.get_tool("run_design_pipeline")).timeout == 30
+
+
+async def test_native_intent_uses_existing_pipeline_tool_and_shared_submit(tmp_path):
+    from src.core.domain.design_run import JobRecord, JobStatus
+
+    rig = _rig(tmp_path)
+    rig.pipeline.submit = AsyncMock(
+        return_value=JobRecord("job0", "a" * 32, JobStatus.QUEUED, None, None, 0, 0)
+    )
+    revision = {"recipe_id": "screen-clamp", "target_angle_deg": 30}
+    async with Client(_server(rig)) as client:
+        result = await client.call_tool("run_design_pipeline", {"revision": revision})
+        assert not result.is_error
+    rig.pipeline.submit.assert_awaited_once_with(None, revision=revision)

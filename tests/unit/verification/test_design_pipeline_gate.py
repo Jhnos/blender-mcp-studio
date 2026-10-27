@@ -381,7 +381,7 @@ async def test_current_positive_submits_without_spec_and_checks_saved_selection(
     async def resource(_client, _run, name):
         return saved if name == "spec.json" else {}
 
-    monkeypatch.setattr(real_gate, "_run_spec", run)
+    monkeypatch.setattr(real_gate, "run_job", run)
     monkeypatch.setattr(real_gate, "_resource_json", resource)
     monkeypatch.setattr(real_gate, "_positive_failures", lambda *_: [])
     monkeypatch.setattr(real_gate.checks, "check_report", lambda *_: [])

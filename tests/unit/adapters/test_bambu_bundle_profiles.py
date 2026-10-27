@@ -8,6 +8,7 @@ import pytest
 import src.adapters.slicing.bambu_studio_cli as cli_module
 from src.adapters.slicing.bambu_studio_cli import SLICE_TIMEOUT_S, BambuStudioCli
 from src.adapters.slicing.bundle_profiles import flatten_leaf, profiles_root
+from src.core.domain.import_limits import ImportLimits
 from src.core.domain.model_spec import PrintTarget
 from src.core.domain.slicing import SliceRequest, ToolUnavailableError
 from tests.fakes.bambu_bundle import LEAVES, flattened, make_bundle
@@ -56,7 +57,12 @@ def test_flatten_rejects_inheritance_cycle(tmp_path: Path) -> None:
 
 
 async def test_slice_writes_profiles_flattened_from_the_bundle(tmp_path: Path) -> None:
-    cli = BambuStudioCli(make_bundle(tmp_path), profiles_dir=_CONFIG, runner=FakeRunner())
+    cli = BambuStudioCli(
+        make_bundle(tmp_path),
+        profiles_dir=_CONFIG,
+        limits=ImportLimits(10, 100000, 100000, 100000),
+        runner=FakeRunner(),
+    )
     await cli.slice(_request(tmp_path))
     out = tmp_path / "out"
     for kind in ("machine", "filament"):
@@ -67,7 +73,12 @@ async def test_slice_writes_profiles_flattened_from_the_bundle(tmp_path: Path) -
 
 async def test_bundle_without_profiles_dir_is_unavailable(tmp_path: Path) -> None:
     runner = FakeRunner()
-    cli = BambuStudioCli(make_bundle(tmp_path, profiles=False), profiles_dir=_CONFIG, runner=runner)
+    cli = BambuStudioCli(
+        make_bundle(tmp_path, profiles=False),
+        profiles_dir=_CONFIG,
+        limits=ImportLimits(10, 100000, 100000, 100000),
+        runner=runner,
+    )
     with pytest.raises(ToolUnavailableError, match="no profiles directory") as info:
         await cli.slice(_request(tmp_path))
     assert str(tmp_path) not in str(info.value)
@@ -75,5 +86,10 @@ async def test_bundle_without_profiles_dir_is_unavailable(tmp_path: Path) -> Non
 
 
 def test_adapter_exposes_its_timeout_through_the_port(tmp_path: Path) -> None:
-    cli = BambuStudioCli(make_bundle(tmp_path), profiles_dir=_CONFIG, runner=FakeRunner())
+    cli = BambuStudioCli(
+        make_bundle(tmp_path),
+        profiles_dir=_CONFIG,
+        limits=ImportLimits(10, 100000, 100000, 100000),
+        runner=FakeRunner(),
+    )
     assert cli.timeout_s == SLICE_TIMEOUT_S

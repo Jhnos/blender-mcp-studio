@@ -122,6 +122,7 @@ async def test_missing_terminal_stays_isolated_across_runner_restart(tmp_path):
     with pytest.raises(BlenderExecutionUncertainError):
         await runner.execute(prepared)
     assert lease.busy
+    assert runner.unresolved_run_ids == ("a" * 32,)
     next_lease = BlenderLease()
     restarted = NativeRunner(
         AsyncMock(spec=BlenderPort), next_lease, RequestScriptAuthority(), tmp_path
@@ -165,6 +166,7 @@ async def test_unexpected_dispatch_failure_is_also_isolated(tmp_path):
     with pytest.raises(RuntimeError):
         await runner.execute(prepared)
     assert lease.busy
+    assert runner.unresolved_run_ids == ("a" * 32,)
 
 
 async def test_cancelling_a_queued_revision_does_not_start_it_later(tmp_path):
@@ -257,3 +259,46 @@ async def test_terminal_after_the_observation_deadline_can_recover_without_resta
     finish(tmp_path / ("a" * 32) / "native-execution")
     assert await runner.recover_unfinished() == 0
     assert not lease.busy
+
+
+async def test_verified_reset_recovers_quarantine_without_replaying_failed_job(tmp_path):
+    import json
+
+    prepared, lease, _, backend, _, runner = fixture(tmp_path)
+    directory = tmp_path / ("a" * 32) / "native-execution"
+    journal = NativeExecutionJournal(directory)
+    identity = journal.reserve(
+        "c" * 32, "closed failed callback", prepared.staged.source.native.sha256
+    )
+    journal.publish_terminal(
+        {
+            **identity,
+            "status": "failed",
+            "restored": False,
+            "output": None,
+            "surfaces": None,
+            "error": "restoration failed",
+        }
+    )
+    assert await runner.recover_unfinished() == 1 and lease.busy
+    state = {
+        "source_sha256": identity["source_sha256"],
+        "objects": {"part": {"type": "MESH", "geometry": "a" * 64, "state_sha256": "b" * 64}},
+        "active_objects": ["part"],
+        "external_libraries": 0,
+    }
+
+    def asset(name, data):
+        (directory / name).write_bytes(data)
+        return asdict(SourceArtifact(name, hashlib.sha256(data).hexdigest(), len(data)))
+
+    journal.acknowledge_reset(
+        source=asset("reset-source.blend", b"opaque native"),
+        backup=asset("reset-backup.blend", b"preserved scene"),
+        expected=asset("reset-expected.json", json.dumps(state).encode()),
+        observed=asset("reset-observed.json", json.dumps(state).encode()),
+    )
+    assert await runner.recover_unfinished() == 0
+    assert not lease.busy and runner.unresolved_run_ids == ()
+    assert journal.read_terminal()["restored"] is False
+    backend.execute.assert_not_awaited()

@@ -68,6 +68,7 @@ class AppRuntime:
 
 def build_runtime(env_file: Path | None = None) -> AppRuntime:
     """Build concrete outer adapters at the application's only composition root."""
+    from src.adapters.artifacts.native_product import NativeProductWriter
     from src.adapters.artifacts.native_source import FilesystemNativeSource
     from src.adapters.artifacts.native_staging import FilesystemNativeStaging
     from src.adapters.batch_transform.blender_batch_transform import BlenderBatchTransformAdapter
@@ -145,11 +146,16 @@ def build_runtime(env_file: Path | None = None) -> AppRuntime:
         FilesystemNativeStaging(native_sources, tools.design_runs_dir),
         runner=NativeRunner(blender, lease, authority, tools.design_runs_dir),
     )
+    integrity = TrimeshCgalIntegrity()
     design_pipeline = DesignPipeline(
-        integrity=TrimeshCgalIntegrity(),
+        native=native_revisions,
+        native_products=NativeProductWriter(integrity, tools.import_limits, tools.design_runs_dir),
+        integrity=integrity,
         simulation=RegisteredSuitesSimulation(verification),
         slicing=BambuStudioCli(
-            tools.bambu_studio_bin, profiles_dir=default_config_dir() / "slicer-profiles"
+            tools.bambu_studio_bin,
+            profiles_dir=default_config_dir() / "slicer-profiles",
+            limits=tools.import_limits,
         ),
         packaging=ManifestPackager(),
         jobs=SQLiteJobStore(tools.design_jobs_db),

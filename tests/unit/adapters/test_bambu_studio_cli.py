@@ -9,13 +9,18 @@ import pytest
 
 import src.adapters.slicing.bambu_studio_cli as cli_module
 from src.adapters.slicing.bambu_studio_cli import (
+    SLICE_COMMAND_TIMEOUT_S,
     SLICE_TIMEOUT_S,
     SLOWEST_SLICE_MEASURED_S,
     BambuStudioCli,
 )
+from src.adapters.slicing.toolpath_evidence import TOOLPATH_INSPECTION_TIMEOUT_S
+from src.core.domain.import_limits import ImportLimits
 from src.core.domain.model_spec import PrintTarget
 from src.core.domain.slicing import SliceRequest, ToolUnavailableError
-from tests.fakes.bambu_bundle import make_bundle
+from tests.fakes.bambu_bundle import make_bundle, write_sliced_output
+
+_LIMITS = ImportLimits(10, 100000, 100000, 100000)
 
 _PROFILES = Path(cli_module.__file__).resolve().parents[3] / "config" / "slicer-profiles"
 
@@ -33,7 +38,7 @@ class FakeRunner:
         stdout = kwargs["stdout"]
         stdout.write(self.log)  # type: ignore[attr-defined]
         if self.write_output:
-            (out / name).write_bytes(b"3mf")
+            write_sliced_output(out / name)
             (out / "effective-settings.json").write_text("{}", encoding="utf-8")
         return subprocess.CompletedProcess(argv, self.returncode)
 
@@ -52,12 +57,15 @@ def _request(tmp_path: Path, **over: object) -> SliceRequest:
 
 
 def _cli(tmp_path: Path, runner: FakeRunner, binary: Path | None = None) -> BambuStudioCli:
-    return BambuStudioCli(binary or _binary(tmp_path), profiles_dir=_PROFILES, runner=runner)
+    return BambuStudioCli(
+        binary or _binary(tmp_path), profiles_dir=_PROFILES, limits=_LIMITS, runner=runner
+    )
 
 
 def test_timeout_is_five_times_the_measured_slowest() -> None:
     assert SLOWEST_SLICE_MEASURED_S == 171
-    assert SLICE_TIMEOUT_S == 5 * 171
+    assert SLICE_COMMAND_TIMEOUT_S == 5 * 171
+    assert SLICE_TIMEOUT_S == SLICE_COMMAND_TIMEOUT_S + TOOLPATH_INSPECTION_TIMEOUT_S
 
 
 def test_from_target_carries_every_print_default() -> None:
@@ -68,7 +76,9 @@ def test_from_target_carries_every_print_default() -> None:
 
 
 async def test_availability_reports_missing_binary(tmp_path: Path) -> None:
-    cli = BambuStudioCli(tmp_path / "nope", profiles_dir=_PROFILES, runner=FakeRunner())
+    cli = BambuStudioCli(
+        tmp_path / "nope", profiles_dir=_PROFILES, limits=_LIMITS, runner=FakeRunner()
+    )
     status = await cli.availability()
     assert status.available is False
     assert status.path is None
@@ -92,7 +102,9 @@ async def test_availability_version_is_none_without_plist(tmp_path: Path) -> Non
 
 
 async def test_slice_reports_missing_binary(tmp_path: Path) -> None:
-    cli = BambuStudioCli(tmp_path / "nope", profiles_dir=_PROFILES, runner=FakeRunner())
+    cli = BambuStudioCli(
+        tmp_path / "nope", profiles_dir=_PROFILES, limits=_LIMITS, runner=FakeRunner()
+    )
     with pytest.raises(ToolUnavailableError, match="BambuStudio.app"):
         await cli.slice(_request(tmp_path))
 
@@ -183,13 +195,13 @@ async def test_slice_exit_zero_without_output_fails(tmp_path: Path) -> None:
 
 async def test_slice_timeout_is_a_failed_result(tmp_path: Path) -> None:
     def hang(argv: list[str], **kwargs: object) -> subprocess.CompletedProcess[str]:
-        raise subprocess.TimeoutExpired(argv, SLICE_TIMEOUT_S)
+        raise subprocess.TimeoutExpired(argv, SLICE_COMMAND_TIMEOUT_S)
 
-    cli = BambuStudioCli(_binary(tmp_path), profiles_dir=_PROFILES, runner=hang)
+    cli = BambuStudioCli(_binary(tmp_path), profiles_dir=_PROFILES, limits=_LIMITS, runner=hang)
     result = await cli.slice(_request(tmp_path))
     assert result.passed is False
     assert result.output_3mf is None
-    assert f"slicer did not finish within {SLICE_TIMEOUT_S:g}s" in result.message
+    assert f"slicer did not finish within {SLICE_COMMAND_TIMEOUT_S:g}s" in result.message
 
 
 async def test_slice_rejects_unsupported_printer(tmp_path: Path) -> None:
@@ -242,7 +254,9 @@ async def test_stale_output_does_not_pass(tmp_path: Path) -> None:
 
 
 async def test_unsupported_target_reported_before_missing_binary(tmp_path: Path) -> None:
-    cli = BambuStudioCli(tmp_path / "nope", profiles_dir=_PROFILES, runner=FakeRunner())
+    cli = BambuStudioCli(
+        tmp_path / "nope", profiles_dir=_PROFILES, limits=_LIMITS, runner=FakeRunner()
+    )
     req = SliceRequest.from_target("/a.3mf", str(tmp_path / "out"), PrintTarget(printer="x1c"))
     result = await cli.slice(req)
     assert result.passed is False
@@ -267,3 +281,16 @@ async def test_failed_vendor_sidecars_are_confined_to_the_job_with_relative_inpu
     assert (tmp_path / "job/result.json").read_text() == "vendor failure"
     assert runner.kwargs["cwd"] == tmp_path / "job"
     assert runner.argv[-1] == str(tmp_path / "input.3mf")
+
+
+async def test_cli_exit_zero_cannot_accept_a_malformed_sliced_archive(tmp_path):
+    class BrokenOutput(FakeRunner):
+        def __call__(self, argv, **kwargs):
+            completed = super().__call__(argv, **kwargs)
+            out = Path(argv[argv.index("--outputdir") + 1])
+            (out / argv[argv.index("--export-3mf") + 1]).write_bytes(b"not a sliced archive")
+            return completed
+
+    result = await _cli(tmp_path, BrokenOutput()).slice(_request(tmp_path))
+    assert not result.passed and "toolpath" in result.message
+    assert (tmp_path / "out/extrusion.json").is_file()

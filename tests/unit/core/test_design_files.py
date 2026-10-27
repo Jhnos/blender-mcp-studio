@@ -14,7 +14,9 @@ from tests.unit.core.test_design_pipeline import _rig
 
 
 def _tight(rig, **kw):
-    rig.pipeline._limits = replace(rig.pipeline._limits, **kw)
+    rig.pipeline._stages = replace(
+        rig.pipeline._stages, limits=replace(rig.pipeline._stages.limits, **kw)
+    )
 
 
 async def test_check_meshes_passes_resolved_paths_and_reports_relative(tmp_path):

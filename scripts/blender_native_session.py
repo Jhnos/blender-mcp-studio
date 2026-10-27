@@ -235,7 +235,11 @@ class NativeSceneSession:
         try:
             prefix = "__native_" + uuid.uuid4().hex[:16]
             for index, item in enumerate(self._original):
-                item.name = f"{prefix}_{index:06d}"
+                if item.is_property_readonly("name"):
+                    if not isinstance(item, bpy.types.VectorFont) or item.filepath != "<builtin>":
+                        raise NativeSceneError("original ID cannot be safely namespaced")
+                else:
+                    item.name = f"{prefix}_{index:06d}"
             try:
                 with bpy.data.libraries.load(str(self._source), link=False) as (source, target):
                     target.scenes = source.scenes
@@ -328,14 +332,15 @@ class NativeSceneSession:
             missing = self._original - current
             bpy.data.batch_remove(ids=current - self._original)
             for item in self._original & _ids():
-                item.name = self._names[item]
+                if item.name != self._names[item]:
+                    item.name = self._names[item]
             self._layer.update()
             if missing or _ids() != self._original or self._snapshot() != self._before:
                 raise NativeSceneRestorationError(
                     "original scene restoration could not be verified"
                 )
             self._restoration_verified = True
-        except (RuntimeError, ReferenceError, ValueError) as exc:
+        except (RuntimeError, ReferenceError, ValueError, AttributeError) as exc:
             raise NativeSceneRestorationError("original scene restoration failed") from exc
         finally:
             self._closed = True
