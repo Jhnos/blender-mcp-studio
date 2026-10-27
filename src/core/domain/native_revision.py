@@ -36,3 +36,11 @@ class NativeModelSource:
 class StagedNativeSource:
     source: NativeModelSource
     directory: str  # relative to the configured job root; no host path in receipts
+
+
+class NativeSceneError(NativeRevisionError):
+    """A verified native input cannot be isolated or saved safely."""
+
+
+class NativeSceneRestorationError(NativeSceneError):
+    """Original data or context did not survive a native operation unchanged."""

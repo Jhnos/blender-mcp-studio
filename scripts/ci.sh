@@ -116,6 +116,7 @@ if (( REAL )); then
     # The API's sandbox allowlist and script deadlines are startup snapshots of the
     # files on disk; an API older than the checkout blocks its own derived scripts.
     _run hard "running API is newer than this checkout" "$PY" scripts/check_running_api_freshness.py
+    _run hard "isolated native scene lifetime (not public revision qualification)" "$PY" scripts/verify/native_session_verify_factory.py --all
     _run hard "REST pipeline (nonce + independent oracle)" "$PY" scripts/verify/mcp_verify_rest.py
     _run hard "MCP protocol (nonce + independent oracle)" "$PY" scripts/verify/mcp_verify_real.py
     _run hard "print readiness (real Blender fixtures)" "$PY" scripts/verify/print_readiness_verify_real.py

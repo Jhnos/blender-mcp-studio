@@ -6,7 +6,7 @@ import asyncio
 import contextlib
 import json
 import logging
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from dataclasses import replace
 
 from src.adapters.blender_scene_decoding import decode_object_details, decode_scene_summary
@@ -187,10 +187,15 @@ class BlenderMCPClient(MCPPort):
     ]
 
     def __init__(
-        self, socket: BlenderSocketClient, *, script_timeouts: Mapping[str, float] | None = None
+        self,
+        socket: BlenderSocketClient,
+        *,
+        script_timeouts: Mapping[str, float] | None = None,
+        scoped_timeout: Callable[[str], float | None] | None = None,
     ) -> None:
         self._socket = socket
         self._script_timeouts = dict(script_timeouts or {})
+        self._scoped_timeout = scoped_timeout
 
     async def call_tool(self, tool_name: str, arguments: dict[str, object]) -> ToolResult:
         # Enforcement: a high-level tool here means a caller bypassed the
@@ -209,6 +214,8 @@ class BlenderMCPClient(MCPPort):
         try:
             code = arguments.get("code") if tool_name == _EXECUTE_CODE_TOOL else None
             timeout = self._script_timeouts.get(code) if isinstance(code, str) else None
+            if timeout is None and isinstance(code, str) and self._scoped_timeout is not None:
+                timeout = self._scoped_timeout(code)
             response = await self._socket.send_command(
                 {"type": tool_name, "params": arguments}, timeout=timeout
             )
@@ -266,9 +273,12 @@ class BlenderMCPAdapter(BlenderPort):
         sandbox: CodeSandboxPort | None = None,
         *,
         script_timeouts: Mapping[str, float] | None = None,
+        scoped_timeout: Callable[[str], float | None] | None = None,
     ) -> None:
         self._socket = BlenderSocketClient(host, port)
-        self._mcp = BlenderMCPClient(self._socket, script_timeouts=script_timeouts)
+        self._mcp = BlenderMCPClient(
+            self._socket, script_timeouts=script_timeouts, scoped_timeout=scoped_timeout
+        )
         self._sandbox = sandbox
 
     async def connect(self) -> None:

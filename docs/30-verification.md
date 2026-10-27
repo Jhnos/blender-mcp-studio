@@ -32,6 +32,9 @@ T1/T2仍彙整全部失敗；只要已有硬失敗，核心／完整模式在接
 
 ### T3 裡的產出物閘門（2026-09-08 起）
 
+原生場景生命週期由 `scripts/verify/native_session_verify_factory.py --all` 驗證合成輸入及同一 ArtifactCatalog 選定來源。每個案例使用獨立 factory／background／disable-autoexec 程序，禁止載入 MCP addon；執行檔讀取已安裝 Blender LaunchAgent 的 ProgramArguments，跨平台單跑可明確傳入 `--blender`。輸出使用新的 UUID 目錄，亦可傳入尚不存在的 `--work`。
+此閘門核對原場景、物件身份、另存與獨立重開；故意改動原驅動定義／屬性 UI 的反例必須回報 restoration error 且不得發布候選，不能聲稱這兩例已成功回滾。它屬隔離生命週期資格，不取代共用 runtime 的原生修訂、機構或製造驗收。
+
 | 閘門 | 讀什麼 | 首跑秒數（Mac，2026-09-08） |
 |---|---|---|
 | hand-v3 contract | 在常駐 Blender 重建整手，20 項證據 | 7 |

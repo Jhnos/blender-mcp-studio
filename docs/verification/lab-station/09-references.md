@@ -134,3 +134,9 @@ GitHub查閱Blender官方固定commit `01c07a6f4aa9f8338c89e792583ebbf0a7138cb3`
 ## 原生來源暫存前置查找（2026-10-27）
 
 新增NativeStagingPort／filesystem暫存adapter／NativeRevisionService準備階段前，GitHub查詢 `copyfileobj file_digest`，repository `python/cpython`，回傳 [CPython emscripten下載驗證用法](https://github.com/python/cpython/blob/0e353134844fd50628f3730b9f704c3de1710e20/Platforms/emscripten/__main__.py)。沿用標準庫檔案IO及file_digest，並重用本地來源路徑守衛、指紋函式與工作排空器；copyfileobj本身無總位元組上限，故複製採小區塊讀取並扣除已驗總量，不引入另一套檔案框架或搬運CPython實作。來源選版仍只由既有ArtifactCatalog注入同一份快照，準備服務不另定版本政策，也沒有公開任意路徑／Python入口。
+
+## 原生場景生命週期模組化查找（2026-10-27）
+
+GitHub再查 `bpy.data.libraries.write` 與 `bl_blendfile_io.py`，檢視 [Blender官方子集寫入範例](https://github.com/blender/blender/blob/fa494ce9a0ada672f351d404dc6a1ce17c2e13a0/doc/python_api/examples/bpy.types.BlendDataLibraries.write.0.py)及[官方另存／重開測試](https://github.com/blender/blender/blob/3dba4a0c8e62ad64212f46778756825d4f6f67de/tests/python/bl_blendfile_io.py)。沿用 Blender 公開 libraries／user_map／batch_remove API 與標準庫排他檔案發布；不搬運上游程式、不新增 CAD 框架。原場景保存、輸出身份與獨立重開分開檢驗，不能從檔案寫出推論三者皆成功。
+
+當次工作授權前查 GitHub `repo:python/cpython contextvars ContextVar Token reset asyncio`，讀取[CPython官方contextvars文件](https://github.com/python/cpython/blob/0e353134844fd50628f3730b9f704c3de1710e20/Doc/library/contextvars.rst)。使用標準庫ContextVar／token reset，不複製外部碼或增加依賴；本案另加owner檢查與scope撤銷，因context副本不等於授權轉移。Python最低3.11，不能使用3.14新增的Token context-manager簡寫。

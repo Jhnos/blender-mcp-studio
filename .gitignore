@@ -73,3 +73,6 @@ data/
 
 # SDD per-plan scratch (ledger, briefs, reports); the git history is the record
 /.superpowers/
+
+# Local browser verification output is derived state.
+/.playwright-mcp/
