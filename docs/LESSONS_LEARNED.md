@@ -1,5 +1,37 @@
 # LESSONS_LEARNED
 
+### 父程序的階段狀態，不等於子程序的階段狀態
+
+- **觸發情境**：CI的內部fail-fast旗標透過環境繼承，讓T1／T2及測試中的巢狀dispatcher誤以為已進入會改場景的真機階段；應彙整的靜態錯誤提前終止。
+- **該主動檢查**：在父環境刻意設嚴格旗標，再執行完整dispatcher的靜態失敗及真機失敗案例；輔助函式fixture也要明確設定其初始階段。
+- **如何預防**：dispatcher像REAL／CHAT一樣初始化自己的REAL_FAIL_FAST=0，僅在進入真機階段後設1。test_ci_modes保留外層旗標為1的兩個RED→GREEN案例，原真機失敗須停止後續場景修改的測試不變；helper fixture的static preamble明確初始化0。失敗run保留，不把未進T3的結果當模型或切片故障，也不在舊run尚活著時重啟。
+
+
+### XML語意等價，不等於消費端接受其序列化
+
+- **觸發情境**：移除過期3MF預覽／Gcode關聯後，ElementTree將預設namespace改寫為ns0前綴；通用XML parser可讀，但既有Bambu原生loader拒絕整份模型。
+- **該主動檢查**：用真正消費端讀取產物；XML可解析、網格相同與CLI exit0必須分開驗。不可保留舊Gcode或預覽來掩蓋載入問題。
+- **如何預防**：PlateProject保留預設namespace的DOM序列化及原wrapper／未改mesh bytes，更新必要metadata並清掉過期關聯。單元測試有namespace真RED，原件factory另以真Bambu --info讀回新3MF，切片產物逐件核對同frame有向三角面／原擺位及實際Gcode。此守衛只驗封裝互通，不認證支撐移除與免修面配合。
+
+### 外部工具指定輸出路徑，不等於其所有副產物都寫在該處
+
+- **觸發情境**：Bambu讀取模型失敗時，額外result.json仍寫入呼叫程序的工作目錄，污染專案並可能撞名。
+- **該主動檢查**：讓真的失敗路徑及會產生sidecar的fake runner執行，核對專案／工作目錄兩側；不能只看主要輸出參數與exit code。
+- **如何預防**：共用BambuStudioCli先解析input／output／binary為絕對路徑，再把subprocess cwd固定於各job輸出目錄。relative-input＋失敗sidecar測試真RED後GREEN，所有副產物保留在獨立job；同一adapter的實際新3MF切片與讀回另留證，不靠刪檔恢復假裝原先沒有污染。
+
+
+### 覆寫scene／view layer，不等於operator也使用該上下文
+
+- **觸發情境**：Python的context顯示暫存scene，但新增幾何／套用modifier的operator仍讀取可見window的collection或depsgraph；工具進了原場景，選取狀態也被改動。
+- **該主動檢查**：在保留原window的暫存scene實際建立primitive並套用布林，核對物件所屬與原態；不能只用data.objects.new搭配明確link來證明所有operator安全。
+- **如何預防**：閉集合修訂只使用明確collection／depsgraph的資料API。既有primitive模組保留舊預設路徑，新增顯式BMesh／evaluated-mesh路徑供暫存執行；lifetime的primitive-context及整機screen recipe閘門驗來源原態、實際材料增減、保存重開。候選仍須在還原核對後才可發布；不能從temp_override推定任意operator都可安全執行。
+
+### 幾何仍有效，不等於指定的材料修改已發生
+
+- **觸發情境**：未套用或被跳過的布林仍留下封閉無自交網格；只驗拓樸可以把無作用的操作當成功。
+- **該主動檢查**：比較操作前後同一實際材料點與鄰近應保留材料的控制點，再故意跳過切除／增加各一例；反例須因指定材料變化缺失被拒絕，不能以其他例外當通過。
+- **如何預防**：`native_revision_checks`重用獨立CGAL內外分類，逐步要求避空實體→外部、止擋外部→實體及保留控制；跳過操作真RED後補此閘門，錯誤時不得發布候選。完整STL另外核來源／輸出identity，獨立幾何通過不能代替未改件bytes相同。
+
 ### 還原目前context，不等於複製的授權也已撤回
 
 - **觸發情境**：ContextVar內存放臨時權限；新task或執行緒複製它，甚至原task在scope結束後重新進入保存的context，仍能讀到舊權限。

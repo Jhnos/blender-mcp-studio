@@ -28,6 +28,8 @@ PY="${CI_PYTHON:-$HOME/miniconda3/envs/blender-mcp/bin/python}"
 REAL=0
 CHAT=0
 STATIC=1
+# Internal tier state must not inherit a parent dispatcher's fail-fast mode.
+REAL_FAIL_FAST=0
 if (( $# > 1 )); then
   printf 'Usage: scripts/ci.sh [--real|--chat|--all]\n' >&2
   exit 2
@@ -117,6 +119,7 @@ if (( REAL )); then
     # files on disk; an API older than the checkout blocks its own derived scripts.
     _run hard "running API is newer than this checkout" "$PY" scripts/check_running_api_freshness.py
     _run hard "isolated native scene lifetime (not public revision qualification)" "$PY" scripts/verify/native_session_verify_factory.py --all
+    _run hard "isolated current-source screen revision and full STL (not public qualification)" "$PY" scripts/verify/native_revision_verify_factory.py --all
     _run hard "REST pipeline (nonce + independent oracle)" "$PY" scripts/verify/mcp_verify_rest.py
     _run hard "MCP protocol (nonce + independent oracle)" "$PY" scripts/verify/mcp_verify_real.py
     _run hard "print readiness (real Blender fixtures)" "$PY" scripts/verify/print_readiness_verify_real.py

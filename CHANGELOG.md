@@ -5,6 +5,19 @@
 
 ## [Unreleased]
 
+### V01.0T.008 — 原件螢幕修訂與完整STL集合
+
+- CI內部階段狀態每次啟動自行初始化，避免外層fail-fast環境破壞靜態錯誤彙整；真機失敗即停的規則保留，新增父環境嚴格模式反例。
+
+- 共用PlateProject核對完整原件身份與原座標綁定後只替換修訂mesh；保留擺位、清除舊切片／預覽並維持Bambu相容的關聯XML。原件factory新增實際Bambu讀取檢查；同frame完整有向面讀回與支撐／brim須另驗切片實物。
+- 共用收據讀取重用有上限的size／SHA檢查。Bambu失敗副產物限制於job cwd，先解析相對input／output／binary，避免污染專案。
+
+- Verify unique original STL/3MF axis frames by complete oriented triangle identity; reject stale receipts, ambiguous owners, reflections, scaling and altered faces before reusing plate placement. A revised candidate is independently sliced and read back before delivery; this binding alone does not qualify manufacturing.
+
+- 封閉screen-clamp意圖只接受既有齒位角度；重用布林、CDT、原座標重綁與配對齒面規劃，明確準備來源後修改同一後殼與上蓋，不新增替代零件。
+- 暫存scene中的幾何改用明確collection／depsgraph的資料API，避免operator偷用原window；原有生成器預設路徑保留。加入primitive實際回歸及材料增減正反例。
+- NativeStlWriter以來源收據建立完整原身份STL，未改件保留原bytes，實際匯出檔經獨立幾何檢查、最後重核集合／雜湊才寫成功收據；取消須排空且不刪既有工作收據。尚無公開原生修訂工具；同件候選3MF須獨立切片讀回，全機製造資格另行驗收。
+
 ### V01.0T.007 — 原生修訂的場景隔離
 
 - 本輪正式核心、公開來源與正反切片流程通過；685來源與104原資產未變，原生v80場景已恢復。此為原場景生命週期及授權階段，不宣稱公開原件修訂或製造資格。

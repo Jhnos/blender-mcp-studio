@@ -41,6 +41,7 @@ CASES = (
     "malformed",
     "original-linked",
     "edit-mode",
+    "primitive-context",
 )
 
 

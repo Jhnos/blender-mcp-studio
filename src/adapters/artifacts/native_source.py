@@ -48,6 +48,22 @@ def source_asset_path(root: Path, name: str) -> Path:
     return resolved
 
 
+def read_source_asset(root: Path, expected: SourceArtifact, budget: int) -> bytes:
+    """Read one captured asset without accepting a changed or oversized file."""
+    if not 0 < expected.size_bytes <= budget:
+        raise NativeSourceError("source input exceeds its verified byte budget")
+    with source_asset_path(root, expected.path).open("rb") as handle:
+        payload = handle.read(expected.size_bytes + 1)
+        size = os.fstat(handle.fileno()).st_size
+    if (
+        size != expected.size_bytes
+        or len(payload) != expected.size_bytes
+        or hashlib.sha256(payload).hexdigest() != expected.sha256
+    ):
+        raise NativeSourceError("source input fingerprint changed")
+    return payload
+
+
 def fingerprint_source_asset(path: Path, name: str, budget: int) -> SourceArtifact:
     try:
         with path.open("rb") as handle:

@@ -28,7 +28,7 @@ def _helper_source() -> str:
 
 
 def _drive(command: str, log_dir: Path) -> subprocess.CompletedProcess[str]:
-    preamble = f"RED=''; GRN=''; YEL=''; DIM=''; BLD=''; RST=''\nFAILED=()\nCI_LOG_DIR={log_dir}\n"
+    preamble = f"RED=''; GRN=''; YEL=''; DIM=''; BLD=''; RST=''\nFAILED=()\nREAL_FAIL_FAST=0\nCI_LOG_DIR={log_dir}\n"
     script = f"{preamble}{_helper_source()}\n{command}\n"
     return subprocess.run(
         ["bash", "-c", script], capture_output=True, text=True, check=False, cwd=ROOT

@@ -127,7 +127,7 @@ class BambuStudioCli:
 
     def _argv(self, request: SliceRequest, out: Path, export_name: str, datadir: str) -> list[str]:
         return [
-            str(self._binary),
+            str(self._binary.resolve()),
             "--datadir",
             datadir,
             "--debug",
@@ -150,17 +150,22 @@ class BambuStudioCli:
             export_name,
             "--export-settings",
             str(out / "effective-settings.json"),
-            request.input_3mf,
+            str(Path(request.input_3mf).resolve()),
         ]
 
     def _run(self, argv: list[str], log_path: Path) -> subprocess.CompletedProcess[str]:
         with log_path.open("w", encoding="utf-8") as log:
             return self._runner(
-                argv, stdout=log, stderr=subprocess.STDOUT, text=True, timeout=self._timeout_s
+                argv,
+                stdout=log,
+                stderr=subprocess.STDOUT,
+                text=True,
+                timeout=self._timeout_s,
+                cwd=log_path.parent.resolve(),
             )
 
     async def slice(self, request: SliceRequest) -> SliceResult:
-        out = Path(request.output_dir)
+        out = Path(request.output_dir).resolve()
         log_path = out / "slicer.log"
         short = _SUPPORTED_PRINTERS.get(request.printer)
         if short is None or request.material not in _SUPPORTED_MATERIALS:

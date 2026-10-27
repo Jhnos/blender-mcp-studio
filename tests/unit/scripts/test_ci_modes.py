@@ -106,3 +106,12 @@ def test_static_failure_aggregates_checks_but_never_starts_real_suites(
     assert "mcp_verify_rest.py" not in trace
     assert "mcp_verify_chat.py" not in trace
     assert "CI PASSED" not in result.stdout
+
+
+@pytest.mark.parametrize("mode", ["--real", "--all"])
+def test_inherited_real_fail_fast_cannot_change_static_aggregation(tmp_path, monkeypatch, mode):
+    monkeypatch.setenv("REAL_FAIL_FAST", "1")
+    result, trace = drive(tmp_path, mode, fail="-m ruff check")
+    assert result.returncode == 1
+    assert "-m pytest" in trace and "vitest run" in trace
+    assert "check_installed_plists.py" not in trace

@@ -27,7 +27,7 @@
 - 官方觸控 LCD 圖為 127.70 × 87.45 mm 玻璃，與頁面摘要尺寸分開。
 - 兩節臂解析長度、可達性與每件 P2S 包絡由單元測試守衛。
 - Blender 真模型、獨立 STL mm 尺寸與水密檢查；實際畫面檢視。
-- 使用者確認列印後可拆除支撐；不可鑽孔、研磨或修整配合面。孔、插銷、齒面、卡扣與螺母口袋須按列印公差直接裝配、活動及鎖定；支撐安排與移除不得迫使修面，實體配合仍須量化驗證。
+- 使用者確認列印後可拆除支撐與 brim；不可鑽孔、研磨或修整配合面。孔、插銷、齒面、卡扣與螺母口袋須按列印公差直接裝配、活動及鎖定；支撐安排與移除不得迫使修面，實體配合仍須量化驗證。
 - 干涉判定需區分表面交叉、邊界接觸與實體內含；離線內含沿用共用CGAL分類器，先驗證封閉／自交與轉換保真，不用單方向射線奇偶判斷替代獨立資格。齒槽關節須覆蓋退齒、旋轉與重新就座的完整操作。
 - 機構、干涉與列印操作驗收必須綁定共用服務目前選定的交付模型與零件身份；研究生成器或歷史模型通過，不得移用為目前交付件的資格。
 - 完整制造交付前：安裝孔、螺絲工具空間、探頭玻璃軟夾、防滑鎖定、連續姿態風險、抗傾倒與實體試片。
@@ -107,3 +107,11 @@
 - A grant belongs to the issuing asyncio task and lexical scope. Concurrent requests, inherited child tasks and copied thread contexts cannot borrow it. Exiting the scope revokes all copied contexts, including a copy later re-entered by the original task. Nested scopes restore the outer grant; errors and cancellation revoke the completed scope.
 - The production native runner must create the grant inside the actual worker held by the existing Blender lease; creating it in a parent before spawning that worker is invalid. Repeated cancellation must drain that worker before releasing the lease. A socket observation timeout does not prove the Blender callback completed or that original state was restored.
 - BDD controls independently exercise cross-task replay, copied-context resurrection, exact-code mismatch, nested failure, cancellation, invalid deadlines and a real loopback socket with a shorter default timeout. An unsupported transport must reject an explicitly requested scoped policy rather than silently discard it. These adapter contracts do not establish public native revision or manufacturing qualification.
+
+### Closed screen geometry and STL contract
+
+- The registered screen-clamp request accepts only its recipe identifier and a valid indexed target. Geometry planning lives in `screen_revision_plan`; no source path, output path, code or arbitrary Boolean operation is a request field. Binding the validated target to a complete native job remains part of executor integration.
+- Source preparation names every owner: three existing fastener meshes use vertex-preserving CDT; the two screen print owners and the pH wrist bind to their current, receipt-verified canonical STLs. Explicit fixed-axis registration must satisfy bidirectional point discrepancy and physical handedness before rebasing; it is not proof of bijective topology equivalence. Unrelated rigid frames remain within the declared numerical registration band.
+- Geometry changes only the original back shell and lid. Every source step uses the existing independent closedness／self-intersection checker; material witnesses additionally prove the bore removed material and the integrated stop added it while adjacent controls retain material. Missing or ambiguous canonical identities and changed canonical bytes fail before mutation. Skipping either Boolean must fail specifically for missing material change.
+- Temporary-scene operations use explicit collection／depsgraph data APIs; a scene/view-layer override does not authorize window-dependent operators. The original window remains on its original scene. Save/reopen compares all object identities, raw geometry, frames, parents and driver relations, with zero external libraries.
+- Build the complete original-identity STL set before deriving any 3MF. Unchanged parts retain exact source bytes; changed parts use canonical print coordinates and actual binary output is independently checked. Reject extra/missing identities, stale source/native receipts, empty/incorrect geometry verdicts, existing destinations, mid-validation output tampering and extra files. Only final set/hash verification may write the output receipt and checksum manifest. Cancellation drains workers and never removes another job's receipts.

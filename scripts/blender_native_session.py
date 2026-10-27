@@ -248,7 +248,10 @@ class NativeSceneSession:
             if len(self._objects) != len(target.objects) or set(self._objects) != set(source_names):
                 raise NativeSceneError("native object identities are ambiguous")
             self._override = bpy.context.temp_override(
-                scene=self._scene, view_layer=self._scene.view_layers[0]
+                scene=self._scene,
+                view_layer=self._scene.view_layers[0],
+                collection=self._scene.collection,
+                layer_collection=self._scene.view_layers[0].layer_collection,
             )
             self._override.__enter__()
             self._active = True

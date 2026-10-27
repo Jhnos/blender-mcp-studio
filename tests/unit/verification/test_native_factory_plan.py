@@ -28,6 +28,7 @@ def test_factory_plan_covers_every_case_and_reopens_the_written_file():
         "malformed",
         "original-linked",
         "edit-mode",
+        "primitive-context",
     }
     steps = fixture_steps(current=False)
     assert steps[0].phase == "source" and steps[-1].phase == "reopen"
@@ -79,3 +80,13 @@ def test_real_ci_runs_both_factory_inputs_without_classifying_them_as_public_acc
     real = (root / "scripts/ci.sh").read_text().split("if (( REAL )); then", 1)[1]
     assert '"$PY" scripts/verify/native_session_verify_factory.py --all' in real
     assert "isolated native scene lifetime (not public revision qualification)" in real
+
+
+def test_current_source_recipe_gate_runs_positive_and_each_discriminating_control():
+    from scripts.verify.native_revision_verify_factory import recipe_cases
+
+    assert recipe_cases() == ("none", "skip-cut", "skip-stop", "stale-canonical")
+    root = Path(__file__).resolve().parents[3]
+    real = (root / "scripts/ci.sh").read_text().split("if (( REAL )); then", 1)[1]
+    assert '"$PY" scripts/verify/native_revision_verify_factory.py --all' in real
+    assert "isolated current-source screen revision and full STL" in real

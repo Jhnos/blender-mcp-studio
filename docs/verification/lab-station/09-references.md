@@ -140,3 +140,14 @@ GitHub查閱Blender官方固定commit `01c07a6f4aa9f8338c89e792583ebbf0a7138cb3`
 GitHub再查 `bpy.data.libraries.write` 與 `bl_blendfile_io.py`，檢視 [Blender官方子集寫入範例](https://github.com/blender/blender/blob/fa494ce9a0ada672f351d404dc6a1ce17c2e13a0/doc/python_api/examples/bpy.types.BlendDataLibraries.write.0.py)及[官方另存／重開測試](https://github.com/blender/blender/blob/3dba4a0c8e62ad64212f46778756825d4f6f67de/tests/python/bl_blendfile_io.py)。沿用 Blender 公開 libraries／user_map／batch_remove API 與標準庫排他檔案發布；不搬運上游程式、不新增 CAD 框架。原場景保存、輸出身份與獨立重開分開檢驗，不能從檔案寫出推論三者皆成功。
 
 當次工作授權前查 GitHub `repo:python/cpython contextvars ContextVar Token reset asyncio`，讀取[CPython官方contextvars文件](https://github.com/python/cpython/blob/0e353134844fd50628f3730b9f704c3de1710e20/Doc/library/contextvars.rst)。使用標準庫ContextVar／token reset，不複製外部碼或增加依賴；本案另加owner檢查與scope撤銷，因context副本不等於授權轉移。Python最低3.11，不能使用3.14新增的Token context-manager簡寫。
+
+## 原件封閉配方與STL輸出前置查找（2026-10-27）
+
+先查BlenderProc的Boolean用法（未回傳匹配），再查[Blender官方modifier apply實作](https://github.com/blender/blender/blob/c9a38ad133166a5120c0e0ccec795784ab59ef84/source/blender/editors/object/object_modifier.cc)、[官方KDTree範例](https://github.com/blender/blender/blob/c9a38ad133166a5120c0e0ccec795784ab59ef84/doc/python_api/examples/mathutils.kdtree.0.py)及[trimesh binary STL輸出](https://github.com/mikedh/trimesh/blob/6c158cce226500fc64b12acd265af0cf01d1c212/trimesh/exchange/stl.py)。沿用現有Blender primitives、CDT、rebase與paired-contact planner；只增加明確collection／depsgraph的資料API路徑，不搬運GPL實作、不更換CAD核心。來源配準使用既有固定正交方向與雙向最近點誤差，不引入ICP或自動修補；STL writer使用現有trimesh、來源守衛與MeshIntegrityPort，未增加依賴。
+
+
+## 原STL與3MF座標綁定前置查找（2026-10-27）
+
+GitHub查閱[BambuStudio官方3MF匯入／匯出實作](https://github.com/bambulab/BambuStudio/blob/79df7ae309be398ed30c9f397c13c9911c2edc57/src/libslic3r/Format/bbs_3mf.cpp)及同commit CMakeLists。沿用既有ZIP／ElementTree與binary_stl_surface，不搬運上游程式、不引入新依賴。座標綁定只接受唯一正向換軸加平移，完整有向三角面多重集合須相同；尺寸或頂點接近不足以證明原表面相同。3MF來源必須是當次captured source receipt，舊Gcode／預覽不得用作新幾何資格。
+
+3MF清理沿用同一BambuStudio固定commit原生匯入器；實際消費端對預設namespace序列化有相容要求，不能用通用XML parse成功代替。P2S官方安裝包的machine_end_gcode含T65535卸料哨兵，切片器預覽parser會記Invalid T command；保留原廠結尾並記錄原始log，不刪除該卸料命令以消除訊息。CLI副產物按job cwd隔離，原廠profile仍由既有bundle_profiles讀取，不另複製供機器執行。

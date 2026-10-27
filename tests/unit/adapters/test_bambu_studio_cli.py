@@ -247,3 +247,23 @@ async def test_unsupported_target_reported_before_missing_binary(tmp_path: Path)
     result = await cli.slice(req)
     assert result.passed is False
     assert "x1c" in result.message
+
+
+async def test_failed_vendor_sidecars_are_confined_to_the_job_with_relative_inputs(
+    tmp_path, monkeypatch
+):
+    monkeypatch.chdir(tmp_path)
+
+    class SidecarRunner(FakeRunner):
+        def __call__(self, argv, **kwargs):
+            (Path(kwargs.get("cwd", Path.cwd())) / "result.json").write_text("vendor failure")
+            return super().__call__(argv, **kwargs)
+
+    runner = SidecarRunner(returncode=250, write_output=False)
+    request = SliceRequest.from_target("input.3mf", "job", PrintTarget())
+    result = await _cli(tmp_path, runner).slice(request)
+    assert not result.passed
+    assert not (tmp_path / "result.json").exists()
+    assert (tmp_path / "job/result.json").read_text() == "vendor failure"
+    assert runner.kwargs["cwd"] == tmp_path / "job"
+    assert runner.argv[-1] == str(tmp_path / "input.3mf")

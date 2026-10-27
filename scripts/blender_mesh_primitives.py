@@ -59,6 +59,8 @@ def add_cylinder(
     axis: str = "Z",
     vertices: int = 48,
     exact_axes: bool = True,
+    *,
+    collection: bpy.types.Collection | None = None,
 ) -> bpy.types.Object:
     """A cylinder about `axis`, turned exactly or by the float rotation it used to get.
 
@@ -82,19 +84,48 @@ def add_cylinder(
             "Y": (math.pi / 2.0, 0.0, 0.0),
             "Z": (0.0, 0.0, 0.0),
         }[axis]
-    bpy.ops.mesh.primitive_cylinder_add(
-        vertices=vertices,
-        radius=m(radius_mm),
-        depth=m(depth_mm),
-        location=tuple(m(value) for value in location_mm),
-        rotation=rotation,
-    )
-    obj = bpy.context.object
+    if collection is None:
+        bpy.ops.mesh.primitive_cylinder_add(
+            vertices=vertices,
+            radius=m(radius_mm),
+            depth=m(depth_mm),
+            location=tuple(m(value) for value in location_mm),
+            rotation=rotation,
+        )
+        obj = bpy.context.object
+    else:
+        # Operators can consult the visible window even under temp_override.
+        # An explicit collection takes the same built-in BMesh cone path without
+        # touching any window's active object or selection.
+        mesh = bpy.data.meshes.new(name + "_mesh")
+        editable = bmesh.new()
+        try:
+            bmesh.ops.create_cone(
+                editable,
+                cap_ends=True,
+                cap_tris=False,
+                segments=vertices,
+                radius1=m(radius_mm),
+                radius2=m(radius_mm),
+                depth=m(depth_mm),
+            )
+            editable.to_mesh(mesh)
+        finally:
+            editable.free()
+        obj = bpy.data.objects.new(name, mesh)
+        collection.objects.link(obj)
+        obj.location = tuple(m(value) for value in location_mm)
+        obj.rotation_euler = rotation
     obj.name = name
     for vertex in obj.data.vertices:
         point = tuple(vertex.co)
         vertex.co = tuple(point[index] * sign for index, sign in zip(indices, signs, strict=True))
-    apply_transform(obj)
+    if collection is None:
+        apply_transform(obj)
+    else:
+        obj.data.transform(obj.rotation_euler.to_matrix().to_4x4())
+        obj.rotation_euler = (0, 0, 0)
+        obj.data.update()
     return obj
 
 
@@ -169,7 +200,13 @@ def loft_rings(
     return obj
 
 
-def boolean(target: bpy.types.Object, tool: bpy.types.Object, operation: str) -> None:
+def boolean(
+    target: bpy.types.Object,
+    tool: bpy.types.Object,
+    operation: str,
+    *,
+    depsgraph: bpy.types.Depsgraph | None = None,
+) -> None:
     """Apply `tool` to `target`, refusing to do it to an object nobody evaluates.
 
     `hide_viewport` drops an object out of the depsgraph, and `modifier_apply` on a
@@ -183,12 +220,24 @@ def boolean(target: bpy.types.Object, tool: bpy.types.Object, operation: str) ->
             f"{operation} on {target.name!r} would be skipped silently: the object is "
             "hidden in the viewport, so it is not evaluated. Unhide it while building."
         )
-    bpy.context.view_layer.objects.active = target
+    if depsgraph is None:
+        bpy.context.view_layer.objects.active = target
     modifier = target.modifiers.new(name=f"HH_{operation}", type="BOOLEAN")
     modifier.operation = operation
     modifier.solver = "EXACT"
     modifier.object = tool
-    bpy.ops.object.modifier_apply(modifier=modifier.name)
+    if depsgraph is None:
+        bpy.ops.object.modifier_apply(modifier=modifier.name)
+    else:
+        # Evaluate the explicitly owned scene graph; modifier_apply would use
+        # the visible window's graph and can skip an appended scene's object.
+        try:
+            depsgraph.update()
+            evaluated = target.evaluated_get(depsgraph)
+            mesh = bpy.data.meshes.new_from_object(evaluated, depsgraph=depsgraph)
+        finally:
+            target.modifiers.remove(modifier)
+        target.data = mesh
     bpy.data.objects.remove(tool, do_unlink=True)
 
 

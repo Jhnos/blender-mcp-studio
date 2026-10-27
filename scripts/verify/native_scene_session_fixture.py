@@ -207,6 +207,23 @@ def exercise(work: Path, case: str) -> None:
                 json.loads((work / "source-geometry.json").read_text())
             )
             changed = next(obj for obj in stage.objects.values() if obj.type == "MESH")
+            if case == "primitive-context":
+                from scripts.blender_mesh_primitives import add_cylinder
+
+                inside_before = original_state()
+                tool = add_cylinder(
+                    "STAGED_primitive", 1, 2, (0, 0, 0), collection=stage.scene.collection
+                )
+                assert tool in set(stage.scene.objects), "primitive escaped the staged scene"
+                assert tool not in set(bpy.context.window.scene.objects), (
+                    "primitive entered the original scene"
+                )
+                mesh = tool.data
+                bpy.data.objects.remove(tool, do_unlink=True)
+                bpy.data.meshes.remove(mesh)
+                assert original_state() == inside_before, (
+                    "primitive changed existing selection or context"
+                )
             if case == "operation-failure":
                 raise RuntimeError("injected native operation failure")
             if case == "original-driver":
@@ -235,7 +252,7 @@ def exercise(work: Path, case: str) -> None:
             if case == "pending-failure":
                 raise RuntimeError("injected native operation failure")
     except (NativeSceneError, RuntimeError) as error:
-        if case == "success":
+        if case in ("success", "primitive-context"):
             raise
         if isinstance(error, RuntimeError) and not isinstance(error, NativeSceneError):
             assert (
@@ -245,7 +262,7 @@ def exercise(work: Path, case: str) -> None:
         if case in ("original-driver", "original-ui"):
             assert isinstance(error, NativeSceneRestorationError)
         rejected = True
-    assert rejected == (case != "success"), case
+    assert rejected == (case not in ("success", "primitive-context")), case
     assert set(bpy.data.user_map()) == identities
     original_equal = original_state() == before
     if case in ("original-driver", "original-ui"):
@@ -254,7 +271,7 @@ def exercise(work: Path, case: str) -> None:
         assert original_equal, "native session altered originals or active context"
     if case == "edit-mode":
         assert original_cube.mode == "EDIT", "rejected session changed the operator's mode"
-    if case == "success":
+    if case in ("success", "primitive-context"):
         assert output.is_file()
     elif case in ("existing", "late-output"):
         assert output.read_bytes() == (b"existing-output" if case == "existing" else b"late-output")
