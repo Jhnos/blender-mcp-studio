@@ -16,6 +16,7 @@ import json
 from pathlib import Path
 
 from scripts.verify.generated_artifact_verify_real import BlenderSocketOracle
+from scripts.verify.serrated_contact_verify_real import verify_serrated_contact_plan
 from src.infrastructure.narrowing import as_nonempty_sequence, as_str_keyed_exact, required
 from src.verification.artifact_files import binary_stl_surface
 from src.verification.generator_imports import reload_modules_for
@@ -99,6 +100,7 @@ finally:
 
 def verify_serrated_joint_integration(root: Path) -> None:
     """Observe each formal joint Boolean on real arm geometry; reject any defect."""
+    verify_serrated_contact_plan(root)
     verify_screen_fold_binding(root)
     script = root / "scripts/model_lab_station.py"
     modules = reload_modules_for(root, script)

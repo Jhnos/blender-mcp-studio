@@ -105,3 +105,10 @@ CGAL輪子載入警告：查閱[SWIG官方issue 2881](https://github.com/swig/sw
 另參考 [Blender官方存取回歸測試](https://github.com/blender/blender/blob/main/tests/python/bl_blendfile_io.py) 的另存後重新載入方式；既有真機驗證器以libraries.write／append讀回自己的控制件，並逐姿態檢查實際驅動結果，不另起場景運算服務。原生修訂候選的完整輸出／驗證配方仍應透過專案腳本收斂，暫態研究腳本不屬於公開交付能力。
 
 螢幕控制責任拆分前再查找GitHub，檢視 [Blender官方Rigify機構工具](https://github.com/blender/blender/blob/main/scripts/addons_core/rigify/utils/mechanism.py) 的驅動變數／屬性路徑分離方式。本案重用既有rig驅動器與領域時序；新增的 `lab_station_screen_control` 僅綁定現有零件，避免齒盤幾何模組超過職責／行數預算，不引入Rigify依賴或複製外部碼。
+
+## 配對齒面重用與來源切削查找（2026-10-27）
+
+- [BOSL2 Hirth 接合](https://github.com/BelfrySCAD/BOSL2/wiki/joiners.scad)、[trimesh triangulate_quads](https://github.com/mikedh/trimesh/blob/main/trimesh/geometry.py)：既有專案已提供齒形與固定對角線三角化；未複製程式。此處只補既有原件接觸雙環的完整登錄／覆蓋與一致拓樸規劃，不引入新CAD引擎、擬合或近點合併；下游沿用既有Blender座標重綁、STL匯出及CGAL驗證。
+- [Blender Boolean API](https://docs.staging.blender.org/api/current/bpy.types.BooleanModifier.html)、[原生Manifold接合程式](https://github.com/blender/blender/blob/main/source/blender/geometry/intern/mesh_boolean_manifold.cc)：查找封閉來源的布林替代求解器。更換求解器本身不是精度／拓樸通過證據，仍須每步保真三角化及獨立閉合／自交檢查；未變更本專案共用求解器。
+
+- [SPM原廠DIN931／ISO4014尺寸參考](https://spmetalparts.com/products/bolts/partially-threaded-hex-bolts/) 的M5名義頭高3.5／對邊8mm用於現有六角口袋方案；實際包絡採3.7mm，不推定已涵蓋全部公差。[norelem 07170_ST原廠表](https://www.norelem.fr/medias/07170-ST-Datasheet-19858-Hexagon-head-bolts-DIN-931-ISO-4014-steel-en.pdf?context=bWFzdGVyfHJvb3R8MTg1NTE4fGFwcGxpY2F0aW9uL3BkZnxoYjMvaDQxLzkwMDU3ODYzMDA0NDYvMDcxNzBfU1RfRGF0YXNoZWV0XzE5ODU4X0hleGFnb25faGVhZF9ib2x0c19ESU5fOTMxX0lTT180MDE0X3N0ZWVsLS1lbi5wZGZ8NTE1ZWNkNzc0N2VkYTVkNmIxMGZlNmNhZGRmZjFiYTRiNjcwMDkyMDQ5ZDY0ODI0MjVjYjg0NThlZWQzZGQwYQ) 明列07170-05X35的Ls最小15／Lg最大19mm、07170-05X40的20／24mm；光桿覆蓋與螺母完整牙段應分別驗證，不能用標稱總長減參考牙長代替保證尺寸。
