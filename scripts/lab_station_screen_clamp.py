@@ -1,6 +1,6 @@
 """Bind existing rigid screen clamp roles without creating or changing mesh data."""
 
-from math import isfinite
+from math import atan2, hypot, isfinite
 
 import bpy
 
@@ -21,6 +21,8 @@ def bind_screen_clamp_control(
     The caller owns hardware geometry and engagement. The neutral screen frame
     must be axis aligned; its children follow its existing hinge pivot. Passive
     references are reparented with world transforms preserved before seating.
+    The active part may have baked geometry away from its object origin; its Y/Z
+    translation follows its rotation about the existing screen hinge, not origin zero.
     """
     spec = spec or ScreenClampSpec()
     roles = (screen, active_screw, active_nut, passive_pin, passive_retainer)
@@ -49,6 +51,14 @@ def bind_screen_clamp_control(
     origin_x, origin_angle = screen.location.x, screen.rotation_euler.x
     screw_x, screw_angle = active_screw.location.x, active_screw.rotation_euler.x
     expressions = spec.driver_expressions()
+    pivot_y, pivot_z = screen.location.y, screen.location.z
+    offset_y, offset_z = active_screw.location.y - pivot_y, active_screw.location.z - pivot_z
+    radius, phase = hypot(offset_y, offset_z), atan2(offset_z, offset_y)
+    # Polar rotation uses one trig call, keeping the complete progress expression
+    # within RNA capacity without a driven-property dependency or new rigid part.
+    delta = expressions["active_angle_rad"]
+    active_y = f"{pivot_y!r}+{radius!r}*cos(({delta})+({phase!r}))"
+    active_z = f"{pivot_z!r}+{radius!r}*sin(({delta})+({phase!r}))"
     continuous_property(screen, "fold_angle_deg", spec.sequence.working_angle_deg)
     screen["收折進度"] = 0.0
     screen.id_properties_ui("收折進度").update(
@@ -66,12 +76,6 @@ def bind_screen_clamp_control(
         (screen, "location", 0, f"{origin_x!r}+({expressions['body_x_mm']})*.001"),
         (screen, "rotation_euler", 0, f"{origin_angle!r}+({expressions['body_angle_rad']})"),
         (active_screw, "location", 0, f"{screw_x!r}+({expressions['active_x_mm']})*.001"),
-        (
-            active_screw,
-            "rotation_euler",
-            0,
-            f"{screw_angle!r}+({expressions['active_angle_rad']})",
-        ),
     )
     for obj, path, index, expression in bindings:
         driver(
@@ -79,6 +83,21 @@ def bind_screen_clamp_control(
             screen,
             path,
             index,
+            expression,
+            ("progress",),
+            identity_mapping=True,
+            property_paths=("收折進度",),
+        )
+    for path, axis, expression in (
+        ("rotation_euler", 0, f"{screw_angle!r}+({delta})"),
+        ("location", 1, active_y),
+        ("location", 2, active_z),
+    ):
+        driver(
+            active_screw,
+            screen,
+            path,
+            axis,
             expression,
             ("progress",),
             identity_mapping=True,

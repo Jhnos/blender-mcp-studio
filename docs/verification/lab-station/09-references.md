@@ -151,3 +151,13 @@ GitHub再查 `bpy.data.libraries.write` 與 `bl_blendfile_io.py`，檢視 [Blend
 GitHub查閱[BambuStudio官方3MF匯入／匯出實作](https://github.com/bambulab/BambuStudio/blob/79df7ae309be398ed30c9f397c13c9911c2edc57/src/libslic3r/Format/bbs_3mf.cpp)及同commit CMakeLists。沿用既有ZIP／ElementTree與binary_stl_surface，不搬運上游程式、不引入新依賴。座標綁定只接受唯一正向換軸加平移，完整有向三角面多重集合須相同；尺寸或頂點接近不足以證明原表面相同。3MF來源必須是當次captured source receipt，舊Gcode／預覽不得用作新幾何資格。
 
 3MF清理沿用同一BambuStudio固定commit原生匯入器；實際消費端對預設namespace序列化有相容要求，不能用通用XML parse成功代替。P2S官方安裝包的machine_end_gcode含T65535卸料哨兵，切片器預覽parser會記Invalid T command；保留原廠結尾並記錄原始log，不刪除該卸料命令以消除訊息。CLI副產物按job cwd隔離，原廠profile仍由既有bundle_profiles讀取，不另複製供機器執行。
+
+
+## 共用場景所有權前置查找（2026-10-27）
+
+新增共用port守衛前，GitHub查詢 `repo:python/cpython path:Lib/asyncio/locks.py Lock acquire` 未回傳匹配，改直接讀取[CPython官方asyncio Lock實作](https://github.com/python/cpython/blob/c59ea15111bef2b10bb456ea1881cc5bbcc99c6c/Lib/asyncio/locks.py)。保留既有asyncio.Lock與BlenderLease，不複製上游實作或新增鎖框架；標準Lock本身不限制task owner，因此共用lease另記實際owner。同task可重入，繼承context的子task不自動取得場景修改權。未知完成狀態與正常釋放分開；記憶體隔離票據本身不構成遠端終態或重啟恢復證據。
+
+
+## 原件執行終態前置查找（2026-10-27）
+
+新增job內收據與共享執行adapter前，GitHub查 `repo:blender/blender "os.replace" "json.dump"` 未回傳匹配；再查 `repo:python/cpython "fsync" "replace" "tempfile"`，讀取[CPython IDLE writefile的flush／fsync實作](https://github.com/python/cpython/blob/d9825d504ad738a5160d3c3ecd8cd575a1713e98/Lib/idlelib/iomenu.py)。沿用標準庫flush／fsync、專案既有的暫存後hard-link排他發布、唯一JSON key parser及現有job目錄，不搬運上游程式或引入另一個佇列／工作框架。載入已沿用generator_imports的實際import closure；未手抄reload清單。共享Blender與host-checker的來源SHA一併放入當次程式，遠端執行前重核，不能只指紋一段會匯入可變程式的bootstrap。

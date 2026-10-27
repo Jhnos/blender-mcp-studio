@@ -178,11 +178,17 @@ async def test_real_loopback_socket_observes_the_scoped_deadline():
     sandbox = BlenderCodeSandbox(scoped_timeout=authority.timeout_for)
     adapter = BlenderMCPAdapter("127.0.0.1", port, sandbox, scoped_timeout=authority.timeout_for)
     adapter._socket._timeout = 0.001  # A missing scoped deadline must really fail.
+    from src.adapters.mcp.leased_blender import LeasedBlenderPort
+    from src.core.use_cases.blender_lease import BlenderLease
+
+    lease = BlenderLease()
+    adapter = LeasedBlenderPort(adapter, lease)
     try:
-        with authority.scope(CODE, timeout=2):
-            outcome = await adapter.execute(
-                Command(tool_name="execute_code", arguments={"code": CODE})
-            )
+        async with lease.hold("native-revision"):
+            with authority.scope(CODE, timeout=2):
+                outcome = await adapter.execute(
+                    Command(tool_name="execute_code", arguments={"code": CODE})
+                )
         assert outcome.success and outcome.output == {"actual_socket": True}
         assert received == [{"type": "execute_code", "params": {"code": CODE}}]
         assert authority.timeout_for(CODE) is None

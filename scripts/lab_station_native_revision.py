@@ -13,8 +13,9 @@ from mathutils.kdtree import KDTree
 from scripts.blender_mesh_primitives import add_cylinder, boolean, loft_rings
 from scripts.blender_mesh_rebase import rebase_mesh
 from scripts.blender_mesh_triangulation import triangulate_mesh
+from scripts.lab_station_screen_clamp import bind_screen_clamp_control
 from src.core.domain.lab_station_joints import SerratedJointSpec
-from src.core.domain.native_revision import NativeRevisionError
+from src.core.domain.native_revision import NativeRevisionError, NativeRevisionRequest
 from src.core.planning.screen_revision_plan import ScreenRevisionPlan
 from src.core.planning.serrated_contact_plan import plan_contact_triangulation
 from src.infrastructure.narrowing import (
@@ -214,3 +215,38 @@ def apply_screen_geometry(
         observe("contact-" + name, {name: surface(target)})
     if any(objects[name].data != mesh for name, mesh in before.items()):
         raise NativeRevisionError("screen geometry replaced unrelated mesh data")
+
+
+def apply_screen_controls(
+    objects: Mapping[str, bpy.types.Object],
+    plan: ScreenRevisionPlan,
+    request: NativeRevisionRequest,
+) -> None:
+    """Bind the validated target to the original controller and four hardware identities."""
+    names = (plan.control_owner, *plan.clamp_owners)
+    if not set(names) <= set(objects):
+        raise NativeRevisionError("screen controls require their complete original roles")
+    roles = [objects[name] for name in names]
+    if any(obj.type != "MESH" or obj.get("screen_hardware") is not True for obj in roles[1:]):
+        raise NativeRevisionError("screen controls require the original rigid hardware references")
+    identities = {name: obj.data for name, obj in objects.items()}
+
+    def geometry() -> dict[str, Surface]:
+        return {
+            name: {key: value for key, value in surface(obj).items() if key != "matrix_world"}
+            for name, obj in objects.items()
+            if obj.type == "MESH"
+        }
+
+    original_geometry = geometry()
+    bind_screen_clamp_control(roles[0], roles[1], roles[2], roles[3], roles[4], request.clamp)
+    roles[0]["收折進度"] = 100.0
+    for obj in roles:
+        obj.update_tag()
+    bpy.context.view_layer.update()
+    if any(objects[name].data is not data for name, data in identities.items()):
+        raise NativeRevisionError("screen controls replaced original mesh identities")
+    if geometry() != original_geometry:
+        raise NativeRevisionError("screen controls changed original mesh surfaces")
+    if abs(roles[0]["fold_angle_deg"] - request.target_angle_deg) > 0.0001:
+        raise NativeRevisionError("screen control did not reach the requested indexed target")

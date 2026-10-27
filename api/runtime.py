@@ -79,8 +79,10 @@ def build_runtime(env_file: Path | None = None) -> AppRuntime:
         authorized_generator_code,
     )
     from src.adapters.generation.blender_instance_builder import BlenderInstanceBuilder
+    from src.adapters.generation.native_runner import NativeRunner
     from src.adapters.jobs.sqlite_job_store import SQLiteJobStore
     from src.adapters.mcp.factory import build_blender_adapter
+    from src.adapters.mcp.leased_blender import LeasedBlenderPort
     from src.adapters.mesh.trimesh_cgal_integrity import TrimeshCgalIntegrity
     from src.adapters.packaging.manifest_packager import ManifestPackager
     from src.adapters.polyhaven.polyhaven_adapter import PolyHavenAdapter
@@ -88,6 +90,7 @@ def build_runtime(env_file: Path | None = None) -> AppRuntime:
     from src.adapters.prompt.blender_context_prompt_builder import BlenderContextPromptBuilder
     from src.adapters.security.blender_code_sandbox import BlenderCodeSandbox
     from src.adapters.security.prompt_injection_sanitizer import PromptInjectionSanitizer
+    from src.adapters.security.request_script_authority import RequestScriptAuthority
     from src.adapters.session.sqlite_session_store import SQLiteSessionStore
     from src.adapters.simulation.registered_suites_simulation import RegisteredSuitesSimulation
     from src.adapters.slicing.bambu_studio_cli import BambuStudioCli
@@ -108,14 +111,20 @@ def build_runtime(env_file: Path | None = None) -> AppRuntime:
 
     load_env(env_file)
     authorized = authorized_generator_code() | authorized_verification_code()
-    sandbox = BlenderCodeSandbox(authorized=lambda: authorized)
-    blender = build_blender_adapter(
+    authority = RequestScriptAuthority()
+    sandbox = BlenderCodeSandbox(
+        authorized=lambda: authorized, scoped_timeout=authority.timeout_for
+    )
+    lease = BlenderLease()
+    backend = build_blender_adapter(
         sandbox=sandbox,
+        scoped_timeout=authority.timeout_for,
         script_timeouts={
             **{code: GENERATOR_TIMEOUT_S for code in authorized_generator_code()},
             **{code: VERIFICATION_TIMEOUT_S for code in authorized_verification_code()},
         },
     )
+    blender = LeasedBlenderPort(backend, lease)
     adapter_factory = ConcreteAdapterFactory()
     llm = adapter_factory.build_llm_adapter()
     event_bus = InMemoryEventBus()
@@ -132,7 +141,9 @@ def build_runtime(env_file: Path | None = None) -> AppRuntime:
         native_sources=native_sources,
     )
     native_revisions = NativeRevisionService(
-        artifacts, FilesystemNativeStaging(native_sources, tools.design_runs_dir)
+        artifacts,
+        FilesystemNativeStaging(native_sources, tools.design_runs_dir),
+        runner=NativeRunner(blender, lease, authority, tools.design_runs_dir),
     )
     design_pipeline = DesignPipeline(
         integrity=TrimeshCgalIntegrity(),
@@ -142,7 +153,7 @@ def build_runtime(env_file: Path | None = None) -> AppRuntime:
         ),
         packaging=ManifestPackager(),
         jobs=SQLiteJobStore(tools.design_jobs_db),
-        lease=BlenderLease(),
+        lease=lease,
         runs_dir=tools.design_runs_dir,
         artifact_roots=tools.artifact_roots,
         limits=tools.import_limits,

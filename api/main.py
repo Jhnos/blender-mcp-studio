@@ -38,6 +38,7 @@ from api.routers.ws_manager import ConnectionManager, viewport_broadcast_loop
 from api.runtime import AppRuntime, build_runtime
 from src.adapters.mcp_server import create_mcp_server
 from src.core.domain.exceptions import (
+    BlenderBusyError,
     BlenderConnectionError,
     DomainError,
     ExternalServiceError,
@@ -71,8 +72,12 @@ async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
     except BlenderConnectionError as exc:
         logger.warning("Blender unavailable at API startup: %s", exc)
     try:
+        unresolved = await runtime.native_revisions.recover_unfinished()
+        logger.info("native execution: %s unresolved callback(s)", unresolved)
         try:
-            recovered = await runtime.design_pipeline.recover_interrupted()
+            recovered = await runtime.design_pipeline.recover_interrupted(
+                unresolved_run_ids=runtime.native_revisions.unresolved_run_ids
+            )
             logger.info("design pipeline: %s interrupted job(s) marked failed", recovered)
         except Exception:  # noqa: BLE001 - a degraded job store must not become a crash loop
             logger.exception("design pipeline recovery failed; serving without it")
@@ -182,6 +187,7 @@ def _register_domain_error_handlers(app: FastAPI) -> None:
     async def _not_found(_: Request, exc: Exception) -> JSONResponse:
         return JSONResponse(status_code=404, content={"detail": str(exc)})
 
+    app.add_exception_handler(BlenderBusyError, _unavailable)
     app.add_exception_handler(BlenderConnectionError, _unavailable)
     app.add_exception_handler(LLMConnectionError, _unavailable)
     app.add_exception_handler(UnknownInstanceError, _not_found)

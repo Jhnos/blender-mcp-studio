@@ -59,11 +59,17 @@ class NativeSceneSession:
         self._expected = expected
         self._active = False
         self._closed = False
+        self._restoration_verified = False
         self._original: set[bpy.types.ID] = set()
         self._names: dict[bpy.types.ID, str] = {}
         self._objects: dict[str, bpy.types.Object] = {}
         self._override: AbstractContextManager[object] | None = None
         self._pending: tuple[Path, Path] | None = None
+
+    @property
+    def restoration_verified(self) -> bool:
+        """True only after the full original snapshot matched following cleanup."""
+        return self._restoration_verified
 
     @property
     def objects(self) -> Mapping[str, bpy.types.Object]:
@@ -328,6 +334,7 @@ class NativeSceneSession:
                 raise NativeSceneRestorationError(
                     "original scene restoration could not be verified"
                 )
+            self._restoration_verified = True
         except (RuntimeError, ReferenceError, ValueError) as exc:
             raise NativeSceneRestorationError("original scene restoration failed") from exc
         finally:

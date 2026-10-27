@@ -2,7 +2,7 @@
 
 **Status:** ACTIVE
 
-導航：[目標](#goal) · [規格](#specification) · [驗收](#acceptance-checks) · [現行接手](#hand-off) · [歷史驗證](../archive/2026-10-27-lab-station-handoff-history.md)
+導航：[目標](#goal) · [規格](#specification) · [驗收](#acceptance-checks) · [現行接手](#hand-off) · [執行收據](#durable-native-execution-contract) · [歷史驗證](../archive/2026-10-27-lab-station-handoff-history.md)
 
 ## Goal
 
@@ -55,13 +55,14 @@
 
 ### Next step
 
-接續任務索引指定的同一個工作及其實際 handle；若真機程序仍在執行，不得並行操作 Blender、修改其驗證來源或重啟驗證；確認終態後才進行同輪公開讀回、恢復選定原生模型與checkpoint；封存前的差異檢查失敗必須停止提交。原模型／STL／3MF 保留，後續修改另存修訂。
+接續任務索引指定的同一個工作及其實際 handle；若真機程序仍在執行，不得並行操作 Blender、修改其驗證來源或重啟驗證；確認終態後才進行同輪公開讀回、恢復選定原生模型與checkpoint。原模型／STL／3MF 保留，後續修改另存修訂。
 
 ## Screen clamp control contract (2026-10-27)
 
 - Shared immutable clamp values own pitch, axial seating, target tooth angle and passive-pin float. Reuse the existing five-phase motion; do not duplicate its ramps in Blender bindings.
 - Existing fold behavior defaults to a zero-degree target. An explicit target is finite and within the starting angle; physical clamp endpoints must lie on the joint's indexed tooth angles.
 - Active screw follows body rotation and subtracts screw lead; passive pin and retainer follow body rotation and the same axial float. Preserve all five original rigid identities and mesh data.
+- Baked hardware coordinates may have an off-axis object origin. Keep the actual shaft coaxial through screw rotation by compensating Y/Z around the existing hinge; factor the hinge offset into polar radius/phase so each output uses one trig call and reads raw progress directly. Do not chain a driven custom property into other drivers: appended controls must update without a one-sample lag. Every indexed target must be bound to the real original roles and survive full-file save/reopen, with raw local surfaces and rigid identities preserved.
 - BDD: given each indexed target from 0 through 60 degrees, forward/reverse numerical and evaluated-driver poses agree, including after save/reload; removing rotation-follow or retainer-float must fail. Invalid geometry roles or binding state are rejected before mutation.
 - This contract is a dependency of the shared native-revision service. Control fixtures do not qualify full model collisions, complete hardware tolerances, printing or holding force; no public revision capability is claimed before its adapter and delivery paths are integrated.
 
@@ -115,3 +116,13 @@
 - Geometry changes only the original back shell and lid. Every source step uses the existing independent closedness／self-intersection checker; material witnesses additionally prove the bore removed material and the integrated stop added it while adjacent controls retain material. Missing or ambiguous canonical identities and changed canonical bytes fail before mutation. Skipping either Boolean must fail specifically for missing material change.
 - Temporary-scene operations use explicit collection／depsgraph data APIs; a scene/view-layer override does not authorize window-dependent operators. The original window remains on its original scene. Save/reopen compares all object identities, raw geometry, frames, parents and driver relations, with zero external libraries.
 - Build the complete original-identity STL set before deriving any 3MF. Unchanged parts retain exact source bytes; changed parts use canonical print coordinates and actual binary output is independently checked. Reject extra/missing identities, stale source/native receipts, empty/incorrect geometry verdicts, existing destinations, mid-validation output tampering and extra files. Only final set/hash verification may write the output receipt and checksum manifest. Cancellation drains workers and never removes another job's receipts.
+
+
+## Durable native execution contract
+
+- NativeRunnerPort consumes one PreparedNativeRevision and returns a job-relative NativeRevisionResult; it never reselects a source or creates a second job store. NativeRevisionService and the composition root inject the existing port, lease and exact-program authority. Public execution remains a separate delivery qualification.
+- Each existing job owns an exclusive native-execution directory. Pending identity, callback start, terminal and acknowledgement are bounded, immutable JSON receipts, flushed to disk and published without overwriting. Identity binds protocol, nonce, generated program SHA and source SHA. The generated program also pins its transitive Blender and host-checker source files; dependency reloads come from the existing import-closure helper.
+- The closed callback reuses source preparation, Boolean/material checks, controls and NativeSceneSession. It writes its native candidate only after the original snapshot matches, then records terminal state. Restoration failure, missing or incoherent receipts, altered outputs, symlinks and mismatched acknowledgement never release quarantine. A failed operation with proven restoration may release it while preserving the private error.
+- Socket success, timeout and disconnection do not replace the terminal receipt or trigger a replay. Repeated cancellation drains dispatched work; queued work cancels before reservation or dispatch. Only a matching, restored terminal with verified output fingerprints can be acknowledged and resolve that execution's quarantine.
+- Startup inspects durable receipts before generic orphan-job recovery. Unresolved native run IDs remain excluded from ordinary interrupted-job failure marking; native recovery failure cannot serve scene-changing requests. A persisted pending state is uncertainty, not proof of a live callback.
+- The existing native factory --all includes the actual callback program, an independent original-scene comparison, full-file reopening/control motion, complete same-part STL and same-template Bambu loader checks. This is isolated qualification, not public MCP, physical fit or load acceptance.

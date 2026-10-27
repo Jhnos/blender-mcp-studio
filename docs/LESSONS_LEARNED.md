@@ -1,5 +1,42 @@
 # LESSONS_LEARNED
 
+### 小場景的即時驅動，不等於附加到既有場景後的即時驅動
+
+- **觸發情境**：中介custom-property角度通道在隔離2020樣本通過，正式共享場景的附加控制器卻偶發落後一個進度樣本，螺距偏差0.00666mm；只把fold讀值改成progress又改為顯示落後。此結果修正先前「共享純數值通道即可」的處方，舊失敗與嘗試均保留。
+- **該主動檢查**：在既有驅動場景及部分library append後逐步往返，不只做乾淨背景場景。螺距、軸心、實際轉角與顯示讀值同時對獨立分段解析式檢查；不加反覆update或放寬誤差來掩蓋延遲。
+- **如何預防**：把平面轉動的二個Cartesian trig項改寫成polar radius／phase，每個軸式只含一次trig，因此可直接嵌入完整raw-progress式並符合實測RNA容量。移除中介驅動ID-property，保留原零件與網格身份；同一共享fixture及library-reload controls是真RED／GREEN，原件完整factory與正式core仍須重驗，不能從小場景成功推論常駐視窗成功。
+
+### 觀察端的工作結束，不等於遠端場景已恢復
+
+- **觸發情境**：取消或socket逾時後，本機await可結束，但遠端callback仍可能改場景；API重啟也不能把未終態原件工作當成一般孤兒直接標失敗並釋放引擎。
+- **該主動檢查**：讓回覆遺失而terminal晚到、重複取消已送出的工作、取消仍排隊的工作，再模擬服務重啟。nonce、程式／來源SHA、輸出完整性、恢復旗標與ack各自有拒絕控制。
+- **如何預防**：現有job內先寫durable pending，回呼完成完整原態驗證後才寫terminal；排他發布與有界／唯一key解碼共用原生來源工具，輸出另核SHA。NativeRunner同task持有lease／grant，未知完成隔離不重送；已送出取消排空、尚排隊取消不再執行。啟動先核原件收據，未解除run ID排除一般orphan處理，恢復失敗不可提供修改服務；真背景callback與重開控制沿用現有native factory全套，而非只用mock宣稱資格。
+
+### 程式載入器的指紋，不等於被載入的程式指紋
+
+- **觸發情境**：只有bootstrap／路徑的SHA，來源函式變更仍可得到相同程式身份；手寫reload清單也會漏掉常駐解譯器中的舊依賴。
+- **該主動檢查**：在隔離fixture內分別改動transitive Blender helper及host checker，生成程式SHA必須變更，舊程式在匯入前拒絕新的檔案。
+- **如何預防**：重用import-closure與module-file resolver，將兩端完整來源SHA放進封閉程式並在遠端逐項檢查；不為檢查器加例外、不手抄清單。生成body及dispatch本身另有compile控制，實際callback由同一builder送進背景Blender。
+
+### 單一協定的忙碌檢查，不等於所有入口共用場景所有權
+
+- **觸發情境**：MCP工具有stage守衛，REST與對話仍可直接呼叫底層port；只有socket序列化只能保證封包不交錯，無法保護整段場景工作。
+- **該主動檢查**：真composition持有工作lease時，由另一task經兩個port指令入口嘗試修改，確認底層完全未呼叫；同owner可重入而context繼承的子task不可重入。
+- **如何預防**：所有runtime服務注入同一LeasedBlenderPort與同一BlenderLease，不在每個delivery重建規則。傳輸逾時／送出後斷線須保留未知完成語義，取消或未知完成後阻止新修改及原排隊者；真loopback覆蓋timeout／EOF／cancel、不重送，正常授權腳本仍可通過。此檢查不證明遠端callback已恢復；持久化終態及重啟恢復必須另外驗證，不能用排空本機await代替。
+
+### 物件原點的旋轉，不等於實際五金軸心的旋轉
+
+- **觸發情境**：螺栓形狀已烘焙至世界座標，物件原點仍在零點；只驅動X旋轉時，實際螺栓繞零點公轉而離開鉸鍊。原來只驗X位移與轉角的fixture未觀察Y／Z。
+- **該主動檢查**：以原件網格的實際軸上點／質心追蹤全段往返、全部目標角度及重開後狀態，不能以空物件轉角正確代替原五金同軸。
+- **如何預防**：共用screen clamp保留原網格，從既有鉸鍊與物件原點計算Y／Z旋轉中心補償；既有fixture加軸上點，原件factory逐相位驗四件實際五金、mesh身份、目標及另存重開，正例原碼曾偏離188.6mm而真RED。控制綁定另核全部原local surfaces不變，不能靠重建五金或印另一套零件通過。
+
+### 正確的長公式，不等於引擎完整保存且無循環地執行
+
+- **觸發情境**：重複嵌入分段轉角使Blender expression被截斷；改讀同一物件rotation來驅動location又形成transform依賴循環。
+- **該主動檢查**：觀察實際driver有效性、實際網格姿態與儲存重開，不能只在Python評估算式。不同RNA屬性也可能共享引擎內部的transform節點。
+- **如何預防**：共用driver先依實際RNA的UTF-8容量檢查，超長ASCII／多byte公式在driver_add前拒絕，並驗容量邊界可完整保存。用既有控制器上的單一角度讀值承接progress，再讓螺栓旋轉／Y／Z共同讀該值；保留短表達式且不回讀螺栓自身transform。source fixture與通用2020往返／重開樣本覆蓋軸心及既有49個控制，依賴循環與截斷嘗試的失敗log保留；新控制仍須通過原件factory與核心CI，不能因一個算式正確就宣稱整機通過。
+
+
 ### 父程序的階段狀態，不等於子程序的階段狀態
 
 - **觸發情境**：CI的內部fail-fast旗標透過環境繼承，讓T1／T2及測試中的巢狀dispatcher誤以為已進入會改場景的真機階段；應彙整的靜態錯誤提前終止。

@@ -325,40 +325,23 @@ class DesignPipeline:
             report = replace(report, message=await self.clean(report.message))
         return report
 
-    async def recover_interrupted(self) -> int:
+    async def recover_interrupted(self, *, unresolved_run_ids: tuple[str, ...] = ()) -> int:
         """Fail every QUEUED/RUNNING job left by a dead process; returns how many.
 
         Startup only, before any submit: it cannot tell an orphan from a live run.
         """
         if self._tasks:
             raise RuntimeError("recover_interrupted is startup-only: runs are in flight")
-        orphans = await self._jobs.list_unfinished()
+        orphans = tuple(
+            job
+            for job in await self._jobs.list_unfinished()
+            if job.run_id not in unresolved_run_ids
+        )
         for job in orphans:
             await self._jobs.update(
                 job.job_id, status=JobStatus.FAILED, stage=job.stage, error=INTERRUPTED
             )
-            if job.stage is None:
-                continue
-            run_dir = self._runs_dir / job.run_id
-            try:
-                existing = reports.read_report(run_dir)
-            except (ValueError, KeyError, OSError):
-                # unreadable report == missing: start a fresh one holding only the failure
-                existing = DesignRunReport(job.run_id, "", (), str(run_dir))
-            else:
-                if existing is None:
-                    continue
-            if existing.stages and existing.stages[-1].name is job.stage:
-                continue
-            failed = stages.failed(job.stage, INTERRUPTED)
-            reports.write_report(
-                DesignRunReport(
-                    existing.run_id,
-                    existing.spec_name,
-                    (*existing.stages, failed),
-                    existing.run_dir,
-                )
-            )
+            reports.record_interruption(self._runs_dir / job.run_id, job, INTERRUPTED)
         return len(orphans)
 
     async def status(self, job_id: str) -> JobRecord | None:

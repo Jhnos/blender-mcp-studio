@@ -26,6 +26,13 @@ class ScreenRevisionPlan:
         "S_capillary_yaw_bolt",
     )
     wrist_owner: str = "TE_pH_temp_three_point_wrist"
+    control_owner: str = "整機_螢幕收折"
+    clamp_owners: tuple[str, str, str, str] = (
+        "S_SCREEN_bolt_-1",
+        "S_SCREEN_nut_-1",
+        "S_SCREEN_bolt_1",
+        "S_SCREEN_nut_1",
+    )
 
 
 def plan_screen_revision(pivot_mm: Point) -> ScreenRevisionPlan:

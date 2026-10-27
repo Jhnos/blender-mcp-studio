@@ -492,3 +492,13 @@ async def test_tools_lists_slicer_availability(tmp_path):
     rig = _rig(tmp_path)
     (tool,) = await rig.pipeline.tools()
     assert tool.name == "Bambu Studio" and tool.available
+
+
+async def test_startup_recovery_does_not_fail_a_job_with_unresolved_remote_native_work(tmp_path):
+    rig = _rig(tmp_path)
+    native = await rig.jobs.create("a" * 32)
+    ordinary = await rig.jobs.create("b" * 32)
+    await rig.jobs.update(native.job_id, status=JobStatus.RUNNING, stage=StageName.GEOMETRY)
+    assert await rig.pipeline.recover_interrupted(unresolved_run_ids=(native.run_id,)) == 1
+    assert (await rig.pipeline.status(native.job_id)).status is JobStatus.RUNNING
+    assert (await rig.pipeline.status(ordinary.job_id)).status is JobStatus.FAILED

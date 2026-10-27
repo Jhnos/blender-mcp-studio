@@ -11,7 +11,13 @@ import os
 from collections.abc import Mapping
 from pathlib import Path
 
-from src.core.domain.design_run import DesignRunReport, StageName, StageOutcome, StageReport
+from src.core.domain.design_run import (
+    DesignRunReport,
+    JobRecord,
+    StageName,
+    StageOutcome,
+    StageReport,
+)
 
 REPORT_NAME = "report.json"
 SPEC_NAME = "spec.json"
@@ -79,3 +85,21 @@ def write_spec(run_dir: Path, payload: Mapping[str, object]) -> None:
 
 def read_spec(run_dir: Path) -> object:
     return json.loads((run_dir / SPEC_NAME).read_text(encoding="utf-8"))
+
+
+def record_interruption(run_dir: Path, job: JobRecord, message: str) -> None:
+    """Keep orphan-job report persistence here, alongside every other report write."""
+    if job.stage is None:
+        return
+    try:
+        existing = read_report(run_dir)
+    except (ValueError, KeyError, OSError):
+        existing = DesignRunReport(job.run_id, "", (), str(run_dir))
+    if existing is None or (existing.stages and existing.stages[-1].name is job.stage):
+        return
+    failed = StageReport(job.stage, StageOutcome.FAILED, (), (), message)
+    write_report(
+        DesignRunReport(
+            existing.run_id, existing.spec_name, (*existing.stages, failed), existing.run_dir
+        )
+    )

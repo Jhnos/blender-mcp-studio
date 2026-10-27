@@ -5,6 +5,7 @@ from dataclasses import dataclass
 
 from src.core.domain.exceptions import DomainError
 from src.core.domain.lab_station_joints import ScreenFoldSpec
+from src.core.domain.model_spec import ModelSpec
 from src.core.domain.screen_clamp import ScreenClampSpec
 
 
@@ -86,6 +87,13 @@ class StagedNativeSource:
 
 
 @dataclass(frozen=True, slots=True)
+class PreparedNativeRevision:
+    spec: ModelSpec
+    request: NativeRevisionRequest
+    staged: StagedNativeSource
+
+
+@dataclass(frozen=True, slots=True)
 class NativeStlSet:
     source: NativeModelSource
     native: SourceArtifact
@@ -99,3 +107,11 @@ class NativeSceneError(NativeRevisionError):
 
 class NativeSceneRestorationError(NativeSceneError):
     """Original data or context did not survive a native operation unchanged."""
+
+
+@dataclass(frozen=True, slots=True)
+class NativeRevisionResult:
+    prepared: PreparedNativeRevision
+    directory: str
+    native: SourceArtifact
+    surfaces: SourceArtifact

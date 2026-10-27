@@ -14,7 +14,11 @@ from src.adapters.mcp.blender_tool_codegen import is_translatable, translate
 from src.adapters.scene_listing import list_scene_objects
 from src.adapters.viewport_capture import capture_viewport
 from src.core.domain.command import Command
-from src.core.domain.exceptions import BlenderConnectionError, SceneOperationError
+from src.core.domain.exceptions import (
+    BlenderConnectionError,
+    BlenderExecutionUncertainError,
+    SceneOperationError,
+)
 from src.core.domain.scene_operations import ObjectDetails, SceneSummary, ViewportImage
 from src.core.ports.blender_port import BlenderPort
 from src.core.ports.code_sandbox_port import CodeSandboxPort
@@ -133,27 +137,38 @@ class BlenderSocketClient:
                             return self._decode_response(raw)
                         except json.JSONDecodeError:
                             continue
+                        except UnicodeDecodeError as exc:
+                            if exc.end == len(raw) and exc.reason == "unexpected end of data":
+                                continue
+                            raise
             except (TimeoutError, asyncio.CancelledError):
                 # This protocol has no request IDs. A late reply on this stream
                 # cannot be assigned to the next caller, even if it is valid JSON.
                 # Discard the stream, but never replay an uncertain mutation.
                 await self.disconnect()
                 raise
+            except ValueError as exc:
+                await self.disconnect()
+                raise BlenderExecutionUncertainError(
+                    "Blender command completion is unknown: received an unusable reply"
+                ) from exc
             except ConnectionError as exc:
                 # A peer that hangs up politely sends FIN and the loop above sees EOF.
                 # One that is *reset* — which is what a socket written to after the
                 # addon went away gets — raises here instead, and letting that escape
                 # as a bare OSError breaks the same promise the EOF branch keeps: a
                 # dropped connection must never reach a caller as anything else.
-                raise BlenderConnectionError(
-                    f"Blender at {self._host}:{self._port} dropped the connection ({exc})"
+                await self.disconnect()
+                raise BlenderExecutionUncertainError(
+                    f"Blender command completion is unknown: {self._host}:{self._port} dropped the connection ({exc})"
                 ) from exc
             # Only reachable via the `break` above: the addon sent EOF before a
             # complete reply. Decoding the stump would surface a dropped
             # connection as a *content* error and send the reader hunting for a
             # data-format bug (LESSONS_LEARNED.md, 2026-09-05).
-            raise BlenderConnectionError(
-                f"Blender at {self._host}:{self._port} closed the connection mid-reply "
+            await self.disconnect()
+            raise BlenderExecutionUncertainError(
+                f"Blender command completion is unknown: {self._host}:{self._port} closed the connection mid-reply "
                 f"({len(raw)} bytes received)"
             )
 
@@ -234,7 +249,7 @@ class BlenderMCPClient(MCPPort):
         except BlenderConnectionError:
             raise
         except TimeoutError as exc:
-            raise BlenderConnectionError(
+            raise BlenderExecutionUncertainError(
                 "Blender response timed out; command completion is unknown. "
                 "The connection was discarded; the command was not replayed."
             ) from exc

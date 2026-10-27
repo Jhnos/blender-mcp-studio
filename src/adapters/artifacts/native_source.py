@@ -17,7 +17,7 @@ from src.infrastructure.narrowing import as_mapping
 DEFAULT_MANIFEST_BYTES = 1024 * 1024
 
 
-def _unique_object(pairs: list[tuple[str, object]]) -> dict[str, object]:
+def unique_native_object(pairs: list[tuple[str, object]]) -> dict[str, object]:
     result: dict[str, object] = {}
     for key, value in pairs:
         if key in result:
@@ -118,7 +118,7 @@ class FilesystemNativeSource:
                 raw = handle.read(self._manifest_budget + 1)
             if len(raw) > self._manifest_budget:
                 raise NativeSourceError("source manifest byte budget exceeded")
-            manifest = as_mapping(json.loads(raw, object_pairs_hook=_unique_object))
+            manifest = as_mapping(json.loads(raw, object_pairs_hook=unique_native_object))
         except (OSError, ValueError) as exc:
             raise NativeSourceError("source checksum manifest is unreadable") from exc
         if not manifest:

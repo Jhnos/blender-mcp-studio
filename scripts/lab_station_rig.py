@@ -99,6 +99,9 @@ def driver(
     )
     if len(targets) != len(properties):
         raise ValueError("Every driver variable requires one property path")
+    maximum = bpy.types.Driver.bl_rna.properties["expression"].length_max
+    if maximum and len(expression.encode("utf-8")) >= maximum:
+        raise ValueError("Driver expression exceeds the engine UTF-8 capacity")
     curve = obj.driver_add(path, axis)
     if identity_mapping:
         # A remapping curve can quantize small displacements near its first key.

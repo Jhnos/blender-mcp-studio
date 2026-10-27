@@ -1,9 +1,14 @@
 """Real composition supplies native provenance; shared Blender stays unused."""
 
+import asyncio
 from pathlib import Path
 from unittest.mock import AsyncMock
 
+import pytest
+
 from api.runtime import build_runtime
+from src.core.domain.command import Command
+from src.core.domain.exceptions import BlenderBusyError
 from src.core.domain.import_limits import ImportLimits
 from src.infrastructure.tools_config import ToolsConfig
 from tests.e2e.test_mcp_streamable_http import CountingBlender
@@ -55,5 +60,18 @@ async def test_production_composition_checks_the_selected_native_without_blender
     assert reply["default_native"]["available"] is False
     assert runtime.design_pipeline.lease.holder is None
     assert blender.connect_calls == 0 and blender.disconnect_calls == 0
+    blender.execute.assert_not_awaited()
+    blender.call_tool.assert_not_awaited()
+
+    async def foreign_mutation():
+        with pytest.raises(BlenderBusyError):
+            await runtime.blender.execute(
+                Command(tool_name="delete_object", arguments={"name": "Cube"})
+            )
+        with pytest.raises(BlenderBusyError):
+            await runtime.blender.call_tool("execute_code", {"code": "pass"})
+
+    async with runtime.design_pipeline.lease.hold("native-revision"):
+        await asyncio.create_task(foreign_mutation())
     blender.execute.assert_not_awaited()
     blender.call_tool.assert_not_awaited()

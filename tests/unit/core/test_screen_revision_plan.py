@@ -76,3 +76,14 @@ def test_the_measured_hinge_pivot_translates_both_tools_without_changing_the_pro
 def test_incompatible_or_invalid_hinge_frames_are_rejected(pivot):
     with pytest.raises(NativeRevisionError):
         plan_screen_revision(pivot)
+
+
+def test_plan_names_the_existing_controller_and_four_original_hardware_roles():
+    plan = plan_screen_revision((0, -49, 124))
+    assert plan.control_owner == "整機_螢幕收折"
+    assert plan.clamp_owners == (
+        "S_SCREEN_bolt_-1",
+        "S_SCREEN_nut_-1",
+        "S_SCREEN_bolt_1",
+        "S_SCREEN_nut_1",
+    )

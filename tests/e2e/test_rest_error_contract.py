@@ -27,7 +27,9 @@ from fastapi.testclient import TestClient
 from api.main import create_app
 from src.core.domain.exceptions import (
     BatchTransformError,
+    BlenderBusyError,
     BlenderConnectionError,
+    BlenderExecutionUncertainError,
     ExternalServiceError,
     PrintReadinessError,
     SceneExportError,
@@ -248,3 +250,10 @@ def test_a_vision_failure_on_image_analysis_is_502(app: FastAPI) -> None:
         )
 
     assert (response.status_code, response.json()) == (502, {"detail": DETAIL})
+
+
+@pytest.mark.parametrize("error", [BlenderBusyError, BlenderExecutionUncertainError])
+def test_scene_busy_or_uncertain_completion_is_unavailable(app, error):
+    app.state.blender = RaisingService(error(DETAIL))
+    status, payload = _call(app, "POST", "/api/undo", None)
+    assert (status, payload) == (503, {"detail": DETAIL})

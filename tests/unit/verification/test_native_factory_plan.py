@@ -90,3 +90,21 @@ def test_current_source_recipe_gate_runs_positive_and_each_discriminating_contro
     real = (root / "scripts/ci.sh").read_text().split("if (( REAL )); then", 1)[1]
     assert '"$PY" scripts/verify/native_revision_verify_factory.py --all' in real
     assert "isolated current-source screen revision and full STL" in real
+
+
+def test_native_recipe_covers_every_indexed_target_and_rejects_before_staging(tmp_path):
+    from scripts.verify.native_revision_verify_factory import host, recipe_targets
+    from src.core.domain.native_revision import NativeRevisionError
+
+    assert recipe_targets() == (0, 15, 30, 45, 60)
+    with pytest.raises(NativeRevisionError):
+        host(tmp_path / "invalid", Path("/missing/blender"), target_angle_deg=1)
+    assert not (tmp_path / "invalid").exists()
+
+
+def test_all_native_cases_include_the_actual_durable_callback_and_reopen():
+    root = Path(__file__).resolve().parents[3]
+    source = (root / "scripts/verify/native_revision_verify_factory.py").read_text()
+    all_cases = source.split("if args.all:", 1)[1].split("elif args.phase", 1)[0]
+    assert 'verify_callback(blender, work / "callback")' in all_cases
+    assert '"callback-reopen"' in source

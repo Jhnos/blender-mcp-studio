@@ -6,7 +6,7 @@ import json
 import tempfile
 from collections.abc import Callable, Mapping
 from pathlib import Path
-from unittest.mock import MagicMock
+from unittest.mock import AsyncMock, MagicMock
 
 from fastapi.testclient import TestClient
 
@@ -132,6 +132,8 @@ def make_fake_runtime(
     )
     lease = BlenderLease()
     marker = MagicMock()
+    marker.recover_unfinished = AsyncMock(return_value=0)
+    marker.unresolved_run_ids = ()
     return AppRuntime(
         blender=blender,
         scene_operations=SceneOperationsService(blender),
@@ -329,3 +331,20 @@ def test_public_catalog_exposes_only_the_declared_generation_tools() -> None:
 
     assert len(_EXPECTED_TOOLS) == 21
     assert _EXPECTED_TOOLS & GENERATION_TOOL_NAMES == _PUBLIC_GENERATION_TOOLS
+
+
+def test_native_recovery_failure_cannot_serve_scene_commands():
+    import pytest
+
+    from src.core.domain.native_revision import NativeSceneError
+
+    runtime = make_fake_runtime()
+    runtime.native_revisions.recover_unfinished = AsyncMock(
+        side_effect=NativeSceneError("native recovery unavailable")
+    )
+    with (
+        pytest.raises(NativeSceneError, match="recovery unavailable"),
+        TestClient(create_app(runtime=runtime, require_identity=False)),
+    ):
+        pytest.fail("startup accepted requests without native recovery")
+    assert runtime.blender.disconnect_calls == 1

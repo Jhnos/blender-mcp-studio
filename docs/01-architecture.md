@@ -35,6 +35,7 @@
 - `SceneOperationsService` 使用不可變 domain value，並在 Blender JSON 邊界嚴格 narrowing。
 - `BlenderMCPAdapter` 是高階操作到 addon dialect 的唯一翻譯 chokepoint。
 - 共享 `BlenderSocketClient._lock` 序列化 socket request/response；MCP 不建立第二把 transport lock。
+- `AppRuntime` 將同一 `BlenderLease` 注入管線與 `LeasedBlenderPort`，所有場景修改共用task所有權；只有同task可重入，讀取不取得修改權。指令送出後未知完成或取消，禁止新修改與排隊者進入，直到可信恢復確認；記憶體隔離不替代遠端終態或重啟恢復。
 - **HTTP router 不擁有三種知識**：domain error 到 HTTP status 的映射由 `api/main.py` 的
   application-wide handler 獨佔；use case 的組裝只發生在 `api/runtime.py`；`bpy` 原始碼
   只住在 `src/adapters/blender_scripts/`。三者各有 AST 閘門把關
@@ -89,7 +90,7 @@ Dependency rule：外層依賴內層；domain/application 不 import FastAPI、F
 `SceneCommandPort` 定義 `create_object(spec)`、`modify_object(spec)`、
 `delete_object(name)`、`apply_material(spec)`。
 
-錯誤對映只在 `api/main.py` 一處：`BlenderConnectionError`／`LLMConnectionError` → 503，
+錯誤對映只在 `api/main.py` 一處：`BlenderBusyError`／`BlenderConnectionError`／`LLMConnectionError` → 503，
 `ExternalServiceError`（vision、text-3D、LLM provider 答了但失敗，含 `LLMProviderError`）→ 502，其餘 `DomainError` → 422。
 LLM 與 vision 的 adapter 在邊界把 httpx／SDK 的例外翻成這些型別並串起 cause；use case 不再自己包一層。
 router 不自己把例外翻成 HTTP；`test_routers_do_not_translate_arbitrary_exceptions` 以預算棘輪擋住（D-002）。

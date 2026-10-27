@@ -180,6 +180,79 @@ def verify(blender: Path, work: Path, *, current: bool) -> dict[str, object]:
     return proof
 
 
+def verify_callback(blender: Path, work: Path) -> dict[str, object]:
+    """Run the actual closed program, then independently reopen and check the same parts."""
+    from scripts.verify.native_revision_verify_factory import complete_outputs, stage_current
+    from src.adapters.artifacts.native_execution import NativeExecutionJournal
+    from src.adapters.generation.native_runner import NativeRunner, build_native_program
+    from src.core.domain.native_revision import NativeRevisionRequest
+
+    work = work.resolve()
+    work.mkdir(parents=True, exist_ok=False)
+    captured = asyncio.run(stage_current(work, NativeRevisionRequest("screen-clamp", 30)))
+    body, execution = build_native_program(captured, work / "snapshots")
+    journal = NativeExecutionJournal(execution)
+    journal.reserve(uuid.uuid4().hex, body, captured.staged.source.native.sha256)
+    program = NativeRunner.dispatch_program(body)
+    with (work / "native-program.py").open("x") as handle:
+        handle.write(program)
+    snapshot = work / "snapshots" / captured.staged.directory
+    shutil.copy2(snapshot / captured.staged.source.native.path, work / "original-scene.blend")
+    assert sha256(work / "original-scene.blend") == captured.staged.source.native.sha256
+    (work / "callback.json").write_text(
+        json.dumps(
+            {
+                "execution": execution.relative_to(work).as_posix(),
+                "target_angle_deg": captured.request.target_angle_deg,
+            }
+        )
+    )
+    script = ROOT / "scripts/verify/native_revision_verify_factory.py"
+    for phase, blend in (
+        ("callback", work / "original-scene.blend"),
+        ("callback-reopen", execution / "candidate.blend"),
+    ):
+        with (work / (phase + ".log")).open("x") as log:
+            subprocess.run(
+                [
+                    str(blender),
+                    "--background",
+                    "--factory-startup",
+                    "--disable-autoexec",
+                    "--threads",
+                    "1",
+                    str(blend),
+                    "--python-exit-code",
+                    "1",
+                    "--python",
+                    str(script),
+                    "--",
+                    "--phase",
+                    phase,
+                    "--work",
+                    str(work),
+                ],
+                cwd=ROOT,
+                stdout=log,
+                stderr=subprocess.STDOUT,
+                timeout=600,
+                check=True,
+            )
+        if phase == "callback":
+            terminal = journal.acknowledge()
+            assert terminal["status"] == "completed" and terminal["restored"] is True
+    assert sha256(work / "original-scene.blend") == captured.staged.source.native.sha256
+    complete_outputs(work, captured, execution / "candidate.blend", execution / "stages")
+    from src.infrastructure.narrowing import as_str_keyed_exact, required
+
+    return required(
+        json.loads((work / "verification.json").read_text()),
+        as_str_keyed_exact,
+        message="invalid callback qualification",
+        error=ValueError,
+    )
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     parser.add_argument("--blender", type=Path)
