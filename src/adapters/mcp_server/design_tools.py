@@ -176,7 +176,9 @@ def register_design_tools(
         """List deliverable directories usable as source.root_dir: each root-relative root_dir
         with its STL count per subdirectory and its 3MF names (at most 200, no hidden dirs).
         Use default_spec for the shared selected delivery. If default_available is false,
-        report the missing delivery; never fall back to an archived version."""
+        report the missing delivery; never fall back to an archived version.
+        When present, default_native reports checksum-bound native/part provenance for
+        that exact selection. Its file_identity_only scope is not geometry or print approval."""
         try:
             return await _configured(design, "design pipeline").list_artifacts()
         except DomainError as exc:

@@ -120,3 +120,17 @@ CGAL輪子載入警告：查閱[SWIG官方issue 2881](https://github.com/swig/sw
 另查 [Blender原廠evaluated ID範例](https://github.com/blender/blender/blob/main/doc/python_api/examples/bpy.types.Depsgraph.1.py)。原始ID欄位或單一動畫公式不能取代實際依賴圖讀回；五齒位fixture包含保存重載與中途角度，角度顯示由實際RNA轉角派生，不依賴重複的顯示時序。
 
 五金公差後續核對：[NuFast ISO4014原廠生產圖](https://www.nufast.co.uk/uploads/ISO4014.pdf) 列M5頭高3.35..3.65mm、對邊7.78..8.00mm；既有3.7mm參考外包絡與±0.28mm樣本不能證明完整軸向間隙。頭高與口袋可用軸向位置必須耦合處理。[Böllhoff DIN986原廠表](https://eshop.boellhoff.de/out/media/pdf/DIN_986_Edelstahl_A2___en.pdf) 提供外形、六角與最小螺母高度，但未據此建立保證盲牙深度，因此尚未選定端部封帽方案。
+
+原生來源查找：[Blender官方存取測試](https://github.com/blender/blender/blob/01c07a6f4aa9f8338c89e792583ebbf0a7138cb3/tests/python/bl_blendfile_io.py)及[CPython file_digest](https://github.com/python/cpython/blob/0e353134844fd50628f3730b9f704c3de1710e20/Lib/hashlib.py)。來源識別沿用既有路徑守衛及標準庫，未引入新資產框架；逐檔收據不能替代修改前的暫存重核。
+
+隔離開發依賴查核：[npm audit官方行為](https://docs.npmjs.com/cli/v11/commands/npm-audit/)、[Vite通報](https://github.com/advisories/GHSA-rq7h-c2jc-7f22)、[Vitest mocker通報及4.1.12回補](https://github.com/advisories/GHSA-qxg6-89mg-rqv8)。採既有相容範圍內更新並同步Vitest／coverage-v8最低版，不使用force跨主要版本；audit與完整靜態回歸分別作證。
+
+
+## 原場景保存的前置查找（2026-10-27）
+
+GitHub查閱Blender官方固定commit `01c07a6f4aa9f8338c89e792583ebbf0a7138cb3` 的 [libraries.write範例](https://github.com/blender/blender/blob/01c07a6f4aa9f8338c89e792583ebbf0a7138cb3/doc/python_api/examples/bpy.types.BlendDataLibraries.write.0.py)、`bpy_rna_id_collection.cc` 的user_map及batch_remove。選擇直接包裝已安裝Blender公開API，不搬運GPL實作、不引入第二套Blender框架。另存依賴子集與原場景保留是兩份獨立契約；檔案可讀也須核對實際active scene membership，不能只看資料庫物件數。官方線上API頁回402，另以本機5.1.0 docstrings核對簽名；現階段仍是隔離生命週期研究，能力與進度只讀任務索引。
+
+
+## 原生來源暫存前置查找（2026-10-27）
+
+新增NativeStagingPort／filesystem暫存adapter／NativeRevisionService準備階段前，GitHub查詢 `copyfileobj file_digest`，repository `python/cpython`，回傳 [CPython emscripten下載驗證用法](https://github.com/python/cpython/blob/0e353134844fd50628f3730b9f704c3de1710e20/Platforms/emscripten/__main__.py)。沿用標準庫檔案IO及file_digest，並重用本地來源路徑守衛、指紋函式與工作排空器；copyfileobj本身無總位元組上限，故複製採小區塊讀取並扣除已驗總量，不引入另一套檔案框架或搬運CPython實作。來源選版仍只由既有ArtifactCatalog注入同一份快照，準備服務不另定版本政策，也沒有公開任意路徑／Python入口。

@@ -117,6 +117,7 @@ def _runtime(blender: BlenderPort) -> AppRuntime:
         conversational_modeling=marker,
         modeling_pipeline=marker,
         iterative_refinement=None,
+        native_revisions=marker,
         design_pipeline=AsyncMock(),
         tools=marker,
     )

@@ -4,20 +4,13 @@ Read this file first after a new conversation, compaction, or terminal restart.
 
 ## 接手
 
-- **目前里程碑：** V01.0T.005核心完整通過，正在封存本輪控制與文件；整機工程資格仍ACTIVE。新增不可變螢幕鎖緊規格與共用Blender綁定器，五目標角、2020正反／save-read姿態與49拒絕控制通過；浮點儲存／實際RNA顯示解掉截斷與一步滯後。原件家族與逐輪失敗留在 [V005前史](../archive/2026-10-27-clamp-control-checkpoint.md)，不重建已完成工作。
-- **V005核心終態與原檔：** session84103 exit0，父PID71127已終止，`tmp/current-native-qualification/clamp-shared-real.log` T1／T2／全部選定T3 PASS，對話未選取。新MCP註冊驗證各控制皆真，正例run `8ba88961a2c04bc0893e5c30bf848498`：69件幾何0失敗、實際3MF ZIP僅plate_1.gcode、封裝通過；反例 `dbc0324238ac40e7a1f56cb43846632d` 截斷STL於geometry拒絕且未進print。540來源及其檔案集合與freeze逐項相等；104原交付SHA相等，公開REST／MCPcatalog／schema例／本機選版相同，公開正反報告與持久化檔相同（`clamp-final-public-readback.json`）。按宣告manifest唯一native恢復144物件／113網格／0外部庫，原SHA仍afe3afec6f72ce3e9ae7209c2736c5d1f409f5778a2d86f0096a3b0ba10edefc（`clamp-final-native-restoration.json`）。checkpoint前不需重啟真機CI；再跑靜態與DCC封存文件即可。公開讀回私有診斷首次誤用不存在print.plate_count欄位已失敗保留，改讀既有verifier指定的3MF ZIP獨立計plate，不改驗收條件。
-- **後續服務隔離開發：** 已附掛 `/Users/bearmacmini/.codex/worktrees/native-revision-service/Blender_MCP_drawer`，該處V006來源識別／完整來源暫存及NativeRevisionService準備階段已有單元與factory證據；未部署。V005封存後，以新commit調整其基線，保留全部V006變更，再用明確diff整合回本主目錄；不得整目錄覆蓋、混用兩輪證據或保留永久雙選版來源。模型修訂／完整同組STL後3MF仍未完成，不能將prepare_source當公開修訂能力。
-- **等核心期間新增公差證據：** `tmp/current-native-qualification/head-height-coupled-contact-study/` 有三頭高各27正例共81姿態，6個前後越界控制皆被原前／後殼拒絕；三組雙向連通殼內含各270查詢皆0。`continuous-envelope-proof-02.json`以連續頭高／相依float與角度／body行程的保守包絡，補0.0001mm外向數值量及STL後圓包覆核對，6個完整面／雙向全頂點配對通過、3錯置包絡反例拒絕（前後殼>0.0001mm、固定Lid>0.01mm）。它取代初版local／fixed-Lid證明。`independent-extremes-negative-control.json`證明k3.35可用的f=-0.649，不能給k3.65共用，實際撞前後殼。仍非徑向／轉動鬆量、螺紋、實印公差、完整其他機構運動、工具與負載資格；目前±0.28控制尚未改成相依限制。
-
-
-
-
-
-
-- **V005等核心期間的公差核對：** `screen-hardware-head-tolerance-review.json` 引NuFast ISO4014原廠圖M5頭高3.35..3.65與既有口袋名義面70.85..75.15，推得相對原underhead74.85的頭高相依浮動範圍[k-4,0.30]mm，聯集約[-0.65,0.30]，目前±0.28名義範圍不足，已拒絕完整公差資格；不可用獨立Cartesian極值代替相依限制。按這些名義假設，40規格Ls_min20光桿裕量約0.99999mm、35仍拒絕。口袋面來源只是既有CAD射線見證，非全口袋／實印證書。Böllhoff DIN986 M5封帽螺母表已查，但保證內部盲牙深度未建立，尚不接受為右端保護解法。全部在離線資料計算，未改540凍結來源；V005封存後要補頭高／間隙耦合限制、實際原面控制及端部UX，與共用原件修訂服務同屬必要餘項。
-- **正式交付基線：** 共用ArtifactCatalog仍選 `models/lab-station/model-spec.json` 的v80；原native／69 STL／3MF未改，未發布研究候選或啟動列印。V004完整留證原文已搬到 [歷史快照](../archive/2026-10-27-contact-study-checkpoint.md#v004封存結果由任務索引搬移)，不作本輪替代證據。
-- **下一個實作：** V005完成完整核心驗證與checkpoint後，把原件修訂配方、五金角色及導程約束納入共用AppRuntime服務與窄port，先RED再GREEN；沿用既有規劃／幾何／檢查器，不交付忽略目錄研究腳本。正式能力須經REST／MCP同服務驗證、另存原生檔與完整同組STL後才衍生單盤3MF。新模組前先查GitHub；工具盤點未見直接Blender connector，不另造socket owner。
-- **使用者條件與餘項：** 允許拆支撐／brim；不接受鑽孔、研磨、修整配合面，契約已寫任務16。幫浦／微壓／pH前端／供電板及線管外徑未知，已詢問尚未答；繼續不依賴此輸入的N1–N4。雙獨立探頭、雙上／下臂、四點梯形、約200mm、250mL共杯及後開通風不得縮減。歷史V10滑座carrier自交仍須後續修，不能替換目前雙上臂／梯形。完整機構、電路接口、材料、負載與原件單盤列印資格未完，全球目標保持ACTIVE。
+- **目前：** 任務16 ACTIVE、任務17階段1 AWAITING-ACCEPTANCE。主目錄V01.0T.006的來源識別／來源暫存與取消排空已正式載入；本次提交封存這個階段，不代表原生修訂或整機工程資格完成。歷史開發與失敗逐字保留 [V006交接快照](../archive/2026-10-27-native-source-checkpoint.md)，更早研究只按其連結追溯。
+- **本輪完整核心已終態：** 同一session55541 exit0，父60690／末子14919已退出，`tmp/current-native-qualification/native-v006-real.log` 全部T1/T2/T3 PASS。註冊MCP11套與5控制皆真；當輪正例dfad4f94de454c7f8a4da4751fab8744完成69件geometry 0失敗、print／package PASS，實際3MF ZIP只有Metadata/plate_1.gcode；反例edc197aa3018424ab41046fb1ee511c4只走import／geometry並拒絕，未進print。沒有選對話套件，也沒有宣稱Ollama或Claude LLM對話通過。
+- **同輪交付閉環：** 679來源／依賴／選版宣告與完整集合逐項相同，104原模型資產SHA皆相同；REST／MCPcatalog／schema例／本機唯一選版相等，default_native獨立本機oracle無差，公開正反report等於持久化檔。`native-v006-final-public-readback.json`與`native-v006-public-check.log`留證；唯一manifest native已恢復144物件／113mesh／active144／0外部庫，raw geometry等於獨立factory來源記錄且原SHA不變（`native-v006-final-native-restoration.json`）。本輪結果不可被005報告代替。
+- **Claude與正式頁面：** 既有Claude Code project server blender-mcp-studio解析同canonical HTTP URL，再由標準MCP Client讀回104／69與21工具；`native-v006-claude-config-readback.json`是CLI配置＋實際MCP讀回，不是Claude LLM對話。正式production頁已實讀hashed assets，health connected，browser error／warning0；公開頁面的實際操作與未完成原生修訂不可用配置成功取代。模型仍由models/lab-station/model-spec.json選定v80，不新增入口／fallback。
+- **後續開發保留：** 附掛`/Users/bearmacmini/.codex/worktrees/native-revision-service/Blender_MCP_drawer`、branch codex/native-revision-service有未commit V007。它將append／subset-save／原場景核對模組化，factory合成18例／目前v80 17例與新程序reopen通過；新增當次task／scope／逐字腳本授權的19例與鄰近73例通過，完整static15891 exit0。尚未把新authority及native runner接入正式AppRuntime，無新完整修訂STL／3MF，不能宣稱公開修訂完成。研究及來源備份已保留主tmp/current-native-qualification/native-v007-isolation（349＋414檔）；authority本輪材料仍須補存。不要從附掛目錄部署，先以明確diff整合。
+- **下一步：** 完成本提交的checkpoint checker／push（同輪終態log在tmp/current-native-qualification，C1–C5以實際結果為準），再將附掛V007重新對齊封存006、檢查diff與核心。真正餘項仍是閉集合原件配方、native executor／來源還原、同一job／lease／REST／MCP、完整原身份STL先於新3MF；IPC逾時不能當作Blender worker已排空。持續goal下暫不切換context，checkpoint後繼續。
+- **工程驗收仍開放：** 允許拆支撐／brim，不接受鑽孔、研磨或修整配合面；雙獨立探頭、雙上下臂、四點梯形、約200mm、250mL共杯、折平HMI、後開通風、PLA 0.4／0.2與完整STL先於單盤3MF均保留。頭高與軸向鬆量須耦合，現有±.28樣本不足完整公差；右端8mm保護／工具UX及實際配合／負載／全機連續姿態仍待量化。幫浦、感測器、pH／電源板、線管尺寸已問未答，不重問、不把佔位當尺寸。原檔保留，修訂另存，未啟動實體列印。
 
 | State | Task | Priority |
 |---|---|---|

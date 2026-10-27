@@ -59,3 +59,75 @@ def test_import_and_geometry_stages_need_evidence() -> None:
 def test_artifact_root_comes_from_tools_config_with_override(tmp_path: Path) -> None:
     assert real.artifact_root(None) == load_tools_config().artifact_roots[0]
     assert real.artifact_root(tmp_path) == tmp_path
+
+
+async def test_native_source_oracle_detects_stale_and_incomplete_receipts(tmp_path):
+    import copy
+    from dataclasses import asdict
+
+    from tests.unit.adapters.test_native_source import fixture
+
+    root, manifest, spec, reader = fixture(tmp_path)
+    receipt = {
+        **asdict(await reader.resolve(spec)),
+        "available": True,
+        "scope": "file_identity_only",
+    }
+    selected = {
+        "name": spec.name,
+        "source": {
+            "root_dir": "models/selected",
+            "stl_glob": spec.source.stl_glob,
+            "project_3mf": "plate.3mf",
+        },
+    }
+    assert gate.check_native_source(tmp_path, selected, receipt) == []
+    for field, value in (
+        ("available", False),
+        ("scope", "manufacturing_ready"),
+        ("model_name", "old"),
+        ("root_dir", "old"),
+        ("manifest_sha256", "0" * 64),
+        ("verified_files", 4),
+        ("parts", receipt["parts"][:1]),
+        ("project_3mf", None),
+    ):
+        damaged = copy.deepcopy(receipt)
+        damaged[field] = value
+        assert gate.check_native_source(tmp_path, selected, damaged), field
+    damaged = copy.deepcopy(receipt)
+    damaged["native"]["sha256"] = "0" * 64
+    assert gate.check_native_source(tmp_path, selected, damaged)
+    (root / "native.blend").write_bytes(b"changed")
+    assert gate.check_native_source(tmp_path, selected, receipt)
+
+
+async def test_real_session_rejects_native_provenance_before_submitting(monkeypatch, tmp_path):
+    from unittest.mock import AsyncMock
+
+    class Context:
+        async def __aenter__(self):
+            return object()
+
+        async def __aexit__(self, *_):
+            pass
+
+    selected = {"spec": {"source": {"root_dir": "models/selected"}}, "native": {"available": False}}
+    monkeypatch.setattr(real, "Client", lambda _: Context())
+    monkeypatch.setattr(real, "_selected_contract", AsyncMock(return_value=selected))
+    monkeypatch.setattr(gate, "check_deliverable", lambda *_: [])
+
+    def oracle(*_):
+        return ["native source rejected"]
+
+    monkeypatch.setattr(gate, "check_native_source", oracle, raising=False)
+    monkeypatch.setattr(
+        real,
+        "_tool",
+        AsyncMock(side_effect=AssertionError("native oracle must precede tool probe")),
+    )
+    submit = AsyncMock(side_effect=AssertionError("must reject before submission"))
+    monkeypatch.setattr(real, "_positive", submit)
+    failures = await real._session({}, "https://unused", tmp_path)
+    assert failures == ["native source rejected"]
+    submit.assert_not_awaited()

@@ -68,7 +68,15 @@ async def run_to_completion(work: Awaitable[T]) -> T:
     try:
         return await asyncio.shield(task)
     except asyncio.CancelledError:
-        await asyncio.wait([task])
+        # A second cancel must not interrupt this drain and release the lease
+        # while the shielded subprocess or file worker is still running.
+        while not task.done():
+            try:
+                await asyncio.shield(task)
+            except asyncio.CancelledError:
+                continue
+            except Exception:
+                break  # Work finished with an error; cancellation still propagates.
         if not task.cancelled():
             task.exception()  # retrieved: the cancellation is what propagates
         raise

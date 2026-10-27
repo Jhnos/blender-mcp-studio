@@ -7,12 +7,19 @@
 {
   "meta": {
     "name": "Blender MCP Studio",
-    "version": "registered-verification-v1",
-    "updated": "2026-10-03",
+    "version": "native-source-provenance-v1",
+    "updated": "2026-10-27",
     "invariant": "All inbound transports converge on one AppRuntime and one Blender addon socket."
   },
-  "levels": ["clients", "gateway", "proxy", "process", "inbound", "application", "adapter", "engine"],
+  "levels": ["clients", "gateway", "proxy", "process", "inbound", "application", "ports", "adapter", "engine"],
   "nodes": [
+    {"id": "native_revision_service", "level": "application", "label": "NativeRevisionService", "responsibility": "Capture the current native source and prepare a verified job snapshot", "inputs": ["existing job identifier"], "outputs": ["StagedNativeSource"], "invariants": ["same ArtifactCatalog as DesignPipeline", "one captured selection", "source preparation makes no Blender calls"], "dependsOn": ["artifact_catalog", "native_staging_port"], "adr": "tasks/16_lab-station.md#source-snapshot-contract", "status": "confirmed", "anchor": {"path": "src/core/use_cases/native_revision.py", "kind": "class", "symbol": "NativeRevisionService"}},
+    {"id": "native_staging_port", "level": "ports", "label": "NativeStagingPort", "responsibility": "Define a bounded source snapshot without filesystem or Blender knowledge", "inputs": ["ModelSpec", "NativeModelSource", "job identifier"], "outputs": ["StagedNativeSource"], "invariants": ["exclusive job-relative snapshot", "no caller-chosen output path", "no source overwrite"], "dependsOn": [], "adr": "tasks/16_lab-station.md#source-snapshot-contract", "status": "confirmed", "anchor": {"path": "src/core/ports/native_staging_port.py", "kind": "class", "symbol": "NativeStagingPort"}},
+    {"id": "native_staging_adapter", "level": "adapter", "label": "FilesystemNativeStaging", "responsibility": "Copy and recheck the complete source into an exclusive job directory", "inputs": ["verified source receipt", "configured job root"], "outputs": ["snapshot receipt", "retained failure diagnostic"], "invariants": ["bounded bytes and full manifest population", "final source and snapshot checks", "repeated cancellation drains file worker", "failed collision never edits another snapshot"], "dependsOn": ["native_staging_port", "native_source_port"], "adr": "tasks/16_lab-station.md#source-snapshot-contract", "status": "confirmed", "anchor": {"path": "src/adapters/artifacts/native_staging.py", "kind": "class", "symbol": "FilesystemNativeStaging"}},
+    {"id": "design_pipeline", "level": "application", "label": "DesignPipeline", "responsibility": "Run import, geometry, mechanism, print and packaging stages", "inputs": ["ModelSpec or current selection"], "outputs": ["DesignRunReport", "artifact discovery"], "invariants": ["one shared job store and Blender lease", "REST and MCP share this instance"], "dependsOn": ["artifact_catalog"], "adr": "tasks/16_lab-station.md#native-revision-service-contract", "status": "confirmed", "anchor": {"path": "src/core/use_cases/design_pipeline.py", "kind": "class", "symbol": "DesignPipeline"}},
+    {"id": "artifact_catalog", "level": "application", "label": "ArtifactCatalog", "responsibility": "Resolve the current model and native provenance from one selection snapshot", "inputs": ["selected ModelSpec", "approved artifact roots"], "outputs": ["current spec", "file identity receipt"], "invariants": ["no client-specific version policy", "unavailable native never falls back to archives", "identity is not manufacturing qualification"], "dependsOn": ["native_source_port"], "adr": "tasks/16_lab-station.md#native-revision-service-contract", "status": "confirmed", "anchor": {"path": "src/core/use_cases/artifact_catalog.py", "kind": "class", "symbol": "ArtifactCatalog"}},
+    {"id": "native_source_port", "level": "ports", "label": "NativeSourcePort", "responsibility": "Define read-time native source provenance without storage or transport knowledge", "inputs": ["ModelSpec"], "outputs": ["NativeModelSource"], "invariants": ["typed immutable receipt", "execution must stage and recheck source"], "dependsOn": [], "adr": "tasks/16_lab-station.md#native-revision-service-contract", "status": "confirmed", "anchor": {"path": "src/core/ports/native_source_port.py", "kind": "class", "symbol": "NativeSourcePort"}},
+    {"id": "native_source_adapter", "level": "adapter", "label": "FilesystemNativeSource", "responsibility": "Verify the declared native and complete selected STL set against the checksum manifest", "inputs": ["ModelSpec", "approved roots and limits"], "outputs": ["NativeModelSource", "NativeSourceError"], "invariants": ["read-only bounded filesystem access", "unique manifest-declared native", "reject missing, changed or ambiguous source", "no Blender connection"], "dependsOn": ["native_source_port"], "adr": "tasks/16_lab-station.md#native-revision-service-contract", "status": "confirmed", "anchor": {"path": "src/adapters/artifacts/native_source.py", "kind": "class", "symbol": "FilesystemNativeSource"}},
     {
       "id": "http_hosts", "level": "clients", "label": "HTTP MCP hosts",
       "responsibility": "Use standard MCP Streamable HTTP without host-specific server behavior",
@@ -57,29 +64,9 @@
       "adr": "MCP_LAYER_ADR §A", "status": "confirmed",
       "anchor": {"path": "api/main.py", "kind": "function", "symbol": "create_app"}
     },
-    {
-      "id": "rest_ws", "level": "inbound", "label": "REST + WebSocket adapters",
-      "responsibility": "Serve Web UI workflows through presentation-specific routes",
-      "inputs": ["REST DTO", "chat frames"], "outputs": ["application calls"],
-      "invariants": ["overlapping use cases share application services"], "dependsOn": ["verification_service", "scene_service", "print_service", "batch_service"],
-      "adr": "MCP_LAYER_ADR §A", "status": "confirmed"
-    },
-    {
-      "id": "mcp_adapter", "level": "inbound", "label": "Curated FastMCP adapter",
-      "responsibility": "Expose eleven strict client-neutral tools through incoming ports",
-      "inputs": ["validated tool arguments"], "outputs": ["structured content", "image content", "ToolError"],
-      "invariants": ["exactly eleven tools", "execute_code absent", "legacy SSE absent"], "dependsOn": ["verification_service", "scene_service", "print_service"],
-      "adr": "MCP_LAYER_ADR §A", "status": "confirmed",
-      "anchor": {"path": "src/adapters/mcp_server/server.py", "kind": "function", "symbol": "create_mcp_server"}
-    },
-    {
-      "id": "app_runtime", "level": "application", "label": "AppRuntime",
-      "responsibility": "Own one composed dependency graph and one Blender connection lifecycle",
-      "inputs": ["startup", "shutdown"], "outputs": ["shared ports and adapters"],
-      "invariants": ["connect once", "disconnect once", "same object identity for REST and MCP"], "dependsOn": ["verification_service", "scene_service", "print_service", "batch_service", "blender_adapter"],
-      "adr": "MCP_LAYER_ADR §A", "status": "confirmed",
-      "anchor": {"path": "api/runtime.py", "kind": "class", "symbol": "AppRuntime"}
-    },
+    {"id": "rest_ws", "level": "inbound", "label": "REST + WebSocket adapters", "responsibility": "Serve Web UI workflows through presentation-specific routes", "inputs": ["REST DTO", "chat frames"], "outputs": ["application calls"], "invariants": ["overlapping use cases share application services"], "dependsOn": ["verification_service", "scene_service", "print_service", "batch_service", "design_pipeline"], "adr": "MCP_LAYER_ADR §A", "status": "confirmed"},
+    {"id": "mcp_adapter", "level": "inbound", "label": "Curated FastMCP adapter", "responsibility": "Expose registered client-neutral tools through injected application services", "inputs": ["validated tool arguments"], "outputs": ["structured content", "image content", "ToolError"], "invariants": ["tool catalog governed by registry", "execute_code absent", "legacy SSE absent"], "dependsOn": ["verification_service", "scene_service", "print_service", "design_pipeline"], "adr": "MCP_LAYER_ADR §A", "status": "confirmed", "anchor": {"path": "src/adapters/mcp_server/server.py", "kind": "function", "symbol": "create_mcp_server"}},
+    {"id": "app_runtime", "level": "application", "label": "AppRuntime", "responsibility": "Own one composed dependency graph and one Blender connection lifecycle", "inputs": ["startup", "shutdown"], "outputs": ["shared ports and adapters"], "invariants": ["connect once", "disconnect once", "same object identity for REST and MCP"], "dependsOn": ["verification_service", "scene_service", "print_service", "batch_service", "blender_adapter", "design_pipeline", "native_source_adapter", "native_revision_service", "native_staging_adapter"], "adr": "MCP_LAYER_ADR §A", "status": "confirmed", "anchor": {"path": "api/runtime.py", "kind": "class", "symbol": "AppRuntime"}},
     {
       "id": "scene_service", "level": "application", "label": "SceneOperationsService",
       "responsibility": "Narrow Blender data and orchestrate scene operations in domain language",
@@ -163,6 +150,19 @@
     }
   ],
   "edges": [
+    {"from": "app_runtime", "to": "native_revision_service", "contract": "constructs once", "data": "shared preparation"},
+    {"from": "native_revision_service", "to": "artifact_catalog", "contract": "ArtifactCatalog", "data": "same selection policy"},
+    {"from": "native_revision_service", "to": "native_staging_port", "contract": "NativeStagingPort", "data": "job snapshot"},
+    {"from": "native_staging_adapter", "to": "native_staging_port", "contract": "implements", "data": "typed snapshot"},
+    {"from": "native_staging_adapter", "to": "native_source_port", "contract": "NativeSourcePort", "data": "recheck source"},
+    {"from": "app_runtime", "to": "native_staging_adapter", "contract": "injects into NativeRevisionService", "data": "one staging adapter"},
+    {"from": "rest_ws", "to": "design_pipeline", "contract": "DesignPipeline", "data": "same service"},
+    {"from": "mcp_adapter", "to": "design_pipeline", "contract": "DesignPipeline", "data": "same service"},
+    {"from": "app_runtime", "to": "design_pipeline", "contract": "constructs once", "data": "one pipeline"},
+    {"from": "design_pipeline", "to": "artifact_catalog", "contract": "ArtifactCatalog", "data": "one selection snapshot"},
+    {"from": "artifact_catalog", "to": "native_source_port", "contract": "NativeSourcePort", "data": "identity receipt"},
+    {"from": "native_source_adapter", "to": "native_source_port", "contract": "implements", "data": "typed provenance"},
+    {"from": "app_runtime", "to": "native_source_adapter", "contract": "injects into ArtifactCatalog", "data": "one source policy"},
     {"from": "rest_ws", "to": "verification_service", "contract": "VerificationQueryPort", "data": "registered verification", "critical": true},
     {"from": "mcp_adapter", "to": "verification_service", "contract": "VerificationQueryPort", "data": "registered verification", "critical": true},
     {"from": "app_runtime", "to": "verification_service", "contract": "constructs once", "data": "registered verification", "critical": true},
@@ -331,7 +331,7 @@ function truncate(value, size) {
 }
 
 function render() {
-  const levels = showInternals ? model.levels : model.levels.filter(level => !['adapter', 'engine'].includes(level));
+  const levels = showInternals ? model.levels : model.levels.filter(level => !['ports', 'adapter', 'engine'].includes(level));
   const visibleNodes = model.nodes.filter(node => levels.includes(node.level));
   const byLevel = Object.fromEntries(levels.map(level => [level, []]));
   visibleNodes.forEach(node => byLevel[node.level].push(node));
@@ -367,6 +367,9 @@ function render() {
     if (to.y > from.y + from.h - 1) {
       x1 = from.x + from.w / 2; y1 = from.y + from.h;
       x2 = to.x + to.w / 2; y2 = to.y;
+    } else if (to.y + to.h < from.y + 1) {
+      x1 = from.x + from.w / 2; y1 = from.y;
+      x2 = to.x + to.w / 2; y2 = to.y + to.h;
     } else if (to.x > from.x) {
       x1 = from.x + from.w; y1 = from.y + from.h / 2;
       x2 = to.x; y2 = to.y + to.h / 2;
@@ -389,7 +392,12 @@ function render() {
     const position = positions[node.id];
     const group = el('g', {class: 'node', transform: `translate(${position.x},${position.y})`, tabindex: 0, role: 'button', 'aria-label': node.label}, svg);
     el('rect', {width: NODE_W, height: NODE_H}, group);
-    el('text', {class: 'label', x: 14, y: 28}, group).textContent = node.label;
+    const label = el('text', {class: 'label', x: 14, y: 28}, group);
+    label.textContent = node.label;
+    while (label.getComputedTextLength() > NODE_W - 28 && label.textContent.length > 1) {
+      label.textContent = label.textContent.replace(/…$/, '').slice(0, -1) + '…';
+    }
+    el('title', {}, group).textContent = node.label;
     el('text', {class: 'sub', x: 14, y: 49}, group).textContent = truncate(node.responsibility, 34);
     const activate = () => showDetail(node, group);
     group.addEventListener('click', activate);

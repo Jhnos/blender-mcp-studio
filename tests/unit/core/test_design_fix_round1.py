@@ -82,18 +82,22 @@ class BlockingSlicing:
         raise AssertionError("not used")
 
 
-async def test_cancelled_slice_holds_lease_until_slicer_returns(tmp_path):
+@pytest.mark.parametrize("cancellations", [1, 3])
+async def test_cancelled_slice_holds_lease_until_slicer_returns(tmp_path, cancellations):
     rig = _rig(tmp_path)
     blocking = BlockingSlicing()
     rig.pipeline._slicing = blocking
     task = asyncio.create_task(rig.pipeline.slice_file("artifact/p.3mf", "bambu-p2s"))
     await asyncio.wait_for(blocking.started.wait(), 2)
-    task.cancel()
-    await asyncio.sleep(0.05)
-    assert rig.lease.holder is StageName.PRINT and not task.done()
-    blocking.release.set()
-    with pytest.raises(asyncio.CancelledError):
-        await task
+    try:
+        for _ in range(cancellations):
+            task.cancel()
+            await asyncio.sleep(0.02)
+            assert rig.lease.holder is StageName.PRINT and not task.done()
+    finally:
+        blocking.release.set()
+        with pytest.raises(asyncio.CancelledError):
+            await task
     assert rig.lease.holder is None
 
 

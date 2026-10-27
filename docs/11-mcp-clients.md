@@ -236,3 +236,6 @@ because GUI-launched clients do not reliably inherit the shell working directory
 
 **驗證**：對 MCP URL 發 GET 得到 HTTP 200 **不算證據**——前端 fallback 也會回 200。
 必須跑真正的 initialize 與 `tools/list`。完整判準與指令見 [[30-verification]]。
+
+
+`list_artifacts` 的選版來源已設定原生檔檢查時，`default_native` 會提供同一選版快照的root-relative原生檔名、SHA256、完整列印件指紋與來源清單指紋。`available=false`會附拒絕原因，不改讀歷史資料夾；未提供原生來源檢查的服務可省略此欄位。`scope=file_identity_only`只表示檔案身分核對，不代表原生檔可開啟、機構可動或已通過列印驗收。真正修訂前仍須暫存來源並重新核對；客戶端不要從檔名中的舊版號推斷目前模型。

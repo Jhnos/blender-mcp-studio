@@ -214,7 +214,7 @@ async def _selected_contract(client: Client[Any], contract: Mapping[str, Any]) -
     if spec != described.get("example"):
         raise checks.GateError("selected delivery disagrees between discovery and schema example")
     print(f"selected delivery: {spec.get('name')}", flush=True)
-    return {**contract, "spec": spec}
+    return {**contract, "spec": spec, "native": catalog.get("default_native")}
 
 
 async def _session(contract: Mapping[str, Any], url: str, root: Path) -> list[str]:
@@ -225,6 +225,7 @@ async def _session(contract: Mapping[str, Any], url: str, root: Path) -> list[st
                 resolved = await _selected_contract(client, contract)
                 source = _as_object(resolved["spec"]["source"], "source")
                 failures += checks.check_deliverable(root, str(source["root_dir"]))
+                failures += checks.check_native_source(root, resolved["spec"], resolved["native"])
                 if failures:
                     return failures
                 rows = await _tool(client, "tool_status")

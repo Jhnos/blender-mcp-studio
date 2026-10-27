@@ -140,7 +140,7 @@ class DesignPipeline:
 
     async def list_artifacts(self) -> dict[str, object]:
         """Candidate ``source.root_dir`` values under the artifact roots (relative only)."""
-        return await asyncio.to_thread(self._artifacts.list)
+        return await self._artifacts.discover()
 
     def _finished(self, task: asyncio.Task[DesignRunReport]) -> None:
         self._tasks.discard(task)

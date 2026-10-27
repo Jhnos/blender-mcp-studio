@@ -153,6 +153,7 @@ def make_fake_runtime(
         conversational_modeling=marker,
         modeling_pipeline=marker,
         iterative_refinement=None,
+        native_revisions=marker,
         design_pipeline=DesignPipeline(
             artifacts=ArtifactCatalog(
                 tools.artifact_roots,

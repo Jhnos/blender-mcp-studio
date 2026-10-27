@@ -22,6 +22,7 @@ from src.core.use_cases.design_pipeline import DesignPipeline
 from src.core.use_cases.iterative_refinement import IterativeRefinementUseCase
 from src.core.use_cases.mechanical_generation import MechanicalGenerationService
 from src.core.use_cases.modeling_pipeline import ModelingPipelineUseCase
+from src.core.use_cases.native_revision import NativeRevisionService
 from src.core.use_cases.print_readiness import PrintReadinessService
 from src.core.use_cases.scene_export import SceneExportService
 from src.core.use_cases.scene_operations import SceneOperationsService
@@ -61,11 +62,14 @@ class AppRuntime:
 
     #: Shared by REST and MCP: one pipeline, one Blender lease, one job store.
     design_pipeline: DesignPipeline
+    native_revisions: NativeRevisionService
     tools: ToolsConfig
 
 
 def build_runtime(env_file: Path | None = None) -> AppRuntime:
     """Build concrete outer adapters at the application's only composition root."""
+    from src.adapters.artifacts.native_source import FilesystemNativeSource
+    from src.adapters.artifacts.native_staging import FilesystemNativeStaging
     from src.adapters.batch_transform.blender_batch_transform import BlenderBatchTransformAdapter
     from src.adapters.events.in_memory_event_bus import InMemoryEventBus
     from src.adapters.export.blender_scene_exporter import BlenderSceneExportAdapter
@@ -120,6 +124,16 @@ def build_runtime(env_file: Path | None = None) -> AppRuntime:
     generation = MechanicalGenerationService(BlenderInstanceBuilder(blender))
     verification = VerificationService(BlenderVerificationAdapter(blender), registered_suites())
     tools = load_tools_config()
+    native_sources = FilesystemNativeSource(tools.artifact_roots, tools.import_limits)
+    artifacts = ArtifactCatalog(
+        tools.artifact_roots,
+        tools.import_limits.max_stl_files,
+        load_selected_model_spec,
+        native_sources=native_sources,
+    )
+    native_revisions = NativeRevisionService(
+        artifacts, FilesystemNativeStaging(native_sources, tools.design_runs_dir)
+    )
     design_pipeline = DesignPipeline(
         integrity=TrimeshCgalIntegrity(),
         simulation=RegisteredSuitesSimulation(verification),
@@ -132,9 +146,7 @@ def build_runtime(env_file: Path | None = None) -> AppRuntime:
         runs_dir=tools.design_runs_dir,
         artifact_roots=tools.artifact_roots,
         limits=tools.import_limits,
-        artifacts=ArtifactCatalog(
-            tools.artifact_roots, tools.import_limits.max_stl_files, load_selected_model_spec
-        ),
+        artifacts=artifacts,
     )
     return AppRuntime(
         blender=blender,
@@ -168,5 +180,6 @@ def build_runtime(env_file: Path | None = None) -> AppRuntime:
             else IterativeRefinementUseCase(llm=llm, blender=blender, vision=vision)
         ),
         design_pipeline=design_pipeline,
+        native_revisions=native_revisions,
         tools=tools,
     )

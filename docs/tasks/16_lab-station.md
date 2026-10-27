@@ -74,3 +74,20 @@
 - After each source operation, validate the affected surface independently. Save/reopen checks include original object identities, descendants, all rigid controls, external-library absence and unchanged unrelated surfaces. Actual binary STL bytes must pass topology and strict geometry checks.
 - Complete the same-identity STL set before deriving a new 3MF. Unchanged parts retain source bytes; changed parts carry source/native/export provenance. Reuse the existing slicing and packaging services for single-plate qualification; a successful imported-v80 run does not qualify a revised candidate.
 - BDD rejection cases: missing/malformed selection; stale source hash; multiple native candidates; unknown recipe; pre-existing destination; failed intermediate geometry; missing/extra/replaced part identity; unsaved driver mismatch; failed source restoration. Each failure retains diagnostic evidence and cannot publish a successful result or update the current selection.
+
+### Verified native source boundary
+
+- The current catalog supplies a parsed ModelSpec once. A narrow async source port resolves the single `.blend` explicitly listed by that selected root's SHA256.json; unlisted historical native files never become fallback candidates.
+- Every manifest entry has a canonical relative path and a valid SHA256. All listed files are checked; the selected STL glob must have a nonempty, capped set of files with manifest entries. Symlinked entries, escapes, duplicate keys, stale/missing files, ambiguous listed natives and incomplete part provenance fail before any Blender call.
+- The result is immutable typed provenance with root-relative paths, native and selected-part fingerprints, manifest fingerprint, verified-file count and aggregate byte budget. It certifies identity at read time, not native format, geometry or printability. The execution adapter must stage and recheck these fingerprints before editing.
+- BDD positives include nested/Unicode parts, an unlisted historical native, and a changed current selection. Rejections include invalid manifest paths/digests/types, missing/stale assets, duplicate listed natives, missing/extra STL identities, empty selection and import caps. No error exposes host paths or silently selects an archive.
+
+- Existing list_artifacts adds optional default_native from that exact validated discovery snapshot. An identity error is explicit native unavailability; it does not change selected input artifacts or imply imported-STL failure. Source lookup must not re-query the mutable selection provider during one discovery response.
+- The production composition root injects the filesystem source port into the same ArtifactCatalog used by DesignPipeline. Both REST and MCP serialize its common result; no native operation or readiness claim is added by discovery.
+
+### Source snapshot contract
+
+- Before any native modification, resolve the captured ModelSpec again through the same source port and require the complete immutable receipt to match. Never re-query the selection provider during preparation.
+- Stage all manifest-declared assets and the exact manifest bytes under an exclusive job-relative directory. File bytes are bounded by the verified aggregate size and each staged digest must match; reject pre-existing destinations, symlinks, invalid job identifiers, source changes during copying and incomplete copies.
+- Return a typed job-relative snapshot receipt only after the copied set and original source recheck pass. Retain failed diagnostics without a successful receipt; never overwrite the source, current selection or another job. Cancellation must drain any started file worker before returning, including repeated cancellation.
+- BDD: a successful snapshot is independent of later original-file edits. Rejection controls cover stale receipts, tampering during copy, source-manifest changes, existing outputs, missing/extra files and cancellation while the worker is live. Snapshot identity alone is not native geometry or print qualification.
