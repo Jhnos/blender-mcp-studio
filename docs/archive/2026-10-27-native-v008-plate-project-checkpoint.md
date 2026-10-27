@@ -27,4 +27,3 @@
 - **封存檢查：** 首次seal-static因archive快照搬移後的18個相對連結失效而失敗；原文精確副本保留native-v007-index-prearchive-exact.md，只修正新快照的相對連結。65804 seal-static-links-fixed完整exit0、links／DCC17過、git diff --check過；5S指示檔77／16行、project skill150行。
 - **下一步：** 封存V007後，先保留V008 working bytes並對齊新基線；接續同原件69 STL生成去除舊Gcode／預覽的3MF，再以既有SlicingPort真切片。原件NativeRunner仍須綁validated request、一次captured ModelSpec／print target／source receipts、共享AppRuntime／job／lease與同task grant；IPC timeout不能當遠端worker terminal，須有完成／恢復證據才釋放或隔離lease。
 - **完整工程範圍不縮減：** 可拆支撐／brim，不可鑽孔、研磨或修整配合面；雙獨立探頭、上下雙連桿、四點梯形、約200mm伸距、250mL共杯、折平HMI、後開通風、PLA 0.4／0.2、完整STL先於盡量單盤3MF。全機連續姿態、公差耦合、右端8mm工具UX、載重與實體配合尚待驗證。幫浦／感測器／pH與供電板／線管尺寸已問未答，不重問，不以佔位模型當實尺寸。持續goal仍ACTIVE，checkpoint後繼續，不請使用者清context。
-
