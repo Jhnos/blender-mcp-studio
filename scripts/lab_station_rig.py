@@ -202,7 +202,6 @@ def set_pose(control: bpy.types.Object, **values: float) -> None:
     for key, value in values.items():
         control[key] = value
     control.update_tag()
-    bpy.context.scene.frame_set(bpy.context.scene.frame_current)
     bpy.context.view_layer.update()
 
 
