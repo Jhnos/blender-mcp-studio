@@ -60,6 +60,8 @@
 
 切換選版時，主專案與服務執行目錄須同時具備新模型及可讀該收據的驗證器。公開讀回後，另核對已開啟的 Blender 場景與獨立重開的網格快照。切換前若原場景有未存變更，保留原場景並明列讀回結果。局部支撐驗證應綁定實際 3MF 的雜湊；若重切產生不同刀路，須對新產物重新量測。
 
+名目候選杯的停臂後取出沿用[共用驗證規則](../30-verification.md#t3-裡的產出物閘門2026-09-08-起)。候選杯壁干涉與空間包絡使用相同封閉實體判定；實際杯尺寸與操作驗收仍依上列 Acceptance checks。
+
 ## Screen clamp control contract (2026-10-27)
 
 - Shared immutable clamp values own pitch, axial seating, target tooth angle and passive-pin float. Reuse the existing five-phase motion; do not duplicate its ramps in Blender bindings.

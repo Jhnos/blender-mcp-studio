@@ -100,6 +100,23 @@ def test_current_source_recipe_gate_runs_positive_and_each_discriminating_contro
     assert "isolated current-source screen revision and full STL" in real
 
 
+def test_real_ci_checks_cup_extraction_from_the_current_factory_source():
+    root = Path(__file__).resolve().parents[3]
+    real = (root / "scripts/ci.sh").read_text().split("if (( REAL )); then", 1)[1]
+    gate = '"$PY" scripts/verify/workstation_cup_verify_factory.py'
+    assert gate in real
+    assert real.index(gate) < real.index("workstation prototype fixture (research)")
+
+
+def test_cup_extraction_rejects_an_old_source_and_an_incomplete_display_sweep():
+    from scripts.verify.workstation_cup_verify_factory import assess
+
+    with pytest.raises(ValueError, match="different native model"):
+        assess({"native_sha256": "old"}, "current")
+    with pytest.raises(ValueError, match="display sweep is incomplete"):
+        assess({"native_sha256": "current", "parked": {}, "screen_frames": [{}]}, "current")
+
+
 def test_native_recipe_covers_every_indexed_target_and_rejects_before_staging(tmp_path):
     from scripts.verify.native_revision_verify_factory import host, recipe_targets
     from src.core.domain.native_revision import NativeRevisionError
