@@ -124,13 +124,13 @@ if (( REAL )); then
     _run hard "MCP protocol (nonce + independent oracle)" "$PY" scripts/verify/mcp_verify_real.py
     _run hard "print readiness (real Blender fixtures)" "$PY" scripts/verify/print_readiness_verify_real.py
     _run hard "batch transform (one Undo, independent oracle)" "$PY" scripts/verify/batch_transform_verify_real.py
-    _run hard "lab station fit prototype (not load or assembly acceptance)" "$PY" scripts/verify/generated_artifact_verify_real.py scripts/verify/contracts/lab_station.json
-    _run hard "lab station lift parts (same scene)" "$PY" scripts/verify/generated_artifact_verify_real.py scripts/verify/contracts/lab_station_lifts.json --skip-generate
-    _run hard "lab station clamp parts (same scene)" "$PY" scripts/verify/generated_artifact_verify_real.py scripts/verify/contracts/lab_station_clamps.json --skip-generate
-    _run hard "lab station arm parts (same scene)" "$PY" scripts/verify/generated_artifact_verify_real.py scripts/verify/contracts/lab_station_arms.json --skip-generate
-    _run hard "lab station right arm parts (same scene)" "$PY" scripts/verify/generated_artifact_verify_real.py scripts/verify/contracts/lab_station_arms_right.json --skip-generate
-    _run hard "simple two-link study (not print or load qualification)" "$PY" -m scripts.verify.lab_simple_verify_real
-    _run hard "registered verification through MCP (scene preserved)" "$PY" -m scripts.verify.verification_mcp_verify_real
+    _run hard "workstation prototype fixture (research)" "$PY" scripts/verify/generated_artifact_verify_real.py scripts/verify/contracts/lab_station.json
+    _run hard "workstation lift fixture (research)" "$PY" scripts/verify/generated_artifact_verify_real.py scripts/verify/contracts/lab_station_lifts.json --skip-generate
+    _run hard "workstation clamp fixture (research)" "$PY" scripts/verify/generated_artifact_verify_real.py scripts/verify/contracts/lab_station_clamps.json --skip-generate
+    _run hard "workstation left arm fixture (research)" "$PY" scripts/verify/generated_artifact_verify_real.py scripts/verify/contracts/lab_station_arms.json --skip-generate
+    _run hard "workstation right arm fixture (research)" "$PY" scripts/verify/generated_artifact_verify_real.py scripts/verify/contracts/lab_station_arms_right.json --skip-generate
+    _run hard "two-link and cable fixtures (research)" "$PY" -m scripts.verify.lab_simple_verify_real
+    _run hard "registered research fixtures through MCP (scene preserved)" "$PY" -m scripts.verify.verification_mcp_verify_real
     _run hard "rotary lift concept motion (not print or load qualification)" "$PY" -m scripts.verify.lab_rotary_verify_real
     _run hard "rotary left support mesh contract" "$PY" scripts/verify/generated_artifact_verify_real.py scripts/verify/contracts/lab_rotary_support_capillary.json
     _run hard "rotary right support mesh contract" "$PY" scripts/verify/generated_artifact_verify_real.py scripts/verify/contracts/lab_rotary_support_pH_temp.json --skip-generate
@@ -189,7 +189,7 @@ if (( REAL )); then
     # on the budget criterion, not on exact agreement. The checked-in record in
     # docs/hand-framework/determinism.json is what the unit gate compares against.
     _run hard "hand-compact build determinism within budget" "$PY" scripts/verify/build_determinism_probe.py --instance hand-compact --runs 3 --against-budget
-    # The selected v80 deliverable through the public MCP URL: import, geometry, print, package,
+    # The current selected deliverable through the public MCP URL: import, geometry, print, package,
     # plus a truncated-header negative control. Needs Bambu Studio and a service running this code.
     _run hard "design pipeline on the current selected deliverable (import → geometry → print → package)" "$PY" scripts/verify/design_pipeline_verify_real.py scripts/verify/contracts/design_pipeline_current.json
     _run hard "public native revision (same-part STL → single-plate slice; scene preserved)" "$PY" scripts/verify/native_pipeline_verify_real.py

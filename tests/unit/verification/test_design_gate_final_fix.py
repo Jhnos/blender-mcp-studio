@@ -231,3 +231,83 @@ def test_import_identity_rejects_substitution_even_if_counts_match():
     assert gate.check_import_source(
         {"stls": [a, b], "project_3mf": {**plate, "bytes": 201}}, native
     )
+
+
+async def test_current_workstation_gate_rejects_stale_evidence_even_with_updated_checksums(
+    tmp_path,
+):
+    import hashlib
+    import shutil
+    from dataclasses import asdict
+
+    import pytest
+
+    from src.adapters.artifacts.native_source import FilesystemNativeSource
+    from src.core.domain.model_spec import parse_model_spec
+
+    contract = json.loads(
+        (ROOT / "scripts/verify/contracts/design_pipeline_current.json").read_text()
+    )
+    selected = json.loads((ROOT / "models/lab-station/model-spec.json").read_text())
+    relative = Path(selected["source"]["root_dir"])
+    delivery = tmp_path / relative
+    shutil.copytree(ROOT / relative, delivery)
+    tools = load_tools_config()
+    spec = parse_model_spec(selected, artifact_roots=(tmp_path,))
+    reader = FilesystemNativeSource((tmp_path,), tools.import_limits)
+
+    async def verify():
+        native = {
+            **asdict(await reader.resolve(spec)),
+            "available": True,
+            "scope": "file_identity_only",
+        }
+        return real._verified_delivery(tmp_path, {**contract, "spec": selected, "native": native})
+
+    assert (await verify())["expect"]["stl_count"] == len(list(delivery.glob(spec.source.stl_glob)))
+    manifest_path = delivery / "SHA256.json"
+    original_manifest = json.loads(manifest_path.read_bytes())
+    synchronization = "驗證/synchronized-native-result.json"
+    cases = (
+        ("驗證/motion-dense.json", ("native_sha256",), "motion native source"),
+        (synchronization, ("render_native_sha256",), "render native source"),
+        (synchronization, ("slice", "sliced_sha256"), "sliced project"),
+        (synchronization, ("slice", "revised_surface_sha256"), "sliced revised STL"),
+        ("驗證/extrusion.json", ("source", "sha256"), "extrusion project"),
+        ("驗證/fit-toolpath.json", ("source_sha256",), "fit toolpath project"),
+    )
+    for name, keys, expected in cases:
+        path = delivery / name
+        original = path.read_bytes()
+        doc = json.loads(original)
+        row = doc
+        for key in keys[:-1]:
+            row = row[key]
+        row[keys[-1]] = "0" * 64
+        path.write_text(json.dumps(doc))
+        manifest = {**original_manifest, name: hashlib.sha256(path.read_bytes()).hexdigest()}
+        manifest_path.write_text(json.dumps(manifest))
+        with pytest.raises(gate.GateError, match=expected):
+            await verify()
+        path.write_bytes(original)
+        manifest_path.write_text(json.dumps(original_manifest))
+
+    published_project = selected["source"]["project_3mf"]
+    stale_project = next((ROOT / "models/lab-station-v80").glob("*.3mf"))
+    shutil.copyfile(stale_project, delivery / published_project)
+    manifest = {
+        **original_manifest,
+        published_project: hashlib.sha256(stale_project.read_bytes()).hexdigest(),
+    }
+    manifest_path.write_text(json.dumps(manifest))
+    with pytest.raises(gate.GateError, match="sliced project"):
+        await verify()
+    shutil.copyfile(ROOT / relative / published_project, delivery / published_project)
+
+    renders = [name for name in original_manifest if name.endswith(".png")]
+    replaced, other = renders[:2]
+    shutil.copyfile(delivery / other, delivery / replaced)
+    manifest = {**original_manifest, replaced: original_manifest[other]}
+    manifest_path.write_text(json.dumps(manifest))
+    with pytest.raises(gate.GateError, match="render inventory"):
+        await verify()

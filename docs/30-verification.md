@@ -51,6 +51,8 @@ T1/T2仍彙整全部失敗；只要已有硬失敗，核心／完整模式在接
 | build determinism within budget | 同一零件在常駐 Blender 重建 3 次，判準是**完成品的面數差不超過碎片預算**——頂點順序幾乎每一步都不同，那是 exact solver 的性質不是缺陷，拿它當紅燈的閘門會永遠紅 | 18 |
 | design pipeline (current selection) | `scripts/verify/design_pipeline_verify_real.py scripts/verify/contracts/design_pipeline_current.json`：合約只宣告 `selection: current`；經公開 MCP 取得應用目錄的選定 ModelSpec，先拒絕不可用或 discovery／example 不一致，再提交驗證，輪詢到終態（預算＝切片逾時＋300 s），逐階段驗證據：原件數量取自獨立核對的來源清單，`import.json` 的 STL／3MF 路徑、位元組數與 SHA256 逐件相符，geometry 檢查同數量且 0 失敗、mechanism `not_applicable`、print 1 盤、manifest 含合約列出的檔案與 AGPL 切片器條目、所有文件無主機路徑；再以截斷表頭的 STL 副本做反例，geometry 必須 FAILED 並點名該檔。交付物根目錄取 `config/tools.yaml` 的 `artifact_roots[0]`（`--artifact-root` 可覆寫）。前置（交付物、切片器、端點）缺一即 FAIL 附原因，不 SKIP；要在部署後跑 | 真切片約 3 分鐘 |
 
+目前工作站的交付閘門在提交前，會把公開目錄的選定原生檔、完整 STL 與 3MF，和交付的出圖、腕端動作與擠出收據交叉核對。各檔重新計算清單雜湊後，證據仍必須指向同一份原生檔或切片。這項核對確認證據對應的版本，機構實測仍依各收據的取樣範圍判定。T3 的工作站原型、雙連桿、走線及維修 MCP 測試另屬研究夾具。其場景在測試期間會載入共用 Blender，MCP 研究收據包含所讀取的夾具指紋，不能當成目前交付件的走線與維修資格。
+
 順序是硬的：手指契約重用手契約生成的場景；差分讀那次生成匯出的 STL；
 交付路徑閘門**最後**跑，因為它會清空 `tmp/hand-compact/` 再自己重建——排在前面就會抽掉別人的輸入。三條由
 `test_real_ci_gates_the_hand_contracts` 釘在 `ci.sh` 裡；`test_real_ci_runs_every_contract` 釘住 `contracts/` 下

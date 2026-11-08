@@ -1,6 +1,7 @@
 {
   "description": "Current selected delivery through the shared application catalog",
   "selection": "current",
+  "verify_delivery_evidence": true,
   "expect": {
     "import_3mf": 1,
     "skipped": 0,

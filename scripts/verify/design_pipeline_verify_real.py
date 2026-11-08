@@ -36,6 +36,7 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from scripts.verify import design_gate_checks as checks  # noqa: E402
+from scripts.verify.lab_station_delivery_checks import check_delivery  # noqa: E402
 from scripts.verify.mcp_verify_real import TRANSPORT_ERRORS, default_mcp_url  # noqa: E402
 from src.infrastructure.narrowing import as_mapping, as_sequence  # noqa: E402
 from src.infrastructure.tools_config import load_tools_config  # noqa: E402
@@ -255,6 +256,10 @@ def _verified_delivery(root: Path, contract: Mapping[str, Any]) -> Mapping[str, 
         raise checks.GateError("; ".join(failures))
     if not current:
         return contract
+    if contract.get("verify_delivery_evidence") is True:
+        failures = check_delivery(root, native)
+        if failures:
+            raise checks.GateError("; ".join(failures))
     expect = _as_object(contract["expect"], "expect")
     if {"stl_count", "geometry_checked"} & expect.keys():
         raise checks.GateError("current contract must derive STL counts from verified source")

@@ -1,6 +1,7 @@
-"""Registered suites through canonical MCP; scene preservation through an independent oracle."""
+"""Registered research fixtures through canonical MCP with an independent scene oracle."""
 
 import asyncio
+import hashlib
 import json
 import time
 from pathlib import Path
@@ -92,9 +93,19 @@ async def verify() -> None:
     oracle = BlenderSocketOracle("127.0.0.1", 9876, timeout=60)
     source = ROOT / "tmp/lab-station-module-configurations/cable-clearance.blend"
     restore = ROOT / "tmp/lab-station-electrode-guides-aligned/arm-seated.blend"
-    oracle.execute(f"import bpy\nbpy.ops.wm.open_mainfile(filepath={str(source)!r})")
-    evidence: dict[str, object] = {}
+    source_hash = hashlib.sha256(source.read_bytes()).hexdigest()
+    evidence: dict[str, object] = {
+        "scope": "research_fixture",
+        "source": {"path": source.relative_to(ROOT).as_posix(), "sha256": source_hash},
+    }
     try:
+        oracle.execute(f"""import bpy,hashlib
+from pathlib import Path
+source = Path({str(source)!r})
+bpy.ops.wm.open_mainfile(filepath=str(source))
+if Path(bpy.data.filepath) != source or hashlib.sha256(source.read_bytes()).hexdigest() != {source_hash!r}:
+    raise ValueError('Blender did not load the recorded research fixture')
+""")
         oracle.execute("""import bpy
 bpy.ops.mesh.primitive_cube_add(size=.1,location=(2,2,2))
 marker=bpy.context.object
@@ -184,6 +195,8 @@ except RuntimeError as error:
         evidence["exception_restores_scene"] = True
         evidence["unknown_extra_code_missing_model_rejected"] = True
         evidence["suite_elapsed_s"] = elapsed
+        if hashlib.sha256(source.read_bytes()).hexdigest() != source_hash:
+            raise ValueError("Research fixture changed during verification")
         (ROOT / "tmp/lab-station-route-engine/mcp-verification.json").write_text(
             json.dumps(evidence, indent=2)
         )
