@@ -311,3 +311,70 @@ async def test_current_workstation_gate_rejects_stale_evidence_even_with_updated
     manifest_path.write_text(json.dumps(manifest))
     with pytest.raises(gate.GateError, match="render inventory"):
         await verify()
+
+
+def test_workstation_inventory_evidence_requires_every_part_at_each_step(tmp_path: Path) -> None:
+    from scripts.verify.lab_station_delivery_checks import check_delivery
+
+    selected = tmp_path / "selected"
+    directory = selected / "驗證"
+    directory.mkdir(parents=True)
+    parts = {"lid": "a" * 64, "rear": "b" * 64, "original_pin": "c" * 64}
+    native_sha, plate_sha, render_sha = ("d" * 64, "e" * 64, "f" * 64)
+    evidence = {
+        "format_version": 2,
+        "native": {
+            "native_sha256": native_sha,
+            "stl_sha256_by_owner": dict(parts),
+            "reopened_stl_sha256_by_owner": dict(parts),
+        },
+        "slice": {"sliced_sha256": plate_sha, "parts": 3, "input_stl_sha256_by_owner": dict(parts)},
+        "render_native_sha256": native_sha,
+        "render_sha256": {"assembly.png": render_sha},
+    }
+    files = {
+        "synchronized-native-result": evidence,
+        "motion-dense": {"native_sha256": native_sha},
+        "extrusion": {"source": {"sha256": plate_sha}},
+        "fit-toolpath": {
+            "source_sha256": plate_sha,
+            "bed_model_paths_by_part": dict.fromkeys(parts, 1),
+        },
+    }
+    (selected / "SHA256.json").write_text(
+        json.dumps(
+            {
+                **dict.fromkeys((f"驗證/{name}.json" for name in files), "0" * 64),
+                "assembly.png": render_sha,
+            }
+        )
+    )
+    for name, payload in files.items():
+        (directory / f"{name}.json").write_text(json.dumps(payload))
+    receipt = {
+        "root_dir": "selected",
+        "native": {"sha256": native_sha},
+        "project_3mf": {"sha256": plate_sha},
+        "parts": [{"path": f"parts/{name}.stl", "sha256": sha} for name, sha in parts.items()],
+    }
+    assert check_delivery(tmp_path, receipt) == []
+
+    path = directory / "synchronized-native-result.json"
+    for stage, field, message in (
+        ("native", "stl_sha256_by_owner", "exported STL inventory"),
+        ("native", "reopened_stl_sha256_by_owner", "reopened STL inventory"),
+        ("slice", "input_stl_sha256_by_owner", "sliced STL inventory"),
+    ):
+        for corrupted in (
+            {name: value for name, value in parts.items() if name != "original_pin"},
+            {**parts, "rear": parts["lid"]},
+            {**parts, "unexpected": parts["lid"]},
+        ):
+            damaged = {**evidence, stage: {**evidence[stage], field: corrupted}}
+            path.write_text(json.dumps(damaged))
+            assert any(message in error for error in check_delivery(tmp_path, receipt))
+    path.write_text(json.dumps({**evidence, "format_version": 3}))
+    assert any("unsupported" in error for error in check_delivery(tmp_path, receipt))
+    path.write_text(json.dumps(evidence))
+    receipt["parts"].append({"path": "elsewhere/lid.stl", "sha256": parts["lid"]})
+    assert any("duplicate" in error for error in check_delivery(tmp_path, receipt))

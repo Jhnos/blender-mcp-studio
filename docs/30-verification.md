@@ -53,6 +53,8 @@ T1/T2仍彙整全部失敗；只要已有硬失敗，核心／完整模式在接
 
 目前工作站的交付閘門在提交前，會把公開目錄的選定原生檔、完整 STL 與 3MF，和交付的出圖、腕端動作與擠出收據交叉核對。各檔重新計算清單雜湊後，證據仍必須指向同一份原生檔或切片。這項核對確認證據對應的版本，機構實測仍依各收據的取樣範圍判定。T3 的工作站原型、雙連桿、走線及維修 MCP 測試另屬研究夾具。其場景在測試期間會載入共用 Blender，MCP 研究收據包含所讀取的夾具指紋，不能當成目前交付件的走線與維修資格。
 
+新交付使用 `synchronized-native-result.json` 的 `format_version: 2`。收據以 STL 檔名去除副檔名為零件名稱，分別在 `native.stl_sha256_by_owner`、`native.reopened_stl_sha256_by_owner` 與 `slice.input_stl_sha256_by_owner` 記錄實際匯出、重開讀回與切片輸入的完整清單。沿用件也列入，三份清單都必須與獨立核對的選版 STL 逐件相符。未標格式的既有交付仍依原單件格式驗證。
+
 順序是硬的：手指契約重用手契約生成的場景；差分讀那次生成匯出的 STL；
 交付路徑閘門**最後**跑，因為它會清空 `tmp/hand-compact/` 再自己重建——排在前面就會抽掉別人的輸入。三條由
 `test_real_ci_gates_the_hand_contracts` 釘在 `ci.sh` 裡；`test_real_ci_runs_every_contract` 釘住 `contracts/` 下

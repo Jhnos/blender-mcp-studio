@@ -7,6 +7,29 @@ from pathlib import Path
 from scripts.verify.native_pipeline_checks import object_value, rows
 
 
+def _stl_comparisons(
+    synchronized: Mapping[str, object],
+    native: Mapping[str, object],
+    sliced: Mapping[str, object],
+    parts: Mapping[str, object],
+) -> tuple[tuple[str, object, object], ...]:
+    if "format_version" not in synchronized:
+        changed_sha = parts[str(native["modified"])]
+        return (
+            ("reopened revised STL", native["reopened_stl_sha256"], changed_sha),
+            ("exported revised STL", native["stl_sha256"], changed_sha),
+            ("sliced revised STL", sliced["revised_surface_sha256"], changed_sha),
+        )
+    version = synchronized["format_version"]
+    if type(version) is not int or version != 2:
+        raise ValueError("unsupported workstation delivery evidence format")
+    return (
+        ("reopened STL inventory", object_value(native["reopened_stl_sha256_by_owner"]), parts),
+        ("exported STL inventory", object_value(native["stl_sha256_by_owner"]), parts),
+        ("sliced STL inventory", object_value(sliced["input_stl_sha256_by_owner"]), parts),
+    )
+
+
 def check_delivery(root: Path, receipt: object) -> list[str]:
     """Cross-check receipts only after the independent source-byte check succeeds."""
     try:
@@ -14,7 +37,10 @@ def check_delivery(root: Path, receipt: object) -> list[str]:
         selected = root / str(source["root_dir"])
         native_sha = object_value(source["native"])["sha256"]
         project_sha = object_value(source["project_3mf"])["sha256"]
-        parts = {Path(str(row["path"])).stem: row["sha256"] for row in rows(source["parts"])}
+        part_rows = rows(source["parts"])
+        parts = {Path(str(row["path"])).stem: row["sha256"] for row in part_rows}
+        if len(parts) != len(part_rows):
+            raise ValueError("duplicate STL owner in selected delivery")
         manifest = object_value(json.loads((selected / "SHA256.json").read_bytes()))
 
         def document(name: str) -> Mapping[str, object]:
@@ -32,15 +58,12 @@ def check_delivery(root: Path, receipt: object) -> list[str]:
         }
         extrusion = document("extrusion")
         fit_toolpath = document("fit-toolpath")
-        changed_sha = parts[str(native["modified"])]
         comparisons = (
             ("native source", native["native_sha256"], native_sha),
             ("render native source", synchronized["render_native_sha256"], native_sha),
             ("motion native source", document("motion-dense")["native_sha256"], native_sha),
             ("render inventory", renders, rendered_files),
-            ("reopened revised STL", native["reopened_stl_sha256"], changed_sha),
-            ("exported revised STL", native["stl_sha256"], changed_sha),
-            ("sliced revised STL", sliced["revised_surface_sha256"], changed_sha),
+            *_stl_comparisons(synchronized, native, sliced, parts),
             ("sliced project", sliced["sliced_sha256"], project_sha),
             ("sliced part count", sliced["parts"], len(parts)),
             ("extrusion project", object_value(extrusion["source"])["sha256"], project_sha),
