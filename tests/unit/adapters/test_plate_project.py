@@ -209,3 +209,83 @@ def test_plate_labels_bind_runtime_gcode_identity_to_each_named_instance():
     ):
         with pytest.raises(ValueError):
             plate_object_labels(parse_plate_xml(broken), 1)
+
+
+def blocker_template(*, shared_file, x=3, subtype="support_blocker", duplicate_normal=False):
+    with zipfile.ZipFile(io.BytesIO(template())) as source:
+        entries = {n: source.read(n) for n in source.namelist()}
+    member = "3D/Objects/lid.model"
+    blocker_member = member if shared_file else "3D/Objects/blocker.model"
+    translation = "0 0 0" if duplicate_normal else f"{x} 4 5"
+    entries["3D/3dmodel.model"] = entries["3D/3dmodel.model"].replace(
+        b"</components>",
+        (
+            f'<component p:path="/{blocker_member}" objectid="3" '
+            f'transform="1 0 0 0 1 0 0 0 1 {translation}"/></components>'
+        ).encode(),
+    )
+    model = entries[member]
+    if shared_file:
+        blocker = model[model.index(b"<object ") : model.index(b"</resources>")]
+        entries[member] = model.replace(
+            b"</resources>", blocker.replace(b'id="1"', b'id="3"') + b"</resources>"
+        )
+    else:
+        entries[blocker_member] = model.replace(b'id="1"', b'id="3"')
+    config = "Metadata/model_settings.config"
+    name = "lid" if duplicate_normal else "fit guard"
+    entries[config] = entries[config].replace(
+        b"</object>",
+        (
+            f'<part id="3" subtype="{subtype}"><metadata key="name" value="{name}"/>'
+            '<metadata key="source_file" value="guard.stl"/><mesh_stat face_count="4"/></part></object>'
+        ).encode(),
+    )
+    output = io.BytesIO()
+    with zipfile.ZipFile(output, "w") as target:
+        for name, data in entries.items():
+            target.writestr(name, data)
+    return output.getvalue()
+
+
+def test_same_layout_keeps_blockers_through_bambu_regrouping():
+    source = PlateProject(blocker_template(shared_file=False), ("lid",), max_bytes=100000)
+    assert source.require_same_layout(blocker_template(shared_file=True)) == {"lid": 0.0}
+    with pytest.raises(ValueError):
+        source.require_same_layout(blocker_template(shared_file=True, x=3.1))
+    with pytest.raises(ValueError, match="blocker inventory"):
+        source.require_same_layout(template())
+
+
+@pytest.mark.parametrize("subtype", ["normal_part", "modifier", "support_enforcer"])
+def test_only_support_blockers_may_accompany_a_normal_part(subtype):
+    with pytest.raises(ValueError):
+        PlateProject(
+            blocker_template(shared_file=True, subtype=subtype), ("lid",), max_bytes=100000
+        )
+
+
+@pytest.mark.parametrize("shared_file", [False, True])
+def test_revision_updates_normal_mesh_without_rewriting_blocker(shared_file):
+    source = blocker_template(shared_file=shared_file)
+    project = PlateProject(source, ("lid",), max_bytes=100000)
+    revised = {
+        "vertices": [*POINTS, (1, 1, 0)],
+        "faces": [(0, 2, 4), (2, 1, 4), (1, 0, 4), *FACES[1:]],
+    }
+    payload, _ = project.revise({"lid": (original(), revised)})
+    member = "3D/Objects/lid.model" if shared_file else "3D/Objects/blocker.model"
+    with zipfile.ZipFile(io.BytesIO(source)) as old, zipfile.ZipFile(io.BytesIO(payload)) as new:
+        assert new.read("3D/3dmodel.model") == old.read("3D/3dmodel.model")
+        path = f"./{{{NS}}}resources/{{{NS}}}object[@id='3']"
+        assert ET.tostring(ET.fromstring(new.read(member)).find(path)) == ET.tostring(
+            ET.fromstring(old.read(member)).find(path)
+        )
+        cfg = ET.fromstring(new.read("Metadata/model_settings.config"))
+        assert cfg.find("./object/part[@id='1']/mesh_stat").get("face_count") == "6"
+        assert cfg.find("./object/part[@id='3']/mesh_stat").get("face_count") == "4"
+        assert (
+            cfg.find("./object/part[@id='3']/metadata[@key='source_file']").get("value")
+            == "guard.stl"
+        )
+    PlateProject(payload, ("lid",), max_bytes=100000)

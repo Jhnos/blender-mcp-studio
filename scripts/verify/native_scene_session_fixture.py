@@ -1,7 +1,7 @@
 """Isolated factory fixtures for the native scene lifetime; never connect to the addon.
 
 Run with Blender --background --factory-startup --disable-autoexec --python-exit-code 1
---python this-file -- --phase source|exercise|reopen --work <new-directory> [--case ...].
+--python this-file -- --phase source|record|preview|exercise|reopen --work <new-directory> [--case ...].
 This is lifecycle evidence only, not production MCP or manufacturing acceptance.
 """
 
@@ -267,10 +267,23 @@ def reopen(work: Path) -> None:
     )
 
 
+def preview(work: Path) -> None:
+    from scripts.lab_station_render import configure_electrode_view
+
+    assert Path(bpy.data.filepath).resolve() == (work / "source.blend").resolve()
+    output = work / "assembly.png"
+    assert not output.exists()
+    scene = configure_electrode_view()
+    scene.render.image_settings.file_format = "PNG"
+    scene.render.filepath = str(output)
+    bpy.ops.render.render(write_still=True)
+    assert output.is_file()
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--phase", choices=("source", "record", "exercise", "reopen"), required=True
+        "--phase", choices=("source", "record", "preview", "exercise", "reopen"), required=True
     )
     parser.add_argument("--work", type=Path, required=True)
     parser.add_argument(
@@ -286,6 +299,8 @@ def main() -> None:
         source(args.work)
     elif args.phase == "record":
         record(args.work)
+    elif args.phase == "preview":
+        preview(args.work)
     elif args.phase == "exercise":
         exercise(args.work, args.case)
     else:

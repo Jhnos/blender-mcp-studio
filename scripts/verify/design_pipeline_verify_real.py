@@ -3,7 +3,7 @@
 
 Submits the contract's ModelSpec with ``run_design_pipeline``, polls ``get_job_status`` with a
 heartbeat, then asserts machine evidence for import, geometry, mechanism, print and package
-(``design_gate_checks``; expected numbers live in the contract JSON). A negative control submits
+(``design_gate_checks``; current part counts come from the verified source). A negative control submits
 a copy with one STL header truncated and requires a geometry FAILED naming that file.
 
 Absent prerequisites (deliverable directory, slicer, MCP endpoint) are FAILs with a reason, never
@@ -37,7 +37,7 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from scripts.verify import design_gate_checks as checks  # noqa: E402
 from scripts.verify.mcp_verify_real import TRANSPORT_ERRORS, default_mcp_url  # noqa: E402
-from src.infrastructure.narrowing import as_mapping  # noqa: E402
+from src.infrastructure.narrowing import as_mapping, as_sequence  # noqa: E402
 from src.infrastructure.tools_config import load_tools_config  # noqa: E402
 
 
@@ -191,6 +191,10 @@ async def _positive(client: Client[Any], contract: Mapping[str, Any]) -> list[st
     failures = _positive_failures(
         report, manifest, report_json, import_json, plates, contract["expect"]
     )
+    if contract.get("selection") == "current":
+        failures += checks.check_import_source(
+            import_json, _as_object(contract.get("native"), "verified native provenance")
+        )
     if saved_spec != contract["spec"] or report.get("spec_name") != contract["spec"]["name"]:
         failures.append("run spec.json disagrees with the selected ModelSpec")
     return failures
@@ -238,6 +242,31 @@ async def _selected_contract(client: Client[Any], contract: Mapping[str, Any]) -
     return {**contract, "spec": spec, "native": catalog.get("default_native")}
 
 
+def _verified_delivery(root: Path, contract: Mapping[str, Any]) -> Mapping[str, Any]:
+    """Use one independently verified source for both current design gates."""
+    spec = _as_object(contract["spec"], "spec")
+    source = _as_object(spec.get("source"), "source")
+    failures = checks.check_deliverable(root, str(source["root_dir"]))
+    current = contract.get("selection") == "current"
+    native = contract.get("native")
+    if current:
+        failures += checks.check_native_source(root, spec, native)
+    if failures:
+        raise checks.GateError("; ".join(failures))
+    if not current:
+        return contract
+    expect = _as_object(contract["expect"], "expect")
+    if {"stl_count", "geometry_checked"} & expect.keys():
+        raise checks.GateError("current contract must derive STL counts from verified source")
+    parts = as_sequence(_as_object(native, "verified native provenance").get("parts"))
+    if not parts:
+        raise checks.GateError("verified native source has no parts")
+    return {
+        **contract,
+        "expect": {**expect, "stl_count": len(parts), "geometry_checked": len(parts)},
+    }
+
+
 async def _session(contract: Mapping[str, Any], url: str, root: Path) -> list[str]:
     failures: list[str] = []
     submission_started = False
@@ -245,11 +274,7 @@ async def _session(contract: Mapping[str, Any], url: str, root: Path) -> list[st
         try:
             async with Client(url) as client:
                 resolved = await _selected_contract(client, contract)
-                source = _as_object(resolved["spec"]["source"], "source")
-                failures += checks.check_deliverable(root, str(source["root_dir"]))
-                failures += checks.check_native_source(root, resolved["spec"], resolved["native"])
-                if failures:
-                    return failures
+                resolved = _verified_delivery(root, resolved)
                 rows = await _tool(client, "tool_status")
                 failures += checks.check_slicer(rows or [], contract["expect"]["slicer_tool"])
                 if failures:

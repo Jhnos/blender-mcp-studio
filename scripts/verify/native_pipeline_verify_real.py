@@ -36,6 +36,7 @@ from scripts.verify.design_pipeline_verify_real import (  # noqa: E402
     _resource_bytes,
     _resource_json,
     _selected_contract,
+    _verified_delivery,
     run_job,
 )
 from scripts.verify.generated_artifact_verify_real import BlenderSocketOracle  # noqa: E402
@@ -220,13 +221,9 @@ async def verify(url: str, tools: ToolsConfig) -> dict[str, object]:
                 (ROOT / "scripts/verify/contracts/design_pipeline_current.json").read_text()
             )
             resolved = await _selected_contract(client, contract)
-            spec = native.object_value(resolved["spec"])
-            source = native.object_value(spec["source"])
             root = tools.artifact_roots[0]
-            failures = checks.check_deliverable(root, str(source["root_dir"]))
-            failures += checks.check_native_source(root, spec, resolved["native"])
-            if failures:
-                raise checks.GateError("; ".join(failures))
+            resolved = _verified_delivery(root, resolved)
+            spec = native.object_value(resolved["spec"])
             await rejection_controls(client, tools)
             failures, details = await positive(client, resolved, tools, url)
             proof.update(details)

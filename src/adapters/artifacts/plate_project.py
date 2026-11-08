@@ -1,7 +1,7 @@
 """Revise verified original meshes in their existing 3MF placement; no slicing.
 
-The component form is deliberately narrow: unique named objects, one mesh each,
-identity component transforms and millimetres. Other forms require a new contract.
+Each named object has one printable mesh and may have named support blockers.
+All meshes use millimetres. Only blockers may have a component translation.
 """
 
 from __future__ import annotations
@@ -47,6 +47,7 @@ class _Part:
     element: ET.Element
     settings: ET.Element
     build: ET.Element
+    offset: tuple[float, ...]
 
     def surface(self) -> dict[str, object]:
         return {
@@ -70,13 +71,72 @@ class _Part:
         return {
             "vertices": [
                 tuple(
-                    sum(point[j] * transform[j * 3 + axis] for j in range(3)) + transform[9 + axis]
+                    sum((point[j] + self.offset[j]) * transform[j * 3 + axis] for j in range(3))
+                    + transform[9 + axis]
                     for axis in range(3)
                 )
                 for point in points
             ],
             "faces": faces,
         }
+
+
+def _component_offset(component: ET.Element, subtype: str) -> tuple[float, ...]:
+    raw = component.get("transform")
+    if subtype == "normal_part" and raw != _IDENTITY:
+        raise ValueError("plate requires identity component transforms")
+    transform = tuple(float(v) for v in (raw or _IDENTITY).split())
+    if (
+        len(transform) != 12
+        or transform[:9] != (1, 0, 0, 0, 1, 0, 0, 0, 1)
+        or not all(math.isfinite(v) for v in transform)
+    ):
+        raise ValueError("plate blocker transform must be a finite translation")
+    return transform[9:]
+
+
+def _index_meshes(data: bytes) -> dict[str, ET.Element]:
+    model = parse_plate_xml(data)
+    if model.get("unit") != "millimeter":
+        raise ValueError("plate mesh must use explicit millimetres")
+    objects = model.findall("m:resources/m:object", _NS)
+    meshes = {o.get("id", ""): o for o in objects}
+    if len(meshes) != len(objects) or not meshes or "" in meshes:
+        raise ValueError("plate mesh resources require unique ids")
+    return meshes
+
+
+def _replace_mesh(data: bytes, object_id: str, mesh: str) -> bytes:
+    # This member was checked with parse_plate_xml before entering the DOM parser.
+    document = minidom.parseString(data.decode("utf-8"))
+    try:
+        namespace = _NS["m"]
+        root = document.documentElement
+        if root is None:
+            raise ValueError("plate mesh model has no root")
+        resources = next(
+            node
+            for node in root.getElementsByTagNameNS(namespace, "resources")
+            if node.parentNode is root
+        )
+        obj = next(
+            node
+            for node in resources.getElementsByTagNameNS(namespace, "object")
+            if node.parentNode is resources and node.getAttribute("id") == object_id
+        )
+        old_mesh = next(
+            node for node in obj.getElementsByTagNameNS(namespace, "mesh") if node.parentNode is obj
+        )
+        if old_mesh.tagName != "mesh" or old_mesh.hasAttributes():
+            raise ValueError("plate mesh markup requires an explicit unadorned mesh")
+        with minidom.parseString(mesh) as replacement:
+            new_mesh = replacement.documentElement
+            if new_mesh is None:
+                raise ValueError("revised plate mesh has no root")
+            obj.replaceChild(document.importNode(new_mesh, deep=True), old_mesh)
+        return document.toxml(encoding="utf-8")
+    finally:
+        document.unlink()
 
 
 def _stale(name: str) -> bool:
@@ -131,35 +191,63 @@ class PlateProject:
         if not all(ids) or len(set(ids)) != len(ids) or sorted(built) != sorted(ids):
             raise ValueError("plate build must contain each original wrapper once")
         self._parts: dict[str, _Part] = {}
+        self._blockers: dict[tuple[str, str], _Part] = {}
+        models: dict[str, dict[str, ET.Element]] = {}
+        member_owners: dict[str, str] = {}
+        used: set[tuple[str, str]] = set()
         for config in configurations:
-            obj = _one([o for o in wrappers if o.get("id") == config.get("id")])
-            comp = _one(obj.findall("m:components/m:component", _NS))
-            if comp.get("transform") != _IDENTITY:
-                raise ValueError("plate requires identity component transforms")
-            member = comp.get(_PRODUCTION + "path", "").lstrip("/")
-            model = parse_plate_xml(self._entries[member])
-            if model.get("unit") != "millimeter":
-                raise ValueError("plate mesh must use explicit millimetres")
-            obj = _one(model.findall("m:resources/m:object", _NS))
-            if obj.get("id") != comp.get("objectid"):
-                raise ValueError("plate component mesh id differs")
-            _one(obj.findall("m:mesh", _NS))
-            part = _one(config.findall("part"))
-            if part.get("id") != obj.get("id") or _name(part) != _name(config):
-                raise ValueError("plate part identity differs from its owner")
+            owner = _name(config)
+            wrapper_id = config.get("id")
+            obj = _one([o for o in wrappers if o.get("id") == wrapper_id])
             build = _one(
                 [
                     item
                     for item in wrapper.findall("m:build/m:item", _NS)
-                    if item.get("objectid") == config.get("id")
+                    if item.get("objectid") == wrapper_id
                 ]
             )
-            self._parts[_name(config)] = _Part(member, obj, config, build)
-        members = {p.member for p in self._parts.values()}
-        if len(members) != len(owners) or {
-            n for n in self._entries if n.endswith(".model")
-        } != members | {"3D/3dmodel.model"}:
-            raise ValueError("plate contains extra or shared mesh resources")
+            components = obj.findall("m:components/m:component", _NS)
+            parts = config.findall("part")
+            part_ids = [part.get("id") for part in parts]
+            component_ids = [comp.get("objectid") for comp in components]
+            if (
+                None in part_ids
+                or len(set(part_ids)) != len(part_ids)
+                or len(parts) != len(components)
+                or set(part_ids) != set(component_ids)
+            ):
+                raise ValueError("plate component mesh ids differ from configured parts")
+            settings_by_id = dict(zip(part_ids, parts, strict=True))
+            for comp in components:
+                component_id = comp.attrib["objectid"]
+                part_settings = settings_by_id[component_id]
+                subtype = part_settings.get("subtype", "normal_part")
+                if subtype not in ("normal_part", "support_blocker"):
+                    raise ValueError("plate part subtype is unsupported")
+                name = _name(part_settings)
+                member = comp.get(_PRODUCTION + "path", "").lstrip("/")
+                if member_owners.setdefault(member, owner) != owner:
+                    raise ValueError("plate contains shared mesh resources across owners")
+                if member not in models:
+                    models[member] = _index_meshes(self._entries[member])
+                mesh = models[member][component_id]
+                _one(mesh.findall("m:mesh", _NS))
+                if mesh.find("m:components", _NS) is not None:
+                    raise ValueError("plate does not support nested components")
+                used.add((member, component_id))
+                part = _Part(member, mesh, config, build, _component_offset(comp, subtype))
+                if subtype == "normal_part" and name == owner and owner not in self._parts:
+                    self._parts[owner] = part
+                elif subtype == "support_blocker" and (owner, name) not in self._blockers:
+                    self._blockers[owner, name] = part
+                else:
+                    raise ValueError("plate part identity or subtype differs from its owner")
+            if owner not in self._parts:
+                raise ValueError("plate owner requires one normal part")
+        if {n for n in self._entries if n.endswith(".model")} != models.keys() | {
+            "3D/3dmodel.model"
+        } or used != {(member, mesh_id) for member, meshes in models.items() for mesh_id in meshes}:
+            raise ValueError("plate contains extra mesh resources")
 
     def _bind(self, owner: str, original: Surface) -> tuple[_Part, MeshFrameBinding]:
         if owner not in self._parts:
@@ -183,6 +271,17 @@ class PlateProject:
     def require_same_layout(self, payload: bytes) -> dict[str, float]:
         """Require every enabled original part at its existing world-frame surface after slicing."""
         other = PlateProject(payload, tuple(self._parts), max_bytes=self._max_bytes)
+        if self._blockers.keys() != other._blockers.keys():
+            raise ValueError("plate support blocker inventory differs")
+        for key, part in self._blockers.items():
+            try:
+                require_same_oriented_surface(
+                    part.world_surface(), other._blockers[key].world_surface()
+                )
+            except ValueError as exc:
+                raise ValueError(
+                    f"plate support blocker surface differs for {key!r}: {exc}"
+                ) from exc
         return {
             owner: require_same_oriented_surface(
                 part.world_surface(), other._parts[owner].world_surface()
@@ -208,18 +307,24 @@ class PlateProject:
             )
             triangles = "".join(f'<triangle v1="{a}" v2="{b}" v3="{c}"/>' for a, b, c in faces)
             mesh = f"<mesh><vertices>{vertices}</vertices><triangles>{triangles}</triangles></mesh>"
-            text = entries[part.member].decode("utf-8")
-            if text.count("<mesh>") != 1 or text.count("</mesh>") != 1:
-                raise ValueError("plate mesh markup requires an explicit unadorned mesh")
-            start, end = text.index("<mesh>"), text.index("</mesh>") + len("</mesh>")
-            entries[part.member] = (text[:start] + mesh + text[end:]).encode("utf-8")
-            for node in configurations[owner].iter():
+            mesh_id = part.element.attrib["id"]
+            entries[part.member] = _replace_mesh(entries[part.member], mesh_id, mesh)
+            config = configurations[owner]
+            changed_nodes = [
+                config,
+                *(
+                    node
+                    for child in config
+                    if child.tag != "part" or child.get("id") == mesh_id
+                    for node in child.iter()
+                ),
+            ]
+            for node in changed_nodes:
                 if "face_count" in node.attrib:
                     node.set("face_count", str(len(faces)))
-            for parent in configurations[owner].iter():
-                for child in list(parent):
+                for child in list(node):
                     if child.tag == "metadata" and child.get("key", "").startswith("source_"):
-                        parent.remove(child)
+                        node.remove(child)
             bindings[owner] = {"member": part.member, **asdict(binding)}
         removed = {name for name in entries if _stale(name)}
         for name in removed:

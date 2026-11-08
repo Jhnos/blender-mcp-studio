@@ -76,32 +76,41 @@ def _faces(value: object) -> list[tuple[int, int, int]]:
 def _registered_frame(
     obj: bpy.types.Object, points: Sequence[Sequence[float]], wrist: bool
 ) -> tuple[Matrix, float]:
-    frame = (
-        Matrix(((0, 0, -0.001, 0), (0, -0.001, 0, 0), (0.001, 0, 0, 0), (0, 0, 0, 1)))
+    frames = (
+        (
+            Matrix(((0, 0, -0.001, 0), (0, -0.001, 0, 0), (0.001, 0, 0, 0), (0, 0, 0, 1))),
+            Matrix.Diagonal((-0.001, 0.001, 0.001, 1)),
+        )
         if wrist
-        else Matrix.Diagonal((0.001, 0.001, 0.001, 1))
+        else (Matrix.Diagonal((0.001, 0.001, 0.001, 1)),)
     )
     original = [v.co.copy() for v in obj.data.vertices]
-    transformed = [frame @ Vector(p) for p in points]
-    if not original or not transformed:
+    if not original or not points:
         raise NativeRevisionError("canonical binding requires nonempty source geometry")
-    frame.translation = Vector(
-        tuple(min(v[i] for v in original) - min(v[i] for v in transformed) for i in range(3))
-    )
-    transformed = [frame @ Vector(p) for p in points]
-    errors: list[float] = []
-    for first, second in ((original, transformed), (transformed, original)):
-        tree = KDTree(len(second))
-        for index, point in enumerate(second):
-            tree.insert(point, index)
-        tree.balance()
-        errors.extend(tree.find(point)[2] for point in first)
-    maximum = max(errors) * 1000
-    if maximum > 0.001 or (obj.matrix_world @ frame).determinant() <= 0:
-        raise NativeRevisionError(
-            "canonical print asset does not match the registered source frame"
+    matches = []
+    for frame in frames:
+        if (obj.matrix_world @ frame).determinant() <= 0:
+            continue
+        transformed = [frame @ Vector(p) for p in points]
+        frame.translation = Vector(
+            tuple(min(v[i] for v in original) - min(v[i] for v in transformed) for i in range(3))
         )
-    return frame, maximum
+        transformed = [frame @ Vector(p) for p in points]
+        errors: list[float] = []
+        for first, second in ((original, transformed), (transformed, original)):
+            tree = KDTree(len(second))
+            for index, point in enumerate(second):
+                tree.insert(point, index)
+            tree.balance()
+            errors.extend(tree.find(point)[2] for point in first)
+        maximum = max(errors) * 1000
+        if maximum <= 0.001:
+            matches.append((frame, maximum))
+    if len(matches) != 1:
+        raise NativeRevisionError(
+            "canonical print asset does not have a unique registered source frame"
+        )
+    return matches[0]
 
 
 def prepare_screen_source(

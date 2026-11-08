@@ -154,6 +154,7 @@ async def test_slice_writes_profiles_with_request_overrides(tmp_path: Path) -> N
     req = _request(tmp_path, layer_height_mm=0.16, support=True, brim_mm=4.0)
     await _cli(tmp_path, FakeRunner()).slice(req)
     process = json.loads((tmp_path / "out" / "process.json").read_text(encoding="utf-8"))
+    assert process.get("enable_arc_fitting") == "0"
     assert process["layer_height"] == "0.16"
     assert process["enable_support"] == "1"
     assert (process["support_type"], process["support_style"]) == ("normal(auto)", "snug")

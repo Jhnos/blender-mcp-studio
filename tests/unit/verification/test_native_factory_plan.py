@@ -39,6 +39,14 @@ def test_factory_plan_covers_every_case_and_reopens_the_written_file():
     assert current[-1].blend == "candidate-success.blend"
 
 
+def test_current_preview_uses_the_same_native_snapshot_as_the_geometry_record():
+    current = fixture_steps(current=True)
+    record, preview = current[:2]
+    assert record.phase == "record"
+    assert preview.phase == "preview" and preview.blend == record.blend
+    assert all(step.phase != "preview" for step in fixture_steps(current=False))
+
+
 def test_every_worker_is_factory_background_and_disables_file_auto_execution(tmp_path):
     for step in fixture_steps(current=False):
         command = step.command(Path("/opt/blender"), tmp_path)

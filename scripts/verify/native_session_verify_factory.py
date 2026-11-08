@@ -78,8 +78,10 @@ class FactoryStep:
 
 def fixture_steps(*, current: bool) -> tuple[FactoryStep, ...]:
     first = FactoryStep("record", blend="source.blend") if current else FactoryStep("source")
+    previews = (FactoryStep("preview", blend="source.blend"),) if current else ()
     return (
         first,
+        *previews,
         *(
             FactoryStep(
                 "exercise",
@@ -176,6 +178,14 @@ def verify(blender: Path, work: Path, *, current: bool) -> dict[str, object]:
         "source_objects": len(json.loads((work / "source-geometry.json").read_text())),
         "artifact_sha256": sha256(work / "candidate-success.blend"),
     }
+    if current:
+        if sha256(work / "source.blend") != expected_sha:
+            raise ValueError("preview input is no longer the selected native snapshot")
+        proof["preview"] = {
+            "path": "assembly.png",
+            "sha256": sha256(work / "assembly.png"),
+            "native_sha256": expected_sha,
+        }
     (work / "verification.json").write_text(json.dumps(proof, ensure_ascii=False, indent=2))
     return proof
 

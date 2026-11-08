@@ -15,7 +15,7 @@ from scripts.verify import design_gate_checks as gate
 
 ROOT = Path(__file__).resolve().parents[3]
 CONTRACT = json.loads((ROOT / "scripts/verify/contracts/design_pipeline_current.json").read_text())
-EXPECT = CONTRACT["expect"]
+EXPECT = {**CONTRACT["expect"], "stl_count": 69, "geometry_checked": 69}
 OUT_3MF = "print/整機69件-單盤排版-v78-P2S-PLA.3mf"
 BAD_REL = "STL/列印零件/x.stl"
 
@@ -325,7 +325,8 @@ def test_truncated_header_keeps_exactly_the_requested_bytes(tmp_path: Path) -> N
 def test_contract_is_data() -> None:
     assert CONTRACT["selection"] == "current"
     assert "spec" not in CONTRACT
-    assert EXPECT["stl_count"] == 69 and EXPECT["plates"] == 1
+    assert CONTRACT["expect"]["plates"] == 1
+    assert not {"stl_count", "geometry_checked"} & CONTRACT["expect"].keys()
 
 
 def test_real_ci_runs_the_design_pipeline_gate_after_the_determinism_probe() -> None:
@@ -373,21 +374,34 @@ async def test_current_positive_submits_without_spec_and_checks_saved_selection(
 
     selected = {"name": "current-model", "source": {"root_dir": "selected"}}
     saved = dict(selected)
+    part = {"path": "part.stl", "sha256": "a" * 64, "size_bytes": 100}
+    project = {"path": "plate.3mf", "sha256": "b" * 64, "size_bytes": 200}
+    imported = {
+        "stls": [{"path": part["path"], "sha256": part["sha256"], "bytes": 100}],
+        "project_3mf": {"path": project["path"], "sha256": project["sha256"], "bytes": 200},
+    }
 
     async def run(_client, spec, _label):
         assert spec is None  # Exercise the real default, not a client-side copied input.
         return {"status": "done"}, {"run_id": "r1", "spec_name": selected["name"]}
 
     async def resource(_client, _run, name):
-        return saved if name == "spec.json" else {}
+        return {"spec.json": saved, "import.json": imported}.get(name, {})
 
     monkeypatch.setattr(real_gate, "run_job", run)
     monkeypatch.setattr(real_gate, "_resource_json", resource)
     monkeypatch.setattr(real_gate, "_positive_failures", lambda *_: [])
     monkeypatch.setattr(real_gate.checks, "check_report", lambda *_: [])
     monkeypatch.setattr(real_gate.checks, "output_3mf", lambda *_: None)
-    contract = {"selection": "current", "spec": selected, "expect": {}}
+    contract = {
+        "selection": "current",
+        "spec": selected,
+        "expect": {},
+        "native": {"parts": [part], "project_3mf": project},
+    }
     assert await real_gate._positive(None, contract) == []
+    imported["stls"][0]["sha256"] = "c" * 64
+    assert any("STL identities" in failure for failure in await real_gate._positive(None, contract))
     saved["name"] = "stale-model"
     failures = await real_gate._positive(None, contract)
     assert any("spec.json" in failure for failure in failures)

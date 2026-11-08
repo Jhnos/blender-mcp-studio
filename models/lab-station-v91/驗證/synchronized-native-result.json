@@ -1,0 +1,216 @@
+{
+  "revision": "v91-lcd-window",
+  "native": {
+    "equal": true,
+    "source_native_sha256": "8f5c209ff2f8b74339ebc6485e4ca9705484814ac09103642bc24c7ea525856e",
+    "native_sha256": "adefcc8b7b6e9b4f43119b1338c17a8c1042d09b202270ffe7299c5c59ead507",
+    "source_stl_sha256": "7f919ee1d47db947e45e88ed35b4c91a4fdb8b3478a5c8648e18e7aba9d8923f",
+    "stl_sha256": "36719aa49eec8b8f6ef1764dccb1544bd03e1a4c6cd6d4c0492635d38c5f29a4",
+    "modified": "LS_FIT_lcd_front",
+    "unchanged_objects": 147,
+    "original_frame_error_mm": 2.356080486265455e-05,
+    "stl_frame": [
+      [
+        0.0010000000474974513,
+        0.0,
+        0.0,
+        -0.07500000298023224
+      ],
+      [
+        0.0,
+        0.0010000000474974513,
+        0.0,
+        -0.054999999701976776
+      ],
+      [
+        0.0,
+        0.0,
+        0.0010000000474974513,
+        -0.003000000026077032
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    ],
+    "reopened_stl_sha256": "36719aa49eec8b8f6ef1764dccb1544bd03e1a4c6cd6d4c0492635d38c5f29a4",
+    "mesh_integrity": {
+      "vertices": 600,
+      "triangles": 1216
+    },
+    "reopened_surface_maximum_error_mm": 0.0,
+    "uncut_reexport_sha256": "244132529dc2555f127be5ca03dfd3e7617cafe6f92300cdb3fb7b45dabfc08a",
+    "build_stl_sha256": "36719aa49eec8b8f6ef1764dccb1544bd03e1a4c6cd6d4c0492635d38c5f29a4"
+  },
+  "fit": {
+    "release": "lab-station-v90-r2",
+    "mesh": "LS_FIT_lcd_front.stl",
+    "drawing": "https://docs.waveshare.com/assets/images/ESP32-S3-Touch-LCD-5-touch-size-2-f55a9abf7b42455adbc880b71b4b92f9.webp",
+    "nominal_glass_mm": [
+      127.7,
+      87.45
+    ],
+    "nominal_active_mm": [
+      109.0,
+      65.8
+    ],
+    "nominal_active_center_offset_mm": [
+      0.0,
+      -1.4750000000000014
+    ],
+    "measured_seat_bounds_mm": [
+      [
+        10.75000286102295,
+        10.875001907348633
+      ],
+      [
+        139.25001525878906,
+        99.125
+      ]
+    ],
+    "measured_window_bounds_mm": [
+      [
+        20.000003814697266,
+        21.499998092651367
+      ],
+      [
+        130.0,
+        88.5
+      ]
+    ],
+    "measured_window_mm": [
+      109.99999618530273,
+      67.00000190734863
+    ],
+    "nominal_centered_glass_edge_reserves_mm": [
+      0.5000052452087402,
+      -0.8749971389770508,
+      0.49999094009399414,
+      2.0749990463256864
+    ],
+    "existing_worst_edge_reserves_mm": [
+      -0.20000095367430504,
+      -1.274996185302733,
+      -0.20001525878905113,
+      -1.2750000000000057
+    ],
+    "recommended_cut_window_mm": [
+      111.1,
+      70.2
+    ],
+    "recommended_cut_bounds_mm": [
+      [
+        19.45000905990601,
+        19.900000953674315
+      ],
+      [
+        130.55000905990602,
+        90.10000095367431
+      ]
+    ],
+    "recommended_cut_minimum_edge_reserve_mm": 0.32500095367430504,
+    "remaining_glass_support_lip_mm": 8.700006198883045,
+    "assumptions": "Bare touch edition mechanical drawing, the 9.35 mm edge datum is nominal with no printed tolerance. CAD fit, no printer deformation or connector clearance verified.",
+    "actual_model_changed": false,
+    "uncut_reexport_sha256": "244132529dc2555f127be5ca03dfd3e7617cafe6f92300cdb3fb7b45dabfc08a",
+    "original_release_to_uncut_reexport_nonwindow_mm": 0.00022614677425992883,
+    "retained_frame_features": {
+      "depth_samples": 25,
+      "maximum_nonwindow_boundary_deviation_mm": 0.0,
+      "mounting_holes": [
+        {
+          "center_mm": [
+            5.999996852168665,
+            6.0000020466257515
+          ],
+          "minimum_polygon_diameter_mm": 3.5922879360950413,
+          "window_to_bore_radial_ligament_mm": 17.54198952378429
+        },
+        {
+          "center_mm": [
+            5.999994467984536,
+            104.00000028355328
+          ],
+          "minimum_polygon_diameter_mm": 3.592282008168211,
+          "window_to_bore_radial_ligament_mm": 17.54199551547376
+        },
+        {
+          "center_mm": [
+            143.99998936035684,
+            6.000000935775784
+          ],
+          "minimum_polygon_diameter_mm": 3.592264844527321,
+          "window_to_bore_radial_ligament_mm": 17.5419790143093
+        },
+        {
+          "center_mm": [
+            143.999991959342,
+            103.99999476948011
+          ],
+          "minimum_polygon_diameter_mm": 3.592269380208292,
+          "window_to_bore_radial_ligament_mm": 17.541976623850566
+        }
+      ],
+      "shifted_screw_hole_negative_deviation_mm": 0.20000000000000018
+    },
+    "measured_oracle_window_mm": [
+      111.10000228881836,
+      70.19999694824219
+    ],
+    "measured_oracle_minimum_edge_reserve_mm": 0.32499847412108807,
+    "oracle_sha256": "36719aa49eec8b8f6ef1764dccb1544bd03e1a4c6cd6d4c0492635d38c5f29a4",
+    "oracle_glass_seat_unchanged": true
+  },
+  "render_native_sha256": "adefcc8b7b6e9b4f43119b1338c17a8c1042d09b202270ffe7299c5c59ead507",
+  "render_sha256": {
+    "LCD前框-v91.png": "c95da489fe4881ddb2f82223d6f46ad4031d668a3e500a06d33af52c581446a9",
+    "三探頭腕端-負向15度就座.png": "47d687bba3f477914204a89901d731a0244a2c35c15a31ce78e7f71d818d33d4",
+    "整機-v91.png": "5ff078cc60a42cc35162811c892394831807416b027facbce1a4c76213c40778"
+  },
+  "slice": {
+    "source": "lab-station-v90-r2",
+    "unchanged_printable_surfaces": 75,
+    "revised_surface": "STL-整機76件/LS_FIT_lcd_front.stl",
+    "revised_surface_sha256": "36719aa49eec8b8f6ef1764dccb1544bd03e1a4c6cd6d4c0492635d38c5f29a4",
+    "revised_part_binding": {
+      "LS_FIT_lcd_front": {
+        "member": "3D/Objects/object_3.model",
+        "rotation": [
+          [
+            0,
+            0,
+            1
+          ],
+          [
+            0,
+            -1,
+            0
+          ],
+          [
+            1,
+            0,
+            0
+          ]
+        ],
+        "translation_mm": [
+          -3.0,
+          55.0,
+          -75.0
+        ],
+        "maximum_error_mm": 4.270905654613576e-06
+      }
+    },
+    "preserved_blockers": 12,
+    "parts": 76,
+    "max_world_surface_roundtrip_mm": 7.827432586044615e-06,
+    "output": "lcd-native-candidate-r3/plate/slice/v90-r2-lcd-oracle-unsliced-P2S-PLA.3mf",
+    "sliced_sha256": "3ff0040bc333378bfddf9f8ff46af756b7943f1f86d01515efa6acc10197b0b5",
+    "outside_paths": 0,
+    "all_parts_have_first_layer_paths": true,
+    "scope": "isolated same-part STL and plate proof"
+  },
+  "fit_zone_paths": {},
+  "deployed": false
+}

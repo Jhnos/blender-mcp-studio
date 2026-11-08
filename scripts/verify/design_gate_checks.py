@@ -1,8 +1,8 @@
 """Pure verdict rules for the design pipeline real gate (no network, no files but the ones named).
 
 Every function returns a list of readable failure strings (empty = pass) so the gate can print
-all of them at once instead of stopping at the first. Expected numbers come from the contract
-JSON (``scripts/verify/contracts/design_pipeline_v78.json``), never from this module.
+all of them at once instead of stopping at the first. Invariants come from the contract JSON.
+For the current model, part counts come from its independently verified source.
 """
 
 from __future__ import annotations
@@ -87,6 +87,9 @@ def check_native_source(root: Path, spec: Mapping[str, object], receipt: object)
         ]
         if not parts:
             raise ValueError("empty selected parts")
+        project_name = source.get("project_3mf")
+        if not isinstance(project_name, str) or project_name not in actual:
+            raise ValueError("selected project must be in the source manifest")
         expected_receipt = {
             "scope": "file_identity_only",
             "available": True,
@@ -94,7 +97,7 @@ def check_native_source(root: Path, spec: Mapping[str, object], receipt: object)
             "root_dir": relative.as_posix(),
             "native": actual[natives[0]],
             "parts": [actual[name] for name in parts],
-            "project_3mf": actual.get(str(source.get("project_3mf"))),
+            "project_3mf": actual[project_name],
             "manifest_sha256": hashlib.sha256(raw).hexdigest(),
             "verified_files": len(manifest),
             "total_bytes": total_bytes,
@@ -208,6 +211,32 @@ def check_import_json(doc: Mapping[str, object], expect: Mapping[str, object]) -
         failures.append(
             f"import.json lists {projects} project 3MF(s), expected {expect['import_3mf']}"
         )
+    return failures
+
+
+def check_import_source(doc: Mapping[str, object], native: Mapping[str, object]) -> list[str]:
+    """Check ordinary imports against the verified source, including each byte fingerprint."""
+
+    def artifact(row: Mapping[str, object]) -> dict[str, object]:
+        return {"path": row["path"], "sha256": row["sha256"], "bytes": row["size_bytes"]}
+
+    parts = _rows(native.get("parts"))
+    project = as_mapping(native.get("project_3mf"))
+    if not parts or project is None:
+        return ["verified import source inventory is unavailable"]
+    observed = _rows(doc.get("stls"))
+    if len(observed) != len(_items(doc.get("stls"))):
+        return ["import.json contains a malformed STL receipt"]
+    expected = [artifact(row) for row in parts]
+    failures = []
+    if sorted(observed, key=lambda row: str(row.get("path"))) != sorted(
+        expected, key=lambda row: str(row["path"])
+    ):
+        failures.append(
+            "import.json STL identities or fingerprints disagree with the verified source"
+        )
+    if doc.get("project_3mf") != artifact(project):
+        failures.append("import.json project fingerprint disagrees with the verified source")
     return failures
 
 

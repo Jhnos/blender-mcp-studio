@@ -112,7 +112,11 @@ async def test_real_session_rejects_native_provenance_before_submitting(monkeypa
         async def __aexit__(self, *_):
             pass
 
-    selected = {"spec": {"source": {"root_dir": "models/selected"}}, "native": {"available": False}}
+    selected = {
+        "selection": "current",
+        "spec": {"source": {"root_dir": "models/selected"}},
+        "native": {"available": False},
+    }
     monkeypatch.setattr(real, "Client", lambda _: Context())
     monkeypatch.setattr(real, "_selected_contract", AsyncMock(return_value=selected))
     monkeypatch.setattr(gate, "check_deliverable", lambda *_: [])
@@ -159,3 +163,71 @@ async def test_public_job_observation_failure_never_replays_a_submission(monkeyp
         {"expect": {"slicer_tool": "slicer"}}, "https://unused", tmp_path
     )
     assert failures and submitted.await_count == 1
+
+
+async def test_current_gate_counts_verified_parts_after_a_catalog_change(tmp_path):
+    import hashlib
+    from dataclasses import asdict
+
+    import pytest
+
+    from tests.unit.adapters.test_native_source import fixture
+
+    root, manifest, spec, reader = fixture(tmp_path)
+    selected = {
+        "name": spec.name,
+        "source": {
+            "root_dir": "models/selected",
+            "stl_glob": spec.source.stl_glob,
+            "project_3mf": "plate.3mf",
+        },
+    }
+    contract = {"selection": "current", "expect": {"plates": 1}}
+
+    async def read():
+        return {
+            "available": True,
+            "scope": "file_identity_only",
+            **asdict(await reader.resolve(spec)),
+        }
+
+    initial = await read()
+    resolved = real._verified_delivery(tmp_path, {**contract, "spec": selected, "native": initial})
+    assert resolved["expect"] == {"plates": 1, "stl_count": 2, "geometry_checked": 2}
+
+    part = "STL/列印零件/c.stl"
+    (root / part).write_bytes(b"new real part")
+    manifest[part] = hashlib.sha256(b"new real part").hexdigest()
+    (root / "SHA256.json").write_text(json.dumps(manifest))
+    with pytest.raises(gate.GateError, match="provenance"):
+        real._verified_delivery(tmp_path, {**contract, "spec": selected, "native": initial})
+
+    updated = await read()
+    resolved = real._verified_delivery(tmp_path, {**contract, "spec": selected, "native": updated})
+    assert resolved["expect"] == {"plates": 1, "stl_count": 3, "geometry_checked": 3}
+    assert contract["expect"] == {"plates": 1}
+    with pytest.raises(gate.GateError, match="derive"):
+        real._verified_delivery(
+            tmp_path,
+            {**contract, "spec": selected, "native": updated, "expect": {"stl_count": 2}},
+        )
+
+
+def test_import_identity_rejects_substitution_even_if_counts_match():
+    native = {
+        "parts": [
+            {"path": "parts/a.stl", "size_bytes": 100, "sha256": "a" * 64},
+            {"path": "parts/b.stl", "size_bytes": 100, "sha256": "b" * 64},
+        ],
+        "project_3mf": {"path": "plate.3mf", "size_bytes": 200, "sha256": "c" * 64},
+    }
+    a, b = ({"path": f"parts/{part}.stl", "bytes": 100, "sha256": part * 64} for part in "ab")
+    plate = {"path": "plate.3mf", "bytes": 200, "sha256": "c" * 64}
+    assert gate.check_import_source({"stls": [b, a], "project_3mf": plate}, native) == []
+    assert gate.check_import_source({"stls": [a, a], "project_3mf": plate}, native)
+    assert gate.check_import_source(
+        {"stls": [a, {**b, "sha256": "x" * 64}], "project_3mf": plate}, native
+    )
+    assert gate.check_import_source(
+        {"stls": [a, b], "project_3mf": {**plate, "bytes": 201}}, native
+    )
