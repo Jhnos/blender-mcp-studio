@@ -268,14 +268,32 @@ async def test_current_workstation_gate_rejects_stale_evidence_even_with_updated
     manifest_path = delivery / "SHA256.json"
     original_manifest = json.loads(manifest_path.read_bytes())
     synchronization = "驗證/synchronized-native-result.json"
+    evidence = json.loads((delivery / synchronization).read_bytes())
+    if evidence.get("format_version") == 2:
+        part = next(iter(evidence["slice"]["input_stl_sha256_by_owner"]))
+        stale_stl = ("slice", "input_stl_sha256_by_owner", part)
+        stale_stl_message = "sliced STL inventory"
+    else:
+        stale_stl = ("slice", "revised_surface_sha256")
+        stale_stl_message = "sliced revised STL"
     cases = (
         ("驗證/motion-dense.json", ("native_sha256",), "motion native source"),
         (synchronization, ("render_native_sha256",), "render native source"),
         (synchronization, ("slice", "sliced_sha256"), "sliced project"),
-        (synchronization, ("slice", "revised_surface_sha256"), "sliced revised STL"),
+        (synchronization, stale_stl, stale_stl_message),
         ("驗證/extrusion.json", ("source", "sha256"), "extrusion project"),
         ("驗證/fit-toolpath.json", ("source_sha256",), "fit toolpath project"),
     )
+    if "驗證/rear-service.json" in original_manifest:
+        cases += (("驗證/rear-service.json", ("native_sha256",), "rear-service native source"),)
+    if "驗證/rear-support-clearance.json" in original_manifest:
+        cases += (
+            (
+                "驗證/rear-support-clearance.json",
+                ("sliced_sha256",),
+                "rear-support-clearance sliced project",
+            ),
+        )
     for name, keys, expected in cases:
         path = delivery / name
         original = path.read_bytes()

@@ -74,6 +74,24 @@ def check_delivery(root: Path, receipt: object) -> list[str]:
                 parts.keys(),
             ),
         )
+        for name, fingerprints in (
+            ("rear-service", (("native source", "native_sha256", native_sha),)),
+            (
+                "rear-support-clearance",
+                (
+                    ("native source", "native_sha256", native_sha),
+                    ("sliced project", "sliced_sha256", project_sha),
+                ),
+            ),
+            ("rear-hinge-support", (("sliced project", "sliced_sha256", project_sha),)),
+            ("vent-bridge", (("sliced project", "sliced_sha256", project_sha),)),
+        ):
+            if f"驗證/{name}.json" in manifest:
+                observation = document(name)
+                comparisons += tuple(
+                    (f"{name} {label}", observation[key], expected)
+                    for label, key, expected in fingerprints
+                )
         failures = [
             f"selected delivery evidence disagrees with {field}"
             for field, observed, expected in comparisons

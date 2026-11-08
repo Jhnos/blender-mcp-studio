@@ -1,0 +1,209 @@
+{
+  "sliced_sha256": "90313ff39a10f82c1f6e461aa4301a03d7b3b26d1f246fe86150b7dec2152088",
+  "control_sliced_sha256": "90313ff39a10f82c1f6e461aa4301a03d7b3b26d1f246fe86150b7dec2152088",
+  "witness_count": 8,
+  "witnesses_with_support_below": 8,
+  "witnesses": {
+    "26.6": {
+      "sampled_model_trace": {
+        "length_mm": 6.589999999999989,
+        "role": "Overhang wall",
+        "start": [
+          179.19,
+          80.1
+        ],
+        "end": [
+          179.19,
+          73.51
+        ],
+        "z_mm": 26.6,
+        "overlap_area_ratio": 0.0009315119768528378,
+        "largest_sampled_centerline_distance_mm": 6.790000000000006,
+        "width_mm": 0.45,
+        "anchors": 0
+      },
+      "nearest_support_z_mm": 26.2,
+      "vertical_gap_to_model_layer_top_mm": 0.40000000000000213,
+      "projected_supported_fraction_near_top": 0.6781166501363275,
+      "nearest_roles": [
+        "Support interface"
+      ]
+    },
+    "26.8": {
+      "sampled_model_trace": {
+        "length_mm": 0.5608029957124114,
+        "role": "Overhang wall",
+        "start": [
+          171.497,
+          70.689
+        ],
+        "end": [
+          171.185,
+          71.155
+        ],
+        "z_mm": 26.8,
+        "overlap_area_ratio": 0.0,
+        "largest_sampled_centerline_distance_mm": 7.998209894417499,
+        "width_mm": 0.45,
+        "anchors": 0
+      },
+      "nearest_support_z_mm": 26.4,
+      "vertical_gap_to_model_layer_top_mm": 0.40000000000000213,
+      "projected_supported_fraction_near_top": 0.7205032921825263,
+      "nearest_roles": [
+        "Support interface"
+      ]
+    },
+    "38.6": {
+      "sampled_model_trace": {
+        "length_mm": 6.589999999999989,
+        "role": "Overhang wall",
+        "start": [
+          179.19,
+          80.1
+        ],
+        "end": [
+          179.19,
+          73.51
+        ],
+        "z_mm": 38.6,
+        "overlap_area_ratio": 0.0009315119768528378,
+        "largest_sampled_centerline_distance_mm": 6.790000000000006,
+        "width_mm": 0.45,
+        "anchors": 0
+      },
+      "nearest_support_z_mm": 38.2,
+      "vertical_gap_to_model_layer_top_mm": 0.3999999999999986,
+      "projected_supported_fraction_near_top": 0.6041185568986098,
+      "nearest_roles": [
+        "Support interface"
+      ]
+    },
+    "40.4": {
+      "sampled_model_trace": {
+        "length_mm": 0.14927156460625723,
+        "role": "Overhang wall",
+        "start": [
+          177.635,
+          73.51
+        ],
+        "end": [
+          177.626,
+          73.659
+        ],
+        "z_mm": 40.4,
+        "overlap_area_ratio": 0.0,
+        "largest_sampled_centerline_distance_mm": 2.2679164200987385,
+        "width_mm": 0.45,
+        "anchors": 0
+      },
+      "nearest_support_z_mm": 39.743,
+      "vertical_gap_to_model_layer_top_mm": 0.6569999999999965,
+      "projected_supported_fraction_near_top": 0.8661095164785981,
+      "nearest_roles": [
+        "Support interface"
+      ]
+    },
+    "176.6": {
+      "sampled_model_trace": {
+        "length_mm": 6.589999999999989,
+        "role": "Overhang wall",
+        "start": [
+          179.19,
+          80.1
+        ],
+        "end": [
+          179.19,
+          73.51
+        ],
+        "z_mm": 176.6,
+        "overlap_area_ratio": 0.0009315119768528378,
+        "largest_sampled_centerline_distance_mm": 6.790000000000006,
+        "width_mm": 0.45,
+        "anchors": 0
+      },
+      "nearest_support_z_mm": 176.2,
+      "vertical_gap_to_model_layer_top_mm": 0.4000000000000057,
+      "projected_supported_fraction_near_top": 0.5627819103095789,
+      "nearest_roles": [
+        "Support interface"
+      ]
+    },
+    "176.8": {
+      "sampled_model_trace": {
+        "length_mm": 0.5608029957124114,
+        "role": "Overhang wall",
+        "start": [
+          171.497,
+          70.689
+        ],
+        "end": [
+          171.185,
+          71.155
+        ],
+        "z_mm": 176.8,
+        "overlap_area_ratio": 0.0,
+        "largest_sampled_centerline_distance_mm": 7.998209894417499,
+        "width_mm": 0.45,
+        "anchors": 0
+      },
+      "nearest_support_z_mm": 176.4,
+      "vertical_gap_to_model_layer_top_mm": 0.4000000000000057,
+      "projected_supported_fraction_near_top": 0.8950617145055094,
+      "nearest_roles": [
+        "Support interface"
+      ]
+    },
+    "188.6": {
+      "sampled_model_trace": {
+        "length_mm": 6.589999999999989,
+        "role": "Overhang wall",
+        "start": [
+          179.19,
+          80.1
+        ],
+        "end": [
+          179.19,
+          73.51
+        ],
+        "z_mm": 188.6,
+        "overlap_area_ratio": 0.0009315119768528378,
+        "largest_sampled_centerline_distance_mm": 6.790000000000006,
+        "width_mm": 0.45,
+        "anchors": 0
+      },
+      "nearest_support_z_mm": 188.2,
+      "vertical_gap_to_model_layer_top_mm": 0.4000000000000057,
+      "projected_supported_fraction_near_top": 0.6097399066329199,
+      "nearest_roles": [
+        "Support interface"
+      ]
+    },
+    "190.4": {
+      "sampled_model_trace": {
+        "length_mm": 1.5550000000000068,
+        "role": "Overhang wall",
+        "start": [
+          179.19,
+          73.51
+        ],
+        "end": [
+          177.635,
+          73.51
+        ],
+        "z_mm": 190.4,
+        "overlap_area_ratio": 0.0,
+        "largest_sampled_centerline_distance_mm": 2.2679164200987385,
+        "width_mm": 0.45,
+        "anchors": 0
+      },
+      "nearest_support_z_mm": 190.0,
+      "vertical_gap_to_model_layer_top_mm": 0.4000000000000057,
+      "projected_supported_fraction_near_top": 0.6551327126342497,
+      "nearest_roles": [
+        "Support interface"
+      ]
+    }
+  },
+  "scope": "Projection of support in the 0.85 mm below selected unanchored hinge-region witnesses. Clearance to physical beads and load are separate."
+}

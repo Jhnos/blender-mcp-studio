@@ -1,0 +1,39 @@
+{
+  "native_sha256": "bb3143e0cdb04ff03ce7436eef6fd4bfe6bf0b381fd4b7639b0190021e5afa16",
+  "sliced_sha256": "90313ff39a10f82c1f6e461aa4301a03d7b3b26d1f246fe86150b7dec2152088",
+  "fit_plane_print_x_mm": 176.72900047302247,
+  "plane_area_mm2": 1352.2757766454415,
+  "strip_triangles": 178,
+  "minimum_conservative_support_gap_mm": 0.32395452077634235,
+  "nearest": {
+    "role": "Support",
+    "owner": "RH_rear_cover",
+    "width_mm": 0.42,
+    "start_mm": [
+      176.19,
+      77.782,
+      38.971
+    ],
+    "end_mm": [
+      176.198,
+      77.347,
+      38.971
+    ],
+    "closest_xy_on_centerline": [
+      176.19513622684835,
+      77.5027176651212
+    ],
+    "closest_xy_on_face": [
+      176.72900047302247,
+      77.5125358581543
+    ],
+    "bead_to_face_mm": 0.32395452077634235
+  },
+  "potential_touch": {},
+  "checked_nearby": {
+    "RH_rear_cover / Support": 2816,
+    "RH_rear_cover / Support interface": 63,
+    "RH_rear_cover / Support transition": 19
+  },
+  "scope": "Support XY capsules \u00d7 full extrusion layer height against the reopened planar relief. The conservative 0.002 mm numerical guard does not measure physical adhesion or marks."
+}

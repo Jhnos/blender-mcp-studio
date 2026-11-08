@@ -1,0 +1,1086 @@
+{
+  "sliced_sha256": "90313ff39a10f82c1f6e461aa4301a03d7b3b26d1f246fe86150b7dec2152088",
+  "vents": {
+    "short vent 1": {
+      "printed_floor_mm": 73.15,
+      "printed_roof_mm": 76.85,
+      "xy_bounds_mm": [
+        59.650000000000006,
+        146.79997711181642,
+        63.400000000000006,
+        150.79997711181642
+      ],
+      "measurements": [
+        {
+          "z_mm": 77.0,
+          "previous_model_layer_z_mm": 76.985,
+          "max_unbacked_centerline_mm": 3.75,
+          "unbacked_bridge_segments": 4
+        },
+        {
+          "z_mm": 77.2,
+          "previous_model_layer_z_mm": 77.0,
+          "max_unbacked_centerline_mm": 0,
+          "unbacked_bridge_segments": 0
+        },
+        {
+          "z_mm": 77.4,
+          "previous_model_layer_z_mm": 77.265,
+          "max_unbacked_centerline_mm": 3.75,
+          "unbacked_bridge_segments": 0
+        }
+      ]
+    },
+    "short vent 2": {
+      "printed_floor_mm": 73.15,
+      "printed_roof_mm": 76.85,
+      "xy_bounds_mm": [
+        54.900000000000006,
+        146.79997711181642,
+        58.650000000000006,
+        150.79997711181642
+      ],
+      "measurements": [
+        {
+          "z_mm": 77.0,
+          "previous_model_layer_z_mm": 76.985,
+          "max_unbacked_centerline_mm": 3.75,
+          "unbacked_bridge_segments": 4
+        },
+        {
+          "z_mm": 77.2,
+          "previous_model_layer_z_mm": 77.0,
+          "max_unbacked_centerline_mm": 0,
+          "unbacked_bridge_segments": 0
+        },
+        {
+          "z_mm": 77.4,
+          "previous_model_layer_z_mm": 77.265,
+          "max_unbacked_centerline_mm": 3.75,
+          "unbacked_bridge_segments": 0
+        }
+      ]
+    },
+    "short vent 3": {
+      "printed_floor_mm": 73.15,
+      "printed_roof_mm": 76.85,
+      "xy_bounds_mm": [
+        50.150000000000006,
+        146.79997711181642,
+        53.900000000000006,
+        150.79997711181642
+      ],
+      "measurements": [
+        {
+          "z_mm": 77.0,
+          "previous_model_layer_z_mm": 76.985,
+          "max_unbacked_centerline_mm": 3.75,
+          "unbacked_bridge_segments": 4
+        },
+        {
+          "z_mm": 77.2,
+          "previous_model_layer_z_mm": 77.0,
+          "max_unbacked_centerline_mm": 0,
+          "unbacked_bridge_segments": 0
+        },
+        {
+          "z_mm": 77.4,
+          "previous_model_layer_z_mm": 77.265,
+          "max_unbacked_centerline_mm": 3.75,
+          "unbacked_bridge_segments": 0
+        }
+      ]
+    },
+    "short vent 4": {
+      "printed_floor_mm": 73.15,
+      "printed_roof_mm": 76.85,
+      "xy_bounds_mm": [
+        45.400000000000006,
+        146.79997711181642,
+        49.150000000000006,
+        150.79997711181642
+      ],
+      "measurements": [
+        {
+          "z_mm": 77.0,
+          "previous_model_layer_z_mm": 76.985,
+          "max_unbacked_centerline_mm": 3.75,
+          "unbacked_bridge_segments": 4
+        },
+        {
+          "z_mm": 77.2,
+          "previous_model_layer_z_mm": 77.0,
+          "max_unbacked_centerline_mm": 0,
+          "unbacked_bridge_segments": 0
+        },
+        {
+          "z_mm": 77.4,
+          "previous_model_layer_z_mm": 77.265,
+          "max_unbacked_centerline_mm": 3.75,
+          "unbacked_bridge_segments": 0
+        }
+      ]
+    },
+    "short vent 5": {
+      "printed_floor_mm": 83.15,
+      "printed_roof_mm": 86.85,
+      "xy_bounds_mm": [
+        59.650000000000006,
+        146.79997711181642,
+        63.400000000000006,
+        150.79997711181642
+      ],
+      "measurements": [
+        {
+          "z_mm": 87.0,
+          "previous_model_layer_z_mm": 86.8,
+          "max_unbacked_centerline_mm": 3.745999999999995,
+          "unbacked_bridge_segments": 4
+        },
+        {
+          "z_mm": 87.2,
+          "previous_model_layer_z_mm": 87.053,
+          "max_unbacked_centerline_mm": 3.75,
+          "unbacked_bridge_segments": 0
+        },
+        {
+          "z_mm": 87.4,
+          "previous_model_layer_z_mm": 87.333,
+          "max_unbacked_centerline_mm": 3.75,
+          "unbacked_bridge_segments": 0
+        }
+      ]
+    },
+    "short vent 6": {
+      "printed_floor_mm": 83.15,
+      "printed_roof_mm": 86.85,
+      "xy_bounds_mm": [
+        54.900000000000006,
+        146.79997711181642,
+        58.650000000000006,
+        150.79997711181642
+      ],
+      "measurements": [
+        {
+          "z_mm": 87.0,
+          "previous_model_layer_z_mm": 86.8,
+          "max_unbacked_centerline_mm": 3.745999999999995,
+          "unbacked_bridge_segments": 4
+        },
+        {
+          "z_mm": 87.2,
+          "previous_model_layer_z_mm": 87.053,
+          "max_unbacked_centerline_mm": 3.75,
+          "unbacked_bridge_segments": 0
+        },
+        {
+          "z_mm": 87.4,
+          "previous_model_layer_z_mm": 87.333,
+          "max_unbacked_centerline_mm": 3.75,
+          "unbacked_bridge_segments": 0
+        }
+      ]
+    },
+    "short vent 7": {
+      "printed_floor_mm": 83.15,
+      "printed_roof_mm": 86.85,
+      "xy_bounds_mm": [
+        50.150000000000006,
+        146.79997711181642,
+        53.900000000000006,
+        150.79997711181642
+      ],
+      "measurements": [
+        {
+          "z_mm": 87.0,
+          "previous_model_layer_z_mm": 86.8,
+          "max_unbacked_centerline_mm": 3.745999999999995,
+          "unbacked_bridge_segments": 4
+        },
+        {
+          "z_mm": 87.2,
+          "previous_model_layer_z_mm": 87.053,
+          "max_unbacked_centerline_mm": 3.75,
+          "unbacked_bridge_segments": 0
+        },
+        {
+          "z_mm": 87.4,
+          "previous_model_layer_z_mm": 87.333,
+          "max_unbacked_centerline_mm": 3.75,
+          "unbacked_bridge_segments": 0
+        }
+      ]
+    },
+    "short vent 8": {
+      "printed_floor_mm": 83.15,
+      "printed_roof_mm": 86.85,
+      "xy_bounds_mm": [
+        45.400000000000006,
+        146.79997711181642,
+        49.150000000000006,
+        150.79997711181642
+      ],
+      "measurements": [
+        {
+          "z_mm": 87.0,
+          "previous_model_layer_z_mm": 86.8,
+          "max_unbacked_centerline_mm": 3.745999999999995,
+          "unbacked_bridge_segments": 4
+        },
+        {
+          "z_mm": 87.2,
+          "previous_model_layer_z_mm": 87.053,
+          "max_unbacked_centerline_mm": 3.75,
+          "unbacked_bridge_segments": 0
+        },
+        {
+          "z_mm": 87.4,
+          "previous_model_layer_z_mm": 87.333,
+          "max_unbacked_centerline_mm": 3.75,
+          "unbacked_bridge_segments": 0
+        }
+      ]
+    },
+    "short vent 9": {
+      "printed_floor_mm": 93.15,
+      "printed_roof_mm": 96.85,
+      "xy_bounds_mm": [
+        59.650000000000006,
+        146.79997711181642,
+        63.400000000000006,
+        150.79997711181642
+      ],
+      "measurements": [
+        {
+          "z_mm": 97.0,
+          "previous_model_layer_z_mm": 96.841,
+          "max_unbacked_centerline_mm": 3.75,
+          "unbacked_bridge_segments": 4
+        },
+        {
+          "z_mm": 97.2,
+          "previous_model_layer_z_mm": 97.121,
+          "max_unbacked_centerline_mm": 3.75,
+          "unbacked_bridge_segments": 0
+        },
+        {
+          "z_mm": 97.4,
+          "previous_model_layer_z_mm": 97.2,
+          "max_unbacked_centerline_mm": 0,
+          "unbacked_bridge_segments": 0
+        }
+      ]
+    },
+    "short vent 10": {
+      "printed_floor_mm": 93.15,
+      "printed_roof_mm": 96.85,
+      "xy_bounds_mm": [
+        54.900000000000006,
+        146.79997711181642,
+        58.650000000000006,
+        150.79997711181642
+      ],
+      "measurements": [
+        {
+          "z_mm": 97.0,
+          "previous_model_layer_z_mm": 96.841,
+          "max_unbacked_centerline_mm": 3.75,
+          "unbacked_bridge_segments": 4
+        },
+        {
+          "z_mm": 97.2,
+          "previous_model_layer_z_mm": 97.121,
+          "max_unbacked_centerline_mm": 3.75,
+          "unbacked_bridge_segments": 0
+        },
+        {
+          "z_mm": 97.4,
+          "previous_model_layer_z_mm": 97.2,
+          "max_unbacked_centerline_mm": 0,
+          "unbacked_bridge_segments": 0
+        }
+      ]
+    },
+    "short vent 11": {
+      "printed_floor_mm": 93.15,
+      "printed_roof_mm": 96.85,
+      "xy_bounds_mm": [
+        50.150000000000006,
+        146.79997711181642,
+        53.900000000000006,
+        150.79997711181642
+      ],
+      "measurements": [
+        {
+          "z_mm": 97.0,
+          "previous_model_layer_z_mm": 96.841,
+          "max_unbacked_centerline_mm": 3.75,
+          "unbacked_bridge_segments": 4
+        },
+        {
+          "z_mm": 97.2,
+          "previous_model_layer_z_mm": 97.121,
+          "max_unbacked_centerline_mm": 3.75,
+          "unbacked_bridge_segments": 0
+        },
+        {
+          "z_mm": 97.4,
+          "previous_model_layer_z_mm": 97.2,
+          "max_unbacked_centerline_mm": 0,
+          "unbacked_bridge_segments": 0
+        }
+      ]
+    },
+    "short vent 12": {
+      "printed_floor_mm": 93.15,
+      "printed_roof_mm": 96.85,
+      "xy_bounds_mm": [
+        45.400000000000006,
+        146.79997711181642,
+        49.150000000000006,
+        150.79997711181642
+      ],
+      "measurements": [
+        {
+          "z_mm": 97.0,
+          "previous_model_layer_z_mm": 96.841,
+          "max_unbacked_centerline_mm": 3.75,
+          "unbacked_bridge_segments": 4
+        },
+        {
+          "z_mm": 97.2,
+          "previous_model_layer_z_mm": 97.121,
+          "max_unbacked_centerline_mm": 3.75,
+          "unbacked_bridge_segments": 0
+        },
+        {
+          "z_mm": 97.4,
+          "previous_model_layer_z_mm": 97.2,
+          "max_unbacked_centerline_mm": 0,
+          "unbacked_bridge_segments": 0
+        }
+      ]
+    },
+    "short vent 13": {
+      "printed_floor_mm": 103.15,
+      "printed_roof_mm": 106.85,
+      "xy_bounds_mm": [
+        59.650000000000006,
+        146.79997711181642,
+        63.400000000000006,
+        150.79997711181642
+      ],
+      "measurements": [
+        {
+          "z_mm": 107.0,
+          "previous_model_layer_z_mm": 106.909,
+          "max_unbacked_centerline_mm": 3.75,
+          "unbacked_bridge_segments": 4
+        },
+        {
+          "z_mm": 107.2,
+          "previous_model_layer_z_mm": 107.189,
+          "max_unbacked_centerline_mm": 3.75,
+          "unbacked_bridge_segments": 0
+        },
+        {
+          "z_mm": 107.4,
+          "previous_model_layer_z_mm": 107.2,
+          "max_unbacked_centerline_mm": 0,
+          "unbacked_bridge_segments": 0
+        }
+      ]
+    },
+    "short vent 14": {
+      "printed_floor_mm": 103.15,
+      "printed_roof_mm": 106.85,
+      "xy_bounds_mm": [
+        54.900000000000006,
+        146.79997711181642,
+        58.650000000000006,
+        150.79997711181642
+      ],
+      "measurements": [
+        {
+          "z_mm": 107.0,
+          "previous_model_layer_z_mm": 106.909,
+          "max_unbacked_centerline_mm": 3.75,
+          "unbacked_bridge_segments": 4
+        },
+        {
+          "z_mm": 107.2,
+          "previous_model_layer_z_mm": 107.189,
+          "max_unbacked_centerline_mm": 3.75,
+          "unbacked_bridge_segments": 0
+        },
+        {
+          "z_mm": 107.4,
+          "previous_model_layer_z_mm": 107.2,
+          "max_unbacked_centerline_mm": 0,
+          "unbacked_bridge_segments": 0
+        }
+      ]
+    },
+    "short vent 15": {
+      "printed_floor_mm": 103.15,
+      "printed_roof_mm": 106.85,
+      "xy_bounds_mm": [
+        50.150000000000006,
+        146.79997711181642,
+        53.900000000000006,
+        150.79997711181642
+      ],
+      "measurements": [
+        {
+          "z_mm": 107.0,
+          "previous_model_layer_z_mm": 106.909,
+          "max_unbacked_centerline_mm": 3.75,
+          "unbacked_bridge_segments": 4
+        },
+        {
+          "z_mm": 107.2,
+          "previous_model_layer_z_mm": 107.189,
+          "max_unbacked_centerline_mm": 3.75,
+          "unbacked_bridge_segments": 0
+        },
+        {
+          "z_mm": 107.4,
+          "previous_model_layer_z_mm": 107.2,
+          "max_unbacked_centerline_mm": 0,
+          "unbacked_bridge_segments": 0
+        }
+      ]
+    },
+    "short vent 16": {
+      "printed_floor_mm": 103.15,
+      "printed_roof_mm": 106.85,
+      "xy_bounds_mm": [
+        45.400000000000006,
+        146.79997711181642,
+        49.150000000000006,
+        150.79997711181642
+      ],
+      "measurements": [
+        {
+          "z_mm": 107.0,
+          "previous_model_layer_z_mm": 106.909,
+          "max_unbacked_centerline_mm": 3.75,
+          "unbacked_bridge_segments": 4
+        },
+        {
+          "z_mm": 107.2,
+          "previous_model_layer_z_mm": 107.189,
+          "max_unbacked_centerline_mm": 3.75,
+          "unbacked_bridge_segments": 0
+        },
+        {
+          "z_mm": 107.4,
+          "previous_model_layer_z_mm": 107.2,
+          "max_unbacked_centerline_mm": 0,
+          "unbacked_bridge_segments": 0
+        }
+      ]
+    },
+    "short vent 17": {
+      "printed_floor_mm": 113.15,
+      "printed_roof_mm": 116.85,
+      "xy_bounds_mm": [
+        59.650000000000006,
+        146.79997711181642,
+        63.400000000000006,
+        150.79997711181642
+      ],
+      "measurements": [
+        {
+          "z_mm": 117.0,
+          "previous_model_layer_z_mm": 116.977,
+          "max_unbacked_centerline_mm": 3.75,
+          "unbacked_bridge_segments": 4
+        },
+        {
+          "z_mm": 117.2,
+          "previous_model_layer_z_mm": 117.0,
+          "max_unbacked_centerline_mm": 0,
+          "unbacked_bridge_segments": 0
+        },
+        {
+          "z_mm": 117.4,
+          "previous_model_layer_z_mm": 117.257,
+          "max_unbacked_centerline_mm": 3.75,
+          "unbacked_bridge_segments": 0
+        }
+      ]
+    },
+    "short vent 18": {
+      "printed_floor_mm": 113.15,
+      "printed_roof_mm": 116.85,
+      "xy_bounds_mm": [
+        54.900000000000006,
+        146.79997711181642,
+        58.650000000000006,
+        150.79997711181642
+      ],
+      "measurements": [
+        {
+          "z_mm": 117.0,
+          "previous_model_layer_z_mm": 116.977,
+          "max_unbacked_centerline_mm": 3.75,
+          "unbacked_bridge_segments": 4
+        },
+        {
+          "z_mm": 117.2,
+          "previous_model_layer_z_mm": 117.0,
+          "max_unbacked_centerline_mm": 0,
+          "unbacked_bridge_segments": 0
+        },
+        {
+          "z_mm": 117.4,
+          "previous_model_layer_z_mm": 117.257,
+          "max_unbacked_centerline_mm": 3.75,
+          "unbacked_bridge_segments": 0
+        }
+      ]
+    },
+    "short vent 19": {
+      "printed_floor_mm": 113.15,
+      "printed_roof_mm": 116.85,
+      "xy_bounds_mm": [
+        50.150000000000006,
+        146.79997711181642,
+        53.900000000000006,
+        150.79997711181642
+      ],
+      "measurements": [
+        {
+          "z_mm": 117.0,
+          "previous_model_layer_z_mm": 116.977,
+          "max_unbacked_centerline_mm": 3.75,
+          "unbacked_bridge_segments": 4
+        },
+        {
+          "z_mm": 117.2,
+          "previous_model_layer_z_mm": 117.0,
+          "max_unbacked_centerline_mm": 0,
+          "unbacked_bridge_segments": 0
+        },
+        {
+          "z_mm": 117.4,
+          "previous_model_layer_z_mm": 117.257,
+          "max_unbacked_centerline_mm": 3.75,
+          "unbacked_bridge_segments": 0
+        }
+      ]
+    },
+    "short vent 20": {
+      "printed_floor_mm": 113.15,
+      "printed_roof_mm": 116.85,
+      "xy_bounds_mm": [
+        45.400000000000006,
+        146.79997711181642,
+        49.150000000000006,
+        150.79997711181642
+      ],
+      "measurements": [
+        {
+          "z_mm": 117.0,
+          "previous_model_layer_z_mm": 116.977,
+          "max_unbacked_centerline_mm": 3.75,
+          "unbacked_bridge_segments": 4
+        },
+        {
+          "z_mm": 117.2,
+          "previous_model_layer_z_mm": 117.0,
+          "max_unbacked_centerline_mm": 0,
+          "unbacked_bridge_segments": 0
+        },
+        {
+          "z_mm": 117.4,
+          "previous_model_layer_z_mm": 117.257,
+          "max_unbacked_centerline_mm": 3.75,
+          "unbacked_bridge_segments": 0
+        }
+      ]
+    },
+    "short vent 21": {
+      "printed_floor_mm": 123.15,
+      "printed_roof_mm": 126.85,
+      "xy_bounds_mm": [
+        59.650000000000006,
+        146.79997711181642,
+        63.400000000000006,
+        150.79997711181642
+      ],
+      "measurements": [
+        {
+          "z_mm": 127.0,
+          "previous_model_layer_z_mm": 126.8,
+          "max_unbacked_centerline_mm": 3.745999999999995,
+          "unbacked_bridge_segments": 4
+        },
+        {
+          "z_mm": 127.2,
+          "previous_model_layer_z_mm": 127.045,
+          "max_unbacked_centerline_mm": 3.75,
+          "unbacked_bridge_segments": 0
+        },
+        {
+          "z_mm": 127.4,
+          "previous_model_layer_z_mm": 127.325,
+          "max_unbacked_centerline_mm": 3.75,
+          "unbacked_bridge_segments": 0
+        }
+      ]
+    },
+    "short vent 22": {
+      "printed_floor_mm": 123.15,
+      "printed_roof_mm": 126.85,
+      "xy_bounds_mm": [
+        54.900000000000006,
+        146.79997711181642,
+        58.650000000000006,
+        150.79997711181642
+      ],
+      "measurements": [
+        {
+          "z_mm": 127.0,
+          "previous_model_layer_z_mm": 126.8,
+          "max_unbacked_centerline_mm": 3.745999999999995,
+          "unbacked_bridge_segments": 4
+        },
+        {
+          "z_mm": 127.2,
+          "previous_model_layer_z_mm": 127.045,
+          "max_unbacked_centerline_mm": 3.75,
+          "unbacked_bridge_segments": 0
+        },
+        {
+          "z_mm": 127.4,
+          "previous_model_layer_z_mm": 127.325,
+          "max_unbacked_centerline_mm": 3.75,
+          "unbacked_bridge_segments": 0
+        }
+      ]
+    },
+    "short vent 23": {
+      "printed_floor_mm": 123.15,
+      "printed_roof_mm": 126.85,
+      "xy_bounds_mm": [
+        50.150000000000006,
+        146.79997711181642,
+        53.900000000000006,
+        150.79997711181642
+      ],
+      "measurements": [
+        {
+          "z_mm": 127.0,
+          "previous_model_layer_z_mm": 126.8,
+          "max_unbacked_centerline_mm": 3.745999999999995,
+          "unbacked_bridge_segments": 4
+        },
+        {
+          "z_mm": 127.2,
+          "previous_model_layer_z_mm": 127.045,
+          "max_unbacked_centerline_mm": 3.75,
+          "unbacked_bridge_segments": 0
+        },
+        {
+          "z_mm": 127.4,
+          "previous_model_layer_z_mm": 127.325,
+          "max_unbacked_centerline_mm": 3.75,
+          "unbacked_bridge_segments": 0
+        }
+      ]
+    },
+    "short vent 24": {
+      "printed_floor_mm": 123.15,
+      "printed_roof_mm": 126.85,
+      "xy_bounds_mm": [
+        45.400000000000006,
+        146.79997711181642,
+        49.150000000000006,
+        150.79997711181642
+      ],
+      "measurements": [
+        {
+          "z_mm": 127.0,
+          "previous_model_layer_z_mm": 126.8,
+          "max_unbacked_centerline_mm": 3.745999999999995,
+          "unbacked_bridge_segments": 4
+        },
+        {
+          "z_mm": 127.2,
+          "previous_model_layer_z_mm": 127.045,
+          "max_unbacked_centerline_mm": 3.75,
+          "unbacked_bridge_segments": 0
+        },
+        {
+          "z_mm": 127.4,
+          "previous_model_layer_z_mm": 127.325,
+          "max_unbacked_centerline_mm": 3.75,
+          "unbacked_bridge_segments": 0
+        }
+      ]
+    },
+    "short vent 25": {
+      "printed_floor_mm": 133.15,
+      "printed_roof_mm": 136.85,
+      "xy_bounds_mm": [
+        59.650000000000006,
+        146.79997711181642,
+        63.400000000000006,
+        150.79997711181642
+      ],
+      "measurements": [
+        {
+          "z_mm": 137.0,
+          "previous_model_layer_z_mm": 136.833,
+          "max_unbacked_centerline_mm": 3.75,
+          "unbacked_bridge_segments": 4
+        },
+        {
+          "z_mm": 137.2,
+          "previous_model_layer_z_mm": 137.113,
+          "max_unbacked_centerline_mm": 3.75,
+          "unbacked_bridge_segments": 0
+        },
+        {
+          "z_mm": 137.4,
+          "previous_model_layer_z_mm": 137.393,
+          "max_unbacked_centerline_mm": 3.75,
+          "unbacked_bridge_segments": 0
+        }
+      ]
+    },
+    "short vent 26": {
+      "printed_floor_mm": 133.15,
+      "printed_roof_mm": 136.85,
+      "xy_bounds_mm": [
+        54.900000000000006,
+        146.79997711181642,
+        58.650000000000006,
+        150.79997711181642
+      ],
+      "measurements": [
+        {
+          "z_mm": 137.0,
+          "previous_model_layer_z_mm": 136.833,
+          "max_unbacked_centerline_mm": 3.75,
+          "unbacked_bridge_segments": 4
+        },
+        {
+          "z_mm": 137.2,
+          "previous_model_layer_z_mm": 137.113,
+          "max_unbacked_centerline_mm": 3.75,
+          "unbacked_bridge_segments": 0
+        },
+        {
+          "z_mm": 137.4,
+          "previous_model_layer_z_mm": 137.393,
+          "max_unbacked_centerline_mm": 3.75,
+          "unbacked_bridge_segments": 0
+        }
+      ]
+    },
+    "short vent 27": {
+      "printed_floor_mm": 133.15,
+      "printed_roof_mm": 136.85,
+      "xy_bounds_mm": [
+        50.150000000000006,
+        146.79997711181642,
+        53.900000000000006,
+        150.79997711181642
+      ],
+      "measurements": [
+        {
+          "z_mm": 137.0,
+          "previous_model_layer_z_mm": 136.833,
+          "max_unbacked_centerline_mm": 3.75,
+          "unbacked_bridge_segments": 4
+        },
+        {
+          "z_mm": 137.2,
+          "previous_model_layer_z_mm": 137.113,
+          "max_unbacked_centerline_mm": 3.75,
+          "unbacked_bridge_segments": 0
+        },
+        {
+          "z_mm": 137.4,
+          "previous_model_layer_z_mm": 137.393,
+          "max_unbacked_centerline_mm": 3.75,
+          "unbacked_bridge_segments": 0
+        }
+      ]
+    },
+    "short vent 28": {
+      "printed_floor_mm": 133.15,
+      "printed_roof_mm": 136.85,
+      "xy_bounds_mm": [
+        45.400000000000006,
+        146.79997711181642,
+        49.150000000000006,
+        150.79997711181642
+      ],
+      "measurements": [
+        {
+          "z_mm": 137.0,
+          "previous_model_layer_z_mm": 136.833,
+          "max_unbacked_centerline_mm": 3.75,
+          "unbacked_bridge_segments": 4
+        },
+        {
+          "z_mm": 137.2,
+          "previous_model_layer_z_mm": 137.113,
+          "max_unbacked_centerline_mm": 3.75,
+          "unbacked_bridge_segments": 0
+        },
+        {
+          "z_mm": 137.4,
+          "previous_model_layer_z_mm": 137.393,
+          "max_unbacked_centerline_mm": 3.75,
+          "unbacked_bridge_segments": 0
+        }
+      ]
+    },
+    "short vent 29": {
+      "printed_floor_mm": 143.15,
+      "printed_roof_mm": 146.85,
+      "xy_bounds_mm": [
+        59.650000000000006,
+        146.79997711181642,
+        63.400000000000006,
+        150.79997711181642
+      ],
+      "measurements": [
+        {
+          "z_mm": 147.0,
+          "previous_model_layer_z_mm": 146.901,
+          "max_unbacked_centerline_mm": 3.75,
+          "unbacked_bridge_segments": 4
+        },
+        {
+          "z_mm": 147.2,
+          "previous_model_layer_z_mm": 147.181,
+          "max_unbacked_centerline_mm": 3.75,
+          "unbacked_bridge_segments": 0
+        },
+        {
+          "z_mm": 147.4,
+          "previous_model_layer_z_mm": 147.2,
+          "max_unbacked_centerline_mm": 0,
+          "unbacked_bridge_segments": 0
+        }
+      ]
+    },
+    "short vent 30": {
+      "printed_floor_mm": 143.15,
+      "printed_roof_mm": 146.85,
+      "xy_bounds_mm": [
+        54.900000000000006,
+        146.79997711181642,
+        58.650000000000006,
+        150.79997711181642
+      ],
+      "measurements": [
+        {
+          "z_mm": 147.0,
+          "previous_model_layer_z_mm": 146.901,
+          "max_unbacked_centerline_mm": 3.75,
+          "unbacked_bridge_segments": 4
+        },
+        {
+          "z_mm": 147.2,
+          "previous_model_layer_z_mm": 147.181,
+          "max_unbacked_centerline_mm": 3.75,
+          "unbacked_bridge_segments": 0
+        },
+        {
+          "z_mm": 147.4,
+          "previous_model_layer_z_mm": 147.2,
+          "max_unbacked_centerline_mm": 0,
+          "unbacked_bridge_segments": 0
+        }
+      ]
+    },
+    "short vent 31": {
+      "printed_floor_mm": 143.15,
+      "printed_roof_mm": 146.85,
+      "xy_bounds_mm": [
+        50.150000000000006,
+        146.79997711181642,
+        53.900000000000006,
+        150.79997711181642
+      ],
+      "measurements": [
+        {
+          "z_mm": 147.0,
+          "previous_model_layer_z_mm": 146.901,
+          "max_unbacked_centerline_mm": 3.75,
+          "unbacked_bridge_segments": 4
+        },
+        {
+          "z_mm": 147.2,
+          "previous_model_layer_z_mm": 147.181,
+          "max_unbacked_centerline_mm": 3.75,
+          "unbacked_bridge_segments": 0
+        },
+        {
+          "z_mm": 147.4,
+          "previous_model_layer_z_mm": 147.2,
+          "max_unbacked_centerline_mm": 0,
+          "unbacked_bridge_segments": 0
+        }
+      ]
+    },
+    "short vent 32": {
+      "printed_floor_mm": 143.15,
+      "printed_roof_mm": 146.85,
+      "xy_bounds_mm": [
+        45.400000000000006,
+        146.79997711181642,
+        49.150000000000006,
+        150.79997711181642
+      ],
+      "measurements": [
+        {
+          "z_mm": 147.0,
+          "previous_model_layer_z_mm": 146.901,
+          "max_unbacked_centerline_mm": 3.75,
+          "unbacked_bridge_segments": 4
+        },
+        {
+          "z_mm": 147.2,
+          "previous_model_layer_z_mm": 147.181,
+          "max_unbacked_centerline_mm": 3.75,
+          "unbacked_bridge_segments": 0
+        },
+        {
+          "z_mm": 147.4,
+          "previous_model_layer_z_mm": 147.2,
+          "max_unbacked_centerline_mm": 0,
+          "unbacked_bridge_segments": 0
+        }
+      ]
+    },
+    "short vent 33": {
+      "printed_floor_mm": 153.15,
+      "printed_roof_mm": 156.85,
+      "xy_bounds_mm": [
+        59.650000000000006,
+        146.79997711181642,
+        63.400000000000006,
+        150.79997711181642
+      ],
+      "measurements": [
+        {
+          "z_mm": 157.0,
+          "previous_model_layer_z_mm": 156.969,
+          "max_unbacked_centerline_mm": 3.75,
+          "unbacked_bridge_segments": 4
+        },
+        {
+          "z_mm": 157.2,
+          "previous_model_layer_z_mm": 157.0,
+          "max_unbacked_centerline_mm": 0,
+          "unbacked_bridge_segments": 0
+        },
+        {
+          "z_mm": 157.4,
+          "previous_model_layer_z_mm": 157.249,
+          "max_unbacked_centerline_mm": 3.75,
+          "unbacked_bridge_segments": 0
+        }
+      ]
+    },
+    "short vent 34": {
+      "printed_floor_mm": 153.15,
+      "printed_roof_mm": 156.85,
+      "xy_bounds_mm": [
+        54.900000000000006,
+        146.79997711181642,
+        58.650000000000006,
+        150.79997711181642
+      ],
+      "measurements": [
+        {
+          "z_mm": 157.0,
+          "previous_model_layer_z_mm": 156.969,
+          "max_unbacked_centerline_mm": 3.75,
+          "unbacked_bridge_segments": 4
+        },
+        {
+          "z_mm": 157.2,
+          "previous_model_layer_z_mm": 157.0,
+          "max_unbacked_centerline_mm": 0,
+          "unbacked_bridge_segments": 0
+        },
+        {
+          "z_mm": 157.4,
+          "previous_model_layer_z_mm": 157.249,
+          "max_unbacked_centerline_mm": 3.75,
+          "unbacked_bridge_segments": 0
+        }
+      ]
+    },
+    "short vent 35": {
+      "printed_floor_mm": 153.15,
+      "printed_roof_mm": 156.85,
+      "xy_bounds_mm": [
+        50.150000000000006,
+        146.79997711181642,
+        53.900000000000006,
+        150.79997711181642
+      ],
+      "measurements": [
+        {
+          "z_mm": 157.0,
+          "previous_model_layer_z_mm": 156.969,
+          "max_unbacked_centerline_mm": 3.75,
+          "unbacked_bridge_segments": 4
+        },
+        {
+          "z_mm": 157.2,
+          "previous_model_layer_z_mm": 157.0,
+          "max_unbacked_centerline_mm": 0,
+          "unbacked_bridge_segments": 0
+        },
+        {
+          "z_mm": 157.4,
+          "previous_model_layer_z_mm": 157.249,
+          "max_unbacked_centerline_mm": 3.75,
+          "unbacked_bridge_segments": 0
+        }
+      ]
+    },
+    "short vent 36": {
+      "printed_floor_mm": 153.15,
+      "printed_roof_mm": 156.85,
+      "xy_bounds_mm": [
+        45.400000000000006,
+        146.79997711181642,
+        49.150000000000006,
+        150.79997711181642
+      ],
+      "measurements": [
+        {
+          "z_mm": 157.0,
+          "previous_model_layer_z_mm": 156.969,
+          "max_unbacked_centerline_mm": 3.75,
+          "unbacked_bridge_segments": 4
+        },
+        {
+          "z_mm": 157.2,
+          "previous_model_layer_z_mm": 157.0,
+          "max_unbacked_centerline_mm": 0,
+          "unbacked_bridge_segments": 0
+        },
+        {
+          "z_mm": 157.4,
+          "previous_model_layer_z_mm": 157.249,
+          "max_unbacked_centerline_mm": 3.75,
+          "unbacked_bridge_segments": 0
+        }
+      ]
+    }
+  },
+  "scope": "Model extrusion through the projected vent roof, outside the prior model bead footprint. Support and physical bridge sag are separate."
+}
