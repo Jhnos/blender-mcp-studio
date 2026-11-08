@@ -54,11 +54,54 @@ def _cell(point: Point) -> tuple[int, int, int]:
     return values[0], values[1], values[2]
 
 
-def _match(source: list[Point], target: list[Point]) -> tuple[list[int], float] | None:
+def _topology_match(
+    options: list[set[int]], faces: list[Triangle], target_faces: list[Triangle]
+) -> list[int] | None:
+    """Resolve only forced adjacency matches; never search or pick an ambiguous assignment."""
+    if any(len(choices) > 64 for choices in options):
+        return None
+    neighbors = [set[int]() for _ in options]
+    target_neighbors = [set[int]() for _ in options]
+    for triangles, links in ((faces, neighbors), (target_faces, target_neighbors)):
+        for a, b, c in triangles:
+            links[a].update((b, c))
+            links[b].update((a, c))
+            links[c].update((a, b))
+    choices = [
+        {j for j in values if len(neighbors[i]) == len(target_neighbors[j])}
+        for i, values in enumerate(options)
+    ]
+    for _ in range(32):
+        previous = choices
+        choices = [
+            {j for j in values if all(previous[n] & target_neighbors[j] for n in neighbors[i])}
+            for i, values in enumerate(previous)
+        ]
+        fixed = [next(iter(values)) for values in choices if len(values) == 1]
+        if any(not values for values in choices) or len(fixed) != len(set(fixed)):
+            return None
+        for values in choices:
+            if len(values) > 1:
+                values.difference_update(fixed)
+        if all(len(values) == 1 for values in choices):
+            indices = [next(iter(values)) for values in choices]
+            return indices if len(set(indices)) == len(indices) else None
+        if choices == previous:
+            return None
+    return None
+
+
+def _match(
+    source: list[Point], target: list[Point], faces: list[Triangle], target_faces: list[Triangle]
+) -> tuple[list[int], float] | None:
+    if len(source) != len(target):
+        return None
     grid: dict[tuple[int, int, int], list[int]] = defaultdict(list)
     for index, point in enumerate(target):
         grid[_cell(point)].append(index)
     indices, maximum = [], 0.0
+    options: list[set[int]] = []
+    tied = False
     for point in source:
         cell = _cell(point)
         candidates: list[tuple[float, int]] = []
@@ -68,13 +111,17 @@ def _match(source: list[Point], target: list[Point]) -> tuple[list[int], float] 
         candidates.sort()
         if not candidates or candidates[0][0] > _TOLERANCE_MM:
             return None
-        if len(candidates) > 1 and candidates[0][0] == candidates[1][0]:
-            return None
+        tied |= len(candidates) > 1 and candidates[0][0] == candidates[1][0]
+        options.append({index for distance, index in candidates if distance <= _TOLERANCE_MM})
         distance, index = candidates[0]
         indices.append(index)
         maximum = max(maximum, distance)
-    if len(set(indices)) != len(target) or len(source) != len(target):
-        return None
+    if tied or len(set(indices)) != len(target):
+        resolved = _topology_match(options, faces, target_faces)
+        if resolved is None:
+            return None
+        indices = resolved
+        maximum = max(math.dist(point, target[i]) for point, i in zip(source, indices, strict=True))
     return indices, maximum
 
 
@@ -96,7 +143,7 @@ def bind_axis_frame(
             for i in range(3)
         ):
             continue
-        result = _match(mapped, target)
+        result = _match(mapped, target, faces, target_faces)
         if result is None:
             continue
         indices, maximum = result
@@ -114,7 +161,7 @@ def require_same_oriented_surface(
     """Compare complete surfaces in one existing frame, without fitting or repositioning."""
     points, faces = parse_closed_surface(original)
     target, target_faces = parse_closed_surface(actual)
-    result = _match(points, target)
+    result = _match(points, target, faces, target_faces)
     if result is None:
         raise ValueError("surface coordinates differ in their existing frame")
     indices, maximum = result

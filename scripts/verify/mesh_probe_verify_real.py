@@ -12,6 +12,11 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from scripts.verify.generated_artifact_verify_real import BlenderSocketOracle  # noqa: E402
+from src.infrastructure.narrowing import (  # noqa: E402
+    as_finite_number,
+    as_sequence,
+    as_str_keyed_exact,
+)
 from src.verification.mesh_measurements import measurements_pass  # noqa: E402
 
 
@@ -78,6 +83,94 @@ evidence = {
 print(json.dumps(evidence))
 """
     )
+
+
+def section_probe_code(config: object) -> str:
+    """Build one read-only section observation; no model, output or script selection."""
+    value = as_str_keyed_exact(config)
+    if value is None or set(value) != {"owners", "frame", "planes_x_mm"}:
+        raise ValueError("section request requires owners, frame and plane coordinates")
+    owners, planes = as_sequence(value["owners"]), as_sequence(value["planes_x_mm"])
+    frame = value["frame"]
+    if owners is None or not 1 <= len(owners) <= 64 or planes is None or not 1 <= len(planes) <= 32:
+        raise ValueError("section request has an empty or oversized population")
+    if any(not isinstance(name, str) or not name or len(name) > 128 for name in (*owners, frame)):
+        raise ValueError("section request needs bounded object and frame names")
+    if len(set(owners)) != len(owners):
+        raise ValueError("section object names must be unique")
+    coordinates = [as_finite_number(v) for v in planes]
+    if any(v is None for v in coordinates):
+        raise ValueError("section plane coordinates must be finite numbers")
+    payload = {"owners": list(owners), "frame": frame, "planes_x_mm": coordinates}
+    program = (
+        "section_config = "
+        + repr(payload)
+        + "\n"
+        + r"""
+import bpy, bmesh, json, math
+from mathutils import Vector
+bpy.context.view_layer.update()
+frame = bpy.data.objects[section_config["frame"]].matrix_world.copy()
+axes = [frame.to_3x3().col[i] for i in range(3)]
+if (any(abs(axis.length-1)>1e-6 for axis in axes)
+    or any(abs(axes[i].dot(axes[j]))>1e-6 for i in range(3) for j in range(i))
+    or any(not math.isfinite(v) for row in frame for v in row)):
+    raise ValueError("section coordinate frame must be finite and rigid in metres")
+inverse = frame.inverted()
+records = {}
+for name in section_config["owners"]:
+    part = bpy.data.objects[name]
+    if part.type != "MESH" or part.mode != "OBJECT" or part.modifiers or part.data.shape_keys:
+        raise ValueError("section observation requires an unmodified rigid object mesh")
+    sections = []
+    for coordinate in section_config["planes_x_mm"]:
+        editable = bmesh.new()
+        try:
+            editable.from_mesh(part.data)
+            if not editable.faces or any(not edge.is_manifold for edge in editable.edges):
+                raise ValueError("section source must be a nonempty closed manifold mesh")
+            editable.transform(inverse @ part.matrix_world)
+            cut = bmesh.ops.bisect_plane(editable,
+                geom=[*editable.verts,*editable.edges,*editable.faces],
+                dist=0.0,plane_co=Vector((coordinate/1000,0,0)),
+                plane_no=Vector((1,0,0)),clear_inner=False,clear_outer=False)
+            edges = {edge for edge in cut["geom_cut"] if isinstance(edge,bmesh.types.BMEdge)}
+            neighbors = {vertex:[] for edge in edges for vertex in edge.verts}
+            for edge in edges:
+                first,second = edge.verts
+                neighbors[first].append(second)
+                neighbors[second].append(first)
+            if any(len(adjacent)!=2 for adjacent in neighbors.values()):
+                raise ValueError("section intersection has an open or branching contour")
+            remaining = set(neighbors)
+            loops = []
+            while remaining:
+                start = next(iter(remaining))
+                previous,current = None,start
+                points = []
+                while True:
+                    if current not in remaining:
+                        raise ValueError("section contour revisited a non-start vertex")
+                    points.append(tuple(float(v)*1000 for v in current.co))
+                    remaining.remove(current)
+                    following = next(v for v in neighbors[current] if v!=previous)
+                    previous,current = current,following
+                    if current==start:
+                        break
+                offset = min(range(len(points)),key=lambda index:points[index])
+                points = points[offset:]+points[:offset]
+                reverse = [points[0],*reversed(points[1:])]
+                points = min(points,reverse)
+                loops.append({"closed":True,"points_mm":points})
+            loops.sort(key=lambda row:(row["points_mm"][0],len(row["points_mm"])))
+            sections.append({"plane_x_mm":coordinate,"loops":loops})
+        finally:
+            editable.free()
+    records[name] = sections
+print("SECTION_PROBE:"+json.dumps({"scope":"raw closed mesh sections only; not hole or assembly acceptance","frame":section_config["frame"],"parts":records}))
+"""
+    )
+    return "exec(" + repr(program) + ", {})\n"
 
 
 def main() -> int:

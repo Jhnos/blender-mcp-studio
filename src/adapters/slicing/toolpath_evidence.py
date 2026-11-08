@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import re
 import time
 import zipfile
@@ -13,7 +14,7 @@ from math import isfinite
 from pathlib import Path
 from xml.etree import ElementTree as ET
 
-from src.adapters.artifacts.native_source import fingerprint_source_asset
+from src.adapters.artifacts.native_source import fingerprint_source_asset, unique_native_object
 from src.adapters.artifacts.plate_metadata import parse_plate_xml, plate_object_labels
 from src.adapters.slicing.gcode_paths import iter_extrusions
 from src.core.domain.extrusion import BuildVolume, ExtrusionInspection
@@ -21,7 +22,7 @@ from src.core.domain.import_limits import ImportLimits
 from src.core.domain.native_revision import NativeSourceError
 from src.core.domain.slicing import SliceRequest
 from src.core.use_cases.toolpath_inspection import inspect_extrusions
-from src.infrastructure.narrowing import as_sequence
+from src.infrastructure.narrowing import as_mapping, as_sequence
 
 # Measured full 69-object inspection: 26.51 s, 2026-10-27; five times rounded seconds.
 SLOWEST_INSPECTION_MEASURED_S = 27
@@ -30,6 +31,88 @@ TOOLPATH_INSPECTION_TIMEOUT_S = 5 * SLOWEST_INSPECTION_MEASURED_S
 _GCODE = re.compile(r"Metadata/plate_([1-9][0-9]*)\.gcode")
 _MAX_METADATA_BYTES = 4 * 1024 * 1024
 _SCOPE = "commanded bead envelopes and named bed-contact paths; not measured adhesion, assembly or load acceptance"
+_PROFILE_KEYS = frozenset(
+    {
+        "printer_model",
+        "filament_type",
+        "nozzle_diameter",
+        "layer_height",
+        "enable_support",
+        "brim_width",
+    }
+)
+
+
+def _profile_number(value: object) -> float:
+    try:
+        number = float(str(value))
+    except (ValueError, TypeError) as exc:
+        raise ValueError("invalid numeric print profile setting") from exc
+    if not isfinite(number):
+        raise ValueError("print profile settings must be finite")
+    return number
+
+
+def _single_setting(value: object, *, gcode: bool) -> object:
+    if gcode:
+        return value
+    values = as_sequence(value)
+    if values is None or len(values) != 1:
+        raise ValueError("print profile requires exactly one nozzle and material")
+    return values[0]
+
+
+def _profile_values(settings: Mapping[str, object], *, gcode: bool = False) -> dict[str, object]:
+    printer = settings.get("printer_model")
+    material = _single_setting(settings.get("filament_type"), gcode=gcode)
+    if any(not isinstance(v, str) or not v or len(v) > 128 for v in (printer, material)):
+        raise ValueError("print profile requires bounded printer and material names")
+    nozzle = _profile_number(_single_setting(settings.get("nozzle_diameter"), gcode=gcode))
+    layer, brim = (
+        _profile_number(settings.get("layer_height")),
+        _profile_number(settings.get("brim_width")),
+    )
+    support = settings.get("enable_support")
+    if nozzle <= 0 or layer <= 0 or brim < 0 or support not in ("0", "1"):
+        raise ValueError("print profile contains invalid nozzle, layer, support or brim settings")
+    return {
+        "printer_model": printer,
+        "material": material,
+        "nozzle_diameter_mm": nozzle,
+        "layer_height_mm": layer,
+        "support": support == "1",
+        "brim_mm": brim,
+    }
+
+
+class _ProfileHeader:
+    def __init__(self) -> None:
+        self.started = self.finished = False
+        self.values: dict[str, object] = {}
+
+    def observe(self, line: str) -> None:
+        if self.finished and "CONFIG_BLOCK" not in line:
+            return
+        line = line.strip()
+        if line == "; CONFIG_BLOCK_START":
+            if self.started:
+                raise ValueError("duplicate G-code print profile block")
+            self.started = True
+        elif line == "; CONFIG_BLOCK_END":
+            if not self.started or self.finished:
+                raise ValueError("invalid G-code print profile block")
+            self.finished = True
+        elif self.started and not self.finished and line.startswith("; "):
+            key, separator, value = line[2:].partition(" = ")
+            if separator and key in _PROFILE_KEYS:
+                if key in self.values or len(value) > 128:
+                    raise ValueError("duplicate or oversized G-code print profile setting")
+                self.values[key] = value
+
+    def profile(self) -> dict[str, object]:
+        if not self.finished or set(self.values) != _PROFILE_KEYS:
+            raise ValueError("G-code has no complete print profile block")
+        return _profile_values(self.values, gcode=True)
 
 
 def _xy(value: object) -> tuple[float, float]:
@@ -104,12 +187,16 @@ def _hashed_lines(
     update: Callable[[bytes], None],
     deadline: float,
     clock: Callable[[], float],
+    header: _ProfileHeader | None = None,
 ) -> Iterator[str]:
     for index, line in enumerate(raw):
         if index % 1024 == 0 and clock() >= deadline:
             raise ValueError("toolpath inspection exceeded its cooperative time budget")
         update(line)
-        yield line.decode("utf-8")
+        decoded = line.decode("utf-8")
+        if header is not None:
+            header.observe(decoded)
+        yield decoded
 
 
 def inspect_sliced_project(
@@ -145,6 +232,31 @@ def inspect_sliced_project(
             if metadata.file_size > min(limits.max_3mf_bytes, _MAX_METADATA_BYTES):
                 raise ValueError("slice instance metadata exceeds its byte budget")
             settings = parse_plate_xml(archive.read(metadata))
+            profile = None
+            if request is not None:
+                config = archive.getinfo("Metadata/project_settings.config")
+                if config.file_size > min(limits.max_3mf_bytes, _MAX_METADATA_BYTES):
+                    raise ValueError("slice print profile exceeds its byte budget")
+                values = as_mapping(
+                    json.loads(archive.read(config), object_pairs_hook=unique_native_object)
+                )
+                if values is None:
+                    raise ValueError("slice print profile must be an object")
+                profile = _profile_values(values)
+                expected = {
+                    "printer_model": machine.get("printer_model"),
+                    "material": request.material,
+                    "nozzle_diameter_mm": _profile_number(
+                        _single_setting(machine.get("nozzle_diameter"), gcode=False)
+                    ),
+                    "layer_height_mm": request.layer_height_mm,
+                    "support": request.support,
+                    "brim_mm": request.brim_mm,
+                }
+                if profile != expected:
+                    raise ValueError(
+                        "sliced project print profile differs from captured request or machine"
+                    )
             members = sorted(name for name in names if _GCODE.fullmatch(name))
             if not members:
                 raise ValueError("sliced archive has no plate G-code")
@@ -153,15 +265,20 @@ def inspect_sliced_project(
                 assert matched is not None
                 labels = plate_object_labels(settings, int(matched.group(1)))
                 digest = hashlib.sha256()
+                header = _ProfileHeader() if request is not None else None
                 with archive.open(member) as raw:
                     result = inspect_extrusions(
-                        iter_extrusions(_hashed_lines(raw, digest.update, deadline, clock)),
+                        iter_extrusions(_hashed_lines(raw, digest.update, deadline, clock, header)),
                         volume,
                         expected_object_ids=frozenset(labels),
                         allow_support=request.support if request is not None else True,
                         allow_brim=request.brim_mm > 0 if request is not None else True,
                     )
                 plate = _document(result, labels)
+                if header is not None:
+                    if header.profile() != profile:
+                        raise ValueError("G-code print profile differs from sliced project")
+                    plate["print_profile"] = profile
                 plate.update(gcode=member, gcode_sha256=digest.hexdigest())
                 plates.append(plate)
         if clock() >= deadline:

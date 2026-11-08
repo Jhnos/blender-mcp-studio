@@ -136,3 +136,60 @@ def test_inspection_deadline_stops_the_same_reader_with_failed_evidence(tmp_path
         project(tmp_path), MACHINE, LIMITS, timeout_s=1, clock=lambda: next(ticks)
     )
     assert not report["passed"] and "budget" in report["error"]
+
+
+@pytest.mark.parametrize(
+    "fault",
+    [
+        None,
+        "project-nozzle",
+        "gcode-layer",
+        "project-material",
+        "gcode-support",
+        "missing-config",
+        "duplicate-config",
+    ],
+)
+def test_requested_profile_must_survive_project_and_gcode_boundaries(tmp_path, fault):
+    import json
+
+    from src.core.domain.model_spec import PrintTarget
+    from src.core.domain.slicing import SliceRequest
+
+    settings = {
+        "printer_model": "Bambu Lab P2S",
+        "nozzle_diameter": ["0.4"],
+        "filament_type": ["PLA"],
+        "layer_height": "0.2",
+        "enable_support": "1",
+        "brim_width": "3",
+    }
+    header = (
+        "; CONFIG_BLOCK_START\n"
+        + "\n".join(
+            "; " + key + " = " + (value[0] if isinstance(value, list) else value)
+            for key, value in settings.items()
+        )
+        + "\n; CONFIG_BLOCK_END\n"
+    )
+    if fault == "project-nozzle":
+        settings["nozzle_diameter"] = ["0.6"]
+    if fault == "project-material":
+        settings["filament_type"] = ["ABS"]
+    if fault == "gcode-layer":
+        header = header.replace("layer_height = 0.2", "layer_height = 0.3")
+    if fault == "gcode-support":
+        header = header.replace("enable_support = 1", "enable_support = 0")
+    if fault == "missing-config":
+        header = ""
+    if fault == "duplicate-config":
+        header += header
+    target = project(tmp_path, header + GCODE)
+    with zipfile.ZipFile(target, "a") as archive:
+        archive.writestr("Metadata/project_settings.config", json.dumps(settings))
+    machine = {**MACHINE, "printer_model": "Bambu Lab P2S"}
+    request = SliceRequest.from_target(str(target), str(tmp_path / "out"), PrintTarget())
+    report = inspect_sliced_project(target, machine, LIMITS, request=request)
+    assert report["passed"] == (fault is None)
+    if fault is None:
+        assert report["plates"][0]["print_profile"]["nozzle_diameter_mm"] == 0.4

@@ -96,9 +96,15 @@ T1/T2仍彙整全部失敗；只要已有硬失敗，核心／完整模式在接
 
 共用 `BambuStudioCli` 在命令成功後，讀取該次 machine profile 與新 3MF，產生 `print/extrusion.json`。檢查包含完整線寬、指向圓弧極值、Z 沉積厚度、機器矩形包絡，以及 fresh `identify_id` 對應的每件床面接觸；未知列印幾何命令、缺失 metadata、漏件、無標籤、懸空與越界必須拒絕成功。支撐／brim 關閉時不得仍有相關沉積；一般零件不強制需要支撐，工作站原件公開 gate 則要求兩者的接床路徑。收據綁定完整切片與 G-code SHA256，不能拿舊成功 JSON 替新產物背書。
 
+當次請求存在時，另核對新3MF的project settings與完整G-code設定區塊，要求印表機、材料、噴嘴、模型名目層高、支撐及brim一致，並在收據保存print_profile。缺失／重複區塊或錯設定不得通過；目前交付公開gate另按獨立驗收合約核對設定。這些名目設定不代表實際韌體或物理沉積已量測。
+
 語法語意參考 [BambuStudio GCodeProcessor 固定提交](https://github.com/bambulab/BambuStudio/blob/79df7ae309be398ed30c9f397c13c9911c2edc57/src/libslic3r/GCode/GCodeProcessor.cpp)：G90／G91 與 M82／M83 的 E 模式、相對 IJ 圓心另行解讀。解析器是本專案窄範圍實作，未引入或連結上游 parser。合作式檢查期限由同一讀取器停止，外層 port 期限包含切片與檢查，不能以放棄背景執行緒冒稱工作已結束。
 
 此收據只證明所宣告的軟體路徑與接觸；物理黏附、支撐可移除、免鑽孔／研磨／修面配合及承載仍須各自取得證據。使用者的免後加工界線以 [任務16驗收](tasks/16_lab-station.md#acceptance-checks) 為準。
+
+既有 `mesh_probe_verify_real.section_probe_code` 可在宣告的剛體frame中，以獨立globals對原mesh副本取有界的封閉剖面；拒絕開口／分岔、變形網格與非剛體frame，不寫回來源。`mesh_measurements.measure_section_circle` 分別回報角點擬合半徑與原多邊形邊界最小半徑，數值解析度不得當作列印公差。單元測試覆蓋共線中點、完全相同觀測點與無效輪廓；已知空心柱的獨立引擎觀測須另核半徑、中心、原態及呼叫端namespace。這些局部量測不辨識材料內外，也不證明目前交付件的孔、四點關節閉合或實際配合；不得據此解除整機驗收。
+
+`mesh_binding` 的同frame及唯一軸向frame檢查共用固定數值帶。最近點衝突／等距時，只可用完整頂點鄰接關係縮減帶內候選，且仍須保有頂點一對一及全部同向三角面；超過64候選／32輪或未唯一收斂即拒絕。此過程不合點、不改網格、不放寬距離，也不允許把較寬的診斷搜尋結果當成正式對應資格。
 
 目前工作站的整機要求另由 [交付需求對照](verification/lab-station/14-current-delivery-contract.md) 追溯到產物檢查；核心軟體流程通過不自動解除該表的機械或實體要求。
 

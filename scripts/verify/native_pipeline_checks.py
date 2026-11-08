@@ -163,7 +163,11 @@ def check_slice_inventory(payload: bytes, owners: tuple[str, ...]) -> list[str]:
 
 
 def check_extrusion_receipt(
-    receipt: Mapping[str, object], payload: bytes, owners: tuple[str, ...]
+    receipt: Mapping[str, object],
+    payload: bytes,
+    owners: tuple[str, ...],
+    *,
+    expected_profile: Mapping[str, object] | None = None,
 ) -> list[str]:
     """Workstation contract: fresh single-plate evidence, every part grounded, support/brim present."""
     try:
@@ -178,6 +182,10 @@ def check_extrusion_receipt(
         if len(plates) != 1:
             raise ValueError("workstation extrusion evidence must contain one plate")
         plate = plates[0]
+        if expected_profile is not None:
+            profile = object_value(plate.get("print_profile"))
+            if dict(profile) != dict(expected_profile) or type(profile.get("support")) is not bool:
+                raise ValueError("workstation print profile differs from its artifact contract")
         if (
             plate.get("passed") is not True
             or plate.get("outside_paths") != 0

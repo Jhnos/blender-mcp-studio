@@ -168,7 +168,12 @@ async def positive(
     stls = native.object_value(product["stls"])
     parts = native.rows(stls["parts"])
     owners = tuple(Path(str(part["path"])).stem for part in parts)
-    failures += native.check_extrusion_receipt(docs["print/extrusion.json"], sliced, owners)
+    failures += native.check_extrusion_receipt(
+        docs["print/extrusion.json"],
+        sliced,
+        owners,
+        expected_profile=native.object_value(resolved["expect"]["print_profile"]),
+    )
     with zipfile.ZipFile(io.BytesIO(sliced)) as archive:
         members = archive.namelist()
     failures += _positive_failures(

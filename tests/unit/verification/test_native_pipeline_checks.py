@@ -159,6 +159,8 @@ def test_extrusion_receipt_binds_fresh_archive_and_removable_structure_paths(tmp
     from scripts.verify.native_pipeline_checks import check_extrusion_receipt
     from src.adapters.slicing.toolpath_evidence import inspect_sliced_project
     from src.core.domain.import_limits import ImportLimits
+    from src.core.domain.model_spec import PrintTarget
+    from src.core.domain.slicing import SliceRequest
     from tests.fakes.bambu_bundle import MACHINE_GEOMETRY, write_sliced_output
 
     project = tmp_path / "slice.3mf"
@@ -173,10 +175,22 @@ def test_extrusion_receipt_binds_fresh_archive_and_removable_structure_paths(tmp
             archive.writestr(name, data)
     payload = project.read_bytes()
     receipt = inspect_sliced_project(
-        project, MACHINE_GEOMETRY, ImportLimits(10, 100000, 100000, 100000)
+        project,
+        MACHINE_GEOMETRY,
+        ImportLimits(10, 100000, 100000, 100000),
+        request=SliceRequest.from_target(str(project), str(tmp_path / "out"), PrintTarget()),
     )
     receipt = json.loads(json.dumps(receipt))
     plate = receipt["plates"][0]
+    expected_profile = deepcopy(plate["print_profile"])
+    if fault == "profile-missing":
+        plate.pop("print_profile")
+    if fault == "profile-nozzle":
+        plate["print_profile"]["nozzle_diameter_mm"] = 0.6
+    if fault == "profile-material":
+        plate["print_profile"]["material"] = "ABS"
+    if fault == "profile-support-type":
+        plate["print_profile"]["support"] = 1
     if fault == "stale":
         receipt["source"]["sha256"] = "0" * 64
     if fault == "outside":
@@ -189,4 +203,6 @@ def test_extrusion_receipt_binds_fresh_archive_and_removable_structure_paths(tmp
         plate["bed_support_paths"] = 0
     if fault == "missing-object":
         plate["objects"] = []
-    assert bool(check_extrusion_receipt(receipt, payload, ("lid",))) == (fault is not None)
+    assert bool(
+        check_extrusion_receipt(receipt, payload, ("lid",), expected_profile=expected_profile)
+    ) == (fault is not None)

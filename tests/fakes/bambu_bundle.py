@@ -7,6 +7,7 @@ import zipfile
 from pathlib import Path
 
 MACHINE_GEOMETRY = {
+    "printer_model": "Bambu Lab P2S",
     "printable_area": ["0x0", "256x0", "256x256", "0x256"],
     "printable_height": "256",
     "bed_exclude_area": [],
@@ -83,14 +84,37 @@ def flattened(kind: str) -> dict[str, object]:
 
 def write_sliced_output(path: Path) -> None:
     """Minimal named Bambu output for command-adapter tests; real geometry is tested separately."""
+    settings: dict[str, object] = {
+        "printer_model": "Bambu Lab P2S",
+        "nozzle_diameter": ["0.4"],
+        "filament_type": ["PLA"],
+        "layer_height": "0.2",
+        "enable_support": "1",
+        "brim_width": "3",
+    }
+    for kind in ("machine", "process", "filament"):
+        profile = path.parent / (kind + ".json")
+        if profile.exists():
+            values = json.loads(profile.read_text())
+            settings.update({key: values[key] for key in settings if key in values})
+    header = (
+        "; CONFIG_BLOCK_START\n"
+        + "\n".join(
+            "; " + key + " = " + str(value[0] if isinstance(value, list) else value)
+            for key, value in settings.items()
+        )
+        + "\n; CONFIG_BLOCK_END\n"
+    )
     with zipfile.ZipFile(path, "w") as archive:
+        archive.writestr("Metadata/project_settings.config", json.dumps(settings))
         archive.writestr(
             "Metadata/model_settings.config",
             '<config><object id="2"><metadata key="name" value="lid"/></object><plate><metadata key="plater_id" value="1"/><model_instance><metadata key="object_id" value="2"/><metadata key="instance_id" value="0"/><metadata key="identify_id" value="8"/></model_instance></plate></config>',
         )
         archive.writestr(
             "Metadata/plate_1.gcode",
-            "\n".join(
+            header
+            + "\n".join(
                 (
                     "G90",
                     "M83",

@@ -87,3 +87,44 @@ def test_same_frame_surface_guard_rejects_repositioning_and_preserves_rounding_b
     shifted = deepcopy(source())
     shifted["vertices"] = [(x + 0.000001, y, z) for x, y, z in POINTS]
     assert require_same_oriented_surface(source(), shifted) < 0.00001
+
+
+def close_corner_surface():
+    return {
+        "vertices": [(0, 0, 0), (0, 0.000004, 0), (3, 0, 0), (0, 0, 5), (1, 0, 1)],
+        "faces": [(0, 2, 1), (0, 1, 3), (1, 2, 3), (0, 3, 4), (3, 2, 4), (2, 0, 4)],
+    }
+
+
+@pytest.mark.parametrize("same_frame", [False, True])
+def test_topology_disambiguates_near_vertices_without_welding_or_relaxing_distance(same_frame):
+    from src.verification.mesh_binding import require_same_oriented_surface
+
+    original = close_corner_surface()
+    other = deepcopy(original)
+    for index in (0, 1):
+        x, y, z = other["vertices"][index]
+        other["vertices"][index] = (x, y + 0.000006, z)
+    before = deepcopy(other)
+    error = (
+        require_same_oriented_surface(original, other)
+        if same_frame
+        else bind_axis_frame(original, other).maximum_error_mm
+    )
+    assert error == pytest.approx(0.000006)
+    assert original == close_corner_surface() and other == before
+    other["vertices"][0] = (0, 0.00002, 0)
+    with pytest.raises(ValueError):
+        require_same_oriented_surface(original, other)
+
+
+def test_unresolved_nearby_correspondences_are_not_guessed():
+    from src.verification.mesh_binding import require_same_oriented_surface
+
+    original = {"vertices": close_corner_surface()["vertices"][:4], "faces": FACES}
+    other = deepcopy(original)
+    for index in (0, 1):
+        x, y, z = other["vertices"][index]
+        other["vertices"][index] = (x, y + 0.000006, z)
+    with pytest.raises(ValueError):
+        require_same_oriented_surface(original, other)

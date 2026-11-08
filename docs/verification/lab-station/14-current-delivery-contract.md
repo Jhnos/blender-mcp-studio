@@ -18,7 +18,7 @@ Population: 每次由共用 ArtifactCatalog 擷取的目前 ModelSpec、完整�
 | C08 | LCD與電路空間依實際板件／接頭／線材尺寸裝配，探頭夾持及幫浦／微壓／pH前端／供電接口可固定；佔位包絡不當成真實硬體 | product | yes | behavior | — |
 | C09 | 全部同身份STL完成並通過幾何檢查後，才用同一組零件衍生3MF；保存全件擺位與有向表面，不跳過或替換零件 | voc | yes | behavior | artifact:scripts/verify/native_pipeline_verify_real.py::positive; artifact:scripts/verify/native_pipeline_checks.py::check_slice_inventory |
 | C10 | 單盤新切片包含全部具名原件沉積及接床路徑、支撐與brim；含線寬及指向圓弧的完整沉積包絡不越界 | product | yes | behavior | artifact:scripts/verify/native_pipeline_checks.py::check_extrusion_receipt |
-| C11 | 實際使用PLA、0.4 mm噴嘴及0.2 mm模型層高，設定穿過全部邊界並在新產物一致；不以支撐插入層誤判模型層高 | product | yes | behavior | — |
+| C11 | 實際使用PLA、0.4 mm噴嘴及0.2 mm模型層高，設定穿過全部邊界並在新產物一致；不以支撐插入層誤判模型層高 | product | yes | behavior | artifact:src/adapters/slicing/toolpath_evidence.py::inspect_sliced_project; artifact:scripts/verify/native_pipeline_checks.py::check_extrusion_receipt |
 | C12 | 只拆支撐與brim即可裝配／活動／鎖定；不鑽孔、研磨或修整配合面，且支撐移除不破壞孔、齒面、插銷及止扣 | voc | yes | behavior | — |
 | C13 | 探頭保持力、關節鎖定、臂件與鉸鍊強度、層向風險及抗傾倒以實際材料／負載證據驗證，不把水密或固定姿態當承載資格 | engineering | yes | behavior | — |
 
