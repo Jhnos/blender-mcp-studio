@@ -4,12 +4,17 @@ The slicers run with ``--arrange 0``, so a plate laid out for a larger bed is re
 slicer itself (OrcaSlicer 2.4.2 exits -52 with one log line). This module lets the adapter say
 why before any slicer starts. The extent is every mesh vertex of every build item, through the
 item's transform and any ``components`` transforms, so it is exact for rotated parts too.
-Only the root model part (``3D/3dmodel.model``) is read; a component that points at another
-part (``p:path``, production extension) cannot be measured here and raises ``PlateExtentError``.
+The root model part (``3D/3dmodel.model``) is read first. A component carrying the production
+extension ``p:path`` (the standard Bambu/Orca project layout: ``/3D/Objects/object_N.model``)
+is resolved inside the same archive, its ``objectid`` looked up in that part and its transform
+composed as for an in-part component. The path loses one leading ``/``; ``..`` segments,
+backslashes, a missing part or a suffix other than ``.model`` raise ``PlateExtentError``.
 
-Hardening (the input can come from a remote MCP caller; stdlib only, no new dependency):
-the model part is read once with a bounded read of at most ``MAX_MODEL_BYTES`` + 1 (and its
-declared size is checked first), so a zip bomb cannot inflate past the cap. A model that is not
+Hardening (the input can come from a remote MCP caller; stdlib only, no new dependency).
+Every part read (root and referenced) gets the checks below, each part is parsed at most once,
+and ONE cumulative budget of ``MAX_MODEL_BYTES`` covers the root plus all parts. Each read is a
+bounded read of at most the remaining budget + 1 (the declared size is checked first), so a zip
+bomb cannot inflate past the cap. A model that is not
 UTF-8 (a UTF-16/UTF-32 byte-order mark, or an XML declaration naming another ``encoding``) is
 refused first, because the byte-level DTD check below only holds for an ASCII-compatible
 encoding: a UTF-16 ``<!ENTITY`` would not match it. Then any ``<!DOCTYPE`` or ``<!ENTITY``
@@ -71,9 +76,11 @@ def _compose(inner: Matrix, outer: Matrix) -> Matrix:
     return (*rows[0], *rows[1], *rows[2], *shift)
 
 
-class _Model:
+class _Part:
+    """One parsed ``.model`` part: its objects, and (root only) its build items."""
+
     def __init__(self, root: ElementTree.Element) -> None:
-        self._objects = {
+        self.objects = {
             obj.get("id"): obj for obj in root.iter(f"{_CORE}object") if obj.get("id") is not None
         }
         self.items = [
@@ -81,10 +88,57 @@ class _Model:
             for item in root.iter(f"{_CORE}item")
         ]
 
+
+class _Archive:
+    """Reads and parses model parts of one 3MF under ONE cumulative byte budget."""
+
+    def __init__(self, archive: zipfile.ZipFile, name: str, cap: int) -> None:
+        self._zip, self._name, self._cap, self._left = archive, name, cap, cap
+        self._parts: dict[str, _Part] = {}
+
+    def part(self, member: str) -> _Part:
+        if member not in self._parts:
+            self._parts[member] = _Part(ElementTree.fromstring(self._read(member)))
+        return self._parts[member]
+
+    def resolve(self, production_path: str) -> str:
+        """The archive member a ``p:path`` names; refuses escapes, odd suffixes, absent parts."""
+        member = production_path[1:] if production_path.startswith("/") else production_path
+        if (
+            "\\" in member
+            or ".." in member.split("/")
+            or not member.endswith(".model")
+            or member not in self._zip.namelist()
+        ):
+            raise PlateExtentError(f"{self._name}: component part is not a model in the archive")
+        return member
+
+    def _read(self, member: str) -> bytes:
+        """One part, bounded by what is left of the budget; refuses non-UTF-8 and any DTD."""
+        if self._zip.getinfo(member).file_size > self._left:
+            raise PlateExtentError(f"{self._name}: {member} exceeds {self._cap} B uncompressed")
+        with self._zip.open(member) as handle:
+            data = handle.read(self._left + 1)  # a false declared size cannot exceed it either
+        if len(data) > self._left:
+            raise PlateExtentError(f"{self._name}: {member} exceeds {self._cap} B uncompressed")
+        self._left -= len(data)
+        declared = _DECLARED.match(data)
+        if (
+            data.startswith(_WIDE_BOMS)
+            or b"\x00" in data  # UTF-16/32 even without a BOM; never legal in UTF-8 XML
+            or (declared is not None and declared.group(1).lower() != b"utf-8")
+        ):
+            raise PlateExtentError(f"{self._name}: {member} is not UTF-8; refused")
+        if _DTD.search(data):
+            raise PlateExtentError(
+                f"{self._name}: {member} declares a DTD (DOCTYPE/ENTITY); refused"
+            )
+        return data
+
     def points(
-        self, object_id: str | None, m: Matrix, depth: int = 0
+        self, part: _Part, object_id: str | None, m: Matrix, depth: int = 0
     ) -> Iterator[tuple[float, float]]:
-        obj = self._objects.get(object_id)
+        obj = part.objects.get(object_id)
         if obj is None or depth > 16:
             raise ValueError(f"build references unknown or cyclic object {object_id!r}")
         for vertex in obj.iter(f"{_CORE}vertex"):
@@ -94,44 +148,26 @@ class _Model:
                 x * m[1] + y * m[4] + z * m[7] + m[10],
             )
         for component in obj.iter(f"{_CORE}component"):
-            if any(key.endswith("}path") for key in component.attrib):
-                raise ValueError("component in another model part (production extension)")
+            target = part
+            for key, value in component.attrib.items():
+                if key.endswith("}path"):
+                    target = self.part(self.resolve(value))
             inner = _matrix(component.get("transform"))
-            yield from self.points(component.get("objectid"), _compose(inner, m), depth + 1)
-
-
-def _model_bytes(path: Path, cap: int) -> bytes:
-    """The root model part, read once and bounded; refuses oversize and any DTD."""
-    with zipfile.ZipFile(path) as archive:
-        if archive.getinfo(_MODEL).file_size > cap:
-            raise PlateExtentError(f"{path.name}: {_MODEL} exceeds {cap} B uncompressed")
-        with archive.open(_MODEL) as member:
-            data = member.read(cap + 1)  # a false declared size cannot exceed the cap either
-    if len(data) > cap:
-        raise PlateExtentError(f"{path.name}: {_MODEL} exceeds {cap} B uncompressed")
-    declared = _DECLARED.match(data)
-    if (
-        data.startswith(_WIDE_BOMS)
-        or b"\x00" in data  # UTF-16/32 even without a BOM; never legal in UTF-8 XML
-        or (declared is not None and declared.group(1).lower() != b"utf-8")
-    ):
-        raise PlateExtentError(f"{path.name}: {_MODEL} is not UTF-8; refused")
-    if _DTD.search(data):
-        raise PlateExtentError(f"{path.name}: {_MODEL} declares a DTD (DOCTYPE/ENTITY); refused")
-    return data
+            yield from self.points(target, component.get("objectid"), _compose(inner, m), depth + 1)
 
 
 def plate_extent(path: Path, *, max_model_bytes: int = MAX_MODEL_BYTES) -> Extent:
     """XY bounding box of every placed vertex, in millimetres."""
     try:
-        root = ElementTree.fromstring(_model_bytes(path, max_model_bytes))
-        model = _Model(root)
-        xs: list[float] = []
-        ys: list[float] = []
-        for object_id, matrix in model.items:
-            for x, y in model.points(object_id, matrix):
-                xs.append(x)
-                ys.append(y)
+        with zipfile.ZipFile(path) as archive:
+            reader = _Archive(archive, path.name, max_model_bytes)
+            root = reader.part(_MODEL)
+            xs: list[float] = []
+            ys: list[float] = []
+            for object_id, matrix in root.items:
+                for x, y in reader.points(root, object_id, matrix):
+                    xs.append(x)
+                    ys.append(y)
     except OSError as exc:  # str(OSError) carries the absolute path; strerror does not
         raise PlateExtentError(
             f"cannot measure the layout of {path.name}: {exc.strerror or type(exc).__name__}"

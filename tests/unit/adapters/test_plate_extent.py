@@ -256,3 +256,137 @@ def test_bed_size_is_none_when_height_or_area_is_missing_or_unreadable() -> None
     assert bed_size({"printable_area": area}) is None
     assert bed_size({"printable_area": area, "printable_height": "tall"}) is None
     assert bed_size({"printable_height": "100"}) is None
+
+
+# --- production extension: components that point at another model part (Bambu layout) ---
+
+_CORE_NS = "http://schemas.microsoft.com/3dmanufacturing/core/2015/02"
+_PROD_NS = "http://schemas.microsoft.com/3dmanufacturing/production/2015/06"
+
+
+def _part(object_id: int, size: float, body: str = "") -> str:
+    return (
+        f'<model xmlns="{_CORE_NS}"><resources><object id="{object_id}"><mesh><vertices>'
+        f'<vertex x="0" y="0" z="0"/><vertex x="{size}" y="{size}" z="1"/></vertices></mesh>'
+        f"</object></resources>{body}</model>"
+    )
+
+
+def _root(*components: str) -> str:
+    return (
+        f'<model xmlns="{_CORE_NS}" xmlns:p="{_PROD_NS}"><resources>'
+        f'<object id="9"><components>{"".join(components)}</components></object></resources>'
+        '<build><item objectid="9"/></build></model>'
+    )
+
+
+def _production_3mf(path: Path, root: str, parts: dict[str, str]) -> Path:
+    import zipfile
+
+    with zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as archive:
+        archive.writestr("3D/3dmodel.model", root)
+        for name, text in parts.items():
+            archive.writestr(name, text)
+    return path
+
+
+def test_production_components_resolve_in_other_parts(tmp_path: Path) -> None:
+    root = _root(
+        '<component p:path="/3D/Objects/object_1.model" objectid="1"/>',
+        '<component p:path="/3D/Objects/object_2.model" objectid="2"'
+        ' transform="1 0 0 0 1 0 0 0 1 100 50 0"/>',
+    )
+    path = _production_3mf(
+        tmp_path / "prod.3mf",
+        root,
+        {"3D/Objects/object_1.model": _part(1, 4), "3D/Objects/object_2.model": _part(2, 6)},
+    )
+    assert plate_extent(path) == pytest.approx((0, 0, 106, 56))
+
+
+@pytest.mark.parametrize(
+    "bad",
+    ["/3D/../secret.model", "/3D" + chr(92) + "o.model", "/3D/Objects/o.xml"],
+)
+def test_production_path_escape_or_bad_suffix_is_refused(tmp_path: Path, bad: str) -> None:
+    root = _root(f'<component p:path="{bad}" objectid="1"/>')
+    path = _production_3mf(tmp_path / "esc.3mf", root, {"3D/Objects/o.xml": _part(1, 4)})
+    with pytest.raises(PlateExtentError, match="esc.3mf"):
+        plate_extent(path)
+
+
+def test_production_missing_part_is_refused(tmp_path: Path) -> None:
+    root = _root('<component p:path="/3D/Objects/nope.model" objectid="1"/>')
+    with pytest.raises(PlateExtentError, match="gone.3mf"):
+        plate_extent(_production_3mf(tmp_path / "gone.3mf", root, {}))
+
+
+def test_production_part_with_dtd_is_refused(tmp_path: Path) -> None:
+    root = _root('<component p:path="/3D/Objects/o.model" objectid="1"/>')
+    path = _production_3mf(
+        tmp_path / "dtd.3mf", root, {"3D/Objects/o.model": "<!DOCTYPE x>" + _part(1, 4)}
+    )
+    with pytest.raises(PlateExtentError, match="dtd.3mf.*DTD"):
+        plate_extent(path)
+
+
+def test_production_cumulative_budget_is_refused(tmp_path: Path) -> None:
+    root = _root(
+        '<component p:path="/3D/Objects/a.model" objectid="1"/>',
+        '<component p:path="/3D/Objects/b.model" objectid="2"/>',
+    )
+    parts = {"3D/Objects/a.model": _part(1, 4), "3D/Objects/b.model": _part(2, 4)}
+    path = _production_3mf(tmp_path / "sum.3mf", root, parts)
+    each = max(len(text.encode()) for text in parts.values())
+    cap = len(root.encode()) + each + each // 2  # each part alone fits; the sum does not
+    with pytest.raises(PlateExtentError, match="sum.3mf.*exceeds"):
+        plate_extent(path, max_model_bytes=cap)
+    assert plate_extent(path) == pytest.approx((0, 0, 4, 4))
+
+
+def test_production_part_is_parsed_once(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    import zipfile
+
+    root = _root(
+        '<component p:path="/3D/Objects/a.model" objectid="1"/>',
+        '<component p:path="/3D/Objects/a.model" objectid="1"'
+        ' transform="1 0 0 0 1 0 0 0 1 10 0 0"/>',
+    )
+    path = _production_3mf(tmp_path / "once.3mf", root, {"3D/Objects/a.model": _part(1, 4)})
+    opened: list[str] = []
+    real_open = zipfile.ZipFile.open
+
+    def spy(self: zipfile.ZipFile, name: str, *a: object, **k: object) -> object:
+        opened.append(str(name))
+        return real_open(self, name, *a, **k)  # type: ignore[arg-type]
+
+    monkeypatch.setattr(zipfile.ZipFile, "open", spy)
+    assert plate_extent(path) == pytest.approx((0, 0, 14, 4))
+    assert opened.count("3D/Objects/a.model") == 1
+
+
+def test_production_cross_part_cycle_is_refused(tmp_path: Path) -> None:
+    root = _root('<component p:path="/3D/Objects/a.model" objectid="1"/>')
+    loop = (
+        f'<model xmlns="{_CORE_NS}" xmlns:p="{_PROD_NS}"><resources><object id="1"><components>'
+        '<component p:path="/3D/Objects/a.model" objectid="1"/></components></object>'
+        "</resources></model>"
+    )
+    path = _production_3mf(tmp_path / "loop.3mf", root, {"3D/Objects/a.model": loop})
+    with pytest.raises(PlateExtentError, match="loop.3mf"):
+        plate_extent(path)
+
+
+_V92_NAME = Path("models") / "lab-station-v92" / "P2S-PLA-76件單盤-已切片-v92.3mf"
+_V92 = next(
+    (p / _V92_NAME for p in Path(__file__).resolve().parents if (p / _V92_NAME).is_file()), None
+)
+
+
+@pytest.mark.skipif(_V92 is None, reason="v92 deliverable absent on this host")
+def test_plate_extent_real_v92_production_layout_fits_p2s() -> None:
+    assert _V92 is not None
+    extent = plate_extent(_V92)
+    print(f"v92 extent: {extent}")
+    min_x, min_y, max_x, max_y = extent
+    assert 0 <= min_x < max_x <= 256 and 0 <= min_y < max_y <= 256
