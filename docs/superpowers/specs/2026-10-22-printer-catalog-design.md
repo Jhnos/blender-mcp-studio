@@ -79,3 +79,16 @@
   - v78 的 69 件 × `creality-k1c-0.4`（新增）
   - 兩道都要 1 盤、manifest 記下實際使用的切片器與版本，並附負向對照：不相容的材料要在送出時被拒絕。
 - 整輪 `scripts/ci.sh --real` 必須不中斷地跑完。
+
+## Addendum 2026-11-09 — rulings during build
+
+建造中做的裁決，以程式碼為準；這裡記下結論與理由，§7 的驗收清單以此為修正。
+
+- **Creality 閘門是 K1 Max，K1C 改當 plate-fit 反例。** v78 的 69 件單盤排版是照 P2S 的 256×256 床排的，放不進 K1C 的 220×220 可列印區域；2026-10-22 實跑時 `creality-k1c-0.4` 被預檢擋下、OrcaSlicer 沒有啟動，`creality-k1-max-0.4`（300×300）rc 0、1 盤（commit `95a654f`）。所以正向閘門用 K1 Max（`contracts/design_pipeline_v78_creality_k1max.json`），同一份 3MF 改指 K1C 當反例，訊息須含 `does not fit creality-k1c-0.4` 與 `220×220`。
+- **spec v2 的 material 也是必填**，跟 printer 一樣沒有預設（`print_target.material is required in spec v2`）。只有 v1 仍由 parser 補上舊值，報告標示 legacy default。
+- **層高規則是機器範圍。** 正好等於 catalog 某個 process 鍵的層高直接用那個 process；其他層高從最近的基礎 process 起算，且必須落在該印表機 machine 設定檔宣告的範圍內（含端點）；machine 沒宣告範圍時只接受 catalog 的精確鍵。超出範圍在 submit 就被拒。
+- **OrcaSlicer 逾時 170 s**＝5 × 34 s：v78 69 件在 `creality-k1-max-0.4` 上兩次實測 33.8 s、34.2 s（2026-10-22，Mac16,10），取整 34 s。MCP `slice_for_print` 的逾時取目錄中所有切片器逾時的最大值（`max_timeout_s`）＋30 s。
+- **plate-fit 預檢。** 啟動切片器前比對 3MF 排版與 machine 設定檔的 `printable_area`；放不下或量不出來就直接 failed 並說明原因，不啟動切片器。
+- **支撐、prime tower、brim 是工作的屬性，每個廠商同一套**（`slice_job.job_process_keys`）：一個工作只有一種材料，所以關掉 prime tower；有支撐時用 `normal(auto)` + `snug`（密集單盤排版用預設／tree 支撐會撞 `CLI_GCODE_PATH_CONFLICTS`）；brim 寬度與 `brim_type` 來自工作（`brim_mm` > 0 為 `outer_only`，否則 `no_brim`）。覆寫檔不再重複這些鍵。
+- **`list_printers` 的欄位**：每台印表機帶 `bed_mm` [寬, 深]、`max_height_mm`、`layer_height_mm`（`{min,max}` 或 `{exact:[...]}`），以及 `slicer` `{id, name, version}`；`id` 是 catalog 的切片器 id，跟 `tool_status` 與套件 manifest 的 `slicer_tool` 同一個值（manifest 本身不變）。
+- **bundle 設定檔讀不到＝不可用。** 切片器裝了但印表機的 bundle 設定檔讀不到（例如 app 更名了設定檔），該印表機列在 `unavailable`，原因是清洗過主機路徑的錯誤訊息；`describe_model_spec` 的 enum 也不列它，跟缺切片器一樣處理。
