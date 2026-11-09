@@ -26,6 +26,7 @@ def job_process_keys(request: SliceRequest) -> dict[str, str]:
     keys = {
         "layer_height": _fmt_mm(request.layer_height_mm),
         "brim_width": _fmt_mm(request.brim_mm),
+        "brim_type": "outer_only" if request.brim_mm > 0 else "no_brim",
         "enable_support": "1" if request.support else "0",
         # A prime/wipe tower only purges between filament changes, and a request carries one
         # material, so one filament profile: no tower. Multi-material support must revisit

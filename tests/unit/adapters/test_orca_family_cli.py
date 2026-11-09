@@ -249,7 +249,7 @@ def test_overrides_file_matches_v80_acceptance() -> None:
     data = _overrides()
     assert data["wall_loops"] == "3"
     assert data["sparse_infill_pattern"] == "gyroid"
-    assert data["enable_prime_tower"] == "0"
+    assert "enable_prime_tower" not in data  # job-derived since 2026-11-09 (slice_job)
     assert data["initial_layer_speed"] == ["20", "20", "20"]
     assert data["initial_layer_infill_speed"] == ["30", "30", "30"]
 
@@ -390,6 +390,7 @@ async def test_no_overrides_for_creality(tmp_path: Path) -> None:
         **flattened("process", K1C_LEAVES),
         "layer_height": "0.2",
         "brim_width": "4.0",
+        "brim_type": "outer_only",  # job-derived: the job has a brim
         "enable_support": "1",
         "enable_prime_tower": "0",  # job-derived: one filament, so no purge tower
         "support_type": "normal(auto)",  # job-derived: support is on by default
