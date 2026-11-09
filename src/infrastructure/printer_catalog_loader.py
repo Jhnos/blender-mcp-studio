@@ -20,7 +20,16 @@ _TOOLS_FIELDS = frozenset(f.name for f in fields(ToolsConfig))
 OVERRIDES_SUBDIR = "slicer-profiles"
 
 _SLICER_KEYS = frozenset(
-    ("id", "name", "binary_key", "profiles_subdir", "license", "error_codes", "install_hint")
+    (
+        "id",
+        "name",
+        "binary_key",
+        "profiles_subdir",
+        "license",
+        "error_codes",
+        "install_hint",
+        "toolpath_inspection",
+    )
 )
 _EXIT_CODE_KEYS = frozenset(("code", "meaning", "name", "hint"))
 _PRINTER_KEYS = frozenset(
@@ -70,6 +79,16 @@ def _text(raw: Mapping[str, object], key: str, where: str) -> str:
     value = _require(raw, key, where)
     if not isinstance(value, str) or not value:
         raise ValueError(f"{where}: {key} must be a non-empty string")
+    return value
+
+
+def _flag(raw: Mapping[str, object], key: str, where: str) -> bool:
+    """A required YAML boolean: present, and exactly ``true`` or ``false`` (no 1, "yes", null)."""
+    if key not in raw:
+        raise ValueError(f"{where}: missing key {key}")
+    value = raw[key]
+    if not isinstance(value, bool):
+        raise ValueError(f"{where}: {key} must be true or false, got {value!r}")
     return value
 
 
@@ -133,6 +152,7 @@ def _slicer(raw: Mapping[str, object], where: str) -> SlicerSpec:
         license=_text(raw, "license", where),
         error_codes=tuple(pairs),
         install_hint=_text(raw, "install_hint", where),
+        toolpath_inspection=_flag(raw, "toolpath_inspection", where),
     )
 
 

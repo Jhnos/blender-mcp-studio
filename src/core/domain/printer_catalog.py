@@ -34,6 +34,9 @@ class SlicerSpec:
     license: str
     error_codes: tuple[ExitCode, ...]
     install_hint: str
+    #: Whether a successful slice is followed by the G-code tool-path inspection
+    #: (``print/extrusion.json``); catalog data, so no code branches on the vendor.
+    toolpath_inspection: bool
 
 
 @dataclass(frozen=True, slots=True)

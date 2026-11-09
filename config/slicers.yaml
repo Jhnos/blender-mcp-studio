@@ -213,6 +213,11 @@ slicers:
         meaning: G-code in wrapping detect area
         hint: "Found G-code in the wrapping detect area. Please make sure the 3mf file can be successfully sliced in the latest Bambu Studio."
     install_hint: Install Bambu Studio, or set BAMBU_STUDIO_BIN to its executable.
+    # After a successful slice, inspect the plate G-code (print/extrusion.json). The inspector
+    # (toolpath_evidence / gcode_paths) reads this slicer's dialect: `; FEATURE:`,
+    # `; LINE_WIDTH:`, `; LAYER_HEIGHT:`, `; CHANGE_LAYER`, `; OBJECT_ID:` and a
+    # CONFIG_BLOCK. While it is on, the job turns arc fitting off (slice_job.job_process_keys).
+    toolpath_inspection: true
   - id: orcaslicer
     name: OrcaSlicer
     binary_key: orcaslicer_bin
@@ -409,3 +414,13 @@ slicers:
         meaning: G-code path in unprintable area
         hint: "Found G-code in unprintable area of multi-extruder printers after slicing. Please make sure the 3mf file can be successfully sliced in the latest Orca Slicer."
     install_hint: Install OrcaSlicer, or set ORCASLICER_BIN to its executable.
+    # Off. One inspection run (2026-11-09) on the saved K1 Max output of OrcaSlicer 2.4.2
+    # (v78 69-part plate, creality-k1-max-0.4, PLA) returned passed=false with "unsupported or
+    # undeclared machine exclusions or extruder offsets": its bundle machine profile gives
+    # bed_exclude_area and extruder_offset as the scalar string "0x0", not a list. Past that,
+    # plate_1.gcode is another annotation dialect: 0 lines of `; FEATURE:`, `; LINE_WIDTH:`,
+    # `; LAYER_HEIGHT:`, `; CHANGE_LAYER`, `; OBJECT_ID:`; instead 96048 `;TYPE:`, 107306
+    # `;WIDTH:`, 12839 `;HEIGHT:`, 5127 `;LAYER_CHANGE`, with objects named by Klipper
+    # EXCLUDE_OBJECT lines. Reading it needs a second G-code dialect and object-label mapping,
+    # which is not a small vendor-neutral change. Turn this on only with that parser.
+    toolpath_inspection: false

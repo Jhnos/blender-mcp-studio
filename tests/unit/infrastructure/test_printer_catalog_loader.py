@@ -19,6 +19,7 @@ slicers:
     license: AGPL-3.0-only
     error_codes: []
     install_hint: install it
+    toolpath_inspection: false
 """
 
 
@@ -212,4 +213,31 @@ def test_float_key_rejected(tmp_path: Path) -> None:
     text = _printer("x").replace("{'0.20': p}", "{0.20: p}")
     cfg = _config(tmp_path, {"a.yaml": text})
     with pytest.raises(ValueError, match="a.yaml: processes key 0.2 must be a string.*quote"):
+        load_printer_catalog(cfg)
+
+
+# ---- tool-path inspection is per-slicer data, never a vendor check in code ----
+
+
+def test_toolpath_inspection_is_declared_per_slicer() -> None:
+    catalog = load_printer_catalog()
+    assert catalog.slicer("bambu-studio").toolpath_inspection is True
+    # OrcaSlicer's G-code dialect is not the one the inspector reads (see slicers.yaml)
+    assert catalog.slicer("orcaslicer").toolpath_inspection is False
+
+
+@pytest.mark.parametrize("value", ['"yes"', "1", "null"])
+def test_toolpath_inspection_must_be_a_boolean(tmp_path: Path, value: str) -> None:
+    cfg = _config(tmp_path, {"a.yaml": _printer("acme-a")})
+    bad = _SLICERS.replace("toolpath_inspection: false", f"toolpath_inspection: {value}")
+    (cfg / "slicers.yaml").write_text(bad, encoding="utf-8")
+    with pytest.raises(ValueError, match="slicers.yaml: toolpath_inspection must be true or false"):
+        load_printer_catalog(cfg)
+
+
+def test_toolpath_inspection_is_required(tmp_path: Path) -> None:
+    cfg = _config(tmp_path, {"a.yaml": _printer("acme-a")})
+    missing = _SLICERS.replace("    toolpath_inspection: false\n", "")
+    (cfg / "slicers.yaml").write_text(missing, encoding="utf-8")
+    with pytest.raises(ValueError, match="slicers.yaml: missing key toolpath_inspection"):
         load_printer_catalog(cfg)
