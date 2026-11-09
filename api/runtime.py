@@ -98,7 +98,7 @@ def build_runtime(env_file: Path | None = None) -> AppRuntime:
     from src.core.use_cases.blender_lease import BlenderLease
     from src.infrastructure.config_loader import default_config_dir
     from src.infrastructure.env_loader import load_env
-    from src.infrastructure.printer_catalog_loader import load_printer_catalog
+    from src.infrastructure.printer_catalog_loader import OVERRIDES_SUBDIR, load_printer_catalog
     from src.infrastructure.tools_config import load_tools_config
     from src.verification.cable_route_cases import registered_suites
 
@@ -127,7 +127,7 @@ def build_runtime(env_file: Path | None = None) -> AppRuntime:
         slicing=OrcaFamilyCli(
             catalog,
             {slicer.id: getattr(tools, slicer.binary_key) for slicer in catalog.slicers},
-            overrides_dir=default_config_dir() / "slicer-profiles",
+            overrides_dir=default_config_dir() / OVERRIDES_SUBDIR,
         ),
         packaging=ManifestPackager(),
         jobs=SQLiteJobStore(tools.design_jobs_db),

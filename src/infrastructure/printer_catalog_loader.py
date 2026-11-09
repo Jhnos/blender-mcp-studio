@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import math
 from collections.abc import Mapping
+from dataclasses import fields
 from pathlib import Path
 
 import yaml
@@ -10,6 +12,12 @@ import yaml
 from src.core.domain.printer_catalog import ExitCode, PrinterCatalog, PrinterProfile, SlicerSpec
 from src.infrastructure.config_loader import default_config_dir as _builtin_dir
 from src.infrastructure.narrowing import as_int, as_mapping, as_sequence
+from src.infrastructure.tools_config import ToolsConfig
+
+#: A slicer's ``binary_key`` must name one of these (the runtime reads it with getattr).
+_TOOLS_FIELDS = frozenset(f.name for f in fields(ToolsConfig))
+#: Printer ``overrides`` files live here, relative to the config dir.
+OVERRIDES_SUBDIR = "slicer-profiles"
 
 _SLICER_KEYS = frozenset(
     ("id", "name", "binary_key", "profiles_subdir", "license", "error_codes", "install_hint")
@@ -77,6 +85,21 @@ def _pairs(raw: Mapping[str, object], key: str, where: str) -> tuple[tuple[str, 
     return tuple((str(k), str(v)) for k, v in mapping.items())
 
 
+def _heights(pairs: tuple[tuple[str, str], ...], where: str) -> tuple[tuple[str, str], ...]:
+    """``processes`` keys are layer heights: each must parse as a positive, finite float."""
+    for key, _ in pairs:
+        try:
+            height = float(key)
+        except ValueError:
+            height = math.nan
+        if not math.isfinite(height) or height <= 0:
+            raise ValueError(
+                f"{where}: processes key '{key}' must be a positive layer height in mm, "
+                "e.g. '0.20'"
+            )
+    return pairs
+
+
 def _slicer(raw: Mapping[str, object], where: str) -> SlicerSpec:
     _known_keys(raw, _SLICER_KEYS, where)
     codes = as_sequence(raw.get("error_codes", []))
@@ -97,10 +120,16 @@ def _slicer(raw: Mapping[str, object], where: str) -> SlicerSpec:
                 str(entry.get("hint", "")),
             )
         )
+    binary_key = _text(raw, "binary_key", where)
+    if binary_key not in _TOOLS_FIELDS:
+        raise ValueError(
+            f"{where}: binary_key '{binary_key}' is not a tools.yaml setting; "
+            f"known: {sorted(_TOOLS_FIELDS)}"
+        )
     return SlicerSpec(
         id=_text(raw, "id", where),
         name=_text(raw, "name", where),
-        binary_key=_text(raw, "binary_key", where),
+        binary_key=binary_key,
         profiles_subdir=_text(raw, "profiles_subdir", where),
         license=_text(raw, "license", where),
         error_codes=tuple(pairs),
@@ -122,7 +151,7 @@ def _printer(raw: Mapping[str, object], where: str) -> PrinterProfile:
         slicer=_text(raw, "slicer", where),
         profile_vendor_dir=_text(raw, "profile_vendor_dir", where),
         machine=_text(raw, "machine", where),
-        processes=_pairs(raw, "processes", where),
+        processes=_heights(_pairs(raw, "processes", where), where),
         filaments=_pairs(raw, "filaments", where),
         bed_type=_text(raw, "bed_type", where),
         overrides=str(overrides) if overrides is not None else None,
@@ -179,6 +208,12 @@ def load_printer_catalog(config_dir: Path | None = None) -> PrinterCatalog:
         if printer.slicer not in slicer_ids:
             raise ValueError(
                 f"{where}: unknown slicer '{printer.slicer}'; known: {sorted(slicer_ids)}"
+            )
+        if printer.overrides is not None and not (
+            base / OVERRIDES_SUBDIR / printer.overrides
+        ).is_file():
+            raise ValueError(
+                f"{where}: overrides '{printer.overrides}' is not a file in {OVERRIDES_SUBDIR}/"
             )
         seen[printer.id] = where
         printers.append(printer)

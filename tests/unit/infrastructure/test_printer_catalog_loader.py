@@ -180,6 +180,34 @@ def test_empty_catalog_rejected(tmp_path: Path) -> None:
         load_printer_catalog(_config(tmp_path, {}))
 
 
+# ---- config errors fail at load, naming the key (final fix F5) ----
+
+
+def test_binary_key_must_name_a_tools_config_field(tmp_path: Path) -> None:
+    cfg = _config(tmp_path, {"a.yaml": _printer("acme-a")})
+    bad = _SLICERS.replace("binary_key: orcaslicer_bin", "binary_key: orca_bin")
+    (cfg / "slicers.yaml").write_text(bad, encoding="utf-8")
+    with pytest.raises(ValueError, match="binary_key 'orca_bin'.*orcaslicer_bin"):
+        load_printer_catalog(cfg)
+
+
+@pytest.mark.parametrize("key", ["fine", "0", "-0.2", "nan"])
+def test_process_keys_must_be_positive_heights(tmp_path: Path, key: str) -> None:
+    text = _printer("acme-a").replace("{'0.20': p}", "{'" + key + "': p}")
+    with pytest.raises(ValueError, match=f"acme/a.yaml: processes key '{key}'"):
+        load_printer_catalog(_config(tmp_path, {"a.yaml": text}))
+
+
+def test_overrides_file_must_exist(tmp_path: Path) -> None:
+    text = _printer("acme-a").replace("overrides: null", "overrides: missing.json")
+    cfg = _config(tmp_path, {"a.yaml": text})
+    with pytest.raises(ValueError, match="acme/a.yaml: overrides 'missing.json'"):
+        load_printer_catalog(cfg)
+    (cfg / "slicer-profiles").mkdir()
+    (cfg / "slicer-profiles" / "missing.json").write_text("{}", encoding="utf-8")
+    assert load_printer_catalog(cfg).printer("acme-a").overrides == "missing.json"
+
+
 def test_float_key_rejected(tmp_path: Path) -> None:
     text = _printer("x").replace("{'0.20': p}", "{0.20: p}")
     cfg = _config(tmp_path, {"a.yaml": text})
