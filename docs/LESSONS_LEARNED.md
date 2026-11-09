@@ -274,6 +274,7 @@
   - 輸出清洗只放在 `DesignPipeline._execute` 與終態 job 更新兩處，MCP 錯誤包裝器是最後一道。
   - 轉接器例外的訊息本身不帶路徑。
   - 測試用真實 `BambuStudioCli`，指向不存在的二進位，掃描 job、報告與 MCP 錯誤裡有沒有 home、`/Users/`、`/private/`、`/var/folders`。
+  - 掃描要涵蓋每個公開／打包的執行檔案的位元組，包含第三方工具的日誌，不只掃結構化輸出（2026-11-09：`print/slicer.log` 與 `00000.log` 含主機路徑，現由 `PathScrubber` 在 `_execute` 的 PRINT 階段後單點改寫，`test_design_log_scrub.py` 守住）。
 
 ### 門檻乘出來的最壞值要回頭看一次，荒謬的推導值代表少了一個上限
 

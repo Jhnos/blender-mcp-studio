@@ -273,7 +273,7 @@ class DesignPipeline:
             for name, step in self._stages.plan(run_id, spec, state, run_dir, native):
                 current = name
                 await self._jobs.update(job_id, status=JobStatus.RUNNING, stage=name)
-                done.append(await self._execute(name, step))
+                done.append(await self._execute(name, step, run_dir))
                 reports.write_report(snapshot())
                 if done[-1].outcome is StageOutcome.FAILED:
                     break
@@ -313,7 +313,7 @@ class DesignPipeline:
                 await self._jobs.update(job_id, status=status, stage=current, error=error)
 
     async def _execute(
-        self, name: StageName, step: Callable[[], Awaitable[StageReport]]
+        self, name: StageName, step: Callable[[], Awaitable[StageReport]], run_dir: Path
     ) -> StageReport:
         try:
             if name in _LEASED:
@@ -325,6 +325,9 @@ class DesignPipeline:
             raise  # A possibly active native callback is not a definitive failed stage.
         except Exception as exc:  # noqa: BLE001 - any stage error is a FAILED stage, not a crash
             report = stages.failed(name, f"{type(exc).__name__}: {exc}")
+        finally:
+            if name is StageName.PRINT:  # the one place slicer logs are scrubbed, pass or fail
+                files.scrub_logs(run_dir / "print", self._scrub)
         if report.message:  # choke point: no stage message leaves with a host path
             report = replace(report, message=await self.clean(report.message))
         return report
