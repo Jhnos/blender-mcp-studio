@@ -53,14 +53,29 @@
     - 兩家實際送進切片器的 process.json 都是：brim_type outer_only、brim 3.0、support snug、prime tower 0。
   - 擴充試驗：只加一個 YAML（Ender-3 V3 Plus）就能用，不必改程式。
 
+- 2026-11-09（併入 main 90af34d 後，分支 HEAD `858a83e`，V01.0U.000）：
+  - 合併 commit `c6b5386`。`BambuStudioCli` 已移除，刀路檢查改由 `OrcaFamilyCli` 依 `slicers.yaml` 的 `toolpath_inspection` 執行。
+    - Orca 關閉。親驗：Orca G-code 有 0 個 `; FEATURE:`、96048 個 `;TYPE:`。
+  - 乾跑找到並已修正三件事：
+    - v92 的 3MF 是 production 格式，盤面檢查讀不了；改為跟著 `p:path` 讀，加上累計位元組上限、遍歷工作量上限（5×72546）、項目數上限（5×94）。v92 範圍 4.8–249.0 × 4.8–255.0 mm。
+    - 可下載的切片 log 含主機路徑（階段 1 起就有，P2S 15 處；整合後 Orca `00000.log` 20 處）。現在打包前在單一處清洗，包含切片器整個 `.app`。
+    - 安全審查兩項 MEDIUM（元件展開耗盡、log 未清切片器目錄）都已修，先 RED 後 GREEN。
+  - 指揮官親驗：
+    - `scripts/ci.sh` 綠。
+    - 臨時 API 乾跑：目前選版 v92（P2S）PASS、K1 Max PASS，兩個負向對照照預期失敗。
+    - 4 個 run 裡含 `/Users/`、`/private/`、`/var/folders`、`/Applications/` 的檔案數為 0。
+
 ### Open failures
 
 - 已評估、刻意延後：
   - 讀不到 bundle 的印表機，submit 時的錯誤用詞（"not sliceable"）跟 list_printers（"bundle profiles cannot be read"）不同，只是措辭。
   - `SliceRequest.printer` 與 `printer_id` 重複。
 - PETG 負向對照只走「不在目錄」路徑；bundle `compatible_printers` 拒絕只有單元測試，沒有真機閘門。
+- `src/core/use_cases/design_pipeline.py` 379/380 行，下次加功能前先拆檔。
+- OrcaSlicer 沒有刀路檢查：要支援，得另寫一個讀 `;TYPE:`／`;WIDTH:`／`;HEIGHT:` 的解析器。
+- 線上正式服務（main V01.0T.00O）仍有 log 含主機路徑的問題，部署本分支後才會修掉。
 
 ### Next step
 
-- 合併到 main（先問使用者）→ `bash deploy/launchd/install.sh all` → 經動態 FQDN 跑兩家閘門 → 整輪 `scripts/ci.sh --real` → push → checkpoint 腳本 → 清 worktree。
+- 使用者已同意（2026-11-09，選項 A）：等另一個 session 把它在 main 上的修改 commit、push 後，把 main 快轉到本分支 → `bash deploy/launchd/install.sh all` → 經動態 FQDN 跑整輪 `scripts/ci.sh --real` → push → checkpoint 腳本 → 清 worktree。
 - 之後等使用者驗收，再移到 `archive/`。

@@ -23,6 +23,11 @@
 - 層高可以是機器範圍內的任何值，切片時取最近的基礎 process。
 - 支撐、prime tower、brim 改由 job 決定，兩家行為一致：單一耗材就關 prime tower，支撐用 normal＋snug，brim 依 `brim_mm`。
 - 併入 main（至 V01.0T.00O）：刀路檢查（`print/extrusion.json`）改由不分廠牌的 `OrcaFamilyCli` 在切片成功後執行，是否檢查由 `config/slicers.yaml` 每個切片器的 `toolpath_inspection` 決定（Bambu Studio 開；OrcaSlicer 關，原因寫在該檔註解）。`BambuStudioCli` 已移除。
+- 切片前的盤面檢查改讀 Bambu 專案格式的 3MF（零件分在 `3D/Objects/*.model`），讓 v92 目前選版可以切片。所有讀進來的零件共用一個位元組上限。另外依實測加上兩個上限，擋掉元件層層展開的資源耗盡：遍歷工作量上限 5 × 72,546，壓縮檔項目上限 5 × 94。
+
+#### Security
+
+- 可下載、會打包的切片 log 不再含主機路徑。這個問題自階段 1 就有：P2S `slicer.log` 有 15 處。打包前在同一個地方改寫 `print/*.log`，家目錄、暫存目錄、artifact 根目錄和切片器整個 `.app` 都會清掉；成功、失敗兩條路徑都有測試，下載檔的內容也會掃描。
 
 ### V01.0T.00O — 工作站驗證保留指定姿態
 
