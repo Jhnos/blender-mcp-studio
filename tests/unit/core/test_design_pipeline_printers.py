@@ -6,7 +6,6 @@ import pytest
 
 from src.core.domain.model_spec import ModelSpecError
 from src.core.domain.packaging import ToolUse
-from src.core.use_cases import print_targets
 from tests.fakes.design_ports import FakeSlicing
 from tests.unit.core.test_design_pipeline import _payload, _rig, _run
 
@@ -47,11 +46,6 @@ async def test_submit_rejects_a_printer_whose_slicer_is_not_usable(tmp_path):
     with pytest.raises(ModelSpecError, match=K1C):
         await rig.pipeline.submit(payload)
     assert rig.jobs.records == {}
-
-
-def test_printer_id_for_translates_only_the_v1_name() -> None:
-    assert print_targets.printer_id_for("bambu-p2s") == P2S
-    assert print_targets.printer_id_for(K1C) == K1C
 
 
 async def test_describe_spec_lists_usable_printers(tmp_path):

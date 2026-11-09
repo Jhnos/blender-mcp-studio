@@ -257,6 +257,14 @@ def _parse_mechanism(payload: Mapping[str, object]) -> MechanismChecks:
     return MechanismChecks(suites=checked)
 
 
+def parse_print_target(payload: Mapping[str, object]) -> PrintTarget:
+    """Only the spec's ``print_target``, read exactly as ``parse_model_spec`` reads it."""
+    version = payload.get("spec_version")
+    if not isinstance(version, str) or version not in SUPPORTED_SPEC_VERSIONS:
+        raise ModelSpecError(f"unsupported spec_version: {version!r}")
+    return _parse_print_target(payload, version)[0]
+
+
 def parse_model_spec(
     payload: Mapping[str, object], *, artifact_roots: tuple[Path, ...]
 ) -> ModelSpec:

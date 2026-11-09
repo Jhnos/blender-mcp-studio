@@ -56,8 +56,12 @@ from src.adapters.slicing.slice_job import (
     failure,
     job_process_keys,
     keep_datadir_logs,
+    run_logged,
+    slicer_argv,
     with_notes,
 )
+from src.adapters.slicing.slice_targets import check_target as target_check
+from src.adapters.slicing.slice_targets import process_key
 from src.core.domain.packaging import ToolUse
 from src.core.domain.printer_catalog import (
     PrinterCatalog,
@@ -66,7 +70,6 @@ from src.core.domain.printer_catalog import (
     UnknownPrinterError,
 )
 from src.core.domain.slicing import (
-    LayerHeightError,
     MachineFacts,
     SliceRequest,
     SliceResult,
@@ -82,36 +85,6 @@ SLICE_TIMEOUT_S: dict[str, float] = {
 }
 
 Runner = Callable[..., "subprocess.CompletedProcess[str]"]
-
-
-def _process_key(printer: PrinterProfile, layer_height_mm: float) -> str:
-    """The printer's process profile nearest the requested layer height (a tie takes the lower).
-
-    The request's ``layer_height`` is written over the profile either way, so a 0.28 mm
-    request on a printer that offers only "0.20" starts from that profile (v80 behaviour).
-    """
-    keys = [key for key, _ in printer.processes]
-    exact = f"{layer_height_mm:.2f}"
-    if exact in keys:
-        return exact
-    return min(keys, key=lambda key: (round(abs(float(key) - layer_height_mm), 9), float(key)))
-
-
-def _require_in_range(
-    printer: PrinterProfile, layer_height_mm: float, bounds: tuple[float, float] | None
-) -> None:
-    if bounds is None:
-        keys = ", ".join(key for key, _ in printer.processes)
-        raise LayerHeightError(
-            f"layer_height_mm {layer_height_mm:g} is not a process of {printer.id} and its "
-            f"machine profile declares no layer-height range; allowed: {keys}"
-        )
-    low, high = bounds
-    if not low - 1e-9 <= layer_height_mm <= high + 1e-9:
-        raise LayerHeightError(
-            f"layer_height_mm {layer_height_mm:g} is outside {printer.id}'s range "
-            f"{low:g}–{high:g} mm"
-        )
 
 
 class OrcaFamilyCli:
@@ -212,22 +185,13 @@ class OrcaFamilyCli:
         return self._slicer_of(printer_id).name
 
     def check_target(self, printer_id: str, layer_height_mm: float, material: str) -> TargetCheck:
-        """Submit-time check: profiles exist, are compatible, and the layer height is printable.
-
-        A height with an exact ``processes`` key needs no range. Any other height starts from
-        the nearest base process and must lie inside the machine profile's declared range; a
-        machine that declares none accepts exact keys only.
-        """
+        """Submit-time check: profiles exist, are compatible, the height is printable."""
         printer = self._catalog.printer(printer_id)
         slicer = self._catalog.slicer(printer.slicer)
-        layer = _process_key(printer, layer_height_mm)
-        profiles = self._bundle_profiles(
-            slicer, self._usable_binary(slicer), printer, layer, material
-        )
-        if f"{layer_height_mm:.2f}" != layer:
-            _require_in_range(printer, layer_height_mm, layer_range(profiles["machine"]))
-        notes = check_compatible(profiles, printer.machine)  # IncompatibleProfileError
-        return TargetCheck(notes, dict(printer.processes)[layer])
+        layer = process_key(printer, layer_height_mm)
+        binary = self._usable_binary(slicer)
+        profiles = self._bundle_profiles(slicer, binary, printer, layer, material)
+        return target_check(printer, layer_height_mm, layer, profiles)
 
     def _write_profiles(
         self, profiles: dict[str, dict[str, object]], printer: PrinterProfile, request: SliceRequest
@@ -252,46 +216,6 @@ class OrcaFamilyCli:
         ):
             (out / f"{kind}.json").write_text(json.dumps(data, indent=2), encoding="utf-8")
 
-    @staticmethod
-    def _argv(
-        binary: Path, printer: PrinterProfile, request: SliceRequest, export: str, datadir: str
-    ) -> list[str]:
-        out = Path(request.output_dir)
-        return [
-            str(binary),
-            "--datadir",
-            datadir,
-            "--debug",
-            "3",  # info: at 2 a failed OrcaSlicer run logs only "run found error, exit"
-            "--load-settings",
-            f"{out / 'machine.json'};{out / 'process.json'}",
-            "--load-filaments",
-            str(out / "filament.json"),
-            "--curr-bed-type",
-            printer.bed_type,
-            "--arrange",
-            "0",
-            "--orient",
-            "0",
-            "--slice",
-            "0",
-            "--outputdir",
-            str(out),
-            "--export-3mf",
-            export,
-            "--export-settings",
-            str(out / "effective-settings.json"),
-            request.input_3mf,
-        ]
-
-    def _run(
-        self, argv: list[str], log_path: Path, timeout_s: float
-    ) -> subprocess.CompletedProcess[str]:
-        with log_path.open("w", encoding="utf-8") as log:
-            return self._runner(
-                argv, stdout=log, stderr=subprocess.STDOUT, text=True, timeout=timeout_s
-            )
-
     def _target(self, request: SliceRequest) -> PrinterProfile | str:
         """The catalog printer, or why the request cannot be sliced (checked before the binary)."""
         try:
@@ -315,7 +239,7 @@ class OrcaFamilyCli:
         slicer = self._catalog.slicer(printer.slicer)
         binary = self._usable_binary(slicer)
         out.mkdir(parents=True, exist_ok=True)
-        layer = _process_key(printer, request.layer_height_mm)
+        layer = process_key(printer, request.layer_height_mm)
         profiles = self._bundle_profiles(slicer, binary, printer, layer, request.material)
         try:
             notes = check_compatible(profiles, printer.machine)
@@ -333,9 +257,9 @@ class OrcaFamilyCli:
         (out / "effective-settings.json").unlink(missing_ok=True)
         timeout_s = self._timeouts[slicer.id]
         with tempfile.TemporaryDirectory(prefix=f"{slicer.id}-data-") as datadir:
-            argv = self._argv(binary, printer, request, export, datadir)
+            argv = slicer_argv(binary, printer, request, export, datadir)
             try:
-                proc = await asyncio.to_thread(self._run, argv, log_path, timeout_s)
+                proc = await asyncio.to_thread(run_logged, self._runner, argv, log_path, timeout_s)
             except subprocess.TimeoutExpired:
                 keep_datadir_logs(Path(datadir), out)
                 msg = failure(f"slicer did not finish within {timeout_s:g}s", notes, log_path)

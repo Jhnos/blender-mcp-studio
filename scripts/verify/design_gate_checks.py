@@ -13,8 +13,7 @@ from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
 from pathlib import Path
 
 from src.adapters.slicing.orca_family_cli import SLICE_TIMEOUT_S
-from src.core.domain.model_spec import LEGACY_V1_PRINTER
-from src.core.use_cases import print_targets
+from src.core.domain.model_spec import ModelSpecError, parse_print_target
 from src.infrastructure.narrowing import as_mapping, as_sequence
 from src.infrastructure.printer_catalog_loader import load_printer_catalog
 
@@ -35,13 +34,18 @@ class GateError(RuntimeError):
 def poll_budget_s(spec: Mapping[str, object]) -> float:
     """The slice deadline of the slicer the contract spec's printer uses, plus the margin.
 
-    The printer resolves through the catalog (a spec-v1 name maps to its catalog id), so a
-    Creality contract gets the OrcaSlicer budget and the v78 P2S contract Bambu Studio's.
+    A contract must name its printer. The parser reads the target (a spec-v1 name becomes its
+    catalog id), so a Creality contract gets the OrcaSlicer budget and the v78 P2S contract
+    Bambu Studio's.
     """
     target = as_mapping(spec.get("print_target")) or {}
-    printer = str(target.get("printer", LEGACY_V1_PRINTER))  # contract specs are v1 today
-    catalog = load_printer_catalog()
-    slicer = catalog.printer(print_targets.printer_id_for(printer)).slicer
+    if "printer" not in target:
+        raise GateError("contract spec has no print_target.printer; a gate never picks one")
+    try:
+        printer = parse_print_target(spec).printer
+    except ModelSpecError as exc:
+        raise GateError(f"contract spec print_target: {exc}") from exc
+    slicer = load_printer_catalog().printer(printer).slicer
     return SLICE_TIMEOUT_S[slicer] + POLL_MARGIN_S
 
 

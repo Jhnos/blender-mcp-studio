@@ -9,8 +9,8 @@ import src.adapters.slicing.orca_family_cli as cli_module
 from src.adapters.slicing.bundle_profiles import (
     IncompatibleProfileError,
     UnknownProfileError,
+    app_bundle,
     check_compatible,
-    profiles_root,
     resolve_printer_profiles,
 )
 from src.adapters.slicing.orca_family_cli import SLICE_TIMEOUT_S, OrcaFamilyCli
@@ -52,10 +52,9 @@ def test_vendored_full_profiles_are_gone_and_leaves_live_in_the_printer_yaml() -
     )
 
 
-def test_profiles_root_is_derived_from_the_binary(tmp_path: Path) -> None:
-    binary = make_bundle(tmp_path)
-    assert profiles_root(binary) == tmp_path / "Fake.app" / "Contents" / "Resources" / "profiles"
-    assert profiles_root(tmp_path / "bare-binary") is None
+def test_app_bundle_is_derived_from_the_binary(tmp_path: Path) -> None:
+    assert app_bundle(make_bundle(tmp_path)) == tmp_path / "Fake.app"
+    assert app_bundle(tmp_path / "bare-binary") is None
 
 
 def _p2s() -> PrinterProfile:
@@ -64,8 +63,9 @@ def _p2s() -> PrinterProfile:
 
 @pytest.mark.parametrize("kind", sorted(LEAVES))
 def test_flatten_follows_two_level_inherits_child_wins(tmp_path: Path, kind: str) -> None:
-    root = profiles_root(make_bundle(tmp_path))
-    assert root is not None
+    bundle = app_bundle(make_bundle(tmp_path))
+    assert bundle is not None
+    root = bundle / load_printer_catalog().slicer("bambu-studio").profiles_subdir
     assert resolve_printer_profiles(root, _p2s(), "0.20", "PLA")[kind] == flattened(kind)
 
 

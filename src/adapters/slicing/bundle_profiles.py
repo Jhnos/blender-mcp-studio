@@ -48,11 +48,6 @@ def app_bundle(binary: Path) -> Path | None:
     return next((parent for parent in binary.parents if parent.suffix == ".app"), None)
 
 
-def profiles_root(binary: Path) -> Path | None:
-    bundle = app_bundle(binary)
-    return None if bundle is None else bundle / "Contents" / "Resources" / "profiles"
-
-
 def _read(path: Path) -> dict[str, object] | None:
     try:
         return as_str_keyed(json.loads(path.read_text(encoding="utf-8")), context=path.name)

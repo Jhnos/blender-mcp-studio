@@ -1,13 +1,16 @@
-"""Per-job slicing rules shared by every slicer: request-derived process keys, readable failure
-messages, and the diagnostics kept from a failed run. No subprocess here."""
+"""Per-job slicing rules shared by every slicer: request-derived process keys, the command line
+and its logged run, readable failure messages, and the diagnostics kept from a failed run.
+"""
 
 from __future__ import annotations
 
 import shutil
 import signal
+import subprocess
+from collections.abc import Callable
 from pathlib import Path
 
-from src.core.domain.printer_catalog import ExitCode, SlicerSpec
+from src.core.domain.printer_catalog import ExitCode, PrinterProfile, SlicerSpec
 from src.core.domain.slicing import SliceRequest
 
 LOG_TAIL_LINES = 20
@@ -39,6 +42,50 @@ def job_process_keys(request: SliceRequest) -> dict[str, str]:
         # Creality default style; normal + snug sliced the v78 69-part plate).
         keys.update(support_type="normal(auto)", support_style="snug")
     return keys
+
+
+def slicer_argv(
+    binary: Path, printer: PrinterProfile, request: SliceRequest, export: str, datadir: str
+) -> list[str]:
+    """The v80-proven command line (every Orca-family slicer takes the same flags)."""
+    out = Path(request.output_dir)
+    return [
+        str(binary),
+        "--datadir",
+        datadir,
+        "--debug",
+        "3",  # info: at 2 a failed OrcaSlicer run logs only "run found error, exit"
+        "--load-settings",
+        f"{out / 'machine.json'};{out / 'process.json'}",
+        "--load-filaments",
+        str(out / "filament.json"),
+        "--curr-bed-type",
+        printer.bed_type,
+        "--arrange",
+        "0",
+        "--orient",
+        "0",
+        "--slice",
+        "0",
+        "--outputdir",
+        str(out),
+        "--export-3mf",
+        export,
+        "--export-settings",
+        str(out / "effective-settings.json"),
+        request.input_3mf,
+    ]
+
+
+def run_logged(
+    runner: Callable[..., subprocess.CompletedProcess[str]],
+    argv: list[str],
+    log_path: Path,
+    timeout_s: float,
+) -> subprocess.CompletedProcess[str]:
+    """Run the slicer with stdout and stderr in ``log_path`` (blocking: call it in a thread)."""
+    with log_path.open("w", encoding="utf-8") as log:
+        return runner(argv, stdout=log, stderr=subprocess.STDOUT, text=True, timeout=timeout_s)
 
 
 def log_tail(log_path: Path) -> str:

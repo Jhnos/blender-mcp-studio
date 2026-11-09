@@ -18,8 +18,8 @@ from src.adapters.slicing.orca_family_cli import (
     SLICE_TIMEOUT_S,
     SLOWEST_SLICE_MEASURED_S,
     OrcaFamilyCli,
-    _process_key,
 )
+from src.adapters.slicing.slice_targets import process_key as _process_key
 from src.core.domain.model_spec import PrintTarget
 from src.core.domain.packaging import ToolUse
 from src.core.domain.printer_catalog import PrinterCatalog, PrinterProfile

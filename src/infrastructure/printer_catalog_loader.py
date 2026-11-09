@@ -94,8 +94,7 @@ def _heights(pairs: tuple[tuple[str, str], ...], where: str) -> tuple[tuple[str,
             height = math.nan
         if not math.isfinite(height) or height <= 0:
             raise ValueError(
-                f"{where}: processes key '{key}' must be a positive layer height in mm, "
-                "e.g. '0.20'"
+                f"{where}: processes key '{key}' must be a positive layer height in mm, e.g. '0.20'"
             )
     return pairs
 
@@ -209,9 +208,10 @@ def load_printer_catalog(config_dir: Path | None = None) -> PrinterCatalog:
             raise ValueError(
                 f"{where}: unknown slicer '{printer.slicer}'; known: {sorted(slicer_ids)}"
             )
-        if printer.overrides is not None and not (
-            base / OVERRIDES_SUBDIR / printer.overrides
-        ).is_file():
+        if (
+            printer.overrides is not None
+            and not (base / OVERRIDES_SUBDIR / printer.overrides).is_file()
+        ):
             raise ValueError(
                 f"{where}: overrides '{printer.overrides}' is not a file in {OVERRIDES_SUBDIR}/"
             )
