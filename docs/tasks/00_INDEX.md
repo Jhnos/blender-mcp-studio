@@ -4,6 +4,8 @@ Read this file first after a new conversation, compaction, or terminal restart.
 
 ## 接手
 
+- **印表機目錄（2026-11-09）：** 任務 18 機器側完成，分支 `claude/printer-catalog`。T1＋T2 綠；合併前用分支碼乾跑兩家真機閘門：P2S（Bambu Studio）與 K1 Max（OrcaSlicer）都 PASS，三個負向對照都照預期失敗。下一步是合併、部署、跑整輪 `--real`，詳見任務 18 的 hand-off。任務 17 與 18 都在等使用者驗收。
+
 - **正式 MCP／CI 收口（2026-10-21）：** 第八輪完整不中斷 `--real` CI 全綠（52 硬閘門），升版 V01.0R.02I 封存並部署。本輪修掉八個 class：LaunchAgent 漂移閘門誤報、共用 Ollama 排隊被報 unreachable、V10 手臂相切與鏈三角化（CDT `finish_link`）、rotary 偏航 bore 相位、驗證逾時單樣本校準（改為最慢套件 ×5）、共用圓柱改動波及已發布包（`exact_axes` 參數，手部包維持現狀）、Funnel 握手重置重試、API 啟動快照過期（新前置閘門）。pi5 的 `masvis-phase2-agent` 容器仍停著（回復：`ssh pi5 docker start masvis-phase2-agent`）。下一步：`docs/superpowers/specs/2026-10-21-mcp-complete-pipeline-design.md`（讓 MCP 完整的管線設計，含重用普查與分層容器化決定）等使用者裁決第一個實例與切片器位置後展開成任務 17。
 
 - **實際單盤切片（2026-10-20）：** 新增 `雙上臂四點梯形-v80-單盤切片檢查/` 與 `雙上臂四點梯形-v80-已切片單盤與原零件.zip`，原v34/v78/v79不覆寫；69 STL與v78逐位元相同，原生113模型副本亦保留。官方Bambu Studio 02.08.02.61（DMG對官方SHA256通過）離線P2S 0.4／Generic PLA／0.2 mm／紋理PEI 55°C假設；一般snug支撐＋3 mm brim、三牆15%gyroid、首層20 mm/s、單盤69件，return_code 0、warning_message空。保存3MF含一份G-code且與輸出相同，--info重開exit0；69保存網格CGAL通過、拓撲相同、最大座標序列化差0.0000054 mm、無自動修網。獨立G-code讀回69件首層本體、支撐與brim，線寬外緣含圓弧XY約1.136～251.864 mm、床面外0。預估44h15m／1588g，超過單捲1kg；最小旋鈕首層3.79 mm²、長臂22～24 mm²，仍有黏附／直立強度風險、需移除支撐brim，未實印或啟動印表機。樹狀支撐托盤／頂蓋衝突、6mm brim約0.021mm外緣越界及旋鈕平放後新衝突皆保留失敗證據；通過／拒絕閘門在 `tmp/lab-station-slicing-v80/`，未接正式CI、未改MCP或服務、原軟體CI失敗未解除。原廠P2S結尾T65535會觸發CLI原始分析診斷，原樣保留並說明，未作韌體驗證。下一步確認實際材料／底板及足量供料，首層與PLA配合／負載實印驗證；不宣稱免後加工或物理黏附保證。
@@ -33,7 +35,7 @@ Read this file first after a new conversation, compaction, or terminal restart.
 
 | State | Task | Priority |
 |---|---|---|
-| ACTIVE | [`18_printer-catalog.md`](18_printer-catalog.md) | 印表機目錄：Bambu／Creality 解耦，不預設機器，可選印表機；P2S 用 Bambu Studio、六台 Creality 用 OrcaSlicer，每家一道真機閘門 |
+| AWAITING-ACCEPTANCE | [`18_printer-catalog.md`](18_printer-catalog.md) | 印表機目錄：Bambu／Creality 解耦，不預設機器，可選印表機；P2S 用 Bambu Studio、六台 Creality 用 OrcaSlicer，每家一道真機閘門 |
 | AWAITING-ACCEPTANCE | [`17_mcp-complete-pipeline.md`](17_mcp-complete-pipeline.md) | 讓 MCP 完整——階段 1：`ModelSpec` 進、可列印包與機器驗證證據出；第一實例為 v78 交付件匯入路徑；設計與計畫在 `docs/superpowers/` |
 | ACTIVE | [`16_lab-station.md`](16_lab-station.md) | 雙探頭量測工作站：250 mL 共杯、約 20 cm 伸距、P2S；獨立電極臂、齒槽與折平螢幕；全機工程資格待完成 |
 | AWAITING-ACCEPTANCE | [`15_scene-list-and-chat-gate.md`](15_scene-list-and-chat-gate.md) | **場景清單不再只有十個**——上游 addon 截斷到 10;改由 adapter 有上界地讀,碰到上界會說。H6 綠了,對話路徑第一次有真機閘門;`--real` 32 條全綠 |

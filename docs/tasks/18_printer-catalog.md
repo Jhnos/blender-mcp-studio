@@ -1,6 +1,6 @@
 # 印表機目錄：廠商解耦、不預設機器、可選印表機
 
-**Status:** ACTIVE
+**Status:** AWAITING-ACCEPTANCE
 
 ## Goal
 
@@ -40,10 +40,27 @@
     - 回退方式：`rm -rf /Applications/OrcaSlicer.app`。
   - 已安裝的 Bambu Studio bundle 也帶 52 個 Creality 機器設定檔。
 
+- 2026-11-09（分支 `claude/printer-catalog`，最後 commit `9fcd931`）：
+  - 任務 1–6 與最終修正輪（F1–F7）完成。全分支 opus 審查：0 Critical，4 Important 已修：
+    - spec 範例不再寫死機器
+    - 讀不到設定檔的印表機列為 unavailable
+    - brim 由 job 決定，兩家廠商一致
+    - 文件與程式不一致的地方已修正
+  - 指揮官親跑 `scripts/ci.sh`：CI PASSED（T1＋T2）。
+  - 合併前乾跑：分支碼起臨時 uvicorn 127.0.0.1:19599，`BLENDER_PORT=1`，ARTIFACT_ROOTS 指主 checkout，runs 放 scratchpad。
+    - K1 Max 閘門 PASS：OrcaSlicer 2.4.2，1 盤；K1C 盤面放不下的負向對照在 print 階段失敗。
+    - P2S 閘門 PASS：Bambu Studio 02.08.02.61；截斷 STL 的負向對照在 geometry 階段失敗。
+    - 兩家實際送進切片器的 process.json 都是：brim_type outer_only、brim 3.0、support snug、prime tower 0。
+  - 擴充試驗：只加一個 YAML（Ender-3 V3 Plus）就能用，不必改程式。
+
 ### Open failures
 
-- 任務 17 的整輪 `--real` CI 卡在 chat 閘門的前置條件：另一個專案的 `com.local.shb.ollama`（11435）長時間吃滿 CPU。依使用者選擇不去動它；背景有 wait-then-CI 腳本在等，等 Ollama 有空再跑。
+- 已評估、刻意延後：
+  - 讀不到 bundle 的印表機，submit 時的錯誤用詞（"not sliceable"）跟 list_printers（"bundle profiles cannot be read"）不同，只是措辭。
+  - `SliceRequest.printer` 與 `printer_id` 重複。
+- PETG 負向對照只走「不在目錄」路徑；bundle `compatible_printers` 拒絕只有單元測試，沒有真機閘門。
 
 ### Next step
 
-- 任務 1：先寫 `tests/unit/infrastructure/test_printer_catalog_loader.py` 並確認紅燈。
+- 合併到 main（先問使用者）→ `bash deploy/launchd/install.sh all` → 經動態 FQDN 跑兩家閘門 → 整輪 `scripts/ci.sh --real` → push → checkpoint 腳本 → 清 worktree。
+- 之後等使用者驗收，再移到 `archive/`。

@@ -5,6 +5,24 @@
 
 ## [Unreleased]
 
+### V01.0T.000 — 印表機目錄：Bambu 與 Creality 解耦，不預設機器，印表機由使用者選
+
+#### Added
+
+- 印表機目錄 `config/printers/<廠商>/<id>.yaml`，含 Bambu P2S 與六台 Creality：K1C、K1、K1 Max、K2 Plus、Ender-3 V3、Ender-3 V3 KE。另有切片器目錄 `config/slicers.yaml`，內附引用來源的錯誤碼表。新增一台機器只要加一個 YAML。
+- 同一個 adapter 驅動 Bambu Studio 與 OrcaSlicer CLI：
+  - 設定檔從已安裝 app 的 bundle 依名稱展開，再做相容性檢查。
+  - 切片前檢查盤面放不下的情況，3MF XML 讀取有防護。
+  - Orca 逾時是 5 × 實測 34 秒。
+- MCP 新增 `list_printers`，工具共 22 項。內容包括床面尺寸、最大高度、層高範圍和切片器 id／名稱／版本；不能用的機器附原因與安裝提示，讀不到設定檔的機器也算不能用。
+- Creality K1 Max 真機閘門，以及兩個負向對照：K1C 盤面放不下、PETG 不在目錄。
+
+#### Changed
+
+- ModelSpec v2：`print_target.printer` 與 `material` 必填，程式裡沒有任何預設機器或材料。v1 spec 照舊轉成 P2S／PLA，報告裡會註明。
+- 層高可以是機器範圍內的任何值，切片時取最近的基礎 process。
+- 支撐、prime tower、brim 改由 job 決定，兩家行為一致：單一耗材就關 prime tower，支撐用 normal＋snug，brim 依 `brim_mm`。
+
 ### V01.0S.000 — MCP 完整管線階段 1：送一份 ModelSpec，拿回可列印包與機器驗證證據
 
 #### Added
