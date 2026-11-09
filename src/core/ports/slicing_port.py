@@ -10,7 +10,13 @@ from typing import Protocol
 
 from src.core.domain.packaging import ToolUse
 from src.core.domain.printer_catalog import PrinterProfile
-from src.core.domain.slicing import SliceRequest, SliceResult, TargetCheck, ToolAvailability
+from src.core.domain.slicing import (
+    MachineFacts,
+    SliceRequest,
+    SliceResult,
+    TargetCheck,
+    ToolAvailability,
+)
 
 
 class SlicingPort(Protocol):
@@ -30,14 +36,10 @@ class SlicingPort(Protocol):
         """The largest per-slicer deadline in the catalog, installed or not (seconds)."""
         ...
 
-    def layer_ranges(self) -> Mapping[str, tuple[float, float] | None]:
-        """For each usable printer id, the (min, max) layer height its machine profile declares
-        in mm, or ``None`` when it declares none (or its profiles cannot be read)."""
-        ...
-
-    def bed_sizes(self) -> Mapping[str, tuple[float, float, float] | None]:
-        """For each usable printer id, the (width, depth, height) in mm its machine profile
-        prints, or ``None`` when it declares none (or its profiles cannot be read)."""
+    def machine_facts(self) -> Mapping[str, MachineFacts | str]:
+        """For each usable printer id, what its machine profile declares (each profile read
+        once); or, when its bundle profiles cannot be read, the error text, which makes that
+        printer unusable here."""
         ...
 
     def catalog_printers(self) -> tuple[PrinterProfile, ...]:

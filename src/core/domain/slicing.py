@@ -73,3 +73,11 @@ class TargetCheck:
 
     notes: tuple[str, ...]
     process_profile: str
+
+
+@dataclass(frozen=True, slots=True)
+class MachineFacts:
+    """What a printer's machine profile declares; ``None`` where it declares nothing."""
+
+    layer_range: tuple[float, float] | None  # (min, max) mm
+    bed_mm: tuple[float, float, float] | None  # width, depth, printable height

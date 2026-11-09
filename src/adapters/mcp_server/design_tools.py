@@ -9,6 +9,7 @@ relative to their artifact root, slice outputs are ``run://{run_id}/print/<name>
 
 from __future__ import annotations
 
+import asyncio
 from dataclasses import asdict
 from typing import Annotated, TypeVar
 
@@ -162,7 +163,8 @@ def register_design_tools(
         """Return the ModelSpec v2 JSON Schema (fields, types, defaults, usable printers and
         their materials) and a complete worked example for run_design_pipeline. Call
         list_printers first; choose a printer whose bed_mm fits the plate."""
-        return _configured(design, "design pipeline").describe_spec()
+        # describe_spec reads the slicer bundles: keep that off the event loop.
+        return await asyncio.to_thread(_configured(design, "design pipeline").describe_spec)
 
     @mcp.tool(
         timeout=QUERY_TIMEOUT_S,

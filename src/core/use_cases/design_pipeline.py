@@ -50,7 +50,7 @@ from src.core.use_cases import design_files as files
 from src.core.use_cases import design_reports as reports
 from src.core.use_cases import design_stages as stages
 from src.core.use_cases.blender_lease import BlenderLease
-from src.core.use_cases.printer_listing import PrinterListing, list_printers
+from src.core.use_cases.printer_listing import PrinterListing, list_printers, readable
 from src.core.use_cases.slice_file import slice_one
 
 logger = logging.getLogger(__name__)
@@ -127,8 +127,13 @@ class DesignPipeline:
         return job
 
     def describe_spec(self) -> dict[str, object]:
-        """Spec v2 as JSON Schema with this host's usable printers and their materials."""
-        return describe_model_spec(self._slicing.printers(), self._slicing.layer_ranges())
+        """Spec v2 as JSON Schema with this host's usable printers and their materials.
+
+        Blocking (reads the bundle profiles): async callers run it in a worker thread.
+        """
+        usable = readable(self._slicing, self._slicing.machine_facts())
+        ranges = {p.id: known.layer_range for p, known in usable}
+        return describe_model_spec(tuple(p for p, _ in usable), ranges)
 
     async def list_artifacts(self) -> dict[str, object]:
         """Candidate ``source.root_dir`` values under the artifact roots (relative only)."""
@@ -181,7 +186,7 @@ class DesignPipeline:
 
     async def list_printers(self) -> PrinterListing:
         """The printers this host can slice for (with machine facts) and those it cannot."""
-        return await list_printers(self._slicing)
+        return await list_printers(self._slicing, self.clean)
 
     async def slice_file(
         self,

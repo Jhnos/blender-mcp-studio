@@ -8,7 +8,7 @@ from pathlib import Path
 from src.core.domain.design_run import JobRecord, JobStatus, StageName
 from src.core.domain.mesh_integrity import MeshIntegrityReport, MeshVerdict
 from src.core.domain.packaging import PackagedFile, PackageManifest, ToolUse
-from src.core.domain.slicing import SliceResult, TargetCheck, ToolAvailability
+from src.core.domain.slicing import MachineFacts, SliceResult, TargetCheck, ToolAvailability
 from src.core.domain.verification import VerificationReport
 from src.core.use_cases.blender_lease import BlenderLease
 from src.infrastructure.printer_catalog_loader import load_printer_catalog
@@ -81,6 +81,7 @@ class FakeSlicing:
         self.error: Exception | None = None
         self.check_error: Exception | None = None  # what check_target raises (incompatibility)
         self.checks: list[tuple[str, float, str]] = []
+        self.unreadable: dict[str, str] = {}  # printer id -> bundle read error text
         catalog = load_printer_catalog()
         self._catalog = catalog
         self._printers = tuple(catalog.printer(pid) for pid in printer_ids)
@@ -100,14 +101,16 @@ class FakeSlicing:
     #: The real machine ranges read 2026-10-22 (min, max mm); other printers declare none here.
     RANGES = {"bambu-p2s-0.4": (0.08, 0.28), "creality-k1c-0.4": (0.08, 0.3)}
 
-    def layer_ranges(self):
-        return {p.id: self.RANGES.get(p.id) for p in self._printers}
-
     #: Bed width, depth and printable height read 2026-10-22; other printers declare none here.
     BEDS = {"bambu-p2s-0.4": (256.0, 256.0, 256.0), "creality-k1c-0.4": (220.0, 220.0, 250.0)}
 
-    def bed_sizes(self):
-        return {p.id: self.BEDS.get(p.id) for p in self._printers}
+    def machine_facts(self):
+        """Facts per usable printer, or the error text for an id in ``self.unreadable``."""
+        return {
+            p.id: self.unreadable.get(p.id)
+            or MachineFacts(self.RANGES.get(p.id), self.BEDS.get(p.id))
+            for p in self._printers
+        }
 
     def catalog_printers(self):
         return self._catalog.printers

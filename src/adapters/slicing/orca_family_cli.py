@@ -67,6 +67,7 @@ from src.core.domain.printer_catalog import (
 )
 from src.core.domain.slicing import (
     LayerHeightError,
+    MachineFacts,
     SliceRequest,
     SliceResult,
     TargetCheck,
@@ -190,25 +191,19 @@ class OrcaFamilyCli:
             )
         return binary
 
-    def _machine(self, p: PrinterProfile) -> dict[str, object] | None:
-        """The printer's flattened machine profile; ``None`` when its bundle is unreadable."""
+    def _facts(self, p: PrinterProfile) -> MachineFacts | str:
+        """The printer's machine facts, or why its bundle profiles cannot be read."""
         slicer = self._catalog.slicer(p.slicer)
         try:
             binary = self._usable_binary(slicer)
-            return self._bundle_profiles(slicer, binary, p, p.processes[0][0], p.filaments[0][0])[
-                "machine"
-            ]
-        except ToolUnavailableError:
-            return None
+            layer, material = p.processes[0][0], p.filaments[0][0]
+            machine = self._bundle_profiles(slicer, binary, p, layer, material)["machine"]
+        except ToolUnavailableError as exc:
+            return str(exc)
+        return MachineFacts(layer_range(machine), bed_size(machine))
 
-    def _machines(self) -> dict[str, dict[str, object] | None]:
-        return {p.id: self._machine(p) for p in self.printers()}
-
-    def layer_ranges(self) -> dict[str, tuple[float, float] | None]:
-        return {k: None if m is None else layer_range(m) for k, m in self._machines().items()}
-
-    def bed_sizes(self) -> dict[str, tuple[float, float, float] | None]:
-        return {k: None if m is None else bed_size(m) for k, m in self._machines().items()}
+    def machine_facts(self) -> dict[str, MachineFacts | str]:
+        return {p.id: self._facts(p) for p in self.printers()}
 
     def catalog_printers(self) -> tuple[PrinterProfile, ...]:
         return self._catalog.printers

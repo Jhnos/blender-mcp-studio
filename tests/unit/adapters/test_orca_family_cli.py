@@ -714,7 +714,18 @@ def test_machine_without_a_range_accepts_only_exact_keys(tmp_path: Path) -> None
 
 def test_layer_ranges_come_from_the_flattened_machine_profiles(tmp_path: Path) -> None:
     cli = _both(tmp_path, FakeRunner())
-    assert cli.layer_ranges()[K1C] is None  # the fake machine declares no range
+    assert cli.machine_facts()[K1C].layer_range is None  # the fake machine declares no range
     _set_machine_range(tmp_path, ["0.08"], ["0.3"])
-    assert cli.layer_ranges()[K1C] == (0.08, 0.3)
-    assert set(cli.layer_ranges()) == {p.id for p in cli.printers()}
+    assert cli.machine_facts()[K1C].layer_range == (0.08, 0.3)
+    assert set(cli.machine_facts()) == {p.id for p in cli.printers()}
+
+
+def test_machine_facts_name_the_unreadable_profile(tmp_path: Path) -> None:
+    catalog = load_printer_catalog()
+    k1c = replace(catalog.printer(K1C), processes=(("0.20", "No Such Process @K1C"),))
+    others = tuple(p for p in catalog.printers if p.id != K1C)
+    cli = _both(tmp_path, FakeRunner(), replace(catalog, printers=(*others, k1c)))
+    facts = cli.machine_facts()
+    assert set(facts) == {p.id for p in cli.printers()}
+    assert isinstance(facts[K1C], str) and "No Such Process @K1C" in facts[K1C]
+    assert not isinstance(facts[P2S], str)  # the readable printer keeps its facts
