@@ -12,8 +12,11 @@ import time
 from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
 from pathlib import Path
 
-from scripts.verify.native_source_checks import check_native_source  # noqa: F401 (re-export)
-from src.adapters.slicing.orca_family_cli import SLICE_TIMEOUT_S
+from scripts.verify.native_source_checks import (  # noqa: F401 (re-exports)
+    check_native_source,
+    check_selected_target,
+)
+from src.adapters.slicing.orca_family_cli import SLICE_TIMEOUT_S, port_deadline_s
 from src.core.domain.model_spec import ModelSpecError, parse_print_target
 from src.infrastructure.narrowing import as_mapping, as_sequence
 from src.infrastructure.printer_catalog_loader import load_printer_catalog
@@ -40,8 +43,13 @@ def poll_budget_s(spec: Mapping[str, object] | None = None) -> float:
     Bambu Studio's. ``None`` is a job whose spec the service resolves itself (a native revision
     of the current selection): the gate names no printer, so it waits for the slowest slicer.
     """
+    catalog = load_printer_catalog()
+
+    def deadline(slicer_id: str) -> float:  # the adapter's port deadline (inspection included)
+        return port_deadline_s(catalog.slicer(slicer_id), SLICE_TIMEOUT_S[slicer_id])
+
     if spec is None:
-        return max(SLICE_TIMEOUT_S.values()) + POLL_MARGIN_S
+        return max(deadline(s.id) for s in catalog.slicers) + POLL_MARGIN_S
     target = as_mapping(spec.get("print_target")) or {}
     if "printer" not in target:
         raise GateError("contract spec has no print_target.printer; a gate never picks one")
@@ -49,28 +57,7 @@ def poll_budget_s(spec: Mapping[str, object] | None = None) -> float:
         printer = parse_print_target(spec).printer
     except ModelSpecError as exc:
         raise GateError(f"contract spec print_target: {exc}") from exc
-    slicer = load_printer_catalog().printer(printer).slicer
-    return SLICE_TIMEOUT_S[slicer] + POLL_MARGIN_S
-
-
-def check_selected_target(spec: Mapping[str, object], expected: object) -> list[str]:
-    """The selection must name its printer and material, and resolve to the contract's.
-
-    A spec-v1 printer name is translated to its catalog id by the parser; a selection that
-    leaves either out is a failure (the gate never assumes the legacy machine).
-    """
-    want = as_mapping(expected) or {}
-    named = as_mapping(spec.get("print_target")) or {}
-    missing = [key for key in ("printer", "material") if key not in named]
-    if missing:
-        return [f"selected spec names no print_target {', '.join(missing)}; a gate assumes none"]
-    try:
-        target = parse_print_target(spec)
-    except ModelSpecError as exc:
-        return [f"selected spec print_target: {exc}"]
-    got = {"printer": target.printer, "material": target.material}
-    wanted = {key: want.get(key) for key in got}
-    return [] if got == wanted else [f"selected delivery targets {got}; contract expects {wanted}"]
+    return deadline(catalog.printer(printer).slicer) + POLL_MARGIN_S
 
 
 def _items(value: object) -> list[object]:

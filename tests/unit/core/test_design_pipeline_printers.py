@@ -64,13 +64,16 @@ async def test_describe_spec_lists_usable_printers(tmp_path):
 
 def test_slice_timeout_covers_every_catalog_slicer_even_when_none_is_installed(tmp_path):
     from src.adapters.slicing.orca_family_cli import SLICE_TIMEOUT_S
+    from src.adapters.slicing.toolpath_evidence import TOOLPATH_INSPECTION_TIMEOUT_S
     from tests.unit.core.test_design_fix_round1 import missing_slicers
 
     rig = _rig(tmp_path)
     rig.pipeline._stages = replace(
         rig.pipeline._stages, slicing=missing_slicers(tmp_path)
     )  # printers() is empty
-    assert rig.pipeline.slice_timeout_s == max(SLICE_TIMEOUT_S.values()) == 855.0
+    # Rule change (main, ported): Bambu Studio's deadline includes the inspection (135 s)
+    deadline = SLICE_TIMEOUT_S["bambu-studio"] + TOOLPATH_INSPECTION_TIMEOUT_S
+    assert rig.pipeline.slice_timeout_s == deadline == 855.0 + 135
 
 
 async def test_mcp_slice_tool_timeout_does_not_collapse_without_slicers(tmp_path):
@@ -80,4 +83,4 @@ async def test_mcp_slice_tool_timeout_does_not_collapse_without_slicers(tmp_path
     rig = _rig(tmp_path)
     rig.pipeline._stages = replace(rig.pipeline._stages, slicing=missing_slicers(tmp_path))
     tool = await _server(rig).get_tool("slice_for_print")
-    assert tool.timeout == 855.0 + 30
+    assert tool.timeout == 855.0 + 135 + 30  # main (ported): + inspection for Bambu Studio

@@ -20,6 +20,7 @@ from src.adapters.slicing.orca_family_cli import (
     OrcaFamilyCli,
 )
 from src.adapters.slicing.slice_targets import process_key as _process_key
+from src.adapters.slicing.toolpath_evidence import TOOLPATH_INSPECTION_TIMEOUT_S
 from src.core.domain.model_spec import PrintTarget
 from src.core.domain.packaging import ToolUse
 from src.core.domain.printer_catalog import PrinterCatalog, PrinterProfile
@@ -31,6 +32,7 @@ from tests.fakes.bambu_bundle import (
     flattened,
     make_bundle,
     make_orca_bundle,
+    write_sliced_output,
 )
 from tests.fakes.plate_3mf import translate, write_3mf
 
@@ -51,7 +53,7 @@ class FakeRunner:
         stdout = kwargs["stdout"]
         stdout.write(self.log)  # type: ignore[attr-defined]
         if self.write_output:
-            (out / name).write_bytes(b"3mf")
+            write_sliced_output(out / name)  # main: inspected slicers need a real archive
             (out / "effective-settings.json").write_text("{}", encoding="utf-8")
         return subprocess.CompletedProcess(argv, self.returncode)
 
@@ -376,7 +378,9 @@ def test_tool_for_names_the_slicer_that_ran(tmp_path: Path) -> None:
 
 def test_timeout_is_per_printer_slicer(tmp_path: Path) -> None:
     cli = _both(tmp_path, FakeRunner())
-    assert cli.timeout_s(P2S) == SLICE_TIMEOUT_S["bambu-studio"]
+    # Rule change (main, ported): the port deadline adds tool-path inspection for a slicer
+    # whose catalog entry inspects; the subprocess still gets the command timeout alone.
+    assert cli.timeout_s(P2S) == SLICE_TIMEOUT_S["bambu-studio"] + TOOLPATH_INSPECTION_TIMEOUT_S
     assert cli.timeout_s(K1C) == SLICE_TIMEOUT_S["orcaslicer"]
 
 

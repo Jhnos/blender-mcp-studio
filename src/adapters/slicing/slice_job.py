@@ -21,10 +21,11 @@ def _fmt_mm(value: float) -> str:
     return repr(float(value))
 
 
-def job_process_keys(request: SliceRequest) -> dict[str, str]:
+def job_process_keys(request: SliceRequest, *, inspected: bool) -> dict[str, str]:
     """Process keys derived from the job, written over the bundle profile and any overrides.
 
-    The same rules hold for every printer and vendor.
+    The same rules hold for every printer and vendor. ``inspected`` is the slicer's catalog
+    ``toolpath_inspection`` flag: when its output is inspected, arc fitting is off.
     """
     keys = {
         "layer_height": _fmt_mm(request.layer_height_mm),
@@ -41,16 +42,24 @@ def job_process_keys(request: SliceRequest) -> dict[str, str]:
         # K1 Max evidence (OrcaSlicer 2.4.2 exited -101 CLI_GCODE_PATH_CONFLICTS with the
         # Creality default style; normal + snug sliced the v78 69-part plate).
         keys.update(support_type="normal(auto)", support_style="snug")
+    if inspected:
+        # Re-fitted arcs from a CLI re-slice exceeded the inspector's arc-radius disagreement
+        # threshold on real output (main, LESSONS 2026-11 "製造設定檔可正常切片，輸出仍可能超出
+        # 驗證器支援的數值範圍"); straight segments keep the output inspectable.
+        keys["enable_arc_fitting"] = "0"
     return keys
 
 
 def slicer_argv(
     binary: Path, printer: PrinterProfile, request: SliceRequest, export: str, datadir: str
 ) -> list[str]:
-    """The v80-proven command line (every Orca-family slicer takes the same flags)."""
-    out = Path(request.output_dir)
+    """The v80-proven command line (every Orca-family slicer takes the same flags).
+
+    Every path is absolute (resolved), so the slicer never depends on the caller's cwd.
+    """
+    out = Path(request.output_dir).resolve()
     return [
-        str(binary),
+        str(binary.resolve()),
         "--datadir",
         datadir,
         "--debug",
@@ -73,7 +82,7 @@ def slicer_argv(
         export,
         "--export-settings",
         str(out / "effective-settings.json"),
-        request.input_3mf,
+        str(Path(request.input_3mf).resolve()),
     ]
 
 
@@ -83,9 +92,20 @@ def run_logged(
     log_path: Path,
     timeout_s: float,
 ) -> subprocess.CompletedProcess[str]:
-    """Run the slicer with stdout and stderr in ``log_path`` (blocking: call it in a thread)."""
+    """Run the slicer with stdout and stderr in ``log_path`` (blocking: call it in a thread).
+
+    The working directory is the output dir, so a sidecar the slicer writes next to itself
+    (``result.json``) stays inside the job.
+    """
     with log_path.open("w", encoding="utf-8") as log:
-        return runner(argv, stdout=log, stderr=subprocess.STDOUT, text=True, timeout=timeout_s)
+        return runner(
+            argv,
+            stdout=log,
+            stderr=subprocess.STDOUT,
+            text=True,
+            timeout=timeout_s,
+            cwd=log_path.parent.resolve(),
+        )
 
 
 def log_tail(log_path: Path) -> str:

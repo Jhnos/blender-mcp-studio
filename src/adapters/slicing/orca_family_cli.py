@@ -20,7 +20,12 @@ package; on a failed run its ``*.log`` files are first copied to
 OrcaSlicer 2.4.2 wrote none, on failed runs or on the passing K1 Max run. Success is judged by
 exit code and the 3MF, never by result.json.
 
-Timeouts are 5 x the slowest measured slice per slicer, rounded up to the next second:
+Tool-path inspection (main, ``toolpath_evidence``) runs after a successful slice when the
+slicer's catalog entry says ``toolpath_inspection: true``; it writes ``extrusion.json`` and a
+rejected inspection fails the slice. The port deadline (``timeout_s``) is then the slicer
+command's timeout plus ``TOOLPATH_INSPECTION_TIMEOUT_S``; the subprocess gets the command's.
+
+Command timeouts are 5 x the slowest measured slice per slicer, rounded up to the next second:
 
 - ``bambu-studio``: the v80 69-part plate, ``tmp/lab-station-slicing-v80/first-pass/slicer.log``,
   first to last log timestamp 2026-10-20 21:10:38.13 -> 21:13:28.78 = 170.6 s (other v80 runs
@@ -62,6 +67,10 @@ from src.adapters.slicing.slice_job import (
 )
 from src.adapters.slicing.slice_targets import check_target as target_check
 from src.adapters.slicing.slice_targets import process_key
+from src.adapters.slicing.toolpath_evidence import (
+    TOOLPATH_INSPECTION_TIMEOUT_S,
+    inspect_sliced_project,
+)
 from src.core.domain.import_limits import ImportLimits
 from src.core.domain.packaging import ToolUse
 from src.core.domain.printer_catalog import (
@@ -78,7 +87,7 @@ from src.core.domain.slicing import (
     ToolAvailability,
     ToolUnavailableError,
 )
-from src.infrastructure.narrowing import as_str_keyed
+from src.infrastructure.narrowing import as_mapping, as_str_keyed
 
 SLOWEST_SLICE_MEASURED_S: dict[str, float] = {"bambu-studio": 171, "orcaslicer": 34}
 SLICE_TIMEOUT_S: dict[str, float] = {
@@ -86,6 +95,13 @@ SLICE_TIMEOUT_S: dict[str, float] = {
 }
 
 Runner = Callable[..., "subprocess.CompletedProcess[str]"]
+EXTRUSION_EVIDENCE = "extrusion.json"
+
+
+def port_deadline_s(slicer: SlicerSpec, command_timeout_s: float) -> float:
+    """How long one slice may take end to end: the command, plus inspection if declared."""
+    inspection = TOOLPATH_INSPECTION_TIMEOUT_S if slicer.toolpath_inspection else 0
+    return command_timeout_s + inspection
 
 
 class OrcaFamilyCli:
@@ -123,10 +139,11 @@ class OrcaFamilyCli:
         )
 
     def timeout_s(self, printer_id: str) -> float:
-        return self._timeouts[self._slicer_of(printer_id).id]
+        slicer = self._slicer_of(printer_id)
+        return port_deadline_s(slicer, self._timeouts[slicer.id])
 
     def max_timeout_s(self) -> float:
-        return max(self._timeouts[slicer.id] for slicer in self._catalog.slicers)
+        return max(port_deadline_s(s, self._timeouts[s.id]) for s in self._catalog.slicers)
 
     async def availability(self) -> tuple[ToolAvailability, ...]:
         return tuple(self._availability(slicer) for slicer in self._catalog.slicers)
@@ -197,7 +214,11 @@ class OrcaFamilyCli:
         return target_check(printer, layer_height_mm, layer, profiles)
 
     def _write_profiles(
-        self, profiles: dict[str, dict[str, object]], printer: PrinterProfile, request: SliceRequest
+        self,
+        profiles: dict[str, dict[str, object]],
+        printer: PrinterProfile,
+        request: SliceRequest,
+        inspected: bool,
     ) -> None:
         out = Path(request.output_dir)
         process = profiles["process"]
@@ -211,7 +232,7 @@ class OrcaFamilyCli:
                 raise ToolUnavailableError(f"{name} is not an object")
             overrides.pop("_source", None)
             process.update(overrides)
-        process.update(job_process_keys(request))
+        process.update(job_process_keys(request, inspected=inspected))
         for kind, data in (
             ("machine", profiles["machine"]),
             ("process", process),
@@ -234,7 +255,7 @@ class OrcaFamilyCli:
         return printer
 
     async def slice(self, request: SliceRequest) -> SliceResult:
-        out = Path(request.output_dir)
+        out = Path(request.output_dir).resolve()
         log_path = out / "slicer.log"
         printer = self._target(request)
         if isinstance(printer, str):
@@ -251,13 +272,14 @@ class OrcaFamilyCli:
         refusal = plate_fit(Path(request.input_3mf), profiles["machine"], printer.id)
         if refusal is not None:
             return SliceResult(False, None, None, str(log_path), -1, refusal)
-        self._write_profiles(profiles, printer, request)
+        self._write_profiles(profiles, printer, request, slicer.toolpath_inspection)
         model = printer.model.replace(" ", "-")
         # Export name is "<input stem>-<printer model>-<material>.3mf".
         export = f"{Path(request.input_3mf).stem}-{model}-{request.material}.3mf"
         # A slicer that exits 0 without writing must not pass on a previous run's files.
         (out / export).unlink(missing_ok=True)
         (out / "effective-settings.json").unlink(missing_ok=True)
+        (out / EXTRUSION_EVIDENCE).unlink(missing_ok=True)
         timeout_s = self._timeouts[slicer.id]
         with tempfile.TemporaryDirectory(prefix=f"{slicer.id}-data-") as datadir:
             argv = slicer_argv(binary, printer, request, export, datadir)
@@ -270,7 +292,22 @@ class OrcaFamilyCli:
             if proc.returncode != 0:
                 keep_datadir_logs(Path(datadir), out)
         result = self._result(proc.returncode, slicer, out, export, log_path, notes)
+        if result.passed and slicer.toolpath_inspection:
+            report = await asyncio.to_thread(self._inspect, out / export, out, request)
+            if report.get("passed") is not True:
+                msg = f"toolpath inspection rejected sliced output; see print/{EXTRUSION_EVIDENCE}"
+                result = replace(result, passed=False, message=with_notes(msg, notes))
         return replace(result, process_profile=dict(printer.processes)[layer])
+
+    def _inspect(self, output: Path, out: Path, request: SliceRequest) -> dict[str, object]:
+        """Inspect the fresh output against the machine profile written for this slice."""
+        machine = as_mapping(json.loads((out / "machine.json").read_text(encoding="utf-8")))
+        if machine is None:
+            raise ToolUnavailableError("machine profile is not an object")
+        report = inspect_sliced_project(output, machine, self._limits, request=request)
+        with (out / EXTRUSION_EVIDENCE).open("x", encoding="utf-8") as handle:
+            json.dump(report, handle, ensure_ascii=False, sort_keys=True, indent=2, allow_nan=False)
+        return report
 
     @staticmethod
     def _result(

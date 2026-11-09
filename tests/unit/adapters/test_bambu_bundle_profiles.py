@@ -14,6 +14,7 @@ from src.adapters.slicing.bundle_profiles import (
     resolve_printer_profiles,
 )
 from src.adapters.slicing.orca_family_cli import SLICE_TIMEOUT_S, OrcaFamilyCli
+from src.adapters.slicing.toolpath_evidence import TOOLPATH_INSPECTION_TIMEOUT_S
 from src.core.domain.model_spec import PrintTarget
 from src.core.domain.printer_catalog import PrinterProfile
 from src.core.domain.slicing import SliceRequest, ToolUnavailableError
@@ -105,7 +106,10 @@ async def test_bundle_without_profiles_dir_is_unavailable(tmp_path: Path) -> Non
 
 def test_adapter_exposes_its_timeout_through_the_port(tmp_path: Path) -> None:
     cli = _adapter(make_bundle(tmp_path), FakeRunner())
-    assert cli.timeout_s("bambu-p2s-0.4") == SLICE_TIMEOUT_S["bambu-studio"]
+    # Rule change (main, ported): the port deadline adds tool-path inspection for a slicer
+    # whose catalog entry inspects; the subprocess still gets the command timeout alone.
+    deadline = SLICE_TIMEOUT_S["bambu-studio"] + TOOLPATH_INSPECTION_TIMEOUT_S
+    assert cli.timeout_s("bambu-p2s-0.4") == deadline
 
 
 # ---- resolution by JSON name, with a non-Bambu vendor whose file names differ ----

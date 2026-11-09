@@ -21,12 +21,21 @@ LEGACY_JOB_KEYS = {
     "enable_prime_tower": "0",
     "brim_width": "3",
     "brim_type": "outer_only",
+    "enable_arc_fitting": "0",  # main 2026-11: arcs off so the inspector accepts the paths
 }
 
 
-def _keys(**over: object) -> dict[str, str]:
+def _keys(inspected: bool = False, **over: object) -> dict[str, str]:
     target = PrintTarget(**{"printer": P2S, "material": "PLA", **over})  # type: ignore[arg-type]
-    return job_process_keys(SliceRequest.from_target("/a.3mf", "/o", target, printer_id=P2S))
+    request = SliceRequest.from_target("/a.3mf", "/o", target, printer_id=P2S)
+    return job_process_keys(request, inspected=inspected)
+
+
+def test_arc_fitting_is_off_only_when_the_output_is_inspected() -> None:
+    # The inspector's arc-radius threshold rejects re-fitted arcs (LESSONS, 2026-11, main), so
+    # a slicer whose output is inspected writes straight segments; others keep their profile.
+    assert _keys(inspected=True)["enable_arc_fitting"] == "0"
+    assert "enable_arc_fitting" not in _keys(inspected=False)
 
 
 def test_brim_type_outer_only_when_the_job_has_a_brim() -> None:

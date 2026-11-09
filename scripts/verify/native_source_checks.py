@@ -1,6 +1,7 @@
-"""Independent oracle for the selected model's native provenance (file identity only).
+"""Independent oracles for the current selection: its native provenance (file identity only)
+and the print target it resolves to.
 
-Split from ``design_gate_checks`` (file budget); that module re-exports ``check_native_source``.
+Split from ``design_gate_checks`` (file budget); that module re-exports both checks.
 """
 
 from __future__ import annotations
@@ -10,6 +11,7 @@ import json
 from collections.abc import Mapping
 from pathlib import Path
 
+from src.core.domain.model_spec import ModelSpecError, parse_print_target
 from src.infrastructure.narrowing import as_mapping, as_sequence
 
 
@@ -93,3 +95,23 @@ def check_native_source(root: Path, spec: Mapping[str, object], receipt: object)
         ]
     except (OSError, ValueError, KeyError, TypeError, RuntimeError):
         return ["selected native source cannot be independently verified"]
+
+
+def check_selected_target(spec: Mapping[str, object], expected: object) -> list[str]:
+    """The selection must name its printer and material, and resolve to the contract's.
+
+    A spec-v1 printer name is translated to its catalog id by the parser; a selection that
+    leaves either out is a failure (the gate never assumes the legacy machine).
+    """
+    want = as_mapping(expected) or {}
+    named = as_mapping(spec.get("print_target")) or {}
+    missing = [key for key in ("printer", "material") if key not in named]
+    if missing:
+        return [f"selected spec names no print_target {', '.join(missing)}; a gate assumes none"]
+    try:
+        target = parse_print_target(spec)
+    except ModelSpecError as exc:
+        return [f"selected spec print_target: {exc}"]
+    got = {"printer": target.printer, "material": target.material}
+    wanted = {key: want.get(key) for key in got}
+    return [] if got == wanted else [f"selected delivery targets {got}; contract expects {wanted}"]

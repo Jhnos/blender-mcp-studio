@@ -69,6 +69,30 @@ def test_gate_asserts_tool_from_contract() -> None:
         assert any(expect["slicer_version"] in f for f in failures), failures
 
 
+def test_unpinned_current_contract_still_requires_tool_and_licence() -> None:
+    expect = CURRENT["expect"]
+    assert "slicer_version" not in expect  # main's current contract pins no version
+    files = [{"path": p} for p in (OUT, *expect["manifest_files"])]
+    good = {"files": files, "tools": [{"name": "bambu-studio", "license": "AGPL-3.0-only"}]}
+    assert gate.check_manifest(good, REPORT, expect) == []
+    wrong = {"files": files, "tools": [{"name": "orcaslicer", "license": "AGPL-3.0-only"}]}
+    assert gate.check_manifest(wrong, REPORT, expect)
+    unlicensed = {"files": files, "tools": [{"name": "bambu-studio", "license": "MIT"}]}
+    assert gate.check_manifest(unlicensed, REPORT, expect)
+
+
+def test_current_selection_must_resolve_to_the_contract_target() -> None:
+    want = CURRENT["print_target"]
+    selected = json.loads((ROOT / "models" / "lab-station" / "model-spec.json").read_text("utf-8"))
+    assert gate.check_selected_target(selected, want) == []  # v1 "bambu-p2s" -> catalog id
+    v1 = {"spec_version": "1", "name": "n", "source": {"root_dir": "r"}}
+    unnamed = gate.check_selected_target(v1, want)
+    assert unnamed and "printer, material" in unnamed[0]  # never the legacy machine
+    k1max = {**v1, "print_target": {"printer": "creality-k1-max-0.4", "material": "PLA"}}
+    (other,) = gate.check_selected_target(k1max, want)
+    assert "creality-k1-max-0.4" in other and "bambu-p2s-0.4" in other
+
+
 def _entry(printer: str) -> dict:
     return {"id": printer, "materials": ["PLA", "ABS"]}
 
