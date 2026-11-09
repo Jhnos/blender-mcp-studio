@@ -62,7 +62,11 @@ def _entry_dict(entry: PrinterEntry) -> dict[str, object]:
         "bed_mm": None if bed is None else [bed[0], bed[1]],
         "max_height_mm": None if bed is None else bed[2],
         "bed_type": printer.bed_type,
-        "slicer": {"name": entry.slicer_name, "version": entry.slicer_version},
+        "slicer": {
+            "id": entry.slicer_id,
+            "name": entry.slicer_name,
+            "version": entry.slicer_version,
+        },
     }
 
 

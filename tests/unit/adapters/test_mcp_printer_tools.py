@@ -7,7 +7,9 @@ from pathlib import Path
 
 from fastmcp import Client
 
+from src.core.domain.model_spec import JOB_DEFAULTS
 from src.core.domain.slicing import ToolAvailability
+from src.core.use_cases.design_stages import MAX_SKIPPED_EVIDENCE, MECHANISM_NOT_EVALUATED
 from tests.fakes.design_ports import FakeSlicing
 from tests.unit.adapters.test_mcp_design_tools import _server, _strings, _text
 from tests.unit.core.test_design_pipeline import _rig
@@ -65,8 +67,9 @@ async def test_list_printers_reports_bed_and_height(tmp_path):
     assert p2s["bed_mm"] == [256.0, 256.0] and p2s["max_height_mm"] == 256.0
     assert k1c["bed_mm"] == [220.0, 220.0] and k1c["max_height_mm"] == 250.0
     assert p2s["layer_height_mm"] == {"min": 0.08, "max": 0.28}
-    assert p2s["slicer"] == {"name": "Bambu Studio", "version": "02.06.00.51"}
-    assert k1c["slicer"] == {"name": "OrcaSlicer", "version": "2.4.2"}
+    # id is the catalog slicer id that tool_status and the package manifest use
+    assert p2s["slicer"] == {"id": "bambu-studio", "name": "Bambu Studio", "version": "02.06.00.51"}
+    assert k1c["slicer"] == {"id": "orcaslicer", "name": "OrcaSlicer", "version": "2.4.2"}
     assert p2s["materials"] == ["PLA"] and p2s["nozzle_mm"] == 0.4
     assert p2s["vendor"] and p2s["model"] and p2s["bed_type"]
 
@@ -132,6 +135,12 @@ async def test_slice_for_print_requires_material(tmp_path):
 
 async def test_slice_for_print_checks_target_before_any_run_dir(tmp_path):
     rig = _installed(_rig(tmp_path), P2S)
+    hint = "Install OrcaSlicer from the site"
+
+    async def tools():
+        return (ToolAvailability("orcaslicer", False, None, None, hint),)
+
+    rig.slicing.availability = tools
     async with Client(_server(rig)) as client:
         res = await client.call_tool(
             "slice_for_print",
@@ -139,6 +148,7 @@ async def test_slice_for_print_checks_target_before_any_run_dir(tmp_path):
             raise_on_error=False,
         )
     assert res.is_error and K1C in _text(res)
+    assert hint in _text(res)  # the user is told how to get the missing slicer
     assert rig.slicing.requests == []
     assert not rig.runs.exists() or not list(rig.runs.iterdir())
 
@@ -176,3 +186,8 @@ async def test_tool_descriptions_point_to_list_printers(tmp_path):
         assert len(tools[name]) <= 700, (name, len(tools[name]))
     for field in ("bed_mm", "max_height_mm", "layer_height_mm", "materials", "unavailable"):
         assert field in tools["list_printers"], field
+    run = tools["run_design_pipeline"]
+    assert MECHANISM_NOT_EVALUATED in run
+    assert "import.json" in run and f"at most {MAX_SKIPPED_EVIDENCE}" in run
+    default = f"layer_height_mm defaults to {JOB_DEFAULTS.layer_height_mm:g}"
+    assert default in " ".join(tools["slice_for_print"].split())

@@ -68,7 +68,7 @@ examples, not server requirements.
 | `apply_material` | Destructive write | Create/update and assign a Principled BSDF material |
 | `run_design_pipeline` | Write | Submit a ModelSpec; returns a queued job (import, geometry, mechanism, print, package) |
 | `describe_model_spec` | Read | ModelSpec v2 JSON Schema, defaults, usable printers/materials and a worked example |
-| `list_printers` | Read | Printers this host can slice for: bed, height, layer range, materials, slicer; plus `unavailable` with install hints |
+| `list_printers` | Read | Printers this host can slice for: bed, height, layer range, materials, `slicer` `{id, name, version}` (`id` is the catalog slicer id that `tool_status` and the package manifest use); plus `unavailable` (no slicer, or unreadable bundle profiles) with reason and install hint |
 | `list_artifacts` | Read | Deliverable directories usable as `source.root_dir` (STL count per subdirectory, 3MF names) |
 | `get_job_status` | Read | Poll a design job by `job_id` |
 | `get_run_report` | Read | Per-stage verdicts, metrics, evidence and the overall `passed` flag of one run |
@@ -104,7 +104,7 @@ arbitrary Python.
 | `get_job_status` | yes | no | yes | 10 s |
 | `get_run_report` | yes | no | yes | 10 s |
 | `check_mesh_integrity` | yes | no | yes | 47.5 s（由 `max_total_stl_bytes` 推導） |
-| `slice_for_print` | no | no | no | 切片埠的 `timeout_s`（Bambu：`SLICE_TIMEOUT_S`）+ 30 s |
+| `slice_for_print` | no | no | no | 目錄內所有切片器 timeout 的最大值（`max_timeout_s`，不論是否安裝）+ 30 s |
 | `list_instances` | yes | no | yes | 10 s |
 | `build_instance` | no | yes | no | `GENERATOR_TIMEOUT_S` + 30 s |
 | `tool_status` | yes | no | yes | 10 s |

@@ -26,10 +26,12 @@ from src.core.domain.exceptions import DomainError
 from src.core.domain.import_limits import ImportLimits
 from src.core.domain.mechanical_generation import InstanceBuild, InstanceSummary
 from src.core.domain.mesh_integrity import MeshIntegrityReport
+from src.core.domain.model_spec import JOB_DEFAULTS
 from src.core.domain.slicing import SliceResult
 from src.core.ports.mechanical_generation_port import InstanceCatalogPort
 from src.core.use_cases.blender_lease import BlenderLease
 from src.core.use_cases.design_pipeline import DesignPipeline
+from src.core.use_cases.design_stages import MAX_SKIPPED_EVIDENCE, MECHANISM_NOT_EVALUATED
 
 #: Submitting only parses the spec, writes spec.json and schedules the run.
 SUBMIT_TIMEOUT_S = 30.0
@@ -61,6 +63,25 @@ BUILD_TOOL_TIMEOUT_S = GENERATOR_TIMEOUT_S + TRANSPORT_MARGIN_S
 
 RUN_URI_PREFIX = "run://"
 _TEXT_SUFFIXES = frozenset({".json", ".log"})
+_PICK = "Call list_printers first; choose a printer whose bed_mm fits the plate."
+
+RUN_DESIGN_PIPELINE_DOC = f"""Submit a ModelSpec (spec_version 2); returns the queued job, poll get_job_status.
+
+{_PICK} Minimal spec: {{"spec_version": "2", "name": ..., "source": {{"root_dir": ...,
+"project_3mf": ...}}, "print_target": {{"printer": ..., "material": ...}}}}. Full schema:
+describe_model_spec; root_dir values: list_artifacts. The run checks geometry, slices and
+packages ({MECHANISM_NOT_EVALUATED}); verdict: get_run_report. import.json lists ignored files
+(at most {MAX_SKIPPED_EVIDENCE}; the count covers all). A bad, out-of-root or unsliceable spec
+is an error and makes no job."""
+
+SLICE_FOR_PRINT_DOC = f"""Slice one 3MF into a fresh run directory. {_PICK}
+printer (an id) and material (one of its materials) are required, never defaulted;
+layer_height_mm defaults to {JOB_DEFAULTS.layer_height_mm:g} and must be printable there.
+
+input_3mf is relative to an allowed artifact root, ends in .3mf. Output comes back as
+run://{{run_id}}/print/<name> URIs. An unusable printer, material or height is an error and
+starts nothing; a non-zero exit or a busy slicer (retry later; never queues) is a result with
+passed=false and a message."""
 _T = TypeVar("_T")
 
 
@@ -138,17 +159,9 @@ def register_design_tools(
     @mcp.tool(
         timeout=SUBMIT_TIMEOUT_S,
         annotations=_annotations("Run design pipeline", read_only=False, idempotent=False),
+        description=RUN_DESIGN_PIPELINE_DOC,
     )
     async def run_design_pipeline(spec: dict[str, object]) -> dict[str, object]:
-        """Submit a ModelSpec (spec_version 2); returns the queued job at once, poll get_job_status.
-
-        Call list_printers first; choose a printer whose bed_mm fits the plate. Minimal spec:
-        {"spec_version": "2", "name": ..., "source": {"root_dir": ..., "project_3mf": ...},
-        "print_target": {"printer": ..., "material": ...}}. describe_model_spec gives the full
-        schema and an example, list_artifacts the valid root_dir values. The run checks geometry,
-        slices the 3MF and packages the evidence; read the verdict with get_run_report. A bad,
-        out-of-root, unsliceable printer/material/layer-height spec is an error and makes no job.
-        """
         pipeline = _configured(design, "design pipeline")
         try:
             return job_dict(await pipeline.submit(spec))
@@ -234,6 +247,7 @@ def register_design_tools(
     @mcp.tool(
         timeout=slice_timeout,
         annotations=_annotations("Slice for print", read_only=False, idempotent=False),
+        description=SLICE_FOR_PRINT_DOC,
     )
     async def slice_for_print(
         input_3mf: str,
@@ -241,15 +255,6 @@ def register_design_tools(
         material: Name,
         layer_height_mm: Annotated[float, Field(gt=0, allow_inf_nan=False)] | None = None,
     ) -> dict[str, object]:
-        """Slice one 3MF into a fresh run directory. Call list_printers first; choose a printer
-        whose bed_mm fits the plate. printer (an id) and material (one of its materials) are
-        required, never defaulted; layer_height_mm defaults to 0.2 and must be printable there.
-
-        input_3mf is relative to an allowed artifact root, ends in .3mf. Output comes back as
-        run://{run_id}/print/<name> URIs. An unusable printer, material or height is an error
-        and starts nothing; a non-zero exit or a busy slicer (retry later; never queues) is a
-        result with passed=false and a message.
-        """
         pipeline = _configured(design, "design pipeline")
         try:
             return slice_result_dict(

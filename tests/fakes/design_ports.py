@@ -102,6 +102,13 @@ class FakeSlicing:
     RANGES = {"bambu-p2s-0.4": (0.08, 0.28), "creality-k1c-0.4": (0.08, 0.3)}
 
     #: Bed width, depth and printable height read 2026-10-22; other printers declare none here.
+    #: Re-checked 2026-11-09 against Bambu Studio and OrcaSlicer 2.4.2 bundles on this Mac
+    #: (RANGES above too), reading the bundles only, no slice. From the repo root:
+    #: python -c "from src.infrastructure.tools_config import load_tools_config as T,
+    #: default_config_dir as D; from src.infrastructure.printer_catalog_loader import
+    #: load_printer_catalog as L; from src.adapters.slicing.orca_family_cli import OrcaFamilyCli
+    #: as O; t, c = T(), L(); print(O(c, {s.id: getattr(t, s.binary_key) for s in c.slicers},
+    #: overrides_dir=D() / 'slicer-profiles').machine_facts())"
     BEDS = {"bambu-p2s-0.4": (256.0, 256.0, 256.0), "creality-k1c-0.4": (220.0, 220.0, 250.0)}
 
     def machine_facts(self):

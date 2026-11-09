@@ -22,6 +22,7 @@ class PrinterEntry:
     printer: PrinterProfile
     layer_range: tuple[float, float] | None  # machine (min, max) mm; None = not declared
     bed_mm: tuple[float, float, float] | None  # width, depth, printable height
+    slicer_id: str  # the catalog slicer id, as tool_status and the package manifest name it
     slicer_name: str
     slicer_version: str | None
 
@@ -55,16 +56,13 @@ async def list_printers(
     ``clean`` strips host paths from a reason (the pipeline's single scrub point).
     """
     facts = await asyncio.to_thread(slicing.machine_facts)
-    entries = tuple(
-        PrinterEntry(
-            p,
-            known.layer_range,
-            known.bed_mm,
-            slicing.slicer_name(p.id),
-            slicing.tool_for(p.id).version,
+    entries = []
+    for p, known in readable(slicing, facts):
+        tool = slicing.tool_for(p.id)
+        name = slicing.slicer_name(p.id)
+        entries.append(
+            PrinterEntry(p, known.layer_range, known.bed_mm, tool.name, name, tool.version)
         )
-        for p, known in readable(slicing, facts)
-    )
     have = {e.printer.id for e in entries}
     hints = {tool.name: tool.install_hint for tool in await slicing.availability()}
     missing = []
@@ -78,4 +76,4 @@ async def list_printers(
             reason = f"{slicing.slicer_name(p.id)} is not installed or not usable on this host"
         hint = hints.get(slicing.tool_for(p.id).name, "")
         missing.append(UnavailablePrinter(p.id, reason, hint))
-    return PrinterListing(entries, tuple(missing))
+    return PrinterListing(tuple(entries), tuple(missing))
