@@ -9,6 +9,7 @@ from pathlib import Path
 
 from src.adapters.packaging.manifest_packager import ManifestPackager
 from src.core.domain.design_run import StageName, StageOutcome
+from src.core.domain.slicing import ToolAvailability
 from src.core.use_cases.design_files import public_run_file, resolve_run_file
 from tests.unit.core.test_design_pipeline import _payload, _rig, _run
 
@@ -92,6 +93,35 @@ async def test_every_downloadable_file_is_free_of_host_paths(tmp_path):
     for name in _public_bytes(run_dir):
         data = resolve_run_file(rig.runs, job.run_id, name).read_bytes()
         assert not any(bad.encode() in data for bad in (*_FORBIDDEN, str(Path.home())))
+
+
+_APP_DIR = "/Applications/FakeSlicer.app/Contents/MacOS"
+
+
+class AppPathSlicer(LoggingSlicer):
+    """A slicer installed outside home/tmp whose log names its own install directory."""
+
+    async def availability(self):
+        return (ToolAvailability("fakeslicer", True, f"{_APP_DIR}/fakeslicer", "1.0", "hint"),)
+
+    async def slice(self, request):
+        result = await super().slice(request)
+        (Path(request.output_dir) / "slicer.log").write_text(
+            f"cli mode, resources at {_APP_DIR}/../Resources\n", encoding="utf-8"
+        )
+        return result
+
+
+async def test_logs_lose_the_slicer_install_dir_like_messages_do(tmp_path):
+    rig = _rig(tmp_path)
+    rig.pipeline._stages = replace(
+        rig.pipeline._stages,
+        slicing=AppPathSlicer(rig.slicing, tmp_path),
+        packaging=ManifestPackager(),
+    )
+    job, _, _ = await _run(rig, _relative(rig))
+    log = (rig.runs / job.run_id / "print" / "slicer.log").read_text(encoding="utf-8")
+    assert _APP_DIR not in log and "/Applications/" not in log
 
 
 def _relative(rig) -> dict:

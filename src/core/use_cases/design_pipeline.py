@@ -239,14 +239,17 @@ class DesignPipeline:
         result = replace(result, message=await self.clean(result.message))
         return files.relative_slice(result, self._runs_dir, self._scrub)
 
-    async def clean(self, text: str) -> str:
-        """Strip host paths from free text, including every slicer binary's directory."""
+    async def _slicer_dirs(self) -> tuple[str, ...]:
+        """Every slicer binary's directory: the one extra-prefix list all scrubbing shares."""
         try:
             tools = await self._stages.slicing.availability()
         except Exception:  # noqa: BLE001 - scrubbing must never fail a run
             tools = ()
-        extra = tuple(str(Path(tool.path).parent) for tool in tools if tool.path)
-        return self._scrub.text(text, extra)
+        return tuple(str(Path(tool.path).parent) for tool in tools if tool.path)
+
+    async def clean(self, text: str) -> str:
+        """Strip host paths from free text, including every slicer binary's directory."""
+        return self._scrub.text(text, await self._slicer_dirs())
 
     async def run(
         self, job_id: str, *, native: CapturedNativeRevision | None = None
@@ -327,7 +330,7 @@ class DesignPipeline:
             report = stages.failed(name, f"{type(exc).__name__}: {exc}")
         finally:
             if name is StageName.PRINT:  # the one place slicer logs are scrubbed, pass or fail
-                files.scrub_logs(run_dir / "print", self._scrub)
+                files.scrub_logs(run_dir / "print", self._scrub, await self._slicer_dirs())
         if report.message:  # choke point: no stage message leaves with a host path
             report = replace(report, message=await self.clean(report.message))
         return report

@@ -100,19 +100,20 @@ class PathScrubber:
         return value
 
 
-def scrub_logs(print_dir: Path, scrub: PathScrubber) -> None:
+def scrub_logs(print_dir: Path, scrub: PathScrubber, extra: tuple[str, ...] = ()) -> None:
     """Rewrite every ``*.log`` under ``print_dir`` in place with host prefixes removed.
 
     Third-party slicer logs are downloadable and packaged, so their bytes are an exit too.
-    Text only: UTF-8 with replacement on read, UTF-8 on write; the files stay where they are.
+    ``extra`` is the same slicer-directory list ``DesignPipeline.clean`` strips from messages
+    (the logs name the slicer's own install path). Text only: UTF-8 with replacement on read,
+    UTF-8 on write; the files stay where they are.
     """
     if not print_dir.is_dir():
         return
     for log in sorted(print_dir.rglob("*.log")):
         if log.is_file() and not log.is_symlink():
-            log.write_text(
-                scrub.text(log.read_text(encoding="utf-8", errors="replace")), encoding="utf-8"
-            )
+            text = log.read_text(encoding="utf-8", errors="replace")
+            log.write_text(scrub.text(text, extra), encoding="utf-8")
 
 
 def relative_report(
