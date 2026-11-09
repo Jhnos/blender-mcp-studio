@@ -10,6 +10,7 @@ import bpy
 from mathutils import Matrix
 
 from scripts.blender_mesh_primitives import add_cylinder, assign, boolean, cleanup_mesh, loft_rings
+from scripts.blender_mesh_triangulation import triangulate_mesh
 from scripts.lab_station_rig import driver, pivot
 from src.core.domain.lab_station import ElectrodeArmSpec, Point
 from src.core.domain.lab_station_joints import ScreenHingeSpec, SerratedJointSpec
@@ -101,16 +102,21 @@ def block(name: str, size: Point, center: Point, mat: bpy.types.Material) -> bpy
 
 
 def add_screen_ears(back: bpy.types.Object, mat: bpy.types.Material) -> None:
+    # Join solid cores before cutting the common bore. Two independently cut
+    # polygonal bore walls leave coincident/sliver vertices at their union.
     for side in (-1, 1):
         ear = add_cylinder("LS_TOOL_ear", 14, 8, (side * 76, -55, 0), "X")
+        # Half a tooth-plate segment keeps the two radial grids transversal.
+        ear.rotation_euler.x = math.pi / 192
         boolean(back, ear, "UNION")
-        boolean(
-            back,
-            add_cylinder("LS_TOOL_bore", 2.8, 9, (side * 76, -55, 0), "X", vertices=192),
-            "DIFFERENCE",
-        )
-    teeth = placed_plate("LS_TOOL_teeth", mat, (-79.8, -55, 0), -1, 2.8)
+    teeth = placed_plate("LS_TOOL_teeth", mat, (-79.8, -55, 0), -1, 2.0)
     boolean(back, teeth, "UNION")
+    # Extend the left cut outwards through the teeth; retain both inner endpoints.
+    for center, depth in ((-78.75, 14.5), (76, 9)):
+        bore = add_cylinder("LS_TOOL_bore", 2.8, depth, (center, -55, 0), "X", vertices=192)
+        bore.rotation_euler.x = math.pi / 192
+        boolean(back, bore, "DIFFERENCE")
+    triangulate_mesh(back.data)
     cleanup_mesh(back)
 
 

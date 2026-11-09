@@ -1,2 +1,5 @@
 *.blend binary
 *.stl binary
+
+# Immutable delivery evidence: preserve original bytes (including CSV CRLF and raw logs).
+models/lab-station-v80/** -text -whitespace

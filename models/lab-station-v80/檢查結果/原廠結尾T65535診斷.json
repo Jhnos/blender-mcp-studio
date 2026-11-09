@@ -1,0 +1,7 @@
+{
+  "raw_slicer_log_message": "Invalid T command (T65535).",
+  "T65535_present_in_unmodified_vendor_machine_end_gcode": true,
+  "machine_profile_sha256": "fc344029262107ade0c16e7a76ddc10dd23fb10265b4adbf15b5769fd25a1e79",
+  "slicer_result_return_code": 0,
+  "instruction": "Kept official P2S template unchanged. This raw analyzer diagnostic is retained; no physical firmware run was performed."
+}

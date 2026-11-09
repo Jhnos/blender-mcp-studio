@@ -20,7 +20,7 @@ import json
 import pytest
 
 from src.adapters.mcp.blender_mcp_adapter import BlenderMCPClient, BlenderSocketClient
-from src.core.domain.exceptions import BlenderConnectionError
+from src.core.domain.exceptions import BlenderConnectionError, BlenderExecutionUncertainError
 
 _DEADLINE = 2.0
 
@@ -153,7 +153,7 @@ async def test_timeout_is_not_reported_as_a_failed_script() -> None:
     socket = BlenderSocketClient("127.0.0.1", port, timeout=0.02)
     client = BlenderMCPClient(socket)
     try:
-        with pytest.raises(BlenderConnectionError, match="completion is unknown"):
+        with pytest.raises(BlenderExecutionUncertainError, match="completion is unknown"):
             await client.call_tool("execute_code", {"code": "pass"})
         assert not socket.is_connected
     finally:
@@ -191,7 +191,7 @@ async def test_only_exact_registered_scripts_receive_their_longer_deadline(
             result = await client.call_tool(tool, {"code": code})
             assert result.success and result.output == "done"
         else:
-            with pytest.raises(BlenderConnectionError, match="completion is unknown"):
+            with pytest.raises(BlenderExecutionUncertainError, match="completion is unknown"):
                 await client.call_tool(tool, {"code": code})
     finally:
         await socket.disconnect()
@@ -246,5 +246,53 @@ async def test_interrupted_request_cannot_poison_next_reply(interruption: str) -
     finally:
         release.set()
         await client.disconnect()
+        server.close()
+        await server.wait_closed()
+
+
+async def test_eof_after_sending_is_uncertain_and_mcp_preserves_that_reason():
+    from src.adapters.mcp_server.errors import tool_error
+
+    async def receive_then_close(reader, writer):
+        await reader.read(4096)
+        writer.close()
+        await writer.wait_closed()
+
+    socket, server = await _connected_client(receive_then_close)
+    try:
+        with pytest.raises(BlenderExecutionUncertainError) as error:
+            await BlenderMCPClient(socket).call_tool("execute_code", {"code": "pass"})
+        assert "completion" in str(tool_error(error.value)).lower()
+        assert "Start Blender" not in str(tool_error(error.value))
+        assert not socket.is_connected
+    finally:
+        await socket.disconnect()
+        server.close()
+        await server.wait_closed()
+
+
+async def test_split_utf8_reply_is_complete_success_instead_of_uncertain():
+    finished = asyncio.Event()
+
+    async def peer(reader, writer):
+        try:
+            await reader.read(4096)
+            writer.write(b'{"status":"success","result":"\xe4')
+            await writer.drain()
+            await asyncio.sleep(0.01)
+            writer.write(b'\xb8\xad"}')
+            await writer.drain()
+        finally:
+            writer.close()
+            await writer.wait_closed()
+            finished.set()
+
+    socket, server = await _connected_client(peer)
+    try:
+        result = await BlenderMCPClient(socket).call_tool("execute_code", {"code": "pass"})
+        assert result.success and result.output == "中"
+    finally:
+        await asyncio.wait_for(finished.wait(), 2)
+        await socket.disconnect()
         server.close()
         await server.wait_closed()

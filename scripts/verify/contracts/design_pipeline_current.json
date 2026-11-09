@@ -1,0 +1,40 @@
+{
+  "description": "Current selected delivery through the shared application catalog",
+  "selection": "current",
+  "spec_version": "2",
+  "print_target": {"printer": "bambu-p2s-0.4", "material": "PLA"},
+  "verify_delivery_evidence": true,
+  "expect": {
+    "import_3mf": 1,
+    "skipped": 0,
+    "geometry_failing": 0,
+    "plates": 1,
+    "slicer_tool": "bambu-studio",
+    "slicer_license": "AGPL-3.0-only",
+    "manifest_files": [
+      "spec.json",
+      "import.json",
+      "geometry.json",
+      "print/effective-settings.json",
+      "print/slicer.log",
+      "print/machine.json",
+      "print/process.json",
+      "print/filament.json",
+      "print/extrusion.json"
+    ],
+    "print_profile": {
+      "printer_model": "Bambu Lab P2S",
+      "material": "PLA",
+      "nozzle_diameter_mm": 0.4,
+      "layer_height_mm": 0.2,
+      "support": true,
+      "brim_mm": 3.0
+    }
+  },
+  "negative_control": {
+    "keep_header_bytes": 40
+  },
+  "negative_controls": {
+    "material": {"material": "PETG"}
+  }
+}

@@ -75,7 +75,9 @@ def test_unknown_spec_version_error_lists_both_versions(tmp_path):
 def test_describe_model_spec_v2_example_parses(tmp_path):
     catalog = load_printer_catalog()
     printers = (catalog.printer(P2S), catalog.printer(K1C))
-    described = describe_model_spec(printers, {P2S: (0.08, 0.28), K1C: (0.08, 0.3)})
+    selected = {"spec_version": "1", "name": "selected", "source": {"root_dir": "s"}}
+    ranges = {P2S: (0.08, 0.28), K1C: (0.08, 0.3)}
+    described = describe_model_spec(printers, ranges, selected)
     assert described["spec_version"] == "2"
     schema = described["schema"]
     assert "print_target" in schema["required"]
@@ -90,17 +92,24 @@ def test_describe_model_spec_v2_example_parses(tmp_path):
     }
     assert by_printer[P2S]["material"]["enum"] == ["PLA"]
     assert by_printer[K1C]["layer_height_mm"]["maximum"] == 0.3
-    example = described["example"]
+    # main: example is the injected selection, copied as given (not the same object)
+    assert described["example"] == selected and described["example"] is not selected
+    example = described["template"]
     assert example["print_target"] == {
         "printer": "<printer id from list_printers>",
         "material": "<material from that printer's list>",
     }
     root = tmp_path / "layout"
     source = example["source"]
-    stl_dir = root / source["root_dir"] / "STL" / "列印零件"
-    stl_dir.mkdir(parents=True)
-    # the client fills the placeholders with a listed choice; the rest parses as given
-    chosen = {**example, "print_target": {"printer": P2S, "material": "PLA"}}
+    assert all(str(v).startswith("<") for v in source.values())  # no deployed model named
+    (root / "deliverable" / "STL").mkdir(parents=True)
+    # the client fills every placeholder (printer from list_printers); then it parses
+    chosen = {
+        **example,
+        "name": "mine",
+        "source": {"root_dir": "deliverable", "stl_glob": "STL/*.stl"},
+        "print_target": {"printer": P2S, "material": "PLA"},
+    }
     spec = parse_model_spec(chosen, artifact_roots=(root,))
     assert spec.spec_version == "2" and spec.legacy_default is False
 
@@ -108,7 +117,8 @@ def test_describe_model_spec_v2_example_parses(tmp_path):
 def _layer_blocks(ranges):
     catalog = load_printer_catalog()
     printers = tuple(catalog.printer(i) for i in ranges)
-    rules = describe_model_spec(printers, ranges)["schema"]["properties"]["print_target"]["allOf"]
+    described = describe_model_spec(printers, ranges, {})
+    rules = described["schema"]["properties"]["print_target"]["allOf"]
     return {
         r["if"]["properties"]["printer"]["const"]: r["then"]["properties"]["layer_height_mm"]
         for r in rules

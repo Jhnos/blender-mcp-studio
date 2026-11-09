@@ -10,6 +10,7 @@ from src.adapters.slicing.slice_job import job_process_keys
 from src.core.domain.model_spec import PrintTarget
 from src.core.domain.slicing import SliceRequest
 from src.infrastructure.printer_catalog_loader import load_printer_catalog
+from tests.fakes.bambu_bundle import TEST_LIMITS
 from tests.unit.adapters.test_orca_family_cli import _PROFILES, P2S, FakeRunner, _binary, _request
 
 #: The keys p2s-pla-overrides.json carried until 2026-11-09; job_process_keys overwrites each.
@@ -47,6 +48,7 @@ async def _merged(tmp_path: Path, overrides_dir: Path) -> dict[str, object]:
         load_printer_catalog(),
         {"bambu-studio": _binary(tmp_path), "orcaslicer": tmp_path / "no-orca"},
         overrides_dir=overrides_dir,
+        limits=TEST_LIMITS,
         runner=FakeRunner(),  # type: ignore[arg-type]
     )
     await cli.slice(_request(tmp_path))  # the P2S v78 job: PLA, defaults (support, 3 mm brim)

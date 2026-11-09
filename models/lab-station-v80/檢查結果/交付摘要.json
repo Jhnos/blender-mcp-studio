@@ -1,0 +1,33 @@
+{
+  "slicer": "Bambu Studio 02.08.02.61",
+  "single_sliced_plate": true,
+  "parts": 69,
+  "source": "v78 actual meshes; v79 orientations and positions",
+  "mesh_geometry_changed": false,
+  "nozzle_mm": 0.4,
+  "model_layer_height_mm": 0.2,
+  "material_preset": "Generic PLA @BBL P2S",
+  "bed_assumption": "Textured PEI Plate",
+  "bed_temp_C": 55,
+  "nozzle_temp_C": 220,
+  "support": "normal(auto), snug, everywhere",
+  "brim_mm": 3,
+  "brim_object_gap_mm": 0.1,
+  "walls": 3,
+  "gyroid_infill_percent": 15,
+  "initial_layer_speed_mm_s": 20,
+  "estimated_time_seconds": 159282.21875,
+  "estimated_filament_g": 1588.333740234375,
+  "support_feature_time_seconds": 47014.33172607422,
+  "first_layer_model_objects": 69,
+  "extruded_xy_envelope_mm": [
+    1.137,
+    1.136,
+    251.864,
+    251.864
+  ],
+  "out_of_bed_samples": 0,
+  "max_saved_vertex_roundoff_mm": 5.3759818132890905e-06,
+  "physical_adhesion_tested": false,
+  "printed_or_sent_to_printer": false
+}

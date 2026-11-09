@@ -11,6 +11,7 @@ and is reported as the upstream Boolean defect it is, not repaired here.
 """
 
 import bmesh
+import bpy
 
 
 def _delaunay_triangles(face: bmesh.types.BMFace) -> list[list[int]]:
@@ -51,3 +52,15 @@ def triangulate_faces(mesh: bmesh.types.BMesh) -> None:
             if created.normal.dot(normal) < 0:
                 created.normal_flip()
     mesh.faces.ensure_lookup_table()
+
+
+def triangulate_mesh(mesh: bpy.types.Mesh) -> None:
+    """Commit chain-safe triangles only after every source polygon is reproduced."""
+    editable = bmesh.new()
+    try:
+        editable.from_mesh(mesh)
+        triangulate_faces(editable)
+        editable.to_mesh(mesh)
+    finally:
+        editable.free()
+    mesh.update()

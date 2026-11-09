@@ -1,15 +1,16 @@
 """ModelSpec v2 described as JSON Schema, so a client can build a spec without reading source.
 
 The parser (``model_spec.parse_model_spec``) is the authority; this module mirrors its keys,
-types and defaults from the same constants. ``V2_EXAMPLE`` is a complete worked spec; a unit
-test keeps it equal to the v78 gate contract's spec
-(``scripts/verify/contracts/design_pipeline_v78.json``) except ``print_target``, which holds
-placeholders because the example never names a machine. Spec v1 is still accepted but is not
-described here.
+types and defaults from the same constants. ``example`` is the selected model's declaration,
+injected by the application (this pure schema owns no deployed model/version or filesystem
+path); it names whatever printer that declaration names. ``template`` (``V2_EXAMPLE``) is a
+complete spec v2 shape whose ``print_target`` holds placeholders, because code never names a
+machine for a client. Spec v1 is still accepted but is not described here.
 """
 
 from __future__ import annotations
 
+import copy
 from collections.abc import Mapping
 
 from src.core.domain.model_spec import (
@@ -23,24 +24,20 @@ from src.core.domain.model_spec import (
 )
 from src.core.domain.printer_catalog import PrinterProfile
 
-V1_EXAMPLE: dict[str, object] = {
-    "spec_version": "1",
-    "name": "lab-station-v78",
-    "source": {
-        "root_dir": "雙上臂四點梯形-v78",
-        "stl_glob": "STL/列印零件/*.stl",
-        "project_3mf": "整機69件-單盤排版-v78.3mf",
-    },
-    "mechanism": {"suites": []},
-}
-
+#: Spec v2 shape for a client building its own spec: every value is a placeholder to replace.
 V2_EXAMPLE: dict[str, object] = {
-    **V1_EXAMPLE,
     "spec_version": "2",
+    "name": "<run and package name>",
+    "source": {
+        "root_dir": "<root_dir from list_artifacts>",
+        "stl_glob": "<glob under root_dir ending in .stl>",
+        "project_3mf": "<project 3MF under root_dir>",
+    },
     "print_target": {
         "printer": "<printer id from list_printers>",
         "material": "<material from that printer's list>",
     },
+    "mechanism": {"suites": []},
 }
 
 _PATH_RULES = "relative, no '..', no hidden ('.'-prefixed) part, must stay inside the root"
@@ -79,11 +76,13 @@ def _per_printer(printer: PrinterProfile, bounds: tuple[float, float] | None) ->
 def describe_model_spec(
     printers: tuple[PrinterProfile, ...],
     ranges: Mapping[str, tuple[float, float] | None],
+    example: Mapping[str, object],
 ) -> dict[str, object]:
-    """JSON Schema for spec v2 plus a worked example.
+    """JSON Schema for spec v2, the selected model as ``example`` and a v2 ``template``.
 
     ``printers`` are the usable ones here; ``ranges`` maps a printer id to the (min, max) layer
-    height of its machine profile, or ``None`` when the profile declares none.
+    height of its machine profile, or ``None`` when the profile declares none. ``example`` is
+    the application's selected declaration, copied as given.
     """
     source = ImportedArtifact(root_dir="")
     schema: dict[str, object] = {
@@ -155,4 +154,9 @@ def describe_model_spec(
             },
         },
     }
-    return {"spec_version": "2", "schema": schema, "example": V2_EXAMPLE}
+    return {
+        "spec_version": "2",
+        "schema": schema,
+        "example": copy.deepcopy(dict(example)),
+        "template": copy.deepcopy(V2_EXAMPLE),
+    }

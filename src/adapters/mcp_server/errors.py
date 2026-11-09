@@ -8,11 +8,13 @@ from contextlib import asynccontextmanager
 from fastmcp.exceptions import ToolError
 
 from src.core.domain.design_run import StageName
-from src.core.domain.exceptions import BlenderConnectionError
+from src.core.domain.exceptions import BlenderConnectionError, BlenderExecutionUncertainError
 from src.core.use_cases.blender_lease import BlenderLease, Holder
 
 
 def tool_error(exc: Exception) -> ToolError:
+    if isinstance(exc, BlenderExecutionUncertainError):
+        return ToolError(str(exc))
     if isinstance(exc, BlenderConnectionError):
         return ToolError("Blender is unavailable. Start Blender and enable the addon on port 9876.")
     return ToolError(str(exc))

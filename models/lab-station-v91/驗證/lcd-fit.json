@@ -1,0 +1,119 @@
+{
+  "release": "lab-station-v90-r2",
+  "mesh": "LS_FIT_lcd_front.stl",
+  "drawing": "https://docs.waveshare.com/assets/images/ESP32-S3-Touch-LCD-5-touch-size-2-f55a9abf7b42455adbc880b71b4b92f9.webp",
+  "nominal_glass_mm": [
+    127.7,
+    87.45
+  ],
+  "nominal_active_mm": [
+    109.0,
+    65.8
+  ],
+  "nominal_active_center_offset_mm": [
+    0.0,
+    -1.4750000000000014
+  ],
+  "measured_seat_bounds_mm": [
+    [
+      10.75000286102295,
+      10.875001907348633
+    ],
+    [
+      139.25001525878906,
+      99.125
+    ]
+  ],
+  "measured_window_bounds_mm": [
+    [
+      20.000003814697266,
+      21.499998092651367
+    ],
+    [
+      130.0,
+      88.5
+    ]
+  ],
+  "measured_window_mm": [
+    109.99999618530273,
+    67.00000190734863
+  ],
+  "nominal_centered_glass_edge_reserves_mm": [
+    0.5000052452087402,
+    -0.8749971389770508,
+    0.49999094009399414,
+    2.0749990463256864
+  ],
+  "existing_worst_edge_reserves_mm": [
+    -0.20000095367430504,
+    -1.274996185302733,
+    -0.20001525878905113,
+    -1.2750000000000057
+  ],
+  "recommended_cut_window_mm": [
+    111.1,
+    70.2
+  ],
+  "recommended_cut_bounds_mm": [
+    [
+      19.45000905990601,
+      19.900000953674315
+    ],
+    [
+      130.55000905990602,
+      90.10000095367431
+    ]
+  ],
+  "recommended_cut_minimum_edge_reserve_mm": 0.32500095367430504,
+  "remaining_glass_support_lip_mm": 8.700006198883045,
+  "assumptions": "Bare touch edition mechanical drawing, the 9.35 mm edge datum is nominal with no printed tolerance. CAD fit, no printer deformation or connector clearance verified.",
+  "actual_model_changed": false,
+  "uncut_reexport_sha256": "244132529dc2555f127be5ca03dfd3e7617cafe6f92300cdb3fb7b45dabfc08a",
+  "original_release_to_uncut_reexport_nonwindow_mm": 0.00022614677425992883,
+  "retained_frame_features": {
+    "depth_samples": 25,
+    "maximum_nonwindow_boundary_deviation_mm": 0.0,
+    "mounting_holes": [
+      {
+        "center_mm": [
+          5.999996852168665,
+          6.0000020466257515
+        ],
+        "minimum_polygon_diameter_mm": 3.5922879360950413,
+        "window_to_bore_radial_ligament_mm": 17.54198952378429
+      },
+      {
+        "center_mm": [
+          5.999994467984536,
+          104.00000028355328
+        ],
+        "minimum_polygon_diameter_mm": 3.592282008168211,
+        "window_to_bore_radial_ligament_mm": 17.54199551547376
+      },
+      {
+        "center_mm": [
+          143.99998936035684,
+          6.000000935775784
+        ],
+        "minimum_polygon_diameter_mm": 3.592264844527321,
+        "window_to_bore_radial_ligament_mm": 17.5419790143093
+      },
+      {
+        "center_mm": [
+          143.999991959342,
+          103.99999476948011
+        ],
+        "minimum_polygon_diameter_mm": 3.592269380208292,
+        "window_to_bore_radial_ligament_mm": 17.541976623850566
+      }
+    ],
+    "shifted_screw_hole_negative_deviation_mm": 0.20000000000000018
+  },
+  "measured_oracle_window_mm": [
+    111.10000228881836,
+    70.19999694824219
+  ],
+  "measured_oracle_minimum_edge_reserve_mm": 0.32499847412108807,
+  "oracle_sha256": "36719aa49eec8b8f6ef1764dccb1544bd03e1a4c6cd6d4c0492635d38c5f29a4",
+  "oracle_glass_seat_unchanged": true
+}

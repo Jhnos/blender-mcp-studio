@@ -32,7 +32,9 @@ application services.
 
 ```bash
 scripts/ci.sh          # T1 static + T2 Python/Web tests; required before commit
-scripts/ci.sh --real   # T3 REST/MCP/readiness/batch checks; requires addon on 9876
+scripts/ci.sh --real   # T3 core model/MCP/slicing; no live LLM; requires addon on 9876
+scripts/ci.sh --chat   # Independent real conversation suite (Ollama + Blender)
+scripts/ci.sh --all    # Core then conversation, sequentially
 bash deploy/launchd/install.sh all   # render, install, and restart production services
 bash scripts/run_dev.sh              # foreground development: API 19505 + Web 5173
 ```

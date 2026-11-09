@@ -7,29 +7,33 @@ caller. Stages never touch jobs or report.json.
 from __future__ import annotations
 
 import asyncio
-from collections.abc import Callable
-from dataclasses import dataclass, field
+from collections.abc import Awaitable, Callable
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 
 from src.core.domain.design_run import StageName, StageOutcome, StageReport
 from src.core.domain.import_limits import ImportLimits
 from src.core.domain.model_spec import (
+    ImportedArtifact,
     ModelSpec,
     ModelSpecError,
     is_hidden_path,
     resolve_artifact_file,
 )
+from src.core.domain.native_revision import CapturedNativeRevision, NativeRevisionError
 from src.core.domain.packaging import ToolUse
 from src.core.domain.slicing import SliceRequest, ToolUnavailableError
 from src.core.ports.mechanism_simulation_port import MechanismSimulationPort
 from src.core.ports.mesh_integrity_port import MeshIntegrityPort
+from src.core.ports.native_product_port import NativeProductPort
 from src.core.ports.packaging_port import PackagingPort
 from src.core.ports.slicing_port import SlicingPort
 from src.core.use_cases import design_evidence as evidence_docs
 from src.core.use_cases import print_targets
 from src.core.use_cases.blender_lease import run_to_completion
-from src.core.use_cases.design_files import relative_path
+from src.core.use_cases.design_files import public_run_file, relative_path
 from src.core.use_cases.design_reports import REPORT_NAME, write_evidence
+from src.core.use_cases.native_revision import NativeRevisionService
 
 MECHANISM_NOT_EVALUATED = "mechanism not evaluated in Phase 1 (import path)"
 MAX_SKIPPED_EVIDENCE = 20  # import.json lists at most this many skips; the metric counts all
@@ -229,7 +233,11 @@ async def print_stage(
 
 def _run_files(run_dir: Path) -> tuple[str, ...]:
     """Every file under run_dir except report.json (it changes after packaging)."""
-    found = (p.relative_to(run_dir).as_posix() for p in run_dir.rglob("*") if p.is_file())
+    found = (
+        p.relative_to(run_dir).as_posix()
+        for p in run_dir.rglob("*")
+        if p.is_file() and public_run_file(run_dir, p)
+    )
     return tuple(sorted(f for f in found if f != REPORT_NAME))
 
 
@@ -246,3 +254,79 @@ async def package_stage(
         metrics,
         (relative_path(manifest.manifest_path, (run_dir,)),),
     )
+
+
+async def native_import_stage(
+    run_id: str,
+    captured: CapturedNativeRevision,
+    native: NativeRevisionService | None,
+    products: NativeProductPort | None,
+    state: RunState,
+    limits: ImportLimits,
+    run_dir: Path,
+) -> StageReport:
+    if native is None or products is None:
+        raise NativeRevisionError("native print pipeline is not configured")
+    executed = await native.execute_captured(run_id, captured)
+    product = await products.build(executed)
+    root = (run_dir.parent / product.directory).resolve()
+    if root != (run_dir / "native-product").resolve():
+        raise NativeRevisionError("native product must belong to the same job")
+    spec = replace(
+        captured.spec,
+        source=ImportedArtifact(
+            str(root), "parts/" + captured.spec.source.stl_glob, product.project.path
+        ),
+    )
+    return await import_stage(spec, state, limits, run_dir)
+
+
+@dataclass(frozen=True, slots=True)
+class DesignStages:
+    """Stage dependencies and construction, shared by imported and native jobs."""
+
+    limits: ImportLimits
+    integrity: MeshIntegrityPort
+    simulation: MechanismSimulationPort
+    slicing: SlicingPort
+    packaging: PackagingPort
+    scrub: Callable[[str], str]
+    native: NativeRevisionService | None
+    products: NativeProductPort | None
+
+    def plan(
+        self,
+        run_id: str,
+        spec: ModelSpec,
+        state: RunState,
+        run_dir: Path,
+        captured: CapturedNativeRevision | None,
+    ) -> list[tuple[StageName, Callable[[], Awaitable[StageReport]]]]:
+        return [
+            (
+                StageName.IMPORT,
+                lambda: (
+                    native_import_stage(
+                        run_id,
+                        captured,
+                        self.native,
+                        self.products,
+                        state,
+                        self.limits,
+                        run_dir,
+                    )
+                    if captured is not None
+                    else import_stage(spec, state, self.limits, run_dir)
+                ),
+            ),
+            (
+                StageName.GEOMETRY,
+                lambda: geometry_stage(self.integrity, state, run_dir, self.scrub),
+            ),
+            (StageName.MECHANISM, lambda: mechanism_stage(spec, self.simulation)),
+            (StageName.PRINT, lambda: print_stage(spec, self.slicing, state, run_dir)),
+            (
+                StageName.PACKAGE,
+                lambda: package_stage(run_id, spec, self.packaging, state, run_dir),
+            ),
+        ]

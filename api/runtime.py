@@ -22,6 +22,7 @@ from src.core.use_cases.design_pipeline import DesignPipeline
 from src.core.use_cases.iterative_refinement import IterativeRefinementUseCase
 from src.core.use_cases.mechanical_generation import MechanicalGenerationService
 from src.core.use_cases.modeling_pipeline import ModelingPipelineUseCase
+from src.core.use_cases.native_revision import NativeRevisionService
 from src.core.use_cases.print_readiness import PrintReadinessService
 from src.core.use_cases.scene_export import SceneExportService
 from src.core.use_cases.scene_operations import SceneOperationsService
@@ -61,11 +62,15 @@ class AppRuntime:
 
     #: Shared by REST and MCP: one pipeline, one Blender lease, one job store.
     design_pipeline: DesignPipeline
+    native_revisions: NativeRevisionService
     tools: ToolsConfig
 
 
 def build_runtime(env_file: Path | None = None) -> AppRuntime:
     """Build concrete outer adapters at the application's only composition root."""
+    from src.adapters.artifacts.native_product import NativeProductWriter
+    from src.adapters.artifacts.native_source import FilesystemNativeSource
+    from src.adapters.artifacts.native_staging import FilesystemNativeStaging
     from src.adapters.batch_transform.blender_batch_transform import BlenderBatchTransformAdapter
     from src.adapters.events.in_memory_event_bus import InMemoryEventBus
     from src.adapters.export.blender_scene_exporter import BlenderSceneExportAdapter
@@ -75,8 +80,10 @@ def build_runtime(env_file: Path | None = None) -> AppRuntime:
         authorized_generator_code,
     )
     from src.adapters.generation.blender_instance_builder import BlenderInstanceBuilder
+    from src.adapters.generation.native_runner import NativeRunner
     from src.adapters.jobs.sqlite_job_store import SQLiteJobStore
     from src.adapters.mcp.factory import build_blender_adapter
+    from src.adapters.mcp.leased_blender import LeasedBlenderPort
     from src.adapters.mesh.trimesh_cgal_integrity import TrimeshCgalIntegrity
     from src.adapters.packaging.manifest_packager import ManifestPackager
     from src.adapters.polyhaven.polyhaven_adapter import PolyHavenAdapter
@@ -84,6 +91,7 @@ def build_runtime(env_file: Path | None = None) -> AppRuntime:
     from src.adapters.prompt.blender_context_prompt_builder import BlenderContextPromptBuilder
     from src.adapters.security.blender_code_sandbox import BlenderCodeSandbox
     from src.adapters.security.prompt_injection_sanitizer import PromptInjectionSanitizer
+    from src.adapters.security.request_script_authority import RequestScriptAuthority
     from src.adapters.session.sqlite_session_store import SQLiteSessionStore
     from src.adapters.simulation.registered_suites_simulation import RegisteredSuitesSimulation
     from src.adapters.slicing.orca_family_cli import OrcaFamilyCli
@@ -95,8 +103,9 @@ def build_runtime(env_file: Path | None = None) -> AppRuntime:
     )
     from src.adapters.verification.blender_verification import BlenderVerificationAdapter
     from src.adapters.vision.factory import build_vision_adapter
+    from src.core.use_cases.artifact_catalog import ArtifactCatalog
     from src.core.use_cases.blender_lease import BlenderLease
-    from src.infrastructure.config_loader import default_config_dir
+    from src.infrastructure.config_loader import default_config_dir, load_selected_model_spec
     from src.infrastructure.env_loader import load_env
     from src.infrastructure.printer_catalog_loader import OVERRIDES_SUBDIR, load_printer_catalog
     from src.infrastructure.tools_config import load_tools_config
@@ -104,14 +113,20 @@ def build_runtime(env_file: Path | None = None) -> AppRuntime:
 
     load_env(env_file)
     authorized = authorized_generator_code() | authorized_verification_code()
-    sandbox = BlenderCodeSandbox(authorized=lambda: authorized)
-    blender = build_blender_adapter(
+    authority = RequestScriptAuthority()
+    sandbox = BlenderCodeSandbox(
+        authorized=lambda: authorized, scoped_timeout=authority.timeout_for
+    )
+    lease = BlenderLease()
+    backend = build_blender_adapter(
         sandbox=sandbox,
+        scoped_timeout=authority.timeout_for,
         script_timeouts={
             **{code: GENERATOR_TIMEOUT_S for code in authorized_generator_code()},
             **{code: VERIFICATION_TIMEOUT_S for code in authorized_verification_code()},
         },
     )
+    blender = LeasedBlenderPort(backend, lease)
     adapter_factory = ConcreteAdapterFactory()
     llm = adapter_factory.build_llm_adapter()
     event_bus = InMemoryEventBus()
@@ -121,20 +136,37 @@ def build_runtime(env_file: Path | None = None) -> AppRuntime:
     verification = VerificationService(BlenderVerificationAdapter(blender), registered_suites())
     tools = load_tools_config()
     catalog = load_printer_catalog()  # each slicer's binary_key names a tools.yaml field
+    native_sources = FilesystemNativeSource(tools.artifact_roots, tools.import_limits)
+    artifacts = ArtifactCatalog(
+        tools.artifact_roots,
+        tools.import_limits.max_stl_files,
+        load_selected_model_spec,
+        native_sources=native_sources,
+    )
+    native_revisions = NativeRevisionService(
+        artifacts,
+        FilesystemNativeStaging(native_sources, tools.design_runs_dir),
+        runner=NativeRunner(blender, lease, authority, tools.design_runs_dir),
+    )
+    integrity = TrimeshCgalIntegrity()
     design_pipeline = DesignPipeline(
-        integrity=TrimeshCgalIntegrity(),
+        native=native_revisions,
+        native_products=NativeProductWriter(integrity, tools.import_limits, tools.design_runs_dir),
+        integrity=integrity,
         simulation=RegisteredSuitesSimulation(verification),
         slicing=OrcaFamilyCli(
             catalog,
             {slicer.id: getattr(tools, slicer.binary_key) for slicer in catalog.slicers},
             overrides_dir=default_config_dir() / OVERRIDES_SUBDIR,
+            limits=tools.import_limits,
         ),
         packaging=ManifestPackager(),
         jobs=SQLiteJobStore(tools.design_jobs_db),
-        lease=BlenderLease(),
+        lease=lease,
         runs_dir=tools.design_runs_dir,
         artifact_roots=tools.artifact_roots,
         limits=tools.import_limits,
+        artifacts=artifacts,
     )
     return AppRuntime(
         blender=blender,
@@ -168,5 +200,6 @@ def build_runtime(env_file: Path | None = None) -> AppRuntime:
             else IterativeRefinementUseCase(llm=llm, blender=blender, vision=vision)
         ),
         design_pipeline=design_pipeline,
+        native_revisions=native_revisions,
         tools=tools,
     )

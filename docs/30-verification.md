@@ -15,12 +15,27 @@
 
 ```bash
 scripts/ci.sh          # T1 static + T2 unit/headless dummy run；commit 前必跑
-scripts/ci.sh --real   # T3 REST/MCP/readiness/batch + hand-v3 契約與重現差分；需要 Blender addon 已就緒
+scripts/ci.sh --real   # 核心 T1/T2/T3：模型、REST/MCP、機構、切片與包；不呼叫 Ollama
+scripts/ci.sh --chat   # 獨立 T4 對話：Ollama 前置＋WS/REST＋Blender oracle，不重跑 T1/T2/T3
+scripts/ci.sh --all    # 先核心、再對話；共用 Blender，不能並行
+# 只重驗目前交付件：同一個核心閘門，不指定版本
+$HOME/miniconda3/envs/blender-mcp/bin/python scripts/verify/design_pipeline_verify_real.py
 ```
+
+核心與對話各自回報所選範圍；未選對話不代表對話通過。明確要求真機套件但 addon 未就緒時回傳失敗。對話前置探測會保留 HTTP 狀態／連線錯誤；超過預算只表示未取得成功回應，不能推定 Ollama 離線或飽和。
+
+單次 `claude -p` 執行驗證時，使用原生環境選項 `CLAUDE_CODE_DISABLE_BACKGROUND_TASKS=1`，讓 Bash 在前景等待到終態；依驗證預算設定足夠的工具 timeout。父 CLI 回覆成功不等於子程序通過，必須保留實際命令、終態輸出及正反例報告。若父程序中止，先確認後端工作終態才可重跑。此選項僅控制 CLI 等待方式，見 [Claude Code 官方環境選項](https://code.claude.com/docs/en/env-vars)。
+
+T1/T2仍彙整全部失敗；只要已有硬失敗，核心／完整模式在接觸Blender前終止，不能帶著已失敗的前置啟動T3。獨立對話模式維持獨立範圍。
 
 真機階段任何 hard gate 失敗後立即停止，避免後續操作污染共享場景。逾時不代表 Blender 已停止；重跑前必須確認先前工作已排空。靜態與單元階段仍彙整失敗。
 
 ### T3 裡的產出物閘門（2026-09-08 起）
+
+原生場景生命週期由 `scripts/verify/native_session_verify_factory.py --all` 驗證合成輸入及同一 ArtifactCatalog 選定來源。每個案例使用獨立 factory／background／disable-autoexec 程序，禁止載入 MCP addon；執行檔讀取已安裝 Blender LaunchAgent 的 ProgramArguments，跨平台單跑可明確傳入 `--blender`。輸出使用新的 UUID 目錄，亦可傳入尚不存在的 `--work`。
+此閘門核對原場景、物件身份、另存與獨立重開；故意改動原驅動定義／屬性 UI 的反例必須回報 restoration error 且不得發布候選，不能聲稱這兩例已成功回滾。它屬隔離生命週期資格，不取代共用 runtime 的原生修訂、機構或製造驗收。
+
+`native_revision_verify_factory.py --all` 接續從同一catalog／staging服務取得原件，分為一個完整幾何／STL正例與skip-cut、skip-stop、stale-canonical三個拒絕控制。原場景同時載入原整機，暫存幾何仍須保留其原態。既有host CGAL逐步判定，實際材料增減另有內外點控制；保存重開後才整理完整STL，完整集合通過獨立檢查後才有成功manifest。再由同一完整STL與原3MF收據建立新未切片盤，移除舊Gcode／預覽並以真正Bambu --info載入；namespace序列化不可只用通用XML parser驗收。命令預設新UUID目錄，亦可傳入尚不存在的`--work`；背景worker無MCP addon／TCP監聽。此隔離資格不替代正式native runner、操作干涉、製造配合或新3MF驗收。
 
 | 閘門 | 讀什麼 | 首跑秒數（Mac，2026-09-08） |
 |---|---|---|
@@ -34,14 +49,22 @@ scripts/ci.sh --real   # T3 REST/MCP/readiness/batch + hand-v3 契約與重現�
 | octopus hand V2 ×2 | 生成、同場景 tips | 26 |
 | generation delivery path | **清空** `tmp/hand-compact/`，走公開 REST endpoint 重建，比 API 回報的數字與磁碟上的位元組，再對 `models/hand-compact/manifest.json` 走同一份碎片預算 | 10 |
 | build determinism within budget | 同一零件在常駐 Blender 重建 3 次，判準是**完成品的面數差不超過碎片預算**——頂點順序幾乎每一步都不同，那是 exact solver 的性質不是缺陷，拿它當紅燈的閘門會永遠紅 | 18 |
-| design pipeline (v78, Bambu P2S) | `scripts/verify/design_pipeline_verify_real.py scripts/verify/contracts/design_pipeline_v78.json`：前置先呼叫 `list_printers`，合約印表機 `bambu-p2s-0.4` 不在可用清單即 FAIL 並附 unavailable 的原因與安裝提示。經公開 MCP URL 送 v78 交付物的 ModelSpec，輪詢到終態（預算＝該印表機切片器的逾時＋300 s），逐階段驗證據：import 69 件且 `import.json` 列 69 個 STL＋1 個 3MF（含 sha256）、geometry 69 件 0 失敗、mechanism `not_applicable`、print 1 盤、manifest 含合約列出的檔案與切片器條目（`bambu-studio`、版本、AGPL）、所有文件無主機路徑。反例：(1) PETG（P2S 沒有的材料）在 submit 就被拒、不建 job；(2) 截斷表頭的 STL 副本，geometry 必須 FAILED 並點名該檔。交付物根目錄取 `config/tools.yaml` 的 `artifact_roots[0]`（`--artifact-root` 可覆寫）。前置（交付物、切片器、端點）缺一即 FAIL 附原因，不 SKIP；要在部署後跑 | 真切片約 3 分鐘 |
-| design pipeline (v78, Creality K1 Max) | 同一支腳本跑 `contracts/design_pipeline_v78_creality_k1max.json`：同一份 v78 交付物在 `creality-k1-max-0.4`（300×300 床）經 OrcaSlicer 切片，manifest 的切片器條目必須是 `orcaslicer` 2.4.2。反例：(1) PETG 在 submit 被拒；(2) plate-fit：同一份 3MF 改指 `creality-k1c-0.4`（220×220 床），print 必須 FAILED，訊息含 `does not fit creality-k1c-0.4` 與 `220×220`，切片器根本不啟動 | 真切片約 34 s（2026-10-22 實測 33.8／34.2 s） |
+| design pipeline (current selection, Bambu P2S) | `scripts/verify/design_pipeline_verify_real.py scripts/verify/contracts/design_pipeline_current.json`：合約宣告 `selection: current`，並以 `spec_version: "2"` 的 `print_target` 寫明它驗的是 `bambu-p2s-0.4`／`PLA`；經公開 MCP 取得應用目錄的選定 ModelSpec，先拒絕不可用、discovery／example 不一致，或選版解析出的印表機／材料（v1 名稱會先轉成目錄 id）與合約不符。前置再呼叫 `list_printers`，合約印表機不在可用清單即 FAIL 並附 unavailable 的原因與安裝提示。提交時不帶 spec（服務自己用選版），輪詢到終態（預算＝最慢切片器的期限＋300 s），逐階段驗證據：原件數量取自獨立核對的來源清單，`import.json` 的 STL／3MF 路徑、位元組數與 SHA256 逐件相符，geometry 檢查同數量且 0 失敗、mechanism `not_applicable`、print 1 盤、manifest 含合約列出的檔案（含 `print/extrusion.json` 刀路檢查）與 AGPL 切片器條目、所有文件無主機路徑。反例：(1) PETG（P2S 沒有的材料）在 submit 就被拒、不建 job；(2) 截斷表頭的 STL 副本，geometry 必須 FAILED 並點名該檔。交付物根目錄取 `config/tools.yaml` 的 `artifact_roots[0]`（`--artifact-root` 可覆寫）。前置（交付物、切片器、端點）缺一即 FAIL 附原因，不 SKIP；要在部署後跑 | 真切片約 3 分鐘 |
+| design pipeline (v78, Creality K1 Max) | 同一支腳本跑 `contracts/design_pipeline_v78_creality_k1max.json`：v78 交付物在 `creality-k1-max-0.4`（300×300 床）經 OrcaSlicer 切片，manifest 的切片器條目必須是 `orcaslicer` 2.4.2；OrcaSlicer 的 `toolpath_inspection` 是 false（原因見 `config/slicers.yaml`），所以 manifest 不列 `extrusion.json`。反例：(1) PETG 在 submit 被拒；(2) plate-fit：同一份 3MF 改指 `creality-k1c-0.4`（220×220 床），print 必須 FAILED，訊息含 `does not fit creality-k1c-0.4` 與 `220×220`，切片器根本不啟動 | 真切片約 34 s（2026-10-22 實測 33.8／34.2 s） |
+
+歷史合約 `contracts/archive/design_pipeline_v78.json`（P2S，v2 spec）與 `archive/design_pipeline_v80.json` 不再接進 `ci.sh`，可手動跑。
+
+目前工作站的交付閘門在提交前，會把公開目錄的選定原生檔、完整 STL 與 3MF，和交付的出圖、腕端動作與擠出收據交叉核對。各檔重新計算清單雜湊後，證據仍必須指向同一份原生檔或切片。這項核對確認證據對應的版本，機構實測仍依各收據的取樣範圍判定。T3 的工作站原型、雙連桿、走線及維修 MCP 測試另屬研究夾具。其場景在測試期間會載入共用 Blender，MCP 研究收據包含所讀取的夾具指紋，不能當成目前交付件的走線與維修資格。
+
+`scripts/verify/workstation_cup_verify_factory.py` 可獨立執行，亦由 T3 呼叫。它從共用選版重開原生快照，在隔離 Blender 擷取停放的雙臂及螢幕 0–60° 姿態。外接凸包連續覆蓋候選杯的抬升與前移，移位集液盤另以封閉實體檢查，其他裝配件須至少留 1 mm 保守間距。空心杯的錯位、不抬前移與過度抬升三個控制須各有正體積交集。收據保存原生檔與擷取檔指紋；這一關驗候選杯模型和停臂後取出路徑，實杯、走線、握持與完整換杯驗收另有要求。
+
+新交付使用 `synchronized-native-result.json` 的 `format_version: 2`。收據以 STL 檔名去除副檔名為零件名稱，分別在 `native.stl_sha256_by_owner`、`native.reopened_stl_sha256_by_owner` 與 `slice.input_stl_sha256_by_owner` 記錄實際匯出、重開讀回與切片輸入的完整清單。沿用件也列入，三份清單都必須與獨立核對的選版 STL 逐件相符。未標格式的既有交付仍依原單件格式驗證。
 
 順序是硬的：手指契約重用手契約生成的場景；差分讀那次生成匯出的 STL；
 交付路徑閘門**最後**跑，因為它會清空 `tmp/hand-compact/` 再自己重建——排在前面就會抽掉別人的輸入。三條由
 `test_real_ci_gates_the_hand_contracts` 釘在 `ci.sh` 裡；`test_real_ci_runs_every_contract` 釘住 `contracts/` 下
 **每一個**檔案都在 `--real`、走對的 checker、且場景重用有先生成（[[DEFERRALS]] D-004，2026-09-09 `done`）。
-交付路徑那一條由 `test_real_ci_gates_the_hand_contracts` 一併釘住順序。整個 T3 約 85 s。
+交付路徑那一條由 `test_real_ci_gates_the_hand_contracts` 一併釘住順序。該歷史交付子集約85秒，不能用來估計目前完整T3；完整核心還含多套研究機構與線路／維修案例，耗時以同一輪終態日誌為準。觀察逾時或超過舊預估均不是重啟依據，應接續原程序handle。
 
 本專案**沒有** GitHub Actions；`scripts/ci.sh` 是唯一 CI。新行為一律從一個
 **有鑑別力的失敗測試**開始——測試要能在功能未實作時變紅，而不是靠實作細節通過。
@@ -67,6 +90,7 @@ scripts/ci.sh --real   # T3 REST/MCP/readiness/batch + hand-v3 契約與重現�
 | `test_rest_error_ssot.py` | router 自行把 domain error 譯成 HTTP status；並凍結 endpoint 自有的守衛清單 |
 | `test_router_composition.py` | router 組裝 use case、內嵌 `bpy` 原始碼或觸碰 `execute_code` |
 | `test_docs_dcc.py` | 斷掉的 wikilink、導航孤兒、埠號寫在 SSOT 之外 |
+| `test_document_links.py` | 全部文件（含archive）的本地Markdown連結失效；搬移／封存須與DCC一起跑，僅修正相對指向，不重寫歷史事實 |
 | `test_script_primitive_ssot.py` | 產生器重新定義共用 primitive |
 | `test_contract_builder.py` | 簽入的手契約 ≠ 由規劃生成的契約(契約是生成產物,手改即紅) |
 | `test_generator_imports.py` | 產生器可達的模組沒進契約 `reload_modules`(常駐 Blender 跑舊碼還綠) |
@@ -77,6 +101,22 @@ scripts/ci.sh --real   # T3 REST/MCP/readiness/batch + hand-v3 契約與重現�
 **每一個都附 should-fire 與 should-pass fixture。** 只有前者的閘門，
 與「永遠報錯」在外觀上完全相同。
 
+### 切片路徑收據
+
+共用 `BambuStudioCli` 在命令成功後，讀取該次 machine profile 與新 3MF，產生 `print/extrusion.json`。檢查包含完整線寬、指向圓弧極值、Z 沉積厚度、機器矩形包絡，以及 fresh `identify_id` 對應的每件床面接觸；未知列印幾何命令、缺失 metadata、漏件、無標籤、懸空與越界必須拒絕成功。支撐／brim 關閉時不得仍有相關沉積；一般零件不強制需要支撐，工作站原件公開 gate 則要求兩者的接床路徑。收據綁定完整切片與 G-code SHA256，不能拿舊成功 JSON 替新產物背書。
+
+當次請求存在時，另核對新3MF的project settings與完整G-code設定區塊，要求印表機、材料、噴嘴、模型名目層高、支撐及brim一致，並在收據保存print_profile。缺失／重複區塊或錯設定不得通過；目前交付公開gate另按獨立驗收合約核對設定。這些名目設定不代表實際韌體或物理沉積已量測。
+
+語法語意參考 [BambuStudio GCodeProcessor 固定提交](https://github.com/bambulab/BambuStudio/blob/79df7ae309be398ed30c9f397c13c9911c2edc57/src/libslic3r/GCode/GCodeProcessor.cpp)：G90／G91 與 M82／M83 的 E 模式、相對 IJ 圓心另行解讀。解析器是本專案窄範圍實作，未引入或連結上游 parser。合作式檢查期限由同一讀取器停止，外層 port 期限包含切片與檢查，不能以放棄背景執行緒冒稱工作已結束。
+
+此收據只證明所宣告的軟體路徑與接觸；物理黏附、支撐可移除、免鑽孔／研磨／修面配合及承載仍須各自取得證據。使用者的免後加工界線以 [任務16驗收](tasks/16_lab-station.md#acceptance-checks) 為準。
+
+既有 `mesh_probe_verify_real.section_probe_code` 可在宣告的剛體frame中，以獨立globals對原mesh副本取有界的封閉剖面；拒絕開口／分岔、變形網格與非剛體frame，不寫回來源。`mesh_measurements.measure_section_circle` 分別回報角點擬合半徑與原多邊形邊界最小半徑，數值解析度不得當作列印公差。單元測試覆蓋共線中點、完全相同觀測點與無效輪廓；已知空心柱的獨立引擎觀測須另核半徑、中心、原態及呼叫端namespace。這些局部量測不辨識材料內外，也不證明目前交付件的孔、四點關節閉合或實際配合；不得據此解除整機驗收。
+
+`mesh_binding` 的同frame及唯一軸向frame檢查共用固定數值帶。最近點衝突／等距時，只可用完整頂點鄰接關係縮減帶內候選，且仍須保有頂點一對一及全部同向三角面；超過64候選／32輪或未唯一收斂即拒絕。此過程不合點、不改網格、不放寬距離，也不允許把較寬的診斷搜尋結果當成正式對應資格。
+
+目前工作站的整機要求另由 [交付需求對照](verification/lab-station/14-current-delivery-contract.md) 追溯到產物檢查；核心軟體流程通過不自動解除該表的機械或實體要求。
+
 ## 驗證矩陣
 
 | Tier | 真實元件 | 被替換的邊界 | 這一層能宣稱什麼 |
@@ -84,7 +124,9 @@ scripts/ci.sh --real   # T3 REST/MCP/readiness/batch + hand-v3 契約與重現�
 | Unit | Domain、service、tool registry | Fake Blender port | validation、routing、error 語意 |
 | ASGI e2e | FastAPI、FastMCP framing、middleware | Fake Blender port | mount、identity、Origin、protocol、client 中立性 |
 | Headless UI | React／MDR／Vite 測試 | Mock HTTP backend | 前端行為 |
-| Real machine | 對外 Tailnet MCP + API + Blender | 無 | nonce 變異、列印夾具、單次 Undo 還原整批，並以獨立 socket oracle 佐證 |
+| Core real machine | 對外 Tailnet MCP + API + Blender + 切片器（不使用即時 LLM） | 無 | nonce 變異、列印夾具、單次 Undo 還原整批，並以獨立 socket oracle 佐證 |
+
+對話 T4 另外透過 Ollama、公開 WS/REST 與獨立 Blender oracle 驗證自然語言建立物件、讀回與清理。核心 CI 中的 LLM 單元／ASGI 測試使用 fake，仍保留。
 
 Real tier 只變異帶 nonce 前綴的驗證物件，並在 `finally` 移除。它同時經 REST 與 MCP
 下指令，再獨立地從 Blender addon socket 讀真實狀態當 oracle（埠見 [[10-runtime-ssot]]）。

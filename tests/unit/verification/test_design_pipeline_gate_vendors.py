@@ -19,7 +19,8 @@ def load(name: str) -> dict:
     return json.loads((CONTRACTS / name).read_text("utf-8"))
 
 
-P2S = load("design_pipeline_v78.json")
+P2S = load("archive/design_pipeline_v78.json")  # archived by main; still the P2S v2 spec
+CURRENT = load("design_pipeline_current.json")
 K1MAX = load("design_pipeline_v78_creality_k1max.json")
 OUT = "print/x.3mf"
 
@@ -38,6 +39,9 @@ def test_contracts_name_printer_material_and_tool() -> None:
     assert P2S["spec"]["spec_version"] == "2"
     assert P2S["spec"]["print_target"] == {"printer": "bambu-p2s-0.4", "material": "PLA"}
     assert K1MAX["spec"]["print_target"] == {"printer": "creality-k1-max-0.4", "material": "PLA"}
+    # the current-selection contract carries no spec, so it names its printer itself
+    assert CURRENT["spec_version"] == "2" and "spec" not in CURRENT
+    assert CURRENT["print_target"] == {"printer": "bambu-p2s-0.4", "material": "PLA"}
     assert K1MAX["spec"]["source"] == P2S["spec"]["source"]
     assert K1MAX["expect"]["stl_count"] == 69 and K1MAX["expect"]["plates"] == 1
     assert (P2S["expect"]["slicer_tool"], P2S["expect"]["slicer_version"]) == (
@@ -122,7 +126,7 @@ def test_ci_runs_both_vendor_gates() -> None:
     lines = [t for t in ci if "design_pipeline_verify_real.py" in t]
     assert len(lines) == 2 and all("_run hard" in t for t in lines)
     assert "Bambu P2S via Bambu Studio" in lines[0]
-    assert lines[0].endswith("design_pipeline_v78.json")
+    assert lines[0].endswith("design_pipeline_current.json")  # main: P2S gate = current selection
     assert "Creality K1 Max via OrcaSlicer" in lines[1]
     assert lines[1].endswith("design_pipeline_v78_creality_k1max.json")
     assert ci.index(lines[0]) + 1 == ci.index(lines[1])

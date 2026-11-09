@@ -62,6 +62,7 @@ from src.adapters.slicing.slice_job import (
 )
 from src.adapters.slicing.slice_targets import check_target as target_check
 from src.adapters.slicing.slice_targets import process_key
+from src.core.domain.import_limits import ImportLimits
 from src.core.domain.packaging import ToolUse
 from src.core.domain.printer_catalog import (
     PrinterCatalog,
@@ -94,6 +95,7 @@ class OrcaFamilyCli:
         binaries: Mapping[str, Path],
         *,
         overrides_dir: Path,
+        limits: ImportLimits,
         runner: Runner = subprocess.run,
         timeouts: Mapping[str, float] | None = None,
     ) -> None:
@@ -101,6 +103,7 @@ class OrcaFamilyCli:
         self._catalog = catalog
         self._binaries = dict(binaries)
         self._overrides_dir = overrides_dir
+        self._limits = limits
         self._runner = runner
         self._timeouts = dict(SLICE_TIMEOUT_S if timeouts is None else timeouts)
 

@@ -13,6 +13,10 @@ class SceneOperationError(DomainError):
     """A scene operation failed with a recoverable, user-facing reason."""
 
 
+class BlenderBusyError(SceneOperationError):
+    """A different job or unresolved command owns the engine mutation boundary."""
+
+
 class BatchTransformError(SceneOperationError):
     """A batch transform request or execution could not be completed safely."""
 
@@ -76,3 +80,7 @@ class MechanicalGenerationError(ExternalServiceError):
     a 502. It is not a 200 with surprising content: the manifest, the package
     tests and the README are all written against the declared list.
     """
+
+
+class BlenderExecutionUncertainError(BlenderConnectionError):
+    """A command was sent but no definitive completion reply was received."""

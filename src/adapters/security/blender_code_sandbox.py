@@ -61,10 +61,18 @@ class BlenderCodeSandbox(CodeSandboxPort):
     not decide what is authorized.
     """
 
-    def __init__(self, authorized: Callable[[], frozenset[str]] | None = None) -> None:
+    def __init__(
+        self,
+        authorized: Callable[[], frozenset[str]] | None = None,
+        *,
+        scoped_timeout: Callable[[str], float | None] | None = None,
+    ) -> None:
         self._authorized = authorized
+        self._scoped_timeout = scoped_timeout
 
     def validate(self, code: str) -> SandboxResult:
+        if self._scoped_timeout is not None and self._scoped_timeout(code) is not None:
+            return SandboxResult(allowed=True, violations=())
         if self._authorized is not None and code in self._authorized():
             return SandboxResult(allowed=True, violations=())
 

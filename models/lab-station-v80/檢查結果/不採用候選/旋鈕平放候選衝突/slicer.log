@@ -1,0 +1,10 @@
+[2026-10-20 21:21:02.399854] [0x0000000204d9ff80] [trace]   Initializing StaticPrintConfigs
+[2026-10-20 21:21:02.424535] [0x0000000204d9ff80] [warning] cli mode, Current BambuStudio Version 02.08.02.61
+[2026-10-20 21:21:02.725640] [0x0000000204d9ff80] [warning] no filament colors found in projects
+[2026-10-20 21:21:04.105584] [0x000000016fe63000] [warning] Detected missing Voronoi vertex, input polygons will be rotated back and forth.
+[2026-10-20 21:21:08.610751] [0x000000016fa57000] [error]   ZFiller: encounter idx from clip: 8
+[2026-10-20 21:21:08.625022] [0x000000016fa57000] [error]   ZFiller: encounter idx from clip: 13
+[2026-10-20 21:21:24.671449] [0x0000000204d9ff80] [error]   gcode path conflicts found between TE_pH_temp_A_knob and S_capillary_shoulder_knob
+[2026-10-20 21:21:24.671824] [0x0000000204d9ff80] [error]   plate 1: found slicing result conflict!
+
+run found error, exit

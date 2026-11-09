@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
+
 import pytest
 
 from src.core.domain.model_spec import ModelSpecError
@@ -15,7 +17,7 @@ P2S, K1C = "bambu-p2s-0.4", "creality-k1c-0.4"
 def _two_printer_rig(tmp_path):
     rig = _rig(tmp_path)
     rig.slicing = FakeSlicing(rig.lease, printer_ids=(P2S, K1C))
-    rig.pipeline._slicing = rig.slicing
+    rig.pipeline._stages = replace(rig.pipeline._stages, slicing=rig.slicing)
     return rig
 
 
@@ -50,10 +52,12 @@ async def test_submit_rejects_a_printer_whose_slicer_is_not_usable(tmp_path):
 
 async def test_describe_spec_lists_usable_printers(tmp_path):
     rig = _two_printer_rig(tmp_path)
-    target = rig.pipeline.describe_spec()["schema"]["properties"]["print_target"]["properties"]
+    target = (await rig.pipeline.describe_spec())["schema"]["properties"]["print_target"][
+        "properties"
+    ]
     assert target["printer"]["enum"] == [P2S, K1C]
     assert target["material"]["enum"] == ["PLA"]
-    rules = rig.pipeline.describe_spec()["schema"]["properties"]["print_target"]["allOf"]
+    rules = (await rig.pipeline.describe_spec())["schema"]["properties"]["print_target"]["allOf"]
     heights = {r["if"]["properties"]["printer"]["const"]: r["then"] for r in rules}
     assert heights[K1C]["properties"]["layer_height_mm"]["maximum"] == 0.3
 
@@ -63,7 +67,9 @@ def test_slice_timeout_covers_every_catalog_slicer_even_when_none_is_installed(t
     from tests.unit.core.test_design_fix_round1 import missing_slicers
 
     rig = _rig(tmp_path)
-    rig.pipeline._slicing = missing_slicers(tmp_path)  # printers() is empty
+    rig.pipeline._stages = replace(
+        rig.pipeline._stages, slicing=missing_slicers(tmp_path)
+    )  # printers() is empty
     assert rig.pipeline.slice_timeout_s == max(SLICE_TIMEOUT_S.values()) == 855.0
 
 
@@ -72,6 +78,6 @@ async def test_mcp_slice_tool_timeout_does_not_collapse_without_slicers(tmp_path
     from tests.unit.core.test_design_fix_round1 import missing_slicers
 
     rig = _rig(tmp_path)
-    rig.pipeline._slicing = missing_slicers(tmp_path)
+    rig.pipeline._stages = replace(rig.pipeline._stages, slicing=missing_slicers(tmp_path))
     tool = await _server(rig).get_tool("slice_for_print")
     assert tool.timeout == 855.0 + 30

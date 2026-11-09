@@ -105,3 +105,40 @@ def test_mcp_client_adapter_implements_blender_port():
 
     adapter = MCPClientBlenderAdapter()
     assert isinstance(adapter, BlenderPort)
+
+
+@pytest.mark.parametrize("phase", ["initialize", "call"])
+async def test_sse_distinguishes_unsent_failure_from_uncertain_dispatch(monkeypatch, phase):
+    from contextlib import asynccontextmanager
+    from unittest.mock import AsyncMock
+
+    from src.adapters.mcp.leased_blender import LeasedBlenderPort
+    from src.adapters.mcp.mcp_client_adapter import MCPClientBlenderAdapter
+    from src.core.domain.exceptions import BlenderExecutionUncertainError
+    from src.core.use_cases.blender_lease import BlenderLease
+
+    session = AsyncMock()
+    getattr(
+        session, "initialize" if phase == "initialize" else "call_tool"
+    ).side_effect = TimeoutError("lost reply")
+
+    @asynccontextmanager
+    async def transport(*args):
+        yield (None, None)
+
+    @asynccontextmanager
+    async def context(*args):
+        yield session
+
+    monkeypatch.setattr("mcp.client.sse.sse_client", transport)
+    monkeypatch.setattr("mcp.client.session.ClientSession", context)
+    lease = BlenderLease()
+    port = LeasedBlenderPort(MCPClientBlenderAdapter(), lease)
+    if phase == "call":
+        with pytest.raises(BlenderExecutionUncertainError):
+            await port.call_tool("execute_code", {"code": "pass"})
+        assert lease.busy
+    else:
+        result = await port.call_tool("execute_code", {"code": "pass"})
+        assert not result.success and not lease.busy
+        session.call_tool.assert_not_awaited()

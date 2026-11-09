@@ -1,0 +1,456 @@
+{
+  "native_sha256": "bb3143e0cdb04ff03ce7436eef6fd4bfe6bf0b381fd4b7639b0190021e5afa16",
+  "fixed_intersections": {},
+  "results": {
+    "original:0:cap:cap": {
+      "neutral": {},
+      "own_cartridge": {},
+      "press": {},
+      "slide": {},
+      "unpressed_retention": 20,
+      "pressed_release": true,
+      "finger_nearest_mm": 3.6722631193697453,
+      "down_retention": true,
+      "back_stop": true
+    },
+    "original:0:tri:tri": {
+      "neutral": {},
+      "own_cartridge": {},
+      "press": {},
+      "slide": {},
+      "unpressed_retention": 20,
+      "pressed_release": true,
+      "finger_nearest_mm": 6.311984732747078,
+      "down_retention": true,
+      "back_stop": true
+    },
+    "swapped:0:cap:tri": {
+      "neutral": {},
+      "own_cartridge": {},
+      "press": {},
+      "slide": {},
+      "unpressed_retention": 20,
+      "pressed_release": true,
+      "finger_nearest_mm": 3.6722631193697453,
+      "down_retention": true,
+      "back_stop": true
+    },
+    "swapped:0:tri:cap": {
+      "neutral": {},
+      "own_cartridge": {},
+      "press": {},
+      "slide": {},
+      "unpressed_retention": 20,
+      "pressed_release": true,
+      "finger_nearest_mm": 6.078308913856745,
+      "down_retention": true,
+      "back_stop": true
+    },
+    "original:15:cap:cap": {
+      "neutral": {},
+      "own_cartridge": {},
+      "press": {},
+      "slide": {},
+      "unpressed_retention": 20,
+      "pressed_release": true,
+      "finger_nearest_mm": 3.6722631193697453,
+      "down_retention": true,
+      "back_stop": true
+    },
+    "original:15:tri:tri": {
+      "neutral": {},
+      "own_cartridge": {},
+      "press": {},
+      "slide": {},
+      "unpressed_retention": 20,
+      "pressed_release": true,
+      "finger_nearest_mm": 6.311984732747078,
+      "down_retention": true,
+      "back_stop": true
+    },
+    "swapped:15:cap:tri": {
+      "neutral": {},
+      "own_cartridge": {},
+      "press": {},
+      "slide": {},
+      "unpressed_retention": 20,
+      "pressed_release": true,
+      "finger_nearest_mm": 3.6722631193697453,
+      "down_retention": true,
+      "back_stop": true
+    },
+    "swapped:15:tri:cap": {
+      "neutral": {},
+      "own_cartridge": {},
+      "press": {},
+      "slide": {},
+      "unpressed_retention": 20,
+      "pressed_release": true,
+      "finger_nearest_mm": 6.078308913856745,
+      "down_retention": true,
+      "back_stop": true
+    },
+    "original:30:cap:cap": {
+      "neutral": {},
+      "own_cartridge": {},
+      "press": {},
+      "slide": {},
+      "unpressed_retention": 20,
+      "pressed_release": true,
+      "finger_nearest_mm": 3.6722631193697453,
+      "down_retention": true,
+      "back_stop": true
+    },
+    "original:30:tri:tri": {
+      "neutral": {},
+      "own_cartridge": {},
+      "press": {},
+      "slide": {},
+      "unpressed_retention": 20,
+      "pressed_release": true,
+      "finger_nearest_mm": 6.311984732747078,
+      "down_retention": true,
+      "back_stop": true
+    },
+    "swapped:30:cap:tri": {
+      "neutral": {},
+      "own_cartridge": {},
+      "press": {},
+      "slide": {},
+      "unpressed_retention": 20,
+      "pressed_release": true,
+      "finger_nearest_mm": 3.6722631193697453,
+      "down_retention": true,
+      "back_stop": true
+    },
+    "swapped:30:tri:cap": {
+      "neutral": {},
+      "own_cartridge": {},
+      "press": {},
+      "slide": {},
+      "unpressed_retention": 20,
+      "pressed_release": true,
+      "finger_nearest_mm": 6.078308913856745,
+      "down_retention": true,
+      "back_stop": true
+    },
+    "original:45:cap:cap": {
+      "neutral": {},
+      "own_cartridge": {},
+      "press": {},
+      "slide": {},
+      "unpressed_retention": 20,
+      "pressed_release": true,
+      "finger_nearest_mm": 3.6722631193697453,
+      "down_retention": true,
+      "back_stop": true
+    },
+    "original:45:tri:tri": {
+      "neutral": {},
+      "own_cartridge": {},
+      "press": {},
+      "slide": {},
+      "unpressed_retention": 20,
+      "pressed_release": true,
+      "finger_nearest_mm": 6.311984732747078,
+      "down_retention": true,
+      "back_stop": true
+    },
+    "swapped:45:cap:tri": {
+      "neutral": {},
+      "own_cartridge": {},
+      "press": {},
+      "slide": {},
+      "unpressed_retention": 20,
+      "pressed_release": true,
+      "finger_nearest_mm": 3.6722631193697453,
+      "down_retention": true,
+      "back_stop": true
+    },
+    "swapped:45:tri:cap": {
+      "neutral": {},
+      "own_cartridge": {},
+      "press": {},
+      "slide": {},
+      "unpressed_retention": 20,
+      "pressed_release": true,
+      "finger_nearest_mm": 6.078308913856745,
+      "down_retention": true,
+      "back_stop": true
+    },
+    "original:60:cap:cap": {
+      "neutral": {},
+      "own_cartridge": {},
+      "press": {},
+      "slide": {},
+      "unpressed_retention": 20,
+      "pressed_release": true,
+      "finger_nearest_mm": 3.6722631193697453,
+      "down_retention": true,
+      "back_stop": true
+    },
+    "original:60:tri:tri": {
+      "neutral": {},
+      "own_cartridge": {},
+      "press": {},
+      "slide": {},
+      "unpressed_retention": 20,
+      "pressed_release": true,
+      "finger_nearest_mm": 6.311984732747078,
+      "down_retention": true,
+      "back_stop": true
+    },
+    "swapped:60:cap:tri": {
+      "neutral": {},
+      "own_cartridge": {},
+      "press": {},
+      "slide": {},
+      "unpressed_retention": 20,
+      "pressed_release": true,
+      "finger_nearest_mm": 3.6722631193697453,
+      "down_retention": true,
+      "back_stop": true
+    },
+    "swapped:60:tri:cap": {
+      "neutral": {},
+      "own_cartridge": {},
+      "press": {},
+      "slide": {},
+      "unpressed_retention": 20,
+      "pressed_release": true,
+      "finger_nearest_mm": 6.078308913856745,
+      "down_retention": true,
+      "back_stop": true
+    }
+  },
+  "wrist_adjustment": {
+    "cap:-15:0": {
+      "samples": 63,
+      "intersections": {}
+    },
+    "cap:15:0": {
+      "samples": 63,
+      "intersections": {}
+    },
+    "tri:-15:0": {
+      "samples": 63,
+      "intersections": {}
+    },
+    "tri:15:0": {
+      "samples": 63,
+      "intersections": {}
+    },
+    "cap:-15:15": {
+      "samples": 63,
+      "intersections": {}
+    },
+    "cap:15:15": {
+      "samples": 63,
+      "intersections": {}
+    },
+    "tri:-15:15": {
+      "samples": 63,
+      "intersections": {}
+    },
+    "tri:15:15": {
+      "samples": 63,
+      "intersections": {}
+    },
+    "cap:-15:30": {
+      "samples": 63,
+      "intersections": {}
+    },
+    "cap:15:30": {
+      "samples": 63,
+      "intersections": {}
+    },
+    "tri:-15:30": {
+      "samples": 63,
+      "intersections": {}
+    },
+    "tri:15:30": {
+      "samples": 63,
+      "intersections": {}
+    },
+    "cap:-15:45": {
+      "samples": 63,
+      "intersections": {}
+    },
+    "cap:15:45": {
+      "samples": 63,
+      "intersections": {}
+    },
+    "tri:-15:45": {
+      "samples": 63,
+      "intersections": {}
+    },
+    "tri:15:45": {
+      "samples": 63,
+      "intersections": {}
+    },
+    "cap:-15:60": {
+      "samples": 63,
+      "intersections": {}
+    },
+    "cap:15:60": {
+      "samples": 63,
+      "intersections": {}
+    },
+    "tri:-15:60": {
+      "samples": 63,
+      "intersections": {}
+    },
+    "tri:15:60": {
+      "samples": 63,
+      "intersections": {}
+    }
+  },
+  "nominal_vessel_radial_clearance_mm": {
+    "S_capillary_probe_0": 2.752484751519404,
+    "EC81_REF_EC_probe": 4.2283694850444355,
+    "S_pH_temp_probe_7": 21.560866243938193,
+    "S_pH_temp_probe_-7": 16.97007981033176
+  },
+  "screen_members": [
+    "LS_FIT_lcd_back",
+    "LS_FIT_lcd_front",
+    "LS_REF_lcd_pcb",
+    "LS_REF_terminal_allowance",
+    "LS_REF_touch_glass",
+    "S_SCREEN_nut_-1",
+    "S_SCREEN_nut_1"
+  ],
+  "screen_matrix_by_angle": {
+    "0": [
+      [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        1.0,
+        0.0,
+        0.005999986082315445
+      ],
+      [
+        0.0,
+        0.0,
+        1.0,
+        0.12699997425079346
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    ],
+    "15": [
+      [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.9659258127212524,
+        -0.2588191032409668,
+        0.003349447622895241
+      ],
+      [
+        0.0,
+        0.2588191032409668,
+        0.9659258127212524,
+        0.14113281667232513
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    ],
+    "30": [
+      [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.8660253882408142,
+        -0.5,
+        -0.002868613228201866
+      ],
+      [
+        0.0,
+        0.5,
+        0.8660253882408142,
+        0.15409806370735168
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    ],
+    "45": [
+      [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.7071067690849304,
+        -0.7071068286895752,
+        -0.01223045401275158
+      ],
+      [
+        0.0,
+        0.7071068286895752,
+        0.7071067690849304,
+        0.1650121659040451
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    ],
+    "60": [
+      [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.4999999701976776,
+        -0.866025447845459,
+        -0.024098077788949013
+      ],
+      [
+        0.0,
+        0.866025447845459,
+        0.4999999701976776,
+        0.17313137650489807
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    ]
+  },
+  "scope": "Saved arm poses, both mount assignments, five screen angles, cup removed. Surface checks with geometric spring deflection and a rigid fingertip approach proxy. No physical lead models."
+}

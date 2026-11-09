@@ -1,0 +1,5 @@
+[2026-10-20 21:17:55.618354] [0x0000000204d9ff80] [trace]   Initializing StaticPrintConfigs
+[2026-10-20 21:17:56.044967] [0x0000000204d9ff80] [warning] cli mode, Current BambuStudio Version 02.08.02.61
+[2026-10-20 21:17:56.421809] [0x0000000204d9ff80] [warning] no filament colors found in projects
+[2026-10-20 21:17:57.732632] [0x0000000170d03000] [warning] Detected missing Voronoi vertex, input polygons will be rotated back and forth.
+[2026-10-20 21:19:37.053928] [0x0000000204d9ff80] [error]   Invalid T command (T65535).

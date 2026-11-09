@@ -3,7 +3,8 @@
 # ci.sh — LOCAL CI (the machine gate for this project).
 #
 # Why local, not GitHub Actions: what actually breaks here needs a real Blender
-# (addon socket 9876), a real Ollama, and the MHH-managed services. A hosted
+# (addon socket 9876), the slicer, and the MHH-managed services. Ollama is
+# required only by the separately selected conversation suite. A hosted
 # runner can only lint and unit-test — it cannot prove the pipeline works, which
 # is the thing that was silently broken for real. The old
 # .github/workflows/ci.yml was removed (it also hard-gated on ruff, which has
@@ -11,7 +12,9 @@
 #
 # Usage:
 #   scripts/ci.sh          # T1 static + T2 unit (incl. headless dummy run). No side effects.
-#   scripts/ci.sh --real   # + T3 real machine. Needs Blender up; creates/deletes verify_* objects.
+#   scripts/ci.sh --real   # + T3 core: model/MCP/slicing, no live LLM.
+#   scripts/ci.sh --chat   # Independent live conversation suite; needs Ollama + Blender.
+#   scripts/ci.sh --all    # Core first, then conversation. Run sequentially (shared scene).
 #
 # HARD gates fail the run. There are no WARN gates left: ruff was cleaned and
 # promoted on 2026-07-15, mypy (strict) on 2026-07-17.
@@ -23,7 +26,21 @@ set -uo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PY="${CI_PYTHON:-$HOME/miniconda3/envs/blender-mcp/bin/python}"
 REAL=0
-[[ "${1:-}" == "--real" ]] && REAL=1
+CHAT=0
+STATIC=1
+# Internal tier state must not inherit a parent dispatcher's fail-fast mode.
+REAL_FAIL_FAST=0
+if (( $# > 1 )); then
+  printf 'Usage: scripts/ci.sh [--real|--chat|--all]\n' >&2
+  exit 2
+fi
+case "${1:-}" in
+  "") ;;
+  --real) REAL=1 ;;
+  --chat) CHAT=1; STATIC=0 ;;
+  --all) REAL=1; CHAT=1 ;;
+  *) printf 'Usage: scripts/ci.sh [--real|--chat|--all]\n' >&2; exit 2 ;;
+esac
 
 RED=$'\033[31m'; GRN=$'\033[32m'; YEL=$'\033[33m'; DIM=$'\033[2m'; BLD=$'\033[1m'; RST=$'\033[0m'
 FAILED=()
@@ -58,6 +75,7 @@ _tier() { printf '\n%s%s%s\n' "$BLD" "$1" "$RST"; }
 
 cd "$ROOT"
 
+if (( STATIC )); then
 _tier "T1 · static"
 _run hard "web build (tsc + vite)"   bash -c 'cd web && npm run build'
 _run hard "web lint (eslint)"        bash -c 'cd web && npm run lint'
@@ -83,7 +101,13 @@ _tier "T2 · unit + headless dummy run"
 _run hard "python unit + e2e (pytest)" "$PY" -m pytest tests/unit tests/e2e -q --no-header -p no:cacheprovider --no-cov
 _run hard "web unit + dummy run (vitest)" bash -c 'cd web && npx vitest run'
 
+fi
+
 if (( REAL )); then
+  if (( ${#FAILED[@]} )); then
+    printf '%sCI FAILED%s — T1/T2 prerequisites failed; real suites were not started.\n' "$RED" "$RST"
+    exit 1
+  fi
   # A timed-out generator may still own Blender. Never run dependent scene gates.
   REAL_FAIL_FAST=1
   _tier "T3 · real machine (MCP↔Blender)"
@@ -94,22 +118,20 @@ if (( REAL )); then
     # The API's sandbox allowlist and script deadlines are startup snapshots of the
     # files on disk; an API older than the checkout blocks its own derived scripts.
     _run hard "running API is newer than this checkout" "$PY" scripts/check_running_api_freshness.py
+    _run hard "isolated native scene lifetime (not public revision qualification)" "$PY" scripts/verify/native_session_verify_factory.py --all
+    _run hard "isolated current-source screen revision and full STL (not public qualification)" "$PY" scripts/verify/native_revision_verify_factory.py --all
+    _run hard "current workstation cup extraction (isolated native geometry)" "$PY" scripts/verify/workstation_cup_verify_factory.py
     _run hard "REST pipeline (nonce + independent oracle)" "$PY" scripts/verify/mcp_verify_rest.py
     _run hard "MCP protocol (nonce + independent oracle)" "$PY" scripts/verify/mcp_verify_real.py
-    # The conversation path — the project's stated Phase 1 — had a verifier that
-    # was never referenced here and did not even import. An unreferenced script
-    # and a broken one look identical from outside. 5/5 since the scene list
-    # stopped being the addon's first ten objects.
-    _run hard "chat path (WS + REST, independent oracle)" "$PY" scripts/verify/mcp_verify_chat.py
     _run hard "print readiness (real Blender fixtures)" "$PY" scripts/verify/print_readiness_verify_real.py
     _run hard "batch transform (one Undo, independent oracle)" "$PY" scripts/verify/batch_transform_verify_real.py
-    _run hard "lab station fit prototype (not load or assembly acceptance)" "$PY" scripts/verify/generated_artifact_verify_real.py scripts/verify/contracts/lab_station.json
-    _run hard "lab station lift parts (same scene)" "$PY" scripts/verify/generated_artifact_verify_real.py scripts/verify/contracts/lab_station_lifts.json --skip-generate
-    _run hard "lab station clamp parts (same scene)" "$PY" scripts/verify/generated_artifact_verify_real.py scripts/verify/contracts/lab_station_clamps.json --skip-generate
-    _run hard "lab station arm parts (same scene)" "$PY" scripts/verify/generated_artifact_verify_real.py scripts/verify/contracts/lab_station_arms.json --skip-generate
-    _run hard "lab station right arm parts (same scene)" "$PY" scripts/verify/generated_artifact_verify_real.py scripts/verify/contracts/lab_station_arms_right.json --skip-generate
-    _run hard "simple two-link study (not print or load qualification)" "$PY" -m scripts.verify.lab_simple_verify_real
-    _run hard "registered verification through MCP (scene preserved)" "$PY" -m scripts.verify.verification_mcp_verify_real
+    _run hard "workstation prototype fixture (research)" "$PY" scripts/verify/generated_artifact_verify_real.py scripts/verify/contracts/lab_station.json
+    _run hard "workstation lift fixture (research)" "$PY" scripts/verify/generated_artifact_verify_real.py scripts/verify/contracts/lab_station_lifts.json --skip-generate
+    _run hard "workstation clamp fixture (research)" "$PY" scripts/verify/generated_artifact_verify_real.py scripts/verify/contracts/lab_station_clamps.json --skip-generate
+    _run hard "workstation left arm fixture (research)" "$PY" scripts/verify/generated_artifact_verify_real.py scripts/verify/contracts/lab_station_arms.json --skip-generate
+    _run hard "workstation right arm fixture (research)" "$PY" scripts/verify/generated_artifact_verify_real.py scripts/verify/contracts/lab_station_arms_right.json --skip-generate
+    _run hard "two-link and cable fixtures (research)" "$PY" -m scripts.verify.lab_simple_verify_real
+    _run hard "registered research fixtures through MCP (scene preserved)" "$PY" -m scripts.verify.verification_mcp_verify_real
     _run hard "rotary lift concept motion (not print or load qualification)" "$PY" -m scripts.verify.lab_rotary_verify_real
     _run hard "rotary left support mesh contract" "$PY" scripts/verify/generated_artifact_verify_real.py scripts/verify/contracts/lab_rotary_support_capillary.json
     _run hard "rotary right support mesh contract" "$PY" scripts/verify/generated_artifact_verify_real.py scripts/verify/contracts/lab_rotary_support_pH_temp.json --skip-generate
@@ -168,18 +190,31 @@ if (( REAL )); then
     # on the budget criterion, not on exact agreement. The checked-in record in
     # docs/hand-framework/determinism.json is what the unit gate compares against.
     _run hard "hand-compact build determinism within budget" "$PY" scripts/verify/build_determinism_probe.py --instance hand-compact --runs 3 --against-budget
-    # The user's v78 deliverable through the public MCP URL: import, geometry, print, package,
-    # plus a truncated-header negative control. Needs Bambu Studio and a service running this code.
-    _run hard "design pipeline on the v78 deliverable (Bambu P2S via Bambu Studio)" "$PY" scripts/verify/design_pipeline_verify_real.py scripts/verify/contracts/design_pipeline_v78.json
+    # The current selected deliverable through the public MCP URL: import, geometry, print, package,
+    # plus a truncated-header negative control. Needs Bambu Studio, OrcaSlicer and a service
+    # running this code.
+    _run hard "design pipeline on the current selected deliverable (Bambu P2S via Bambu Studio)" "$PY" scripts/verify/design_pipeline_verify_real.py scripts/verify/contracts/design_pipeline_current.json
     _run hard "design pipeline on the v78 deliverable (Creality K1 Max via OrcaSlicer)" "$PY" scripts/verify/design_pipeline_verify_real.py scripts/verify/contracts/design_pipeline_v78_creality_k1max.json
+    _run hard "public native revision (same-part STL → single-plate slice; scene preserved)" "$PY" scripts/verify/native_pipeline_verify_real.py
   else
-    # Explicit SKIP, never a silent pass: with Blender down this tier is vacuous.
-    printf '  %sSKIP%s MCP pipeline — Blender addon not listening on 9876 %s(start it: launchctl kickstart -k gui/$(id -u)/com.blender-mcp.blender)%s\n' \
-      "$YEL" "$RST" "$DIM" "$RST"
+    # A requested real suite cannot succeed without its real dependency.
+    printf '  FAIL core: Blender addon is not listening (see docs/10-runtime-ssot.md).\n'
+    exit 1
   fi
+fi
+
+if (( CHAT )); then
+  REAL_FAIL_FAST=1
+  _tier "T4 · conversation (Ollama + WS/REST + Blender)"
+  if ! nc -z localhost 9876 2>/dev/null; then
+    printf '  FAIL conversation: Blender addon is not listening (see docs/10-runtime-ssot.md).\n'
+    exit 1
+  fi
+  _run hard "installed LaunchAgents match this checkout" "$PY" scripts/check_installed_plists.py
+  _run hard "running API is newer than this checkout" "$PY" scripts/check_running_api_freshness.py
+  _run hard "chat path (WS + REST, independent oracle)" "$PY" scripts/verify/mcp_verify_chat.py
 else
-  printf '\n%sT3 · real machine%s %sskipped (use --real; needs Blender, mutates verify_* objects)%s\n' \
-    "$BLD" "$RST" "$DIM" "$RST"
+  printf '\nConversation suite not selected (use --chat or --all).\n'
 fi
 
 echo
@@ -187,4 +222,4 @@ if (( ${#FAILED[@]} )); then
   printf '%sCI FAILED%s — %d hard gate(s): %s\n' "$RED" "$RST" "${#FAILED[@]}" "${FAILED[*]}"
   exit 1
 fi
-printf '%sCI PASSED%s — all hard gates green\n' "$GRN" "$RST"
+printf '%sCI PASSED%s — all selected hard gates green\n' "$GRN" "$RST"

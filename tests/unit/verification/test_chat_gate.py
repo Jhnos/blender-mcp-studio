@@ -62,7 +62,7 @@ def test_wait_keeps_probing_with_a_heartbeat_until_an_answer(capsys):
     assert clock.now == 30.0
     out = capsys.readouterr().out
     assert out.count("ollama probe attempt") == 3
-    assert "no answer" in out
+    assert "no successful response" in out
 
 
 def test_wait_fails_as_a_precondition_once_the_budget_is_spent(capsys):
@@ -77,7 +77,7 @@ def test_wait_fails_as_a_precondition_once_the_budget_is_spent(capsys):
 
     with pytest.raises(RuntimeError, match="shared Ollama") as caught:
         gate.wait_for_ollama(never, budget_s=120, pause_s=15, clock=clock, sleep=clock.sleep)
-    assert "not a chat-path defect" in str(caught.value)
+    assert "cause undetermined" in str(caught.value)
     assert calls == 2
     assert capsys.readouterr().out.count("ollama probe attempt") == 2
 
@@ -97,3 +97,19 @@ def test_main_runs_the_readiness_wait_before_touching_blender(monkeypatch):
     with pytest.raises(RuntimeError, match="precondition"):
         gate.main()
     assert touched == []
+
+
+def test_probe_reports_http_status_instead_of_calling_it_a_timeout(monkeypatch, capsys):
+    import io
+    import urllib.error
+
+    def rejected(*_args, **_kwargs):
+        raise urllib.error.HTTPError(
+            "http://ollama/api/generate", 404, "Not Found", {}, io.BytesIO(b"model missing")
+        )
+
+    monkeypatch.setattr(gate.urllib.request, "urlopen", rejected)
+    assert gate.ollama_probe("http://ollama", "missing", 60) is None
+    out = capsys.readouterr().out
+    assert "HTTP 404" in out
+    assert "model missing" in out

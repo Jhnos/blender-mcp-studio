@@ -11,6 +11,18 @@ from mathutils import Matrix, Vector
 from src.core.domain.lab_station import ElectrodeArmSpec, LabStationSpec, Point
 
 
+def continuous_property(owner: bpy.types.Object, name: str, value: float) -> None:
+    """Keep numeric UI metadata while replacing integer-backed driven storage."""
+    previous = owner.get(name)
+    if type(previous) not in (int, float) or not math.isfinite(value):
+        raise ValueError("Continuous properties require existing numeric, finite values")
+    metadata = owner.id_properties_ui(name).as_dict()
+    if type(previous) is int:
+        del owner[name]
+    owner[name] = float(value)
+    owner.id_properties_ui(name).update(**metadata)
+
+
 def set_electrode_wrist_pose(label: str, angle_deg: float, release_mm: float) -> None:
     """Absolute wrist angle and axial release, retaining the platform-side nut."""
     if not all(math.isfinite(v) for v in (angle_deg, release_mm)) or not 0 <= release_mm <= 2:
@@ -73,15 +85,40 @@ def driver(
     axis: int,
     expression: str,
     properties: Sequence[str],
+    *,
+    identity_mapping: bool = False,
+    property_paths: Sequence[str] | None = None,
+    rna_paths: Sequence[str] | None = None,
 ) -> None:
+    if property_paths is not None and rna_paths is not None:
+        raise ValueError("Choose custom-property names or RNA paths, not both")
+    targets = (
+        rna_paths
+        if rna_paths is not None
+        else (properties if property_paths is None else property_paths)
+    )
+    if len(targets) != len(properties):
+        raise ValueError("Every driver variable requires one property path")
+    maximum = bpy.types.Driver.bl_rna.properties["expression"].length_max
+    if maximum and len(expression.encode("utf-8")) >= maximum:
+        raise ValueError("Driver expression exceeds the engine UTF-8 capacity")
     curve = obj.driver_add(path, axis)
+    if identity_mapping:
+        # A remapping curve can quantize small displacements near its first key.
+        # These channels use the expression result directly, without remapping.
+        curve.keyframe_points.clear()
+        curve.extrapolation = "LINEAR"
+        for modifier in list(curve.modifiers):
+            curve.modifiers.remove(modifier)
     curve.driver.type = "SCRIPTED"
-    for prop in properties:
+    for variable in list(curve.driver.variables):
+        curve.driver.variables.remove(variable)
+    for name, prop in zip(properties, targets, strict=True):
         variable = curve.driver.variables.new()
-        variable.name = prop
+        variable.name = name
         variable.type = "SINGLE_PROP"
         variable.targets[0].id = control
-        variable.targets[0].data_path = f'["{prop}"]'
+        variable.targets[0].data_path = prop if rna_paths is not None else f'["{prop}"]'
     curve.driver.expression = expression
 
 
@@ -165,7 +202,6 @@ def set_pose(control: bpy.types.Object, **values: float) -> None:
     for key, value in values.items():
         control[key] = value
     control.update_tag()
-    bpy.context.scene.frame_set(bpy.context.scene.frame_current)
     bpy.context.view_layer.update()
 
 

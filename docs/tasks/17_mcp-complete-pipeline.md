@@ -4,7 +4,7 @@
 
 ## Goal
 
-任何 MCP host 以機器可讀的 `ModelSpec` 提交一個模型，拿回可送印的包與機器驗證證據（幾何、機構、列印切片、重現 manifest）；第一個實例是使用者交付的實驗室工作站 v78（匯入既有產物，不經產生器）。
+任何 MCP host 以機器可讀的 `ModelSpec` 提交一個模型，拿回可送印的包與機器驗證證據（幾何、機構、列印切片、重現 manifest）；目前共用實例由 models/lab-station/model-spec.json 選定實驗室工作站（匯入既有產物，不經產生器）。
 
 ## Context to read
 
@@ -16,19 +16,32 @@
 ## Specification
 
 - 新 port：`MeshIntegrityPort`、`SlicingPort`、`PackagingPort`、`MechanismSimulationPort`、`JobStorePort`；use case `DesignPipeline` 五階段（import→geometry→mechanism→print→package），證據寫 `data/runs/<run_id>/`。
-- REST `/api/design/*` 與 MCP 工具（目錄由 11 增為 19）共用同一服務；證據檔經既有身分閘門下載。
+- REST `/api/design/*` 與 MCP 工具（目錄由 11 增為 21）共用同一服務；證據檔經既有身分閘門下載。
 - 主機名、二進位路徑、資料目錄只來自 `config/tools.yaml` 與環境變數；程式碼不得出現 Tailscale 網域或家目錄。
 - 切片以 Bambu Studio CLI 子行程呼叫（AGPL-3.0，manifest 明標）；缺席＝明確失敗附安裝指引。
 - 不開公開 `execute_code`；已發布包與既有 DTO 不變。
 
+## Current-selection contract (2026-10-26)
+
+- The selected delivery is declared only in `models/lab-station/model-spec.json`. Transport adapters, schema examples and real-verification contracts must not carry a second live ModelSpec.
+- A narrow injected provider supplies that declaration to the shared application catalog. The domain schema remains pure. Replacing the declaration changes discovery, the example and default submission without editing Python or the verifier.
+- REST and MCP both support submission without a spec: the application selects the current delivery. Explicit specs remain supported for deliberate historical/custom runs. A missing or malformed declaration fails before a job is created, never chooses an archive.
+- The real gate resolves `selection: current` through public MCP, verifies discovery/example agreement and availability, then reuses the existing positive/negative checker. No new verification pipeline or model generation.
+- BDD checks: given a changed declaration, all consumers observe it; given no declaration, default submission creates no job; given an explicit historical spec, that spec is used; given a stale discovery/example pair, the real gate rejects it before slicing.
+- Reuse: existing config loader, application catalog, composition root and real gate. New modules: none. Prior art queried `site:github.com/python-injector/injector dependency injection python configuration provider` and `site:github.com/pydantic/pydantic-settings JSON config settings source`: both cover generic DI/config loading, already present here; reuse the local seams and standard JSON rather than add another framework.
+
 ## Acceptance checks
 
-- `scripts/ci.sh` 綠；`scripts/ci.sh --real` 不中斷全綠，含新閘門「design pipeline on the v78 deliverable」。
-- 透過本機自己的 Tailscale FQDN（動態取）呼叫 `run_design_pipeline` → `get_job_status` → `get_run_report`，v78 的 113 件 STL 幾何通過、單盤 3MF 切片成功、manifest 列出全部檔案；截斷 STL 的負對照以幾何階段失敗收場。
+- 核心 T1/T2/T3 不中斷全綠，含「design pipeline on the current selected deliverable」；對話 T4 獨立驗證，不作為模型／MCP／切片的前置。選取方式見 [驗證 SSOT](../30-verification.md)。
+- 透過本機自己的 Tailscale FQDN（動態取）呼叫 `run_design_pipeline` → `get_job_status` → `get_run_report`，選定交付件的 69 件列印 STL 幾何通過、單盤 3MF 切片成功、manifest 列出全部檔案；截斷 STL 的負對照以幾何階段失敗收場。
 - `tests/unit/core/test_no_hardcoded_hosts.py` 綠（repo 無寫死主機名）。
 - Human acceptance is required before moving this file to `archive/`.
 
 ## Hand-off
+
+使用者授權核心與 Ollama 對話分開驗證，保留原對話真機檢查；結果及待辦見任務索引最新交接。
+
+工作站的共用交付入口改為 [models/lab-station](../../models/lab-station/README.md)；規格v1匯入保留v78幾何的v80切片交付，不重新建立模型。現行驗證結果與未解除事項以[任務索引](00_INDEX.md)的最新交接為準；下列舊日期事實屬歷史脈絡，不能用來選回舊版或重做已完成的合併。
 
 ### Verified facts
 
@@ -50,7 +63,7 @@
   - 報告、manifest、`import.json` 裡都沒有絕對路徑。
 - 切片器：v80 從 dmg 抽出的 app 已確認是 Bambu Lab 的 Developer ID 簽章、Apple 公證，Gatekeeper 接受，版本 02.08.02.61。
 
-### Open failures
+### Historical open failures (phase 1 pre-merge; current state is in the task index)
 
 - 已評估、刻意延後的項目（各附理由）：
   - manifest 的 `tools` 只依名稱排序：目前只有一個工具，等第二個工具出現再改排序鍵。
@@ -68,7 +81,7 @@
   - 階段 3：MuJoCo；機構套件要綁定 spec 的模型。
 - 印表機與廠商的解耦由任務 18 接手（[`18_printer-catalog.md`](18_printer-catalog.md)）。
 
-### Next step
+### Historical next step (phase 1 pre-merge; not current execution instructions)
 
 - 2026-10-22 在 main 上全部完成：
   - 合併到 `3a8f081`，V01.0S.000。

@@ -9,9 +9,20 @@ from __future__ import annotations
 import json
 import os
 from collections.abc import Mapping
+from dataclasses import asdict
 from pathlib import Path
 
-from src.core.domain.design_run import DesignRunReport, StageName, StageOutcome, StageReport
+from src.core.domain.design_run import (
+    DesignRunReport,
+    JobRecord,
+    JobStatus,
+    StageName,
+    StageOutcome,
+    StageReport,
+)
+from src.core.domain.model_spec import ModelSpec, parse_model_spec
+from src.core.domain.native_revision import NativeRevisionRequest
+from src.core.ports.job_store_port import JobStorePort
 
 REPORT_NAME = "report.json"
 SPEC_NAME = "spec.json"
@@ -79,3 +90,42 @@ def write_spec(run_dir: Path, payload: Mapping[str, object]) -> None:
 
 def read_spec(run_dir: Path) -> object:
     return json.loads((run_dir / SPEC_NAME).read_text(encoding="utf-8"))
+
+
+def record_interruption(run_dir: Path, job: JobRecord, message: str) -> None:
+    """Keep orphan-job report persistence here, alongside every other report write."""
+    if job.stage is None:
+        return
+    try:
+        existing = read_report(run_dir)
+    except (ValueError, KeyError, OSError):
+        existing = DesignRunReport(job.run_id, "", (), str(run_dir))
+    if existing is None or (existing.stages and existing.stages[-1].name is job.stage):
+        return
+    failed = StageReport(job.stage, StageOutcome.FAILED, (), (), message)
+    write_report(
+        DesignRunReport(
+            existing.run_id, existing.spec_name, (*existing.stages, failed), existing.run_dir
+        )
+    )
+
+
+def load_spec(run_dir: Path, roots: tuple[Path, ...]) -> ModelSpec:
+    raw = read_spec(run_dir)
+    if not isinstance(raw, Mapping):  # narrow-ok: spec.json is untrusted disk input
+        raise ValueError("spec.json is not an object")
+    return parse_model_spec(raw, artifact_roots=roots)
+
+
+def write_native_request(run_dir: Path, request: NativeRevisionRequest) -> None:
+    _write_atomic(run_dir / "native-request.json", json.dumps(asdict(request), sort_keys=True))
+
+
+async def recover_interrupted(
+    jobs: JobStorePort, runs_dir: Path, unresolved: tuple[str, ...], message: str
+) -> int:
+    orphans = tuple(job for job in await jobs.list_unfinished() if job.run_id not in unresolved)
+    for job in orphans:
+        await jobs.update(job.job_id, status=JobStatus.FAILED, stage=job.stage, error=message)
+        record_interruption(runs_dir / job.run_id, job, message)
+    return len(orphans)

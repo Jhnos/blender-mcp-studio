@@ -18,7 +18,7 @@ from src.core.domain.model_spec import PrintTarget
 from src.core.domain.printer_catalog import PrinterProfile
 from src.core.domain.slicing import SliceRequest, ToolUnavailableError
 from src.infrastructure.printer_catalog_loader import load_printer_catalog
-from tests.fakes.bambu_bundle import LEAVES, flattened, make_bundle, make_named_bundle
+from tests.fakes.bambu_bundle import LEAVES, TEST_LIMITS, flattened, make_bundle, make_named_bundle
 from tests.fakes.plate_3mf import translate, write_3mf
 from tests.unit.adapters.test_orca_family_cli import FakeRunner
 
@@ -37,7 +37,13 @@ def _request(tmp_path: Path) -> SliceRequest:
 
 def _adapter(binary: Path, runner: FakeRunner) -> OrcaFamilyCli:
     binaries = {"bambu-studio": binary, "orcaslicer": binary.parent / "no-orca"}
-    return OrcaFamilyCli(load_printer_catalog(), binaries, overrides_dir=_CONFIG, runner=runner)
+    return OrcaFamilyCli(
+        load_printer_catalog(),
+        binaries,
+        overrides_dir=_CONFIG,
+        limits=TEST_LIMITS,
+        runner=runner,
+    )
 
 
 def test_vendored_full_profiles_are_gone_and_leaves_live_in_the_printer_yaml() -> None:

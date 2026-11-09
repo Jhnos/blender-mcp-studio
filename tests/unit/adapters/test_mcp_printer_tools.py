@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from dataclasses import replace
 from pathlib import Path
 
 from fastmcp import Client
@@ -31,7 +32,7 @@ ENTRY_KEYS = {
 
 def _installed(rig, *printer_ids):
     rig.slicing = FakeSlicing(rig.lease, printer_ids=printer_ids)
-    rig.pipeline._slicing = rig.slicing
+    rig.pipeline._stages = replace(rig.pipeline._stages, slicing=rig.slicing)
     return rig
 
 

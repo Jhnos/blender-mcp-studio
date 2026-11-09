@@ -12,6 +12,25 @@ ARTIFACT = PROJECT_ROOT / "docs" / "architecture.html"
 ARCHITECTURE_DOC = PROJECT_ROOT / "docs" / "01-architecture.md"
 
 CODE_ANCHORS = {
+    "native_revision_service": (
+        "src/core/use_cases/native_revision.py",
+        "class",
+        "NativeRevisionService",
+    ),
+    "native_staging_port": ("src/core/ports/native_staging_port.py", "class", "NativeStagingPort"),
+    "native_staging_adapter": (
+        "src/adapters/artifacts/native_staging.py",
+        "class",
+        "FilesystemNativeStaging",
+    ),
+    "design_pipeline": ("src/core/use_cases/design_pipeline.py", "class", "DesignPipeline"),
+    "artifact_catalog": ("src/core/use_cases/artifact_catalog.py", "class", "ArtifactCatalog"),
+    "native_source_port": ("src/core/ports/native_source_port.py", "class", "NativeSourcePort"),
+    "native_source_adapter": (
+        "src/adapters/artifacts/native_source.py",
+        "class",
+        "FilesystemNativeSource",
+    ),
     "verification_service": ("src/core/use_cases/verification.py", "class", "VerificationService"),
     "verification_adapter": (
         "src/adapters/verification/blender_verification.py",
@@ -123,6 +142,35 @@ def test_model_nodes_equal_classified_code_and_boundary_anchors() -> None:
         }
     for node_id in BOUNDARY_NODES:
         assert "anchor" not in by_id[node_id]
+
+
+def test_native_discovery_uses_the_same_application_and_inward_port() -> None:
+    model = _model()
+    nodes = model["nodes"]
+    edges = model["edges"]
+    assert isinstance(nodes, list)
+    assert isinstance(edges, list)
+    by_id = {node["id"]: node for node in nodes if isinstance(node, dict)}
+    contracts = {
+        (edge["from"], edge["to"], edge["contract"]) for edge in edges if isinstance(edge, dict)
+    }
+    expected = {
+        ("app_runtime", "native_revision_service", "constructs once"),
+        ("native_revision_service", "artifact_catalog", "ArtifactCatalog"),
+        ("native_revision_service", "native_staging_port", "NativeStagingPort"),
+        ("native_staging_adapter", "native_staging_port", "implements"),
+        ("rest_ws", "design_pipeline", "DesignPipeline"),
+        ("mcp_adapter", "design_pipeline", "DesignPipeline"),
+        ("app_runtime", "design_pipeline", "constructs once"),
+        ("design_pipeline", "artifact_catalog", "ArtifactCatalog"),
+        ("artifact_catalog", "native_source_port", "NativeSourcePort"),
+        ("native_source_adapter", "native_source_port", "implements"),
+        ("app_runtime", "native_source_adapter", "injects into ArtifactCatalog"),
+    }
+    assert expected <= contracts
+    assert "native_source_adapter" not in by_id["artifact_catalog"]["dependsOn"]
+    assert by_id["native_source_adapter"]["dependsOn"] == ["native_source_port"]
+    assert by_id["native_source_port"]["dependsOn"] == []
 
 
 def test_every_python_anchor_is_a_real_definition() -> None:

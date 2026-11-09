@@ -6,10 +6,15 @@ import math
 from collections import Counter
 from collections.abc import Mapping, Sequence
 
+from CGAL.CGAL_Convex_hull_3 import convex_hull_3
 from CGAL.CGAL_Kernel import Point_3
 from CGAL.CGAL_Polygon_mesh_processing import (
+    Side_of_triangle_mesh,
+    corefine_and_compute_intersection,
     does_self_intersect,
+    is_outward_oriented,
     polygon_soup_to_polygon_mesh,
+    volume,
 )
 from CGAL.CGAL_Polyhedron_3 import Polyhedron_3
 
@@ -125,20 +130,94 @@ def cgal_self_intersects(points: list[Point], faces: list[Triangle]) -> bool:
     CGAL counts degenerate (zero-area) faces as self-intersecting; such a mesh still fails
     through ``error`` (``parse_closed_surface`` rejects degenerate faces), not only here.
     """
+    return bool(does_self_intersect(_cgal_polyhedron(points, faces)))
+
+
+def _cgal_polyhedron(points: list[Point], faces: list[Triangle]) -> Polyhedron_3:
+    """Preserve the complete input surface at the independent solver boundary."""
     converted = Polyhedron_3()
     polygon_soup_to_polygon_mesh([Point_3(*point) for point in points], faces, converted)
     if converted.size_of_facets() != len(faces):
         raise ValueError("CGAL conversion changed the face count")
-    actual: Counter[tuple[Point, ...]] = Counter()
-    for facet in converted.facets():
+    actual = Counter(tuple(sorted(triangle)) for triangle in _cgal_triangles(converted))
+    expected = Counter(tuple(sorted(points[index] for index in face)) for face in faces)
+    if actual != expected:
+        raise ValueError("CGAL conversion changed triangle coordinates")
+    return converted
+
+
+def _cgal_triangles(polyhedron: Polyhedron_3) -> list[tuple[Point, Point, Point]]:
+    triangles = []
+    for facet in polyhedron.facets():
         edge = facet.halfedge()
         coordinates: list[Point] = []
         for _ in range(3):
             point = edge.vertex().point()
             coordinates.append((float(point.x()), float(point.y()), float(point.z())))
             edge = edge.next()
-        actual[tuple(sorted(coordinates))] += 1
-    expected = Counter(tuple(sorted(points[index] for index in face)) for face in faces)
-    if actual != expected:
-        raise ValueError("CGAL conversion changed triangle coordinates")
-    return bool(does_self_intersect(converted))
+        triangles.append((coordinates[0], coordinates[1], coordinates[2]))
+    return triangles
+
+
+def _checked_polyhedron(mesh: Mapping[str, object]) -> Polyhedron_3:
+    converted = _cgal_polyhedron(*parse_closed_surface(mesh))
+    if does_self_intersect(converted):
+        raise SelfIntersectionError("Self-intersecting triangle surface")
+    return converted
+
+
+def bounded_sides(mesh: Mapping[str, object], queries: object) -> tuple[int, ...]:
+    """Classify finite points as material (1), boundary (0), or exterior/cavity (-1).
+
+    Coordinates share the target surface's units and frame. Invalid surfaces fail
+    before querying; no welding, tolerance offset, or automatic repair is applied.
+    """
+    points, faces = parse_closed_surface(mesh)
+    query_points = [_point(value) for value in _array(queries)]
+    converted = _cgal_polyhedron(points, faces)
+    if does_self_intersect(converted):
+        raise SelfIntersectionError("Self-intersecting triangle surface")
+    classifier = Side_of_triangle_mesh(converted)
+    return tuple(int(classifier.bounded_side(Point_3(*point))) for point in query_points)
+
+
+def _positive_volume(polyhedron: Polyhedron_3) -> float:
+    if not polyhedron.is_closed() or not polyhedron.is_pure_triangle():
+        raise ValueError("Expected a closed triangle volume")
+    result = float(volume(polyhedron))
+    if not math.isfinite(result) or result <= 0:
+        raise ValueError("Expected a finite positive volume")
+    return result
+
+
+def solid_overlap_volume(left: Mapping[str, object], right: Mapping[str, object]) -> float:
+    """Measure shared material in cubic input units. Touching alone yields zero.
+
+    Inputs share a frame and bound material with outward-facing exterior shells
+    and inward-facing cavity shells. An indeterminate solver result raises.
+    """
+    solids = (_checked_polyhedron(left), _checked_polyhedron(right))
+    for solid in solids:
+        if not is_outward_oriented(solid):
+            raise ValueError("Solid exterior must be outward oriented")
+        _positive_volume(solid)
+    overlap = Polyhedron_3()
+    if not corefine_and_compute_intersection(*solids, overlap):
+        raise ValueError("CGAL could not compute the solid intersection")
+    return _positive_volume(overlap) if overlap.size_of_facets() else 0.0
+
+
+def convex_envelope(points: object) -> dict[str, object]:
+    """Build a closed convex hull from finite points in their existing frame."""
+    vertices = [_point(value) for value in _array(points)]
+    if len(set(vertices)) < 4:
+        raise ValueError("A convex volume requires at least four distinct points")
+    hull = Polyhedron_3()
+    convex_hull_3([Point_3(*point) for point in vertices], hull)
+    _positive_volume(hull)
+    index: dict[Point, int] = {}
+    faces = [
+        [index.setdefault(point, len(index)) for point in triangle]
+        for triangle in _cgal_triangles(hull)
+    ]
+    return {"vertices": list(index), "faces": faces}

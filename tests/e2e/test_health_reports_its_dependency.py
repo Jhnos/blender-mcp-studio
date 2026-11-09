@@ -96,6 +96,8 @@ class _Exploding(BlenderPort):
 
 def _runtime(blender: BlenderPort) -> AppRuntime:
     marker = MagicMock()
+    marker.recover_unfinished = AsyncMock(return_value=0)
+    marker.unresolved_run_ids = ()
     return AppRuntime(
         blender=blender,
         scene_operations=marker,
@@ -117,6 +119,7 @@ def _runtime(blender: BlenderPort) -> AppRuntime:
         conversational_modeling=marker,
         modeling_pipeline=marker,
         iterative_refinement=None,
+        native_revisions=marker,
         design_pipeline=AsyncMock(),
         tools=marker,
     )

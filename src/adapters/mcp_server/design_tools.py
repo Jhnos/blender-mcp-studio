@@ -9,7 +9,6 @@ relative to their artifact root, slice outputs are ``run://{run_id}/print/<name>
 
 from __future__ import annotations
 
-import asyncio
 from dataclasses import asdict
 from typing import Annotated, TypeVar
 
@@ -65,14 +64,14 @@ RUN_URI_PREFIX = "run://"
 _TEXT_SUFFIXES = frozenset({".json", ".log"})
 _PICK = "Call list_printers first; choose a printer whose bed_mm fits the plate."
 
-RUN_DESIGN_PIPELINE_DOC = f"""Submit a ModelSpec (spec_version 2); returns the queued job, poll get_job_status.
-
-{_PICK} Minimal spec: {{"spec_version": "2", "name": ..., "source": {{"root_dir": ...,
-"project_3mf": ...}}, "print_target": {{"printer": ..., "material": ...}}}}. Full schema:
-describe_model_spec; root_dir values: list_artifacts. The run checks geometry, slices and
-packages ({MECHANISM_NOT_EVALUATED}); verdict: get_run_report. import.json lists ignored files
-(at most {MAX_SKIPPED_EVIDENCE}; the count covers all). A bad, out-of-root or unsliceable spec
-is an error and makes no job."""
+RUN_DESIGN_PIPELINE_DOC = f"""No spec: run the current selected model. Else a ModelSpec v2.
+Returns the queued job; poll get_job_status; verdict get_run_report.
+{_PICK} Spec: {{"spec_version":"2","name":..,"source":{{"root_dir":..,"project_3mf":..}},
+"print_target":{{"printer":..,"material":..}}}}; schema describe_model_spec; root_dir from
+list_artifacts. Geometry, slice, package ({MECHANISM_NOT_EVALUATED}).
+import.json lists at most {MAX_SKIPPED_EVIDENCE} ignored files. Bad spec: error, no job.
+revision={{"recipe_id":"screen-clamp","target_angle_deg":30}} (no spec; 0/15/30/45/60)
+revises the current native model, slices its same-part plate in one job."""
 
 SLICE_FOR_PRINT_DOC = f"""Slice one 3MF into a fresh run directory. {_PICK}
 printer (an id) and material (one of its materials) are required, never defaulted;
@@ -161,10 +160,12 @@ def register_design_tools(
         annotations=_annotations("Run design pipeline", read_only=False, idempotent=False),
         description=RUN_DESIGN_PIPELINE_DOC,
     )
-    async def run_design_pipeline(spec: dict[str, object]) -> dict[str, object]:
+    async def run_design_pipeline(
+        spec: dict[str, object] | None = None, revision: dict[str, object] | None = None
+    ) -> dict[str, object]:
         pipeline = _configured(design, "design pipeline")
         try:
-            return job_dict(await pipeline.submit(spec))
+            return job_dict(await pipeline.submit(spec, revision=revision))
         except DomainError as exc:
             raise await fail(exc) from exc
 
@@ -174,10 +175,13 @@ def register_design_tools(
     )
     async def describe_model_spec() -> dict[str, object]:
         """Return the ModelSpec v2 JSON Schema (fields, types, defaults, usable printers and
-        their materials) and a complete worked example for run_design_pipeline. Call
-        list_printers first; choose a printer whose bed_mm fits the plate."""
-        # describe_spec reads the slicer bundles: keep that off the event loop.
-        return await asyncio.to_thread(_configured(design, "design pipeline").describe_spec)
+        their materials), the selected model's spec as example, and a v2 template whose
+        print_target holds placeholders. Call list_printers first; choose a printer whose
+        bed_mm fits the plate."""
+        try:
+            return await _configured(design, "design pipeline").describe_spec()
+        except DomainError as exc:
+            raise await fail(exc) from exc
 
     @mcp.tool(
         timeout=QUERY_TIMEOUT_S,
@@ -197,8 +201,15 @@ def register_design_tools(
     )
     async def list_artifacts() -> dict[str, object]:
         """List deliverable directories usable as source.root_dir: each root-relative root_dir
-        with its STL count per subdirectory and its 3MF names (at most 200, no hidden dirs)."""
-        return await _configured(design, "design pipeline").list_artifacts()
+        with its STL count per subdirectory and its 3MF names (at most 200, no hidden dirs).
+        Use default_spec for the shared selected delivery. If default_available is false,
+        report the missing delivery; never fall back to an archived version.
+        When present, default_native reports checksum-bound native/part provenance for
+        that exact selection. Its file_identity_only scope is not geometry or print approval."""
+        try:
+            return await _configured(design, "design pipeline").list_artifacts()
+        except DomainError as exc:
+            raise await fail(exc) from exc
 
     @mcp.tool(
         timeout=QUERY_TIMEOUT_S,

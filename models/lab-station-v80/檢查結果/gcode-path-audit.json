@@ -1,0 +1,634 @@
+{
+  "gcode_file": "plate_1.gcode",
+  "change_layer_events": 6105,
+  "deposited_path_segments": 2174138,
+  "extruded_xy_envelope_mm": [
+    1.137,
+    1.136,
+    251.864,
+    251.864
+  ],
+  "out_of_bed_samples": [],
+  "first_layer_object_ids_with_model_paths": [
+    8,
+    12,
+    16,
+    20,
+    24,
+    28,
+    32,
+    36,
+    40,
+    44,
+    48,
+    52,
+    56,
+    60,
+    64,
+    68,
+    72,
+    76,
+    80,
+    84,
+    88,
+    92,
+    96,
+    100,
+    104,
+    108,
+    112,
+    116,
+    120,
+    124,
+    128,
+    132,
+    136,
+    140,
+    144,
+    148,
+    152,
+    156,
+    160,
+    164,
+    168,
+    172,
+    176,
+    180,
+    184,
+    188,
+    192,
+    196,
+    200,
+    204,
+    208,
+    212,
+    216,
+    220,
+    224,
+    228,
+    232,
+    236,
+    240,
+    244,
+    248,
+    252,
+    256,
+    260,
+    264,
+    268,
+    272,
+    276,
+    280
+  ],
+  "first_layer_object_ids_with_any_paths": [
+    8,
+    12,
+    16,
+    20,
+    24,
+    28,
+    32,
+    36,
+    40,
+    44,
+    48,
+    52,
+    56,
+    60,
+    64,
+    68,
+    72,
+    76,
+    80,
+    84,
+    88,
+    92,
+    96,
+    100,
+    104,
+    108,
+    112,
+    116,
+    120,
+    124,
+    128,
+    132,
+    136,
+    140,
+    144,
+    148,
+    152,
+    156,
+    160,
+    164,
+    168,
+    172,
+    176,
+    180,
+    184,
+    188,
+    192,
+    196,
+    200,
+    204,
+    208,
+    212,
+    216,
+    220,
+    224,
+    228,
+    232,
+    236,
+    240,
+    244,
+    248,
+    252,
+    256,
+    260,
+    264,
+    268,
+    272,
+    276,
+    280
+  ],
+  "first_layer_roles_by_object": {
+    "32": {
+      "Support": 269,
+      "Support interface": 30,
+      "Support transition": 34,
+      "Brim": 121,
+      "Outer wall": 4,
+      "Inner wall": 8
+    },
+    "44": {
+      "Support": 176,
+      "Support transition": 36,
+      "Support interface": 40,
+      "Brim": 194,
+      "Outer wall": 4,
+      "Inner wall": 8
+    },
+    "36": {
+      "Support interface": 29,
+      "Support transition": 5,
+      "Support": 143,
+      "Brim": 189,
+      "Outer wall": 4,
+      "Inner wall": 4,
+      "Gap infill": 1
+    },
+    "16": {
+      "Support interface": 420,
+      "Support transition": 178,
+      "Support": 621,
+      "Brim": 1395,
+      "Outer wall": 78,
+      "Gap infill": 76
+    },
+    "76": {
+      "Support interface": 34,
+      "Support": 74,
+      "Brim": 21,
+      "Outer wall": 4,
+      "Inner wall": 8
+    },
+    "112": {
+      "Support transition": 6,
+      "Support interface": 26,
+      "Brim": 99,
+      "Outer wall": 4,
+      "Inner wall": 4,
+      "Gap infill": 1
+    },
+    "164": {
+      "Brim": 312,
+      "Outer wall": 6,
+      "Inner wall": 9,
+      "Bottom surface": 25
+    },
+    "48": {
+      "Brim": 242,
+      "Outer wall": 4,
+      "Inner wall": 8,
+      "Bottom surface": 460
+    },
+    "92": {
+      "Support transition": 6,
+      "Support interface": 30,
+      "Brim": 154,
+      "Outer wall": 4,
+      "Inner wall": 4,
+      "Gap infill": 1
+    },
+    "84": {
+      "Support transition": 6,
+      "Support interface": 30,
+      "Brim": 186,
+      "Outer wall": 4,
+      "Inner wall": 4,
+      "Gap infill": 1
+    },
+    "24": {
+      "Support": 69,
+      "Brim": 373,
+      "Outer wall": 103,
+      "Inner wall": 205,
+      "Bottom surface": 289
+    },
+    "20": {
+      "Support": 69,
+      "Brim": 416,
+      "Outer wall": 100,
+      "Inner wall": 198,
+      "Bottom surface": 289
+    },
+    "52": {
+      "Support": 235,
+      "Support transition": 32,
+      "Support interface": 36,
+      "Brim": 67,
+      "Outer wall": 5,
+      "Inner wall": 9
+    },
+    "156": {
+      "Support": 83,
+      "Outer wall": 4,
+      "Inner wall": 6,
+      "Bottom surface": 7
+    },
+    "80": {
+      "Support interface": 34,
+      "Support": 74,
+      "Brim": 88,
+      "Outer wall": 4,
+      "Inner wall": 8
+    },
+    "40": {
+      "Support transition": 33,
+      "Support": 241,
+      "Support interface": 32,
+      "Brim": 107,
+      "Outer wall": 4,
+      "Inner wall": 8
+    },
+    "88": {
+      "Support": 74,
+      "Support interface": 34,
+      "Brim": 89,
+      "Outer wall": 4,
+      "Inner wall": 8
+    },
+    "104": {
+      "Support interface": 48,
+      "Support": 142,
+      "Brim": 5,
+      "Outer wall": 8,
+      "Inner wall": 12
+    },
+    "124": {
+      "Brim": 474,
+      "Outer wall": 51,
+      "Inner wall": 47
+    },
+    "132": {
+      "Support transition": 6,
+      "Support interface": 26,
+      "Brim": 189,
+      "Outer wall": 4,
+      "Inner wall": 4,
+      "Gap infill": 1
+    },
+    "148": {
+      "Support interface": 26,
+      "Support transition": 6,
+      "Brim": 117,
+      "Outer wall": 4,
+      "Inner wall": 4,
+      "Gap infill": 1
+    },
+    "64": {
+      "Support interface": 33,
+      "Support transition": 34,
+      "Support": 235,
+      "Brim": 103,
+      "Outer wall": 5,
+      "Inner wall": 9
+    },
+    "56": {
+      "Support": 95,
+      "Brim": 135,
+      "Outer wall": 4,
+      "Inner wall": 8
+    },
+    "256": {
+      "Brim": 504,
+      "Outer wall": 6,
+      "Inner wall": 6,
+      "Gap infill": 12
+    },
+    "248": {
+      "Brim": 401,
+      "Outer wall": 6,
+      "Inner wall": 7,
+      "Gap infill": 11
+    },
+    "232": {
+      "Brim": 382,
+      "Outer wall": 5,
+      "Inner wall": 7
+    },
+    "236": {
+      "Brim": 272,
+      "Outer wall": 6,
+      "Inner wall": 7,
+      "Gap infill": 23
+    },
+    "220": {
+      "Support": 83,
+      "Outer wall": 4,
+      "Inner wall": 5,
+      "Bottom surface": 7
+    },
+    "192": {
+      "Brim": 255,
+      "Outer wall": 6,
+      "Inner wall": 9,
+      "Bottom surface": 25
+    },
+    "196": {
+      "Support": 83,
+      "Outer wall": 3,
+      "Inner wall": 7,
+      "Bottom surface": 7
+    },
+    "224": {
+      "Brim": 262,
+      "Outer wall": 6,
+      "Inner wall": 9,
+      "Bottom surface": 25
+    },
+    "228": {
+      "Brim": 362,
+      "Outer wall": 7,
+      "Inner wall": 8
+    },
+    "200": {
+      "Support": 79,
+      "Outer wall": 2,
+      "Inner wall": 5,
+      "Bottom surface": 7
+    },
+    "204": {
+      "Support interface": 20,
+      "Brim": 153,
+      "Outer wall": 4,
+      "Gap infill": 1
+    },
+    "208": {
+      "Support": 79,
+      "Outer wall": 2,
+      "Inner wall": 5,
+      "Bottom surface": 7
+    },
+    "244": {
+      "Brim": 513,
+      "Outer wall": 6,
+      "Inner wall": 7,
+      "Gap infill": 11
+    },
+    "252": {
+      "Brim": 474,
+      "Outer wall": 8,
+      "Inner wall": 8,
+      "Gap infill": 32
+    },
+    "268": {
+      "Brim": 474,
+      "Outer wall": 6,
+      "Inner wall": 6,
+      "Gap infill": 12
+    },
+    "280": {
+      "Brim": 497,
+      "Outer wall": 6,
+      "Inner wall": 6,
+      "Gap infill": 12
+    },
+    "276": {
+      "Brim": 461,
+      "Outer wall": 6,
+      "Inner wall": 7,
+      "Gap infill": 23
+    },
+    "272": {
+      "Brim": 475,
+      "Outer wall": 8,
+      "Inner wall": 8,
+      "Gap infill": 32
+    },
+    "264": {
+      "Brim": 398,
+      "Outer wall": 6,
+      "Inner wall": 7,
+      "Gap infill": 23
+    },
+    "260": {
+      "Brim": 359,
+      "Outer wall": 8,
+      "Inner wall": 8,
+      "Gap infill": 32
+    },
+    "240": {
+      "Brim": 359,
+      "Outer wall": 8,
+      "Inner wall": 8,
+      "Gap infill": 32
+    },
+    "96": {
+      "Support interface": 38,
+      "Support": 120,
+      "Brim": 102,
+      "Outer wall": 4,
+      "Inner wall": 8
+    },
+    "128": {
+      "Support transition": 6,
+      "Support interface": 26,
+      "Brim": 173,
+      "Outer wall": 4,
+      "Inner wall": 4,
+      "Gap infill": 1
+    },
+    "120": {
+      "Support interface": 42,
+      "Support transition": 36,
+      "Support": 134,
+      "Brim": 22,
+      "Outer wall": 9,
+      "Inner wall": 13
+    },
+    "28": {
+      "Support transition": 6,
+      "Support interface": 28,
+      "Support": 139,
+      "Brim": 189,
+      "Outer wall": 4,
+      "Inner wall": 4,
+      "Gap infill": 1
+    },
+    "100": {
+      "Support transition": 33,
+      "Support interface": 30,
+      "Support": 154,
+      "Brim": 85,
+      "Outer wall": 10,
+      "Inner wall": 16
+    },
+    "116": {
+      "Support": 130,
+      "Brim": 165,
+      "Outer wall": 16
+    },
+    "60": {
+      "Support": 35,
+      "Brim": 334,
+      "Outer wall": 7,
+      "Inner wall": 9,
+      "Gap infill": 1,
+      "Bottom surface": 322
+    },
+    "152": {
+      "Support interface": 11,
+      "Support": 104,
+      "Brim": 28,
+      "Outer wall": 4,
+      "Inner wall": 4,
+      "Gap infill": 1
+    },
+    "168": {
+      "Support interface": 18,
+      "Brim": 156,
+      "Outer wall": 4,
+      "Gap infill": 1
+    },
+    "172": {
+      "Support": 91,
+      "Outer wall": 4,
+      "Inner wall": 6,
+      "Bottom surface": 7
+    },
+    "180": {
+      "Brim": 286,
+      "Outer wall": 4,
+      "Inner wall": 8,
+      "Bottom surface": 25
+    },
+    "184": {
+      "Brim": 257,
+      "Outer wall": 4,
+      "Inner wall": 8,
+      "Bottom surface": 25
+    },
+    "140": {
+      "Support": 75,
+      "Brim": 195,
+      "Outer wall": 8,
+      "Inner wall": 8,
+      "Gap infill": 2
+    },
+    "136": {
+      "Support": 75,
+      "Brim": 211,
+      "Outer wall": 8,
+      "Inner wall": 8,
+      "Gap infill": 2
+    },
+    "144": {
+      "Support": 75,
+      "Brim": 173,
+      "Outer wall": 8,
+      "Inner wall": 8,
+      "Gap infill": 2
+    },
+    "160": {
+      "Brim": 439,
+      "Outer wall": 52,
+      "Inner wall": 47
+    },
+    "212": {
+      "Brim": 274,
+      "Outer wall": 6,
+      "Inner wall": 7
+    },
+    "176": {
+      "Support": 135,
+      "Support interface": 31,
+      "Brim": 14,
+      "Outer wall": 4
+    },
+    "188": {
+      "Support": 82,
+      "Outer wall": 3,
+      "Inner wall": 7,
+      "Bottom surface": 7
+    },
+    "216": {
+      "Brim": 375,
+      "Outer wall": 7,
+      "Inner wall": 8
+    },
+    "68": {
+      "Support": 120,
+      "Support interface": 38,
+      "Brim": 59,
+      "Outer wall": 4,
+      "Inner wall": 8
+    },
+    "72": {
+      "Support": 120,
+      "Support interface": 38,
+      "Brim": 123,
+      "Outer wall": 4,
+      "Inner wall": 8
+    },
+    "108": {
+      "Support interface": 30,
+      "Support": 27,
+      "Brim": 10,
+      "Outer wall": 9,
+      "Inner wall": 12
+    },
+    "12": {
+      "Support": 67,
+      "Brim": 222,
+      "Outer wall": 4,
+      "Inner wall": 8,
+      "Bottom surface": 676
+    },
+    "8": {
+      "Support": 292,
+      "Brim": 195,
+      "Outer wall": 4,
+      "Inner wall": 8,
+      "Bottom surface": 453
+    }
+  },
+  "feature_segment_counts": {
+    "Support": 285857,
+    "Support interface": 68109,
+    "Support transition": 14627,
+    "Brim": 15764,
+    "Outer wall": 299855,
+    "Inner wall": 350482,
+    "Gap infill": 38719,
+    "Bottom surface": 2663,
+    "Overhang wall": 4527,
+    "Internal solid infill": 107509,
+    "Bridge": 21078,
+    "Top surface": 14891,
+    "Sparse infill": 899913,
+    "Floating vertical shell": 50144
+  },
+  "arcs_interpolated": 520765,
+  "physical_adhesion_tested": false
+}

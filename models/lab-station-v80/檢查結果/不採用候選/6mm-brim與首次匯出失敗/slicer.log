@@ -1,0 +1,10 @@
+[2026-10-20 21:13:44.750035] [0x0000000204d9ff80] [trace]   Initializing StaticPrintConfigs
+[2026-10-20 21:13:45.204156] [0x0000000204d9ff80] [warning] cli mode, Current BambuStudio Version 02.08.02.61
+[2026-10-20 21:13:45.850478] [0x0000000204d9ff80] [warning] no filament colors found in projects
+[2026-10-20 21:13:46.789562] [0x000000016e5a3000] [warning] Detected missing Voronoi vertex, input polygons will be rotated back and forth.
+[2026-10-20 21:14:58.309833] [0x0000000204d9ff80] [error]   Invalid T command (T65535).
+[2026-10-20 21:15:05.393248] [0x0000000204d9ff80] [error]   _save_model_to_file:6459, Unable to open the file
+
+[2026-10-20 21:15:05.393531] [0x0000000204d9ff80] [error]   Unable to open the file P2S-PLA-support-brim.3mf.tmp
+Project export to /Users/bearmacmini/Blender_MCP_drawer/tmp/lab-station-slicing-v80/normal-support//Users/bearmacmini/Blender_MCP_drawer/tmp/lab-station-slicing-v80/normal-support/P2S-PLA-support-brim.3mf failed
+run found error, exit

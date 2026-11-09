@@ -1,0 +1,45 @@
+{
+  "description": "Selected v80 delivery: 69 original print parts and saved single-plate sliced project",
+  "spec": {
+    "spec_version": "1",
+    "name": "lab-station-v80",
+    "source": {
+      "root_dir": "models/lab-station-v80",
+      "stl_glob": "STL/列印零件/*.stl",
+      "project_3mf": "P2S-PLA-69件單盤-已切片-v80.3mf"
+    },
+    "print_target": {
+      "printer": "bambu-p2s",
+      "material": "PLA",
+      "layer_height_mm": 0.2,
+      "support": true,
+      "brim_mm": 3.0
+    },
+    "mechanism": {
+      "suites": []
+    }
+  },
+  "expect": {
+    "stl_count": 69,
+    "import_3mf": 1,
+    "skipped": 0,
+    "geometry_checked": 69,
+    "geometry_failing": 0,
+    "plates": 1,
+    "slicer_tool": "bambu-studio",
+    "slicer_license": "AGPL-3.0-only",
+    "manifest_files": [
+      "spec.json",
+      "import.json",
+      "geometry.json",
+      "print/effective-settings.json",
+      "print/slicer.log",
+      "print/machine.json",
+      "print/process.json",
+      "print/filament.json"
+    ]
+  },
+  "negative_control": {
+    "keep_header_bytes": 40
+  }
+}

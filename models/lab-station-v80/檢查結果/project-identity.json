@@ -1,0 +1,490 @@
+{
+  "parts": [
+    {
+      "object": "LS_FIT_lid",
+      "vertices": 3627,
+      "triangles": 7334,
+      "identical_face_indices": true,
+      "max_world_vertex_change_mm": 5.3759818132890905e-06
+    },
+    {
+      "object": "LS_FIT_chassis",
+      "vertices": 1952,
+      "triangles": 3928,
+      "identical_face_indices": true,
+      "max_world_vertex_change_mm": 4.7810864178766656e-06
+    },
+    {
+      "object": "LS_FIT_lcd_back",
+      "vertices": 3446,
+      "triangles": 6900,
+      "identical_face_indices": true,
+      "max_world_vertex_change_mm": 4.3966373974837545e-06
+    },
+    {
+      "object": "S_capillary_base",
+      "vertices": 3176,
+      "triangles": 6360,
+      "identical_face_indices": true,
+      "max_world_vertex_change_mm": 2.538976352001902e-06
+    },
+    {
+      "object": "S_pH_temp_base",
+      "vertices": 3181,
+      "triangles": 6370,
+      "identical_face_indices": true,
+      "max_world_vertex_change_mm": 2.2028284144446837e-06
+    },
+    {
+      "object": "TE_pH_temp_three_point_elbow",
+      "vertices": 1552,
+      "triangles": 3116,
+      "identical_face_indices": true,
+      "max_world_vertex_change_mm": 1.6785320080736344e-06
+    },
+    {
+      "object": "S_pH_temp_head",
+      "vertices": 2386,
+      "triangles": 4780,
+      "identical_face_indices": true,
+      "max_world_vertex_change_mm": 2.1448350309167052e-06
+    },
+    {
+      "object": "TE_capillary_three_point_elbow",
+      "vertices": 1552,
+      "triangles": 3116,
+      "identical_face_indices": true,
+      "max_world_vertex_change_mm": 1.3921547160337986e-06
+    },
+    {
+      "object": "S_capillary_head",
+      "vertices": 2215,
+      "triangles": 4438,
+      "identical_face_indices": true,
+      "max_world_vertex_change_mm": 2.3632409500866335e-06
+    },
+    {
+      "object": "LS_FIT_spill_dish",
+      "vertices": 192,
+      "triangles": 380,
+      "identical_face_indices": true,
+      "max_world_vertex_change_mm": 4.296741058174845e-06
+    },
+    {
+      "object": "LS_FIT_sample_tray",
+      "vertices": 8,
+      "triangles": 12,
+      "identical_face_indices": true,
+      "max_world_vertex_change_mm": 4.185333727983536e-07
+    },
+    {
+      "object": "TE_capillary_three_point_wrist",
+      "vertices": 1021,
+      "triangles": 2046,
+      "identical_face_indices": true,
+      "max_world_vertex_change_mm": 1.93662585754706e-06
+    },
+    {
+      "object": "RH_rear_cover",
+      "vertices": 1282,
+      "triangles": 2576,
+      "identical_face_indices": true,
+      "max_world_vertex_change_mm": 4.045038093347455e-06
+    },
+    {
+      "object": "LS_FIT_lcd_front",
+      "vertices": 503,
+      "triangles": 1022,
+      "identical_face_indices": true,
+      "max_world_vertex_change_mm": 4.327566041042184e-06
+    },
+    {
+      "object": "TE_pH_temp_three_point_wrist",
+      "vertices": 992,
+      "triangles": 1992,
+      "identical_face_indices": true,
+      "max_world_vertex_change_mm": 2.43535911560793e-06
+    },
+    {
+      "object": "TE_capillary_A_knob",
+      "vertices": 375,
+      "triangles": 750,
+      "identical_face_indices": true,
+      "max_world_vertex_change_mm": 6.820604367678555e-07
+    },
+    {
+      "object": "S_capillary_shoulder_knob",
+      "vertices": 373,
+      "triangles": 746,
+      "identical_face_indices": true,
+      "max_world_vertex_change_mm": 5.312931196794208e-07
+    },
+    {
+      "object": "TE_capillary_P_knob",
+      "vertices": 353,
+      "triangles": 706,
+      "identical_face_indices": true,
+      "max_world_vertex_change_mm": 5.498856816394761e-07
+    },
+    {
+      "object": "TE_pH_temp_A_knob",
+      "vertices": 375,
+      "triangles": 750,
+      "identical_face_indices": true,
+      "max_world_vertex_change_mm": 7.237323390550758e-07
+    },
+    {
+      "object": "TE_pH_temp_follower",
+      "vertices": 444,
+      "triangles": 892,
+      "identical_face_indices": true,
+      "max_world_vertex_change_mm": 3.894860833372661e-06
+    },
+    {
+      "object": "TE_pH_temp_P_knob",
+      "vertices": 353,
+      "triangles": 706,
+      "identical_face_indices": true,
+      "max_world_vertex_change_mm": 7.492226769246639e-07
+    },
+    {
+      "object": "TE_pH_temp_lower",
+      "vertices": 444,
+      "triangles": 892,
+      "identical_face_indices": true,
+      "max_world_vertex_change_mm": 3.9120607861196595e-06
+    },
+    {
+      "object": "S_pH_temp_shoulder_knob",
+      "vertices": 373,
+      "triangles": 746,
+      "identical_face_indices": true,
+      "max_world_vertex_change_mm": 6.107001058819694e-07
+    },
+    {
+      "object": "S_pH_temp_upper",
+      "vertices": 4911,
+      "triangles": 9830,
+      "identical_face_indices": true,
+      "max_world_vertex_change_mm": 3.95323570203798e-06
+    },
+    {
+      "object": "S_pH_temp_clamp_cap",
+      "vertices": 784,
+      "triangles": 1572,
+      "identical_face_indices": true,
+      "max_world_vertex_change_mm": 1.3503357573483965e-06
+    },
+    {
+      "object": "S_capillary_clamp_cap",
+      "vertices": 650,
+      "triangles": 1304,
+      "identical_face_indices": true,
+      "max_world_vertex_change_mm": 7.481475270559367e-07
+    },
+    {
+      "object": "S_capillary_upper_follower",
+      "vertices": 444,
+      "triangles": 892,
+      "identical_face_indices": true,
+      "max_world_vertex_change_mm": 3.914301265387884e-06
+    },
+    {
+      "object": "LS_ROUTE_pH_temp_upper",
+      "vertices": 407,
+      "triangles": 814,
+      "identical_face_indices": true,
+      "max_world_vertex_change_mm": 7.109669894145661e-07
+    },
+    {
+      "object": "S_capillary_upper",
+      "vertices": 4911,
+      "triangles": 9830,
+      "identical_face_indices": true,
+      "max_world_vertex_change_mm": 3.966827169404545e-06
+    },
+    {
+      "object": "S_pH_temp_clamp_liner_0",
+      "vertices": 200,
+      "triangles": 396,
+      "identical_face_indices": true,
+      "max_world_vertex_change_mm": 4.283679126179484e-07
+    },
+    {
+      "object": "TE_capillary_follower",
+      "vertices": 444,
+      "triangles": 892,
+      "identical_face_indices": true,
+      "max_world_vertex_change_mm": 3.904325999756239e-06
+    },
+    {
+      "object": "TE_capillary_lower",
+      "vertices": 444,
+      "triangles": 892,
+      "identical_face_indices": true,
+      "max_world_vertex_change_mm": 3.901601273543888e-06
+    },
+    {
+      "object": "LS_ROUTE_capillary_upper",
+      "vertices": 190,
+      "triangles": 376,
+      "identical_face_indices": true,
+      "max_world_vertex_change_mm": 7.375918776569334e-07
+    },
+    {
+      "object": "LS_ROUTE_pH_temp_lower",
+      "vertices": 273,
+      "triangles": 542,
+      "identical_face_indices": true,
+      "max_world_vertex_change_mm": 7.332216299427016e-07
+    },
+    {
+      "object": "LS_ROUTE_capillary_lower",
+      "vertices": 210,
+      "triangles": 416,
+      "identical_face_indices": true,
+      "max_world_vertex_change_mm": 7.702965043696571e-07
+    },
+    {
+      "object": "S_pH_temp_upper_follower",
+      "vertices": 444,
+      "triangles": 892,
+      "identical_face_indices": true,
+      "max_world_vertex_change_mm": 3.901601273543888e-06
+    },
+    {
+      "object": "S_pH_temp_tip_knob",
+      "vertices": 325,
+      "triangles": 650,
+      "identical_face_indices": true,
+      "max_world_vertex_change_mm": 7.15830156632018e-07
+    },
+    {
+      "object": "RH_75_pin",
+      "vertices": 384,
+      "triangles": 764,
+      "identical_face_indices": true,
+      "max_world_vertex_change_mm": 7.64373645907348e-07
+    },
+    {
+      "object": "S_pH_temp_clamp_liner_1",
+      "vertices": 200,
+      "triangles": 396,
+      "identical_face_indices": true,
+      "max_world_vertex_change_mm": 5.070031373743011e-07
+    },
+    {
+      "object": "TE_pH_temp_C_pin",
+      "vertices": 384,
+      "triangles": 764,
+      "identical_face_indices": true,
+      "max_world_vertex_change_mm": 6.935461439775599e-07
+    },
+    {
+      "object": "RH_101_thumb_knob",
+      "vertices": 242,
+      "triangles": 484,
+      "identical_face_indices": true,
+      "max_world_vertex_change_mm": 4.803616072262565e-07
+    },
+    {
+      "object": "TE_capillary_C_pin",
+      "vertices": 384,
+      "triangles": 764,
+      "identical_face_indices": true,
+      "max_world_vertex_change_mm": 4.993776070073784e-07
+    },
+    {
+      "object": "S_capillary_tip_knob",
+      "vertices": 325,
+      "triangles": 650,
+      "identical_face_indices": true,
+      "max_world_vertex_change_mm": 4.802699208860312e-07
+    },
+    {
+      "object": "TE_pH_temp_B_pin",
+      "vertices": 384,
+      "triangles": 764,
+      "identical_face_indices": true,
+      "max_world_vertex_change_mm": 5.251783458602758e-07
+    },
+    {
+      "object": "TE_pH_temp_D_pin",
+      "vertices": 384,
+      "triangles": 764,
+      "identical_face_indices": true,
+      "max_world_vertex_change_mm": 5.251783458602758e-07
+    },
+    {
+      "object": "TE_capillary_D_pin",
+      "vertices": 384,
+      "triangles": 764,
+      "identical_face_indices": true,
+      "max_world_vertex_change_mm": 6.224881108676507e-07
+    },
+    {
+      "object": "S_pH_temp_follower_shoulder_pin",
+      "vertices": 384,
+      "triangles": 764,
+      "identical_face_indices": true,
+      "max_world_vertex_change_mm": 6.840135206528818e-07
+    },
+    {
+      "object": "TE_capillary_B_pin",
+      "vertices": 384,
+      "triangles": 764,
+      "identical_face_indices": true,
+      "max_world_vertex_change_mm": 7.351734301737906e-07
+    },
+    {
+      "object": "TE_capillary_R_pin",
+      "vertices": 384,
+      "triangles": 764,
+      "identical_face_indices": true,
+      "max_world_vertex_change_mm": 7.296713597798882e-07
+    },
+    {
+      "object": "RH_-101_thumb_knob",
+      "vertices": 242,
+      "triangles": 484,
+      "identical_face_indices": true,
+      "max_world_vertex_change_mm": 6.284653558226137e-07
+    },
+    {
+      "object": "S_capillary_follower_shoulder_pin",
+      "vertices": 384,
+      "triangles": 764,
+      "identical_face_indices": true,
+      "max_world_vertex_change_mm": 7.296713597798882e-07
+    },
+    {
+      "object": "S_capillary_clamp_liner_1",
+      "vertices": 200,
+      "triangles": 396,
+      "identical_face_indices": true,
+      "max_world_vertex_change_mm": 6.098693777157989e-07
+    },
+    {
+      "object": "S_capillary_clamp_liner_0",
+      "vertices": 200,
+      "triangles": 396,
+      "identical_face_indices": true,
+      "max_world_vertex_change_mm": 6.346074826338213e-07
+    },
+    {
+      "object": "RH_-75_pin",
+      "vertices": 384,
+      "triangles": 764,
+      "identical_face_indices": true,
+      "max_world_vertex_change_mm": 6.118892936106905e-07
+    },
+    {
+      "object": "TE_pH_temp_R_pin",
+      "vertices": 384,
+      "triangles": 764,
+      "identical_face_indices": true,
+      "max_world_vertex_change_mm": 6.840135206528818e-07
+    },
+    {
+      "object": "S_pH_temp_clamp_liner_2",
+      "vertices": 200,
+      "triangles": 396,
+      "identical_face_indices": true,
+      "max_world_vertex_change_mm": 6.307215363325419e-07
+    },
+    {
+      "object": "S_pH_temp_clamp_liner_3",
+      "vertices": 200,
+      "triangles": 396,
+      "identical_face_indices": true,
+      "max_world_vertex_change_mm": 6.306316986801213e-07
+    },
+    {
+      "object": "RH_-75_clip",
+      "vertices": 164,
+      "triangles": 324,
+      "identical_face_indices": true,
+      "max_world_vertex_change_mm": 6.612520433343063e-07
+    },
+    {
+      "object": "TE_capillary_B_clip",
+      "vertices": 164,
+      "triangles": 324,
+      "identical_face_indices": true,
+      "max_world_vertex_change_mm": 4.988778115022354e-07
+    },
+    {
+      "object": "TE_pH_temp_R_clip",
+      "vertices": 164,
+      "triangles": 324,
+      "identical_face_indices": true,
+      "max_world_vertex_change_mm": 3.4294270376316645e-07
+    },
+    {
+      "object": "S_pH_temp_follower_shoulder_clip",
+      "vertices": 164,
+      "triangles": 324,
+      "identical_face_indices": true,
+      "max_world_vertex_change_mm": 6.983731970877013e-07
+    },
+    {
+      "object": "TE_capillary_C_clip",
+      "vertices": 164,
+      "triangles": 324,
+      "identical_face_indices": true,
+      "max_world_vertex_change_mm": 5.25673284110841e-07
+    },
+    {
+      "object": "TE_pH_temp_D_clip",
+      "vertices": 164,
+      "triangles": 324,
+      "identical_face_indices": true,
+      "max_world_vertex_change_mm": 3.0362086315202025e-07
+    },
+    {
+      "object": "S_capillary_follower_shoulder_clip",
+      "vertices": 164,
+      "triangles": 324,
+      "identical_face_indices": true,
+      "max_world_vertex_change_mm": 4.988779817004854e-07
+    },
+    {
+      "object": "TE_capillary_D_clip",
+      "vertices": 164,
+      "triangles": 324,
+      "identical_face_indices": true,
+      "max_world_vertex_change_mm": 7.100299449499045e-07
+    },
+    {
+      "object": "TE_pH_temp_C_clip",
+      "vertices": 164,
+      "triangles": 324,
+      "identical_face_indices": true,
+      "max_world_vertex_change_mm": 6.853682386796468e-07
+    },
+    {
+      "object": "RH_75_clip",
+      "vertices": 164,
+      "triangles": 324,
+      "identical_face_indices": true,
+      "max_world_vertex_change_mm": 6.367444700511299e-07
+    },
+    {
+      "object": "TE_capillary_R_clip",
+      "vertices": 164,
+      "triangles": 324,
+      "identical_face_indices": true,
+      "max_world_vertex_change_mm": 8.581990418426233e-07
+    },
+    {
+      "object": "TE_pH_temp_B_clip",
+      "vertices": 164,
+      "triangles": 324,
+      "identical_face_indices": true,
+      "max_world_vertex_change_mm": 5.203109358546686e-07
+    }
+  ],
+  "single_sliced_plate": true,
+  "embedded_gcode_matches_file": true,
+  "automatic_mesh_repair_count": 0
+}

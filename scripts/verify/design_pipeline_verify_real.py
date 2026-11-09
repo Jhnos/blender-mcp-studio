@@ -1,12 +1,15 @@
 #!/usr/bin/env python3
-"""Real-tier gate: the user's v78 deliverable through the public MCP URL, stage by stage.
+"""Real-tier gate: the selected user deliverable through the public MCP URL, stage by stage.
 
-Submits the contract's ModelSpec with ``run_design_pipeline``, polls ``get_job_status`` with a
+Submits the contract's ModelSpec with ``run_design_pipeline`` (a ``selection: current`` contract
+submits no spec, so the service runs its own selection), polls ``get_job_status`` with a
 heartbeat, then asserts machine evidence for import, geometry, mechanism, print and package
-(``design_gate_checks``; expected numbers live in the contract JSON). Precondition: ``list_printers``
-must list the contract's printer as usable, else FAIL with the unavailable reason and install hint.
-Negative controls (data in the contract): an unknown material is rejected at submit; a printer
-whose bed is too small ends with print FAILED naming the fit; optionally a copy with one STL
+(``design_gate_checks``; current part counts come from the verified source). Every contract
+names its printer: in its spec, or for a current selection in ``print_target``, which the
+selection must resolve to. Precondition: ``list_printers`` must list that printer as usable,
+else FAIL with the unavailable reason and install hint. Negative controls
+(``design_gate_negatives``, data in the contract): an unknown material is rejected at submit;
+a printer whose bed is too small ends with print FAILED naming the fit; a copy with one STL
 header truncated requires a geometry FAILED naming that file.
 
 Absent prerequisites (deliverable directory, slicer, MCP endpoint) are FAILs with a reason, never
@@ -21,8 +24,6 @@ import base64
 import io
 import json
 import os
-import secrets
-import shutil
 import sys
 import time
 import zipfile
@@ -39,12 +40,26 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from scripts.verify import design_gate_checks as checks  # noqa: E402
+from scripts.verify import design_gate_negatives as negatives  # noqa: E402
+from scripts.verify.lab_station_delivery_checks import check_delivery  # noqa: E402
 from scripts.verify.mcp_verify_real import TRANSPORT_ERRORS, default_mcp_url  # noqa: E402
-from src.infrastructure.narrowing import as_mapping  # noqa: E402
+from src.infrastructure.narrowing import as_mapping, as_sequence  # noqa: E402
 from src.infrastructure.tools_config import load_tools_config  # noqa: E402
 
+
+def job_budget_s(spec: Mapping[str, object] | None = None, *, native: bool = False) -> float:
+    """Poll budget for one job; ``spec=None`` is a job the service resolves itself."""
+    from src.adapters.generation.native_runner import (
+        NATIVE_COMMAND_TIMEOUT_S,
+        NATIVE_COMPLETION_TIMEOUT_S,
+    )
+
+    return checks.poll_budget_s(spec) + (
+        NATIVE_COMMAND_TIMEOUT_S + NATIVE_COMPLETION_TIMEOUT_S if native else 0
+    )
+
+
 POLL_PAUSE_S = 10.0
-NEGATIVE_DIR = "tmp"  # git-ignored, under the artifact root the deployed API reads
 
 
 def artifact_root(override: Path | None) -> Path:
@@ -93,11 +108,22 @@ async def _resource_json(client: Client[Any], run_id: str, name: str) -> Mapping
     return _as_object(json.loads(await _resource_bytes(client, run_id, name)), name)
 
 
-async def _run_spec(
-    client: Client[Any], spec: Mapping[str, object], label: str
+async def run_job(
+    client: Client[Any],
+    spec: Mapping[str, object] | None,
+    label: str,
+    *,
+    revision: Mapping[str, object] | None = None,
 ) -> tuple[Mapping[str, object], Mapping[str, object]]:
     """Submit, poll to a terminal job state, return (job, report)."""
-    submitted = await _object(client, "run_design_pipeline", {"spec": dict(spec)})
+    if revision is not None and spec is not None:
+        raise checks.GateError("native revision cannot supply an alternate spec")
+    arguments = (
+        {"revision": dict(revision)}
+        if revision is not None
+        else ({} if spec is None else {"spec": dict(spec)})
+    )
+    submitted = await _object(client, "run_design_pipeline", arguments)
     job_id, run_id = str(submitted["job_id"]), str(submitted["run_id"])
     print(f"[{label}] submitted job {job_id} run {run_id}", flush=True)
     loop = asyncio.get_running_loop()
@@ -114,7 +140,7 @@ async def _run_spec(
         checks.poll_job,
         status,
         job_id,
-        budget_s=checks.poll_budget_s(spec),
+        budget_s=job_budget_s(spec, native=revision is not None),
         pause_s=POLL_PAUSE_S,
     )
     report = await _object(client, "get_run_report", {"run_id": run_id})
@@ -149,11 +175,13 @@ def _positive_failures(
 
 
 async def _positive(client: Client[Any], contract: Mapping[str, Any]) -> list[str]:
-    job, report = await _run_spec(client, contract["spec"], "v78")
-    print(f"[v78] job ended {job.get('status')} error={job.get('error')}", flush=True)
+    supplied = None if contract.get("selection") == "current" else contract["spec"]
+    job, report = await run_job(client, supplied, str(contract["spec"]["name"]))
+    print(f"[selected] job ended {job.get('status')} error={job.get('error')}", flush=True)
     run_id = str(report["run_id"])
     early = checks.check_report(report, contract["expect"])
     try:
+        saved_spec = await _resource_json(client, run_id, "spec.json")
         manifest = await _resource_json(client, run_id, "manifest.json")
         report_json = await _resource_json(client, run_id, "report.json")
         import_json = await _resource_json(client, run_id, "import.json")
@@ -166,94 +194,103 @@ async def _positive(client: Client[Any], contract: Mapping[str, Any]) -> list[st
     except (ValueError, zipfile.BadZipFile, ToolError, McpError) as exc:
         detail = f"{type(exc).__name__}: {exc}"
         return [*early, f"evidence files unreadable from run {run_id}: {detail}"]
-    return _positive_failures(
+    failures = _positive_failures(
         report, manifest, report_json, import_json, plates, contract["expect"]
     )
-
-
-async def _negative(client: Client[Any], contract: Mapping[str, Any], root: Path) -> list[str]:
-    spec = json.loads(json.dumps(contract["spec"]))
-    source = spec["source"]
-    keep = int(contract["negative_control"]["keep_header_bytes"])
-    work = root / NEGATIVE_DIR / f"design-gate-negative-{secrets.token_hex(4)}"
-    copy_root = work / "artifact"
-    try:
-        original = root / source["root_dir"]
-        stls = sorted(original.glob(source["stl_glob"]))
-        if not stls:
-            return [f"negative control: no STL matches {source['stl_glob']} in the deliverable"]
-        target = stls[0].relative_to(original)
-        (copy_root / target).parent.mkdir(parents=True)
-        for stl in stls:
-            shutil.copy2(stl, copy_root / stl.relative_to(original))
-        checks.truncate_header(copy_root / target, keep)
-        source["root_dir"] = copy_root.relative_to(root).as_posix()
-        source.pop("project_3mf", None)
-        spec["name"] = "negative-control-truncated-header"
-        _, report = await _run_spec(client, spec, "negative")
-        return checks.check_negative(report, target.as_posix())
-    finally:
-        shutil.rmtree(work, ignore_errors=True)
-
-
-async def _material_negative(
-    client: Client[Any], contract: Mapping[str, Any], listing: Mapping[str, object]
-) -> list[str]:
-    """The same spec with a material the printer does not offer must fail at submit."""
-    spec = json.loads(json.dumps(contract["spec"]))
-    material = str(contract["negative_controls"]["material"]["material"])
-    printer = str(spec["print_target"]["printer"])
-    spec["print_target"]["material"] = material
-    spec["name"] = "negative-control-unknown-material"
-    try:
-        submitted = await _tool(client, "run_design_pipeline", {"spec": spec})
-    except (ToolError, McpError) as exc:
-        error: str | None = str(exc)
-    else:
-        error = None
-        print(f"[material] unexpectedly accepted: {str(submitted)[:200]}", flush=True)
-    allowed = checks.listed_materials(listing, printer)
-    return checks.check_material_rejection(error, material, allowed)
-
-
-async def _plate_fit_negative(client: Client[Any], contract: Mapping[str, Any]) -> list[str]:
-    """The same spec on a printer whose bed is too small must end with print FAILED."""
-    control = contract["negative_controls"]["plate_fit"]
-    spec = json.loads(json.dumps(contract["spec"]))
-    spec["print_target"]["printer"] = control["printer"]
-    spec["name"] = "negative-control-plate-too-big"
-    _, report = await _run_spec(client, spec, "plate-fit")
-    return checks.check_plate_fit_negative(report, control["message_contains"])
-
-
-async def _negatives(
-    client: Client[Any], contract: Mapping[str, Any], root: Path, listing: Mapping[str, object]
-) -> list[str]:
-    failures = await _material_negative(client, contract, listing)
-    if "plate_fit" in contract["negative_controls"]:
-        failures += await _plate_fit_negative(client, contract)
-    if "negative_control" in contract:
-        failures += await _negative(client, contract, root)
+    if contract.get("selection") == "current":
+        failures += checks.check_import_source(
+            import_json, _as_object(contract.get("native"), "verified native provenance")
+        )
+    if saved_spec != contract["spec"] or report.get("spec_name") != contract["spec"]["name"]:
+        failures.append("run spec.json disagrees with the selected ModelSpec")
     return failures
+
+
+async def _selected_contract(client: Client[Any], contract: Mapping[str, Any]) -> Mapping[str, Any]:
+    """Resolve a live selection at the service, not in a client-specific copy."""
+    if "selection" not in contract:
+        return contract  # Deliberately supplied historical/custom contract.
+    if contract["selection"] != "current" or "spec" in contract:
+        raise checks.GateError("selection contract must request current without an embedded spec")
+    catalog = await _object(client, "list_artifacts")
+    described = await _object(client, "describe_model_spec")
+    if catalog.get("default_available") is not True:
+        raise checks.GateError("selected delivery is unavailable; no historical fallback")
+    spec = _as_object(catalog.get("default_spec"), "default_spec")
+    if spec != described.get("example"):
+        raise checks.GateError("selected delivery disagrees between discovery and schema example")
+    print(f"selected delivery: {spec.get('name')}", flush=True)
+    return {**contract, "spec": spec, "native": catalog.get("default_native")}
+
+
+def _verified_delivery(root: Path, contract: Mapping[str, Any]) -> Mapping[str, Any]:
+    """Use one independently verified source for both current design gates."""
+    spec = _as_object(contract["spec"], "spec")
+    source = _as_object(spec.get("source"), "source")
+    failures = checks.check_deliverable(root, str(source["root_dir"]))
+    current = contract.get("selection") == "current"
+    native = contract.get("native")
+    if current:
+        failures += checks.check_native_source(root, spec, native)
+    if current and "print_target" in contract:
+        failures += checks.check_selected_target(spec, contract["print_target"])
+    if failures:
+        raise checks.GateError("; ".join(failures))
+    if not current:
+        return contract
+    if contract.get("verify_delivery_evidence") is True:
+        failures = check_delivery(root, native)
+        if failures:
+            raise checks.GateError("; ".join(failures))
+    expect = _as_object(contract["expect"], "expect")
+    if {"stl_count", "geometry_checked"} & expect.keys():
+        raise checks.GateError("current contract must derive STL counts from verified source")
+    parts = as_sequence(_as_object(native, "verified native provenance").get("parts"))
+    if not parts:
+        raise checks.GateError("verified native source has no parts")
+    return {
+        **contract,
+        "expect": {**expect, "stl_count": len(parts), "geometry_checked": len(parts)},
+    }
+
+
+def _contract_printer(contract: Mapping[str, Any]) -> str:
+    """The printer a resolved contract names; a gate never picks one."""
+    named = contract.get("print_target") or _as_object(contract["spec"], "spec").get("print_target")
+    printer = (as_mapping(named) or {}).get("printer")
+    if not isinstance(printer, str) or not printer:
+        raise checks.GateError("contract names no print_target.printer; a gate never picks one")
+    return printer
 
 
 async def _session(contract: Mapping[str, Any], url: str, root: Path) -> list[str]:
     failures: list[str] = []
+    submission_started = False
     for attempt in (1, 2):
         try:
             async with Client(url) as client:
+                resolved = await _selected_contract(client, contract)
+                resolved = _verified_delivery(root, resolved)
                 rows = await _tool(client, "tool_status")
                 failures += checks.check_slicer(rows or [], contract["expect"]["slicer_tool"])
                 listing = await _object(client, "list_printers")
-                printer = str(contract["spec"]["print_target"]["printer"])
+                printer = _contract_printer(resolved)
                 failures += checks.check_printer_listed(listing, printer)
                 if failures:
                     return failures
-                failures += await _positive(client, contract)
-                failures += await _negatives(client, contract, root, listing)
+                submission_started = True
+                failures += await _positive(client, resolved)
+                failures += await negatives.run_negatives(
+                    lambda spec: _tool(client, "run_design_pipeline", {"spec": spec}),
+                    lambda spec, label: run_job(client, spec, label),
+                    resolved,
+                    root,
+                    listing,
+                    printer,
+                )
             return failures
         except TRANSPORT_ERRORS as exc:
-            if attempt == 1 and not failures:
+            if attempt == 1 and not failures and not submission_started:
                 print(f"transport reset ({type(exc).__name__}: {exc}); retrying once", flush=True)
                 continue
             return [*failures, checks.unreachable_message(url, exc)]
@@ -265,7 +302,11 @@ async def _session(contract: Mapping[str, Any], url: str, root: Path) -> list[st
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     parser.add_argument(
-        "contract", type=Path, help="scripts/verify/contracts/design_pipeline_*.json"
+        "contract",
+        type=Path,
+        nargs="?",
+        default=PROJECT_ROOT / "scripts/verify/contracts/design_pipeline_current.json",
+        help="contract (default: current selected delivery)",
     )
     parser.add_argument(
         "--artifact-root",
@@ -276,7 +317,7 @@ def main() -> int:
     args = parser.parse_args()
     contract = json.loads(args.contract.read_text(encoding="utf-8"))
     root = artifact_root(args.artifact_root)
-    failures = checks.check_deliverable(root, contract["spec"]["source"]["root_dir"])
+    failures: list[str] = []
     if not failures:
         try:
             url = os.environ.get("BLENDER_MCP_URL") or default_mcp_url()

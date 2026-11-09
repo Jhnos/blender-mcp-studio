@@ -1,0 +1,313 @@
+{
+  "native_sha256": "bb3143e0cdb04ff03ce7436eef6fd4bfe6bf0b381fd4b7639b0190021e5afa16",
+  "sweep_sha256": "b87f0d59b6808e43783196aff0f02efed3be4aa271c2cebdf3e456f11d18c4f4",
+  "case_count": 40,
+  "cases": {
+    "open-service-reference/0": {
+      "pose": "90/0",
+      "candidate_mesh_count": 1,
+      "intersection_facets": {}
+    },
+    "open-service-reference/15": {
+      "pose": "90/15",
+      "candidate_mesh_count": 1,
+      "intersection_facets": {}
+    },
+    "open-service-reference/30": {
+      "pose": "90/30",
+      "candidate_mesh_count": 1,
+      "intersection_facets": {}
+    },
+    "open-service-reference/45": {
+      "pose": "90/45",
+      "candidate_mesh_count": 1,
+      "intersection_facets": {}
+    },
+    "open-service-reference/60": {
+      "pose": "90/60",
+      "candidate_mesh_count": 1,
+      "intersection_facets": {}
+    },
+    "closed-service-control/0": {
+      "pose": "0/0",
+      "candidate_mesh_count": 2,
+      "intersection_facets": {
+        "RH_rear_cover": 548
+      }
+    },
+    "closed-service-control/15": {
+      "pose": "0/15",
+      "candidate_mesh_count": 2,
+      "intersection_facets": {
+        "RH_rear_cover": 548
+      }
+    },
+    "closed-service-control/30": {
+      "pose": "0/30",
+      "candidate_mesh_count": 2,
+      "intersection_facets": {
+        "RH_rear_cover": 548
+      }
+    },
+    "closed-service-control/45": {
+      "pose": "0/45",
+      "candidate_mesh_count": 2,
+      "intersection_facets": {
+        "RH_rear_cover": 548
+      }
+    },
+    "closed-service-control/60": {
+      "pose": "0/60",
+      "candidate_mesh_count": 2,
+      "intersection_facets": {
+        "RH_rear_cover": 548
+      }
+    },
+    "oversize-width-control/0": {
+      "pose": "90/0",
+      "candidate_mesh_count": 3,
+      "intersection_facets": {
+        "LS_FIT_chassis": 976,
+        "RH_-101_M3_nut": 12,
+        "RH_101_M3_nut": 12
+      }
+    },
+    "oversize-width-control/15": {
+      "pose": "90/15",
+      "candidate_mesh_count": 3,
+      "intersection_facets": {
+        "LS_FIT_chassis": 976,
+        "RH_-101_M3_nut": 12,
+        "RH_101_M3_nut": 12
+      }
+    },
+    "oversize-width-control/30": {
+      "pose": "90/30",
+      "candidate_mesh_count": 3,
+      "intersection_facets": {
+        "LS_FIT_chassis": 976,
+        "RH_-101_M3_nut": 12,
+        "RH_101_M3_nut": 12
+      }
+    },
+    "oversize-width-control/45": {
+      "pose": "90/45",
+      "candidate_mesh_count": 3,
+      "intersection_facets": {
+        "LS_FIT_chassis": 976,
+        "RH_-101_M3_nut": 12,
+        "RH_101_M3_nut": 12
+      }
+    },
+    "oversize-width-control/60": {
+      "pose": "90/60",
+      "candidate_mesh_count": 3,
+      "intersection_facets": {
+        "LS_FIT_chassis": 976,
+        "RH_-101_M3_nut": 12,
+        "RH_101_M3_nut": 12
+      }
+    },
+    "oversize-height-control/0": {
+      "pose": "90/0",
+      "candidate_mesh_count": 6,
+      "intersection_facets": {
+        "LS_FIT_chassis": 1172,
+        "RH_-75_clip": 274,
+        "RH_-75_pin": 598,
+        "RH_75_clip": 274,
+        "RH_75_pin": 750,
+        "RH_rear_cover": 2356
+      }
+    },
+    "oversize-height-control/15": {
+      "pose": "90/15",
+      "candidate_mesh_count": 6,
+      "intersection_facets": {
+        "LS_FIT_chassis": 1172,
+        "RH_-75_clip": 274,
+        "RH_-75_pin": 598,
+        "RH_75_clip": 274,
+        "RH_75_pin": 750,
+        "RH_rear_cover": 2356
+      }
+    },
+    "oversize-height-control/30": {
+      "pose": "90/30",
+      "candidate_mesh_count": 6,
+      "intersection_facets": {
+        "LS_FIT_chassis": 1172,
+        "RH_-75_clip": 274,
+        "RH_-75_pin": 598,
+        "RH_75_clip": 274,
+        "RH_75_pin": 750,
+        "RH_rear_cover": 2356
+      }
+    },
+    "oversize-height-control/45": {
+      "pose": "90/45",
+      "candidate_mesh_count": 6,
+      "intersection_facets": {
+        "LS_FIT_chassis": 1172,
+        "RH_-75_clip": 274,
+        "RH_-75_pin": 598,
+        "RH_75_clip": 274,
+        "RH_75_pin": 750,
+        "RH_rear_cover": 2356
+      }
+    },
+    "oversize-height-control/60": {
+      "pose": "90/60",
+      "candidate_mesh_count": 6,
+      "intersection_facets": {
+        "LS_FIT_chassis": 1172,
+        "RH_-75_clip": 274,
+        "RH_-75_pin": 598,
+        "RH_75_clip": 274,
+        "RH_75_pin": 750,
+        "RH_rear_cover": 2356
+      }
+    },
+    "knob-approach/-101/0": {
+      "pose": "0/0",
+      "candidate_mesh_count": 2,
+      "intersection_facets": {}
+    },
+    "knob-approach/-101/15": {
+      "pose": "0/15",
+      "candidate_mesh_count": 2,
+      "intersection_facets": {}
+    },
+    "knob-approach/-101/30": {
+      "pose": "0/30",
+      "candidate_mesh_count": 2,
+      "intersection_facets": {}
+    },
+    "knob-approach/-101/45": {
+      "pose": "0/45",
+      "candidate_mesh_count": 2,
+      "intersection_facets": {}
+    },
+    "knob-approach/-101/60": {
+      "pose": "0/60",
+      "candidate_mesh_count": 2,
+      "intersection_facets": {}
+    },
+    "knob-penetration-control/-101/0": {
+      "pose": "0/0",
+      "candidate_mesh_count": 3,
+      "intersection_facets": {
+        "LS_FIT_chassis": 818,
+        "LS_FIT_lid": 52,
+        "RH_rear_cover": 638
+      }
+    },
+    "knob-penetration-control/-101/15": {
+      "pose": "0/15",
+      "candidate_mesh_count": 3,
+      "intersection_facets": {
+        "LS_FIT_chassis": 818,
+        "LS_FIT_lid": 52,
+        "RH_rear_cover": 638
+      }
+    },
+    "knob-penetration-control/-101/30": {
+      "pose": "0/30",
+      "candidate_mesh_count": 3,
+      "intersection_facets": {
+        "LS_FIT_chassis": 818,
+        "LS_FIT_lid": 52,
+        "RH_rear_cover": 638
+      }
+    },
+    "knob-penetration-control/-101/45": {
+      "pose": "0/45",
+      "candidate_mesh_count": 3,
+      "intersection_facets": {
+        "LS_FIT_chassis": 818,
+        "LS_FIT_lid": 52,
+        "RH_rear_cover": 638
+      }
+    },
+    "knob-penetration-control/-101/60": {
+      "pose": "0/60",
+      "candidate_mesh_count": 3,
+      "intersection_facets": {
+        "LS_FIT_chassis": 818,
+        "LS_FIT_lid": 52,
+        "RH_rear_cover": 638
+      }
+    },
+    "knob-approach/101/0": {
+      "pose": "0/0",
+      "candidate_mesh_count": 2,
+      "intersection_facets": {}
+    },
+    "knob-approach/101/15": {
+      "pose": "0/15",
+      "candidate_mesh_count": 2,
+      "intersection_facets": {}
+    },
+    "knob-approach/101/30": {
+      "pose": "0/30",
+      "candidate_mesh_count": 2,
+      "intersection_facets": {}
+    },
+    "knob-approach/101/45": {
+      "pose": "0/45",
+      "candidate_mesh_count": 2,
+      "intersection_facets": {}
+    },
+    "knob-approach/101/60": {
+      "pose": "0/60",
+      "candidate_mesh_count": 2,
+      "intersection_facets": {}
+    },
+    "knob-penetration-control/101/0": {
+      "pose": "0/0",
+      "candidate_mesh_count": 3,
+      "intersection_facets": {
+        "LS_FIT_chassis": 820,
+        "LS_FIT_lid": 48,
+        "RH_rear_cover": 594
+      }
+    },
+    "knob-penetration-control/101/15": {
+      "pose": "0/15",
+      "candidate_mesh_count": 3,
+      "intersection_facets": {
+        "LS_FIT_chassis": 820,
+        "LS_FIT_lid": 48,
+        "RH_rear_cover": 594
+      }
+    },
+    "knob-penetration-control/101/30": {
+      "pose": "0/30",
+      "candidate_mesh_count": 3,
+      "intersection_facets": {
+        "LS_FIT_chassis": 820,
+        "LS_FIT_lid": 48,
+        "RH_rear_cover": 594
+      }
+    },
+    "knob-penetration-control/101/45": {
+      "pose": "0/45",
+      "candidate_mesh_count": 3,
+      "intersection_facets": {
+        "LS_FIT_chassis": 820,
+        "LS_FIT_lid": 48,
+        "RH_rear_cover": 594
+      }
+    },
+    "knob-penetration-control/101/60": {
+      "pose": "0/60",
+      "candidate_mesh_count": 3,
+      "intersection_facets": {
+        "LS_FIT_chassis": 820,
+        "LS_FIT_lid": 48,
+        "RH_rear_cover": 594
+      }
+    }
+  },
+  "scope": "Closed solid swept volumes, with inserted-through-wall, oversize and closed-cover controls."
+}

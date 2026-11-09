@@ -1,8 +1,8 @@
 """Pure verdict rules for the design pipeline real gate (no network, no files but the ones named).
 
 Every function returns a list of readable failure strings (empty = pass) so the gate can print
-all of them at once instead of stopping at the first. Expected numbers come from the contract
-JSON (``scripts/verify/contracts/design_pipeline_v78.json``), never from this module.
+all of them at once instead of stopping at the first. Invariants come from the contract JSON.
+For the current model, part counts come from its independently verified source.
 """
 
 from __future__ import annotations
@@ -12,6 +12,7 @@ import time
 from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
 from pathlib import Path
 
+from scripts.verify.native_source_checks import check_native_source  # noqa: F401 (re-export)
 from src.adapters.slicing.orca_family_cli import SLICE_TIMEOUT_S
 from src.core.domain.model_spec import ModelSpecError, parse_print_target
 from src.infrastructure.narrowing import as_mapping, as_sequence
@@ -31,13 +32,16 @@ class GateError(RuntimeError):
     """A gate precondition or budget failed; the message is the whole explanation."""
 
 
-def poll_budget_s(spec: Mapping[str, object]) -> float:
+def poll_budget_s(spec: Mapping[str, object] | None = None) -> float:
     """The slice deadline of the slicer the contract spec's printer uses, plus the margin.
 
-    A contract must name its printer. The parser reads the target (a spec-v1 name becomes its
-    catalog id), so a Creality contract gets the OrcaSlicer budget and the v78 P2S contract
-    Bambu Studio's.
+    A contract spec must name its printer. The parser reads the target (a spec-v1 name becomes
+    its catalog id), so a Creality contract gets the OrcaSlicer budget and a P2S contract
+    Bambu Studio's. ``None`` is a job whose spec the service resolves itself (a native revision
+    of the current selection): the gate names no printer, so it waits for the slowest slicer.
     """
+    if spec is None:
+        return max(SLICE_TIMEOUT_S.values()) + POLL_MARGIN_S
     target = as_mapping(spec.get("print_target")) or {}
     if "printer" not in target:
         raise GateError("contract spec has no print_target.printer; a gate never picks one")
@@ -47,6 +51,26 @@ def poll_budget_s(spec: Mapping[str, object]) -> float:
         raise GateError(f"contract spec print_target: {exc}") from exc
     slicer = load_printer_catalog().printer(printer).slicer
     return SLICE_TIMEOUT_S[slicer] + POLL_MARGIN_S
+
+
+def check_selected_target(spec: Mapping[str, object], expected: object) -> list[str]:
+    """The selection must name its printer and material, and resolve to the contract's.
+
+    A spec-v1 printer name is translated to its catalog id by the parser; a selection that
+    leaves either out is a failure (the gate never assumes the legacy machine).
+    """
+    want = as_mapping(expected) or {}
+    named = as_mapping(spec.get("print_target")) or {}
+    missing = [key for key in ("printer", "material") if key not in named]
+    if missing:
+        return [f"selected spec names no print_target {', '.join(missing)}; a gate assumes none"]
+    try:
+        target = parse_print_target(spec)
+    except ModelSpecError as exc:
+        return [f"selected spec print_target: {exc}"]
+    got = {"printer": target.printer, "material": target.material}
+    wanted = {key: want.get(key) for key in got}
+    return [] if got == wanted else [f"selected delivery targets {got}; contract expects {wanted}"]
 
 
 def _items(value: object) -> list[object]:
@@ -146,6 +170,32 @@ def check_import_json(doc: Mapping[str, object], expect: Mapping[str, object]) -
     return failures
 
 
+def check_import_source(doc: Mapping[str, object], native: Mapping[str, object]) -> list[str]:
+    """Check ordinary imports against the verified source, including each byte fingerprint."""
+
+    def artifact(row: Mapping[str, object]) -> dict[str, object]:
+        return {"path": row["path"], "sha256": row["sha256"], "bytes": row["size_bytes"]}
+
+    parts = _rows(native.get("parts"))
+    project = as_mapping(native.get("project_3mf"))
+    if not parts or project is None:
+        return ["verified import source inventory is unavailable"]
+    observed = _rows(doc.get("stls"))
+    if len(observed) != len(_items(doc.get("stls"))):
+        return ["import.json contains a malformed STL receipt"]
+    expected = [artifact(row) for row in parts]
+    failures = []
+    if sorted(observed, key=lambda row: str(row.get("path"))) != sorted(
+        expected, key=lambda row: str(row["path"])
+    ):
+        failures.append(
+            "import.json STL identities or fingerprints disagree with the verified source"
+        )
+    if doc.get("project_3mf") != artifact(project):
+        failures.append("import.json project fingerprint disagrees with the verified source")
+    return failures
+
+
 def count_plates(names: Iterable[str]) -> int:
     """Plates in a sliced Bambu 3MF = ``Metadata/plate_<n>.gcode`` entries (not .md5 or .json)."""
     return sum(1 for n in names if _PLATE_GCODE.match(n))
@@ -169,13 +219,16 @@ def check_manifest(
         required.append(out)
     failures = [f"manifest.json does not list {path}" for path in required if path not in listed]
     tool, licence = expect["slicer_tool"], expect["slicer_license"]
-    version = expect["slicer_version"]
+    version = expect.get("slicer_version")  # pinned by vendor contracts, not by the current one
     tools = _rows(manifest.get("tools"))
     if not any(
-        t.get("name") == tool and t.get("license") == licence and t.get("version") == version
+        t.get("name") == tool
+        and t.get("license") == licence
+        and (version is None or t.get("version") == version)
         for t in tools
     ):
-        failures.append(f"manifest.json has no tool entry {tool} {version} with license {licence}")
+        named = tool if version is None else f"{tool} {version}"
+        failures.append(f"manifest.json has no tool entry {named} with license {licence}")
     return failures
 
 

@@ -13,7 +13,7 @@ Usage:
 from __future__ import annotations
 
 import os
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 
 from src.core.ports.blender_port import BlenderPort
 from src.core.ports.code_sandbox_port import CodeSandboxPort
@@ -25,6 +25,7 @@ def build_blender_adapter(
     sandbox: CodeSandboxPort | None = None,
     *,
     script_timeouts: Mapping[str, float] | None = None,
+    scoped_timeout: Callable[[str], float | None] | None = None,
 ) -> BlenderPort:
     """Instantiate a BlenderPort from environment config.
 
@@ -36,6 +37,8 @@ def build_blender_adapter(
     transport = os.environ.get("BLENDER_TRANSPORT", "socket").lower()
 
     if transport == "mcp_sse":
+        if scoped_timeout is not None:
+            raise ValueError("request-scoped native execution requires the shared socket adapter")
         from src.adapters.mcp.mcp_client_adapter import MCPClientBlenderAdapter
 
         sse_url = os.environ.get("BLENDER_MCP_SSE_URL", "http://localhost:8765/sse")
@@ -47,5 +50,9 @@ def build_blender_adapter(
     _host = host or os.environ.get("BLENDER_HOST", "localhost")
     _port = port or int(os.environ.get("BLENDER_PORT", "9876"))
     return BlenderMCPAdapter(
-        host=_host, port=_port, sandbox=sandbox, script_timeouts=script_timeouts
+        host=_host,
+        port=_port,
+        sandbox=sandbox,
+        script_timeouts=script_timeouts,
+        scoped_timeout=scoped_timeout,
     )

@@ -7,7 +7,22 @@ OrcaSlicer-shaped app with the Creality K1C leaves named in ``config/printers/cr
 from __future__ import annotations
 
 import json
+import zipfile
 from pathlib import Path
+
+from src.core.domain.import_limits import ImportLimits
+
+#: Import caps for adapter tests (the fake 3MFs are a few kB).
+TEST_LIMITS = ImportLimits(10, 100000, 100000, 100000)
+
+MACHINE_GEOMETRY = {
+    "printer_model": "Bambu Lab P2S",
+    "printable_area": ["0x0", "256x0", "256x256", "0x256"],
+    "printable_height": "256",
+    "bed_exclude_area": [],
+    "extruder_offset": ["0X0"],
+    "nozzle_diameter": ["0.4"],
+}
 
 LEAVES = {
     "machine": "Bambu Lab P2S 0.4 nozzle",
@@ -47,7 +62,13 @@ def _make_app(app: Path, exe: str, vendor: str, leaves: dict[str, str] | None) -
     for kind, leaf in leaves.items():
         _write(
             vendor_dir / kind / f"{kind}_base.json",
-            {"name": f"{kind}_base", "type": kind, "base_key": "base", "shared": "base"},
+            {
+                "name": f"{kind}_base",
+                "type": kind,
+                "base_key": "base",
+                "shared": "base",
+                **(MACHINE_GEOMETRY if kind == "machine" else {}),
+            },
         )
         _write(
             vendor_dir / kind / f"{kind}_extra.json",
@@ -88,6 +109,7 @@ def _bed(kind: str) -> dict[str, object]:
 def flattened(kind: str, leaves: dict[str, str] = LEAVES) -> dict[str, object]:
     """What the adapter must produce for ``kind`` from a fake bundle (v80 semantics)."""
     return {
+        **(MACHINE_GEOMETRY if kind == "machine" else {}),  # the base; the leaf's bed wins
         "type": kind,
         "base_key": "base",
         "extra_key": "extra",
@@ -121,3 +143,53 @@ def make_named_bundle(root: Path) -> Path:
         {"name": "Acme PETG", "compatible_printers": ["Acme Y 0.4 nozzle"]},
     )
     return root
+
+
+def write_sliced_output(path: Path) -> None:
+    """Minimal named Bambu output for command-adapter tests; real geometry is tested separately."""
+    settings: dict[str, object] = {
+        "printer_model": "Bambu Lab P2S",
+        "nozzle_diameter": ["0.4"],
+        "filament_type": ["PLA"],
+        "layer_height": "0.2",
+        "enable_support": "1",
+        "brim_width": "3",
+    }
+    for kind in ("machine", "process", "filament"):
+        profile = path.parent / (kind + ".json")
+        if profile.exists():
+            values = json.loads(profile.read_text())
+            settings.update({key: values[key] for key in settings if key in values})
+    header = (
+        "; CONFIG_BLOCK_START\n"
+        + "\n".join(
+            "; " + key + " = " + str(value[0] if isinstance(value, list) else value)
+            for key, value in settings.items()
+        )
+        + "\n; CONFIG_BLOCK_END\n"
+    )
+    with zipfile.ZipFile(path, "w") as archive:
+        archive.writestr("Metadata/project_settings.config", json.dumps(settings))
+        archive.writestr(
+            "Metadata/model_settings.config",
+            '<config><object id="2"><metadata key="name" value="lid"/></object><plate><metadata key="plater_id" value="1"/><model_instance><metadata key="object_id" value="2"/><metadata key="instance_id" value="0"/><metadata key="identify_id" value="8"/></model_instance></plate></config>',
+        )
+        archive.writestr(
+            "Metadata/plate_1.gcode",
+            header
+            + "\n".join(
+                (
+                    "G90",
+                    "M83",
+                    "G92 E0",
+                    "G0 X1 Y1 Z.2",
+                    "; CHANGE_LAYER",
+                    "; LAYER_HEIGHT: .2",
+                    "; LINE_WIDTH: .5",
+                    "; OBJECT_ID: 8",
+                    "; FEATURE: Outer wall",
+                    "G1 X2 E.1",
+                )
+            )
+            + "\n",
+        )

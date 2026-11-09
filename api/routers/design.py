@@ -21,7 +21,7 @@ def _pipeline(request: Request) -> DesignPipeline:
 
 @router.post("/runs", status_code=202)
 async def submit_design_run(body: DesignRunRequest, request: Request) -> dict[str, object]:
-    return job_dict(await _pipeline(request).submit(body.spec))
+    return job_dict(await _pipeline(request).submit(body.spec, revision=body.revision))
 
 
 @router.get("/jobs/{job_id}")
@@ -64,3 +64,13 @@ async def list_design_printers(request: Request) -> dict[str, object]:
 @router.get("/tools")
 async def list_design_tools(request: Request) -> list[dict[str, object]]:
     return [tool_dict(tool) for tool in await _pipeline(request).tools()]
+
+
+@router.get("/spec")
+async def describe_design_spec(request: Request) -> dict[str, object]:
+    return await _pipeline(request).describe_spec()
+
+
+@router.get("/artifacts")
+async def list_design_artifacts(request: Request) -> dict[str, object]:
+    return await _pipeline(request).list_artifacts()

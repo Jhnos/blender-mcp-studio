@@ -105,3 +105,86 @@ def test_conversion_must_preserve_triangle_coordinates(monkeypatch: pytest.Monke
     monkeypatch.setattr(subject, "polygon_soup_to_polygon_mesh", shift_points)
     with pytest.raises(ValueError, match="triangle coordinates"):
         require_triangle_surface(tetrahedron())
+
+
+def test_bounded_sides_distinguishes_material_boundary_and_exterior() -> None:
+    from src.verification.mesh_integrity import bounded_sides
+
+    points = [[0.1, 0.1, 0.1], [0, 0, 0], [0.5, 0.5, 0], [2, 2, 2]]
+    assert bounded_sides(tetrahedron(), points) == (1, 0, 0, -1)
+    assert bounded_sides(combined(2), [[2.1, 2.1, 2.1], [1.5, 1.5, 1.5]]) == (1, -1)
+
+
+def test_bounded_sides_respects_a_closed_internal_cavity() -> None:
+    from src.verification.mesh_integrity import bounded_sides
+
+    outer, inner = tetrahedron(), tetrahedron()
+    mesh = {
+        "vertices": outer["vertices"] + [[0.1 + v * 0.3 for v in p] for p in inner["vertices"]],
+        "faces": outer["faces"] + [[i + 4 for i in reversed(f)] for f in inner["faces"]],
+    }
+    assert bounded_sides(mesh, [[0.15, 0.15, 0.15], [0.6, 0.1, 0.1]]) == (-1, 1)
+
+
+@pytest.mark.parametrize("points", [[], [[float("nan"), 0, 0]], [[0, 0]]])
+def test_bounded_sides_rejects_missing_or_invalid_queries(points) -> None:
+    from src.verification.mesh_integrity import bounded_sides
+
+    with pytest.raises(ValueError):
+        bounded_sides(tetrahedron(), points)
+
+
+def test_bounded_sides_rejects_invalid_target_before_classifying() -> None:
+    from src.verification.mesh_integrity import bounded_sides
+
+    with pytest.raises(ValueError, match="Self-intersecting"):
+        bounded_sides(combined(0.2), [[0, 0, 0]])
+    mesh = tetrahedron()
+    mesh["faces"].pop()
+    with pytest.raises(ValueError, match="edge"):
+        bounded_sides(mesh, [[0, 0, 0]])
+
+
+def test_solid_overlap_distinguishes_touching_crossing_and_containment() -> None:
+    from src.verification.mesh_integrity import solid_overlap_volume
+
+    original = tetrahedron()
+    for x, volume in ((2, 0), (1, 0), (0.25, 0.75**3 / 6)):
+        moved = tetrahedron()
+        moved["vertices"] = [[a + x, b, c] for a, b, c in moved["vertices"]]
+        assert solid_overlap_volume(original, moved) == pytest.approx(volume)
+    contained = tetrahedron()
+    contained["vertices"] = [
+        [0.1 + coord / 5 for coord in point] for point in contained["vertices"]
+    ]
+    assert solid_overlap_volume(original, contained) == pytest.approx(0.2**3 / 6)
+    assert solid_overlap_volume(contained, original) == pytest.approx(0.2**3 / 6)
+    assert original == tetrahedron()
+
+
+def test_solid_overlap_rejects_open_reversed_and_self_intersecting_inputs() -> None:
+    from src.verification.mesh_integrity import solid_overlap_volume
+
+    open_mesh = tetrahedron()
+    open_mesh["faces"].pop()
+    reversed_mesh = tetrahedron()
+    reversed_mesh["faces"] = [face[::-1] for face in reversed_mesh["faces"]]
+    for invalid, message in (
+        (open_mesh, "edge"),
+        (reversed_mesh, "outward"),
+        (combined(0.2), "Self-intersecting"),
+    ):
+        with pytest.raises(ValueError, match=message):
+            solid_overlap_volume(tetrahedron(2), invalid)
+
+
+def test_convex_envelope_contains_translated_solid_and_rejects_flat_input() -> None:
+    from src.verification.mesh_integrity import convex_envelope, solid_overlap_volume
+
+    points = tetrahedron()["vertices"]
+    hull = convex_envelope(points + [[x + 2, y, z] for x, y, z in points])
+    midpoint = tetrahedron()
+    midpoint["vertices"] = [[x + 1, y, z] for x, y, z in points]
+    assert solid_overlap_volume(hull, midpoint) == pytest.approx(1 / 6)
+    with pytest.raises(ValueError, match="volume"):
+        convex_envelope([[0, 0, 0], [1, 0, 0], [0, 1, 0], [1, 1, 0]])

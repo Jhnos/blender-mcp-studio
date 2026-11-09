@@ -66,8 +66,8 @@ examples, not server requirements.
 | `modify_object` | Destructive write | Change transforms or visibility |
 | `delete_object` | Destructive write | Permanently remove one object |
 | `apply_material` | Destructive write | Create/update and assign a Principled BSDF material |
-| `run_design_pipeline` | Write | Submit a ModelSpec; returns a queued job (import, geometry, mechanism, print, package) |
-| `describe_model_spec` | Read | ModelSpec v2 JSON Schema, defaults, usable printers/materials and a worked example |
+| `run_design_pipeline` | Write | Submit the current model (no `spec`), a registered native revision, or an explicit ModelSpec v2 naming its printer and material; returns a queued job (import, geometry, mechanism, print, package) |
+| `describe_model_spec` | Read | ModelSpec v2 JSON Schema, defaults, usable printers/materials, the selected model as `example` and a v2 `template` whose `print_target` holds placeholders |
 | `list_printers` | Read | Printers this host can slice for: bed, height, layer range, materials, `slicer` `{id, name, version}` (`id` is the catalog slicer id that `tool_status` and the package manifest use); plus `unavailable` (no slicer, or unreadable bundle profiles) with reason and install hint |
 | `list_artifacts` | Read | Deliverable directories usable as `source.root_dir` (STL count per subdirectory, 3MF names) |
 | `get_job_status` | Read | Poll a design job by `job_id` |
@@ -115,10 +115,22 @@ arbitrary Python.
 
 ### 設計管線（ModelSpec → 可列印包）
 
-LLM 供應想法與 ModelSpec，MCP 負責走到可列印包：先用 `list_printers` 看這台主機能切哪些機型（`bed_mm` 要放得下盤面；`unavailable` 附安裝提示）、`describe_model_spec` 取得 schema 與範例、
-`list_artifacts` 找可用的 `source.root_dir`，再以 `run_design_pipeline` 送出（立即回傳
-`job_id`／`run_id`）→ `get_job_status` 輪詢 → `get_run_report` 讀逐階段證據。
+驗證目前模型時，直接呼叫 `run_design_pipeline`，不提供 `spec`。應用服務從唯一宣告選版，
+選版宣告自己寫明印表機與材料，程式不替它挑機器；立即回傳 `job_id`／`run_id` → `get_job_status`
+輪詢 → `get_run_report` 讀逐階段證據。`describe_model_spec` 與 `list_artifacts` 可查詢服務所選模型。
+要換機型或跑歷史／自訂模型時才提供自己的 spec：先用 `list_printers` 看這台主機能切哪些機型
+（`bed_mm` 要放得下盤面；`unavailable` 附安裝提示），`describe_model_spec` 的 `template` 是 v2
+形狀、`print_target` 留空位，`list_artifacts` 找可用的 `source.root_dir`，再以 `run_design_pipeline` 送出。
 `check_mesh_integrity` 與 `slice_for_print` 可單獨使用，也接受 ModelSpec 以外的檔案。
+
+原件修訂仍使用同一個工具：`run_design_pipeline` 傳入
+`{"revision":{"recipe_id":"screen-clamp","target_angle_deg":30}}`，REST 的相同參數傳給
+`POST /api/design/runs`。修訂時省略 `spec`；目標角僅接受 0、15、30、45、60 度。
+服務在排隊前固定目前選版與列印條件，另存完整 STL，再由同一批零件衍生 3MF，沿用原有
+幾何、切片與封裝階段。原檔與目前選版不會自動改變；同一工作只提供正式產物、報告與切片證據，
+來源副本、執行程式及內部收據不提供下載或封裝。完成待確認的工作保持隔離；晚到收據驗證後，
+若資格流程未繼續，工作會明示中斷，不自動重送修改。工具可用性以當前已載入版本為準。
+
 
 - **路徑規則**：`stl_paths`、`input_3mf` 一律是允許的 artifact root 底下的**相對路徑**，
   與 ModelSpec 同一道關卡（無 `..`、無隱藏段、副檔名須為 `.stl`／`.3mf`、符號連結不得逃出 root），
@@ -164,6 +176,8 @@ tool_timeout_sec = 360
 
 Restart or open a new Codex task, then inspect `/mcp`. Codex's current config
 schema also supports stdio servers through `command`, `args`, and `env`.
+
+目前模型由共享應用服務解析：`run_design_pipeline` 省略 `spec` 即提交目前模型，REST `POST /api/design/runs` 可提交 `{}`。明確 spec 只用於歷史／自訂驗證。REST 的 `GET /api/design/spec`、`GET /api/design/artifacts` 與 MCP `describe_model_spec`、`list_artifacts` 共用同一目錄服務；客戶端沒有版本設定副本。
 
 ## Claude Code configuration example
 
@@ -235,3 +249,6 @@ because GUI-launched clients do not reliably inherit the shell working directory
 
 **驗證**：對 MCP URL 發 GET 得到 HTTP 200 **不算證據**——前端 fallback 也會回 200。
 必須跑真正的 initialize 與 `tools/list`。完整判準與指令見 [[30-verification]]。
+
+
+`list_artifacts` 的選版來源已設定原生檔檢查時，`default_native` 會提供同一選版快照的root-relative原生檔名、SHA256、完整列印件指紋與來源清單指紋。`available=false`會附拒絕原因，不改讀歷史資料夾；未提供原生來源檢查的服務可省略此欄位。`scope=file_identity_only`只表示檔案身分核對，不代表原生檔可開啟、機構可動或已通過列印驗收。真正修訂前仍須暫存來源並重新核對；客戶端不要從檔名中的舊版號推斷目前模型。

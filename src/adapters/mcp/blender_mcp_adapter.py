@@ -6,7 +6,7 @@ import asyncio
 import contextlib
 import json
 import logging
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from dataclasses import replace
 
 from src.adapters.blender_scene_decoding import decode_object_details, decode_scene_summary
@@ -14,7 +14,11 @@ from src.adapters.mcp.blender_tool_codegen import is_translatable, translate
 from src.adapters.scene_listing import list_scene_objects
 from src.adapters.viewport_capture import capture_viewport
 from src.core.domain.command import Command
-from src.core.domain.exceptions import BlenderConnectionError, SceneOperationError
+from src.core.domain.exceptions import (
+    BlenderConnectionError,
+    BlenderExecutionUncertainError,
+    SceneOperationError,
+)
 from src.core.domain.scene_operations import ObjectDetails, SceneSummary, ViewportImage
 from src.core.ports.blender_port import BlenderPort
 from src.core.ports.code_sandbox_port import CodeSandboxPort
@@ -133,27 +137,38 @@ class BlenderSocketClient:
                             return self._decode_response(raw)
                         except json.JSONDecodeError:
                             continue
+                        except UnicodeDecodeError as exc:
+                            if exc.end == len(raw) and exc.reason == "unexpected end of data":
+                                continue
+                            raise
             except (TimeoutError, asyncio.CancelledError):
                 # This protocol has no request IDs. A late reply on this stream
                 # cannot be assigned to the next caller, even if it is valid JSON.
                 # Discard the stream, but never replay an uncertain mutation.
                 await self.disconnect()
                 raise
+            except ValueError as exc:
+                await self.disconnect()
+                raise BlenderExecutionUncertainError(
+                    "Blender command completion is unknown: received an unusable reply"
+                ) from exc
             except ConnectionError as exc:
                 # A peer that hangs up politely sends FIN and the loop above sees EOF.
                 # One that is *reset* — which is what a socket written to after the
                 # addon went away gets — raises here instead, and letting that escape
                 # as a bare OSError breaks the same promise the EOF branch keeps: a
                 # dropped connection must never reach a caller as anything else.
-                raise BlenderConnectionError(
-                    f"Blender at {self._host}:{self._port} dropped the connection ({exc})"
+                await self.disconnect()
+                raise BlenderExecutionUncertainError(
+                    f"Blender command completion is unknown: {self._host}:{self._port} dropped the connection ({exc})"
                 ) from exc
             # Only reachable via the `break` above: the addon sent EOF before a
             # complete reply. Decoding the stump would surface a dropped
             # connection as a *content* error and send the reader hunting for a
             # data-format bug (LESSONS_LEARNED.md, 2026-09-05).
-            raise BlenderConnectionError(
-                f"Blender at {self._host}:{self._port} closed the connection mid-reply "
+            await self.disconnect()
+            raise BlenderExecutionUncertainError(
+                f"Blender command completion is unknown: {self._host}:{self._port} closed the connection mid-reply "
                 f"({len(raw)} bytes received)"
             )
 
@@ -187,10 +202,15 @@ class BlenderMCPClient(MCPPort):
     ]
 
     def __init__(
-        self, socket: BlenderSocketClient, *, script_timeouts: Mapping[str, float] | None = None
+        self,
+        socket: BlenderSocketClient,
+        *,
+        script_timeouts: Mapping[str, float] | None = None,
+        scoped_timeout: Callable[[str], float | None] | None = None,
     ) -> None:
         self._socket = socket
         self._script_timeouts = dict(script_timeouts or {})
+        self._scoped_timeout = scoped_timeout
 
     async def call_tool(self, tool_name: str, arguments: dict[str, object]) -> ToolResult:
         # Enforcement: a high-level tool here means a caller bypassed the
@@ -209,6 +229,8 @@ class BlenderMCPClient(MCPPort):
         try:
             code = arguments.get("code") if tool_name == _EXECUTE_CODE_TOOL else None
             timeout = self._script_timeouts.get(code) if isinstance(code, str) else None
+            if timeout is None and isinstance(code, str) and self._scoped_timeout is not None:
+                timeout = self._scoped_timeout(code)
             response = await self._socket.send_command(
                 {"type": tool_name, "params": arguments}, timeout=timeout
             )
@@ -227,7 +249,7 @@ class BlenderMCPClient(MCPPort):
         except BlenderConnectionError:
             raise
         except TimeoutError as exc:
-            raise BlenderConnectionError(
+            raise BlenderExecutionUncertainError(
                 "Blender response timed out; command completion is unknown. "
                 "The connection was discarded; the command was not replayed."
             ) from exc
@@ -266,9 +288,12 @@ class BlenderMCPAdapter(BlenderPort):
         sandbox: CodeSandboxPort | None = None,
         *,
         script_timeouts: Mapping[str, float] | None = None,
+        scoped_timeout: Callable[[str], float | None] | None = None,
     ) -> None:
         self._socket = BlenderSocketClient(host, port)
-        self._mcp = BlenderMCPClient(self._socket, script_timeouts=script_timeouts)
+        self._mcp = BlenderMCPClient(
+            self._socket, script_timeouts=script_timeouts, scoped_timeout=scoped_timeout
+        )
         self._sandbox = sandbox
 
     async def connect(self) -> None:

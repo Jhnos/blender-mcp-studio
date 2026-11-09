@@ -1,0 +1,19 @@
+{
+  "spec_version": "1",
+  "name": "lab-station-v92",
+  "source": {
+    "root_dir": "models/lab-station-v92",
+    "stl_glob": "STL-整機76件/*.stl",
+    "project_3mf": "P2S-PLA-76件單盤-已切片-v92.3mf"
+  },
+  "print_target": {
+    "printer": "bambu-p2s",
+    "material": "PLA",
+    "layer_height_mm": 0.2,
+    "support": true,
+    "brim_mm": 3.0
+  },
+  "mechanism": {
+    "suites": []
+  }
+}

@@ -15,7 +15,7 @@ from src.core.use_cases import design_stages as stages
 from tests.unit.core.test_design_pipeline import _payload, _rig, _run
 
 _CONTRACT = (
-    Path(__file__).resolve().parents[3] / "scripts/verify/contracts/design_pipeline_v78.json"
+    Path(__file__).resolve().parents[3] / "scripts/verify/contracts/design_pipeline_current.json"
 )
 
 
@@ -155,17 +155,24 @@ async def test_submit_store_failure_error_is_scrubbed(tmp_path):
     assert record.error and str(tmp_path) not in record.error
 
 
-def test_contract_spec_is_the_documented_example():
+def test_schema_template_names_no_machine_and_no_deployed_model():
+    # Was: the template equalled the v78 contract spec minus print_target. Main archived that
+    # contract and forbids the schema module from naming a deployed model (the example is the
+    # injected selection), so the template is placeholders only; it still names no machine.
     from src.core.domain.model_spec_schema import V2_EXAMPLE
 
-    contract = json.loads(_CONTRACT.read_text(encoding="utf-8"))
-    spec = dict(contract["spec"])
     example = dict(V2_EXAMPLE)
     target = example.pop("print_target")
-    spec.pop("print_target")
-    assert spec == example
-    # the example names no machine: a client must pick one from list_printers
+    assert example["spec_version"] == "2" and example["mechanism"] == {"suites": []}
+    assert "lab-station" not in json.dumps(example, ensure_ascii=False)
+    # the template names no machine: a client must pick one from list_printers
     assert target == {
         "printer": "<printer id from list_printers>",
         "material": "<material from that printer's list>",
     }
+
+
+def test_contract_resolves_selection_instead_of_copying_the_example():
+    contract = json.loads(_CONTRACT.read_text(encoding="utf-8"))
+    assert contract["selection"] == "current"
+    assert "spec" not in contract

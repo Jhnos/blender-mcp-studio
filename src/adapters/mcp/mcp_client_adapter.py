@@ -23,7 +23,7 @@ from typing import Any
 from src.adapters.blender_scene_decoding import decode_object_details, decode_scene_summary
 from src.adapters.viewport_capture import capture_viewport
 from src.core.domain.command import Command
-from src.core.domain.exceptions import SceneOperationError
+from src.core.domain.exceptions import BlenderExecutionUncertainError, SceneOperationError
 from src.core.domain.scene_operations import ObjectDetails, SceneSummary, ViewportImage
 from src.core.ports.blender_port import BlenderPort
 from src.core.ports.mcp_port import ToolResult
@@ -124,12 +124,14 @@ class MCPClientBlenderAdapter(BlenderPort):
         from mcp.client.session import ClientSession
         from mcp.client.sse import sse_client
 
+        dispatched = False
         try:
             async with (
                 sse_client(self._sse_url) as (read, write),
                 ClientSession(read, write) as session,
             ):
                 await session.initialize()
+                dispatched = True
                 result = await session.call_tool(tool_name, arguments)
 
                 if result.isError:
@@ -142,4 +144,8 @@ class MCPClientBlenderAdapter(BlenderPort):
         except Exception as e:
             logger.error("MCPClientBlenderAdapter._call_tool(%s) failed: %s", tool_name, e)
             self._connected = False
+            if dispatched:
+                raise BlenderExecutionUncertainError(
+                    "Blender command completion is unknown: MCP reply was not confirmed"
+                ) from e
             return ToolResult(success=False, output=None, error=str(e))

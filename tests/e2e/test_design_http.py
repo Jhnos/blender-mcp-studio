@@ -201,3 +201,38 @@ def test_rest_printers_matches_mcp(tmp_path: Path) -> None:
             return (await mcp_client.call_tool("list_printers", {})).structured_content
 
     assert asyncio.run(over_mcp()) == body
+
+
+def test_rest_default_uses_the_same_declaration_for_discovery_and_submission(
+    tmp_path: Path,
+) -> None:
+    spec = _artifact(tmp_path)
+    spec["source"]["root_dir"] = "artifact"
+    spec["source"]["stl_glob"] = "STL/*.stl"
+    runtime = make_fake_runtime(tmp_path, selected_spec=lambda: spec)
+    app = create_app(runtime=runtime, require_identity=False)
+    with TestClient(app, base_url="http://localhost") as client:
+        for name in ("first", "second"):
+            spec["name"] = name
+            assert client.get("/api/design/spec").json()["example"] == spec
+            assert client.get("/api/design/artifacts").json()["default_spec"] == spec
+            response = client.post("/api/design/runs", json={})
+            assert response.status_code == 202
+            job = response.json()
+            assert _wait_done(client, job["job_id"])["status"] == "done"
+            report = client.get(f"/api/design/runs/{job['run_id']}/report").json()
+            assert report["spec_name"] == name and report["passed"]
+
+
+def test_native_intent_uses_existing_rest_job_endpoint_and_shared_submit(tmp_path):
+    from src.core.domain.design_run import JobRecord, JobStatus
+
+    runtime = make_fake_runtime(tmp_path)
+    runtime.design_pipeline.submit = AsyncMock(
+        return_value=JobRecord("job0", "a" * 32, JobStatus.QUEUED, None, None, 0, 0)
+    )
+    revision = {"recipe_id": "screen-clamp", "target_angle_deg": 30}
+    with TestClient(create_app(runtime=runtime), base_url="http://localhost") as client:
+        response = client.post("/api/design/runs", json={"revision": revision})
+        assert response.status_code == 202
+    runtime.design_pipeline.submit.assert_awaited_once_with(None, revision=revision)

@@ -25,7 +25,13 @@ from src.core.domain.packaging import ToolUse
 from src.core.domain.printer_catalog import PrinterCatalog, PrinterProfile
 from src.core.domain.slicing import LayerHeightError, SliceRequest, ToolUnavailableError
 from src.infrastructure.printer_catalog_loader import load_printer_catalog
-from tests.fakes.bambu_bundle import K1C_LEAVES, flattened, make_bundle, make_orca_bundle
+from tests.fakes.bambu_bundle import (
+    K1C_LEAVES,
+    TEST_LIMITS,
+    flattened,
+    make_bundle,
+    make_orca_bundle,
+)
 from tests.fakes.plate_3mf import translate, write_3mf
 
 _PROFILES = Path(cli_module.__file__).resolve().parents[3] / "config" / "slicer-profiles"
@@ -76,6 +82,7 @@ def _make(
         catalog or load_printer_catalog(),
         {"bambu-studio": bambu, "orcaslicer": orca},
         overrides_dir=_PROFILES,
+        limits=TEST_LIMITS,
         runner=runner,  # type: ignore[arg-type]
     )
 

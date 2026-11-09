@@ -71,7 +71,7 @@ def first_party_imports(path: Path, project_root: Path | None = None) -> tuple[s
     return tuple(ordered)
 
 
-def _module_file(project_root: Path, module: str) -> Path:
+def module_file_for(project_root: Path, module: str) -> Path:
     found = _find_module_file(project_root, module)
     if found is None:
         raise FileNotFoundError(f"{module} is imported but has no file under {project_root}")
@@ -88,7 +88,7 @@ def reload_modules_for(project_root: Path, script: Path) -> tuple[str, ...]:
             if module in seen:
                 continue
             seen.add(module)
-            visit(_module_file(project_root, module))
+            visit(module_file_for(project_root, module))
             order.append(module)
 
     visit(script)
