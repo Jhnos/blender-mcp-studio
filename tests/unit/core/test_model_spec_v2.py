@@ -91,12 +91,17 @@ def test_describe_model_spec_v2_example_parses(tmp_path):
     assert by_printer[P2S]["material"]["enum"] == ["PLA"]
     assert by_printer[K1C]["layer_height_mm"]["maximum"] == 0.3
     example = described["example"]
-    assert example["print_target"] == {"printer": P2S, "material": "PLA"}
+    assert example["print_target"] == {
+        "printer": "<printer id from list_printers>",
+        "material": "<material from that printer's list>",
+    }
     root = tmp_path / "layout"
     source = example["source"]
     stl_dir = root / source["root_dir"] / "STL" / "列印零件"
     stl_dir.mkdir(parents=True)
-    spec = parse_model_spec(example, artifact_roots=(root,))
+    # the client fills the placeholders with a listed choice; the rest parses as given
+    chosen = {**example, "print_target": {"printer": P2S, "material": "PLA"}}
+    spec = parse_model_spec(chosen, artifact_roots=(root,))
     assert spec.spec_version == "2" and spec.legacy_default is False
 
 

@@ -159,4 +159,13 @@ def test_contract_spec_is_the_documented_example():
     from src.core.domain.model_spec_schema import V2_EXAMPLE
 
     contract = json.loads(_CONTRACT.read_text(encoding="utf-8"))
-    assert contract["spec"] == V2_EXAMPLE
+    spec = dict(contract["spec"])
+    example = dict(V2_EXAMPLE)
+    target = example.pop("print_target")
+    spec.pop("print_target")
+    assert spec == example
+    # the example names no machine: a client must pick one from list_printers
+    assert target == {
+        "printer": "<printer id from list_printers>",
+        "material": "<material from that printer's list>",
+    }

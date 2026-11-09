@@ -1,9 +1,11 @@
 """ModelSpec v2 described as JSON Schema, so a client can build a spec without reading source.
 
 The parser (``model_spec.parse_model_spec``) is the authority; this module mirrors its keys,
-types and defaults from the same constants. ``V2_EXAMPLE`` is a complete worked spec. Spec v1
-is still accepted but is not described here; ``V1_EXAMPLE`` is the v78 gate contract's spec
-(``scripts/verify/contracts/design_pipeline_v78.json``; a unit test keeps them equal).
+types and defaults from the same constants. ``V2_EXAMPLE`` is a complete worked spec; a unit
+test keeps it equal to the v78 gate contract's spec
+(``scripts/verify/contracts/design_pipeline_v78.json``) except ``print_target``, which holds
+placeholders because the example never names a machine. Spec v1 is still accepted but is not
+described here.
 """
 
 from __future__ import annotations
@@ -35,7 +37,10 @@ V1_EXAMPLE: dict[str, object] = {
 V2_EXAMPLE: dict[str, object] = {
     **V1_EXAMPLE,
     "spec_version": "2",
-    "print_target": {"printer": LEGACY_V1_PRINTER, "material": LEGACY_V1_MATERIAL},
+    "print_target": {
+        "printer": "<printer id from list_printers>",
+        "material": "<material from that printer's list>",
+    },
 }
 
 _PATH_RULES = "relative, no '..', no hidden ('.'-prefixed) part, must stay inside the root"
