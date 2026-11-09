@@ -5,6 +5,8 @@ from pathlib import Path
 import pytest
 
 from src.adapters.slicing.plate_extent import (
+    MAX_ARCHIVE_ENTRIES,
+    MAX_LAYOUT_WORK,
     MAX_MODEL_BYTES,
     PlateExtentError,
     bed_size,
@@ -374,6 +376,40 @@ def test_production_cross_part_cycle_is_refused(tmp_path: Path) -> None:
     )
     path = _production_3mf(tmp_path / "loop.3mf", root, {"3D/Objects/a.model": loop})
     with pytest.raises(PlateExtentError, match="loop.3mf"):
+        plate_extent(path)
+
+
+def _fan_out_part(levels: int, fan: int) -> str:
+    """Object k holds ``fan`` components to object k+1; the last object is a 2-vertex mesh."""
+    objects = [
+        f'<object id="{k}"><components>'
+        + f'<component objectid="{k + 1}"/>' * fan
+        + "</components></object>"
+        for k in range(1, levels)
+    ]
+    leaf = (
+        f'<object id="{levels}"><mesh><vertices><vertex x="0" y="0" z="0"/>'
+        '<vertex x="1" y="1" z="1"/></vertices></mesh></object>'
+    )
+    return f'<model xmlns="{_CORE_NS}"><resources>{"".join(objects)}{leaf}</resources></model>'
+
+
+def test_component_fan_out_is_refused_by_the_work_cap(tmp_path: Path) -> None:
+    """A few hundred bytes that expand to 10**6 visits must stop at the default work cap."""
+    root = _root('<component p:path="/3D/Objects/fan.model" objectid="1"/>')
+    parts = {"3D/Objects/fan.model": _fan_out_part(levels=7, fan=10)}
+    path = _production_3mf(tmp_path / "fan.3mf", root, parts)
+    assert MAX_LAYOUT_WORK < 10**6
+    with pytest.raises(PlateExtentError, match="fan.3mf.*exceeds .* units of layout work"):
+        plate_extent(path)
+
+
+def test_too_many_archive_entries_are_refused(tmp_path: Path) -> None:
+    root = _root('<component p:path="/3D/Objects/o.model" objectid="1"/>')
+    parts = {"3D/Objects/o.model": _part(1, 4)}
+    parts.update({f"Metadata/x{i}.png": "" for i in range(MAX_ARCHIVE_ENTRIES)})
+    path = _production_3mf(tmp_path / "many.3mf", root, parts)
+    with pytest.raises(PlateExtentError, match="many.3mf.*entries"):
         plate_extent(path)
 
 

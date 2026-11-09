@@ -43,6 +43,13 @@ _CORE = "{http://schemas.microsoft.com/3dmanufacturing/core/2015/02}"
 _MODEL = "3D/3dmodel.model"
 #: 5 x the measured uncompressed v78 ``3D/3dmodel.model`` (8168153 B, 69 parts, 2026-10-22).
 MAX_MODEL_BYTES = 5 * 8168153
+#: Traversal is capped separately from bytes: components may fan out (one part referenced many
+#: times per level), so a few hundred bytes can demand millions of visits. One unit per placed
+#: vertex and per object visit; 5 x the measured v92 project (72345 vertices + 201 visits,
+#: ``models/lab-station-v92/P2S-PLA-76件單盤-已切片-v92.3mf``, 2026-11-09; v78: 53197 + 69).
+MAX_LAYOUT_WORK = 5 * (72345 + 201)
+#: 5 x the measured v92 archive entry count (94, 2026-11-09; v78 has 3).
+MAX_ARCHIVE_ENTRIES = 5 * 94
 _DTD = re.compile(rb"<!\s*(doctype|entity)", re.IGNORECASE)
 _WIDE_BOMS = (b"\xff\xfe", b"\xfe\xff", b"\x00\x00\xfe\xff")  # UTF-16 LE/BE, UTF-32 BE (LE ⊃ 16 LE)
 _DECLARED = re.compile(rb"""^(?:\xef\xbb\xbf)?\s*<\?xml[^>]*?\bencoding\s*=\s*["']([^"']*)["']""")
@@ -95,6 +102,20 @@ class _Archive:
     def __init__(self, archive: zipfile.ZipFile, name: str, cap: int) -> None:
         self._zip, self._name, self._cap, self._left = archive, name, cap, cap
         self._parts: dict[str, _Part] = {}
+        names = archive.namelist()
+        if len(names) > MAX_ARCHIVE_ENTRIES:
+            raise PlateExtentError(
+                f"{name}: {len(names)} archive entries exceed {MAX_ARCHIVE_ENTRIES}; refused"
+            )
+        self._members = frozenset(names)
+        self._work_left = MAX_LAYOUT_WORK
+
+    def _spend(self, units: int) -> None:
+        self._work_left -= units
+        if self._work_left < 0:
+            raise PlateExtentError(
+                f"{self._name}: layout exceeds {MAX_LAYOUT_WORK} units of layout work; refused"
+            )
 
     def part(self, member: str) -> _Part:
         if member not in self._parts:
@@ -108,7 +129,7 @@ class _Archive:
             "\\" in member
             or ".." in member.split("/")
             or not member.endswith(".model")
-            or member not in self._zip.namelist()
+            or member not in self._members
         ):
             raise PlateExtentError(f"{self._name}: component part is not a model in the archive")
         return member
@@ -141,7 +162,9 @@ class _Archive:
         obj = part.objects.get(object_id)
         if obj is None or depth > 16:
             raise ValueError(f"build references unknown or cyclic object {object_id!r}")
+        self._spend(1)
         for vertex in obj.iter(f"{_CORE}vertex"):
+            self._spend(1)
             x, y, z = (float(vertex.get(axis, "0")) for axis in ("x", "y", "z"))
             yield (
                 x * m[0] + y * m[3] + z * m[6] + m[9],
