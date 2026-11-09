@@ -1,4 +1,4 @@
-"""Tool-path inspection inside the vendor-neutral adapter (ported from main's BambuStudioCli).
+"""Tool-path inspection inside the vendor-neutral adapter (ported from main's Bambu-only adapter).
 
 Whether a slicer's output is inspected is catalog data (``toolpath_inspection`` in
 ``config/slicers.yaml``): Bambu Studio is inspected, OrcaSlicer is not. No test here names a

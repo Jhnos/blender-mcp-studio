@@ -113,6 +113,13 @@ profiles 子目錄、授權、錯誤碼、安裝提示）；`config/printers/<ve
 app 內沒有 profiles 目錄或設定檔讀不到時，切片結果是 failed，訊息與「切片器不可用」同一類；
 `list_printers` 把這種印表機列在 `unavailable`，`describe_model_spec` 的 enum 也不列它。
 
+**刀路檢查**：`slicers.yaml` 每個切片器必填 `toolpath_inspection: true|false`（只收 YAML 布林）。
+為 true 時，切片成功後在同一個 adapter 內讀新 3MF 的 plate G-code，寫 `print/extrusion.json`，
+檢查不過就讓這次切片 failed；每次切片前先刪舊的 `extrusion.json`；工作鍵另加
+`enable_arc_fitting: "0"`；port 期限＝切片指令逾時＋`TOOLPATH_INSPECTION_TIMEOUT_S`（子行程本身仍只拿指令逾時）。
+目前 Bambu Studio 為 true、OrcaSlicer 為 false（它的 G-code 是另一套註解格式，原因與實測數字在
+`config/slicers.yaml` 註解）。切片器以輸出目錄為工作目錄、所有路徑先 resolve，副產物不會落在 job 外。
+
 `BLENDER_MCP_PUBLIC_BASE_URL` 是這個部署對外的公開基底網址（例如 `https://<host>/blender`；
 留空則由 `tailscale status --self --json` 取得）。它不改變 API 自己監聽的位址，只用來推導：
 API 的 CORS 預設 origin（`CORS_ORIGINS` 未設時）、驗證腳本與 stdio proxy 連線的 MCP／REST URL、
