@@ -12,9 +12,11 @@ import time
 from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
 from pathlib import Path
 
-from scripts.verify.native_source_checks import (  # noqa: F401 (re-exports)
-    check_native_source,
-    check_selected_target,
+from scripts.verify.native_source_checks import (  # explicit re-exports (file budget split)
+    check_native_source as check_native_source,
+)
+from scripts.verify.native_source_checks import (
+    check_selected_target as check_selected_target,
 )
 from src.adapters.slicing.orca_family_cli import SLICE_TIMEOUT_S, port_deadline_s
 from src.core.domain.model_spec import ModelSpecError, parse_print_target
