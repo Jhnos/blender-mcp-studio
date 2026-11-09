@@ -55,6 +55,16 @@ INTERRUPTED = "interrupted: service restarted"
 NATIVE_UNCONFIRMED = "native execution completion unconfirmed; verified recovery is required"
 
 
+def _install_root(binary: Path) -> str:
+    """The prefix to scrub for a tool: its whole ``.app`` bundle if inside one, else its dir.
+
+    Real slicer logs name bundle resources (``…app/Contents/Resources/profiles``), which sit
+    outside the binary's own ``Contents/MacOS`` directory (dry run, 2026-11-09).
+    """
+    bundle = next((p for p in binary.parents if p.suffix == ".app"), None)
+    return str(bundle or binary.parent)
+
+
 class DesignPipeline:
     def __init__(
         self,
@@ -245,7 +255,7 @@ class DesignPipeline:
             tools = await self._stages.slicing.availability()
         except Exception:  # noqa: BLE001 - scrubbing must never fail a run
             tools = ()
-        return tuple(str(Path(tool.path).parent) for tool in tools if tool.path)
+        return tuple(_install_root(Path(tool.path)) for tool in tools if tool.path)
 
     async def clean(self, text: str) -> str:
         """Strip host paths from free text, including every slicer binary's directory."""

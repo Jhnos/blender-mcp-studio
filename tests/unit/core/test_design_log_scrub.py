@@ -107,7 +107,10 @@ class AppPathSlicer(LoggingSlicer):
     async def slice(self, request):
         result = await super().slice(request)
         (Path(request.output_dir) / "slicer.log").write_text(
-            f"cli mode, resources at {_APP_DIR}/../Resources\n", encoding="utf-8"
+            f"cli mode, resources at {_APP_DIR}/../Resources\n"
+            # Real 2026-11-09 logs name bundle resources, outside the binary's own directory.
+            "load /Applications/FakeSlicer.app/Contents/Resources/profiles/x.json\n",
+            encoding="utf-8",
         )
         return result
 
