@@ -6,6 +6,46 @@ from collections.abc import Mapping
 from pathlib import Path
 
 from scripts.verify.native_pipeline_checks import object_value, rows
+from src.infrastructure.narrowing import as_finite_number
+
+
+def check_review_replay(
+    tested: Mapping[str, object],
+    rendered: Mapping[str, object],
+    native_sha: object,
+    images: Mapping[str, object],
+) -> list[str]:
+    """Require an independently read render to replay the actual tested cases."""
+    tested_cases = object_value(tested["cases"])
+    rendered_cases = object_value(rendered["cases"])
+    if not tested_cases or tested_cases.keys() != rendered_cases.keys():
+        return ["review replay case inventory disagrees with motion test"]
+    failures = [
+        f"review replay {stage} native_sha256 differs from selected source"
+        for stage, receipt in (("test", tested), ("render", rendered))
+        if receipt["native_sha256"] != native_sha
+    ]
+    for name, raw_case in tested_cases.items():
+        case = object_value(raw_case)
+        readback = object_value(rendered_cases[name])
+        comparisons = {
+            "native_sha256": native_sha,
+            "frame": tested["frame"],
+            "screen_deg": tested["screen_deg"],
+            "angle_deg": case["angle_deg"],
+            "release_mm": case["release_mm"],
+            "preview_sha256": images[f"{name}.png"],
+        }
+        failures.extend(
+            f"review replay {name} differs in {field}"
+            for field, expected in comparisons.items()
+            if readback[field] != expected
+        )
+        for field in ("matrix_delta_mm", "curve_delta_mm"):
+            error = as_finite_number(readback[field])
+            if error is None or not 0 <= error < 0.001:
+                failures.append(f"review replay {name} exceeds tolerance in {field}")
+    return failures
 
 
 def check_bulkhead_bore(
@@ -132,6 +172,20 @@ def check_delivery(root: Path, receipt: object) -> list[str]:
         if "驗證/bulkhead-bore.json" in manifest:
             failures.extend(
                 check_bulkhead_bore(document("bulkhead-bore"), extrusion, native_sha, project_sha)
+            )
+        if any(
+            f"驗證/{name}.json" in manifest for name in ("review-test-poses", "review-render-poses")
+        ):
+            render_poses = document("review-render-poses")
+            if render_poses["pose_recipe_sha256"] != manifest["驗證/review-test-poses.json"]:
+                failures.append("review replay render used a different motion recipe")
+            failures.extend(
+                check_review_replay(
+                    document("review-test-poses"),
+                    render_poses,
+                    native_sha,
+                    rendered_files,
+                )
             )
         if not rendered_files:
             failures.append("selected delivery has no verified renders")

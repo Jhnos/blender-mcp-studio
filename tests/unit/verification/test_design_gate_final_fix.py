@@ -431,3 +431,43 @@ def test_workstation_inventory_evidence_requires_every_part_at_each_step(tmp_pat
 
     receipt["parts"].append({"path": "elsewhere/lid.stl", "sha256": parts["lid"]})
     assert any("duplicate" in error for error in check_delivery(tmp_path, receipt))
+
+
+def test_review_replay_rejects_neutral_render_used_for_negative_wrist_test() -> None:
+    from scripts.verify.lab_station_delivery_checks import check_review_replay
+
+    native_sha, preview_sha = "a" * 64, "b" * 64
+    case = {"angle_deg": -15.0, "release_mm": 2.0}
+    tested = {
+        "native_sha256": native_sha,
+        "frame": 1025,
+        "screen_deg": 30,
+        "cases": {"wrist": case},
+    }
+    rendered_case = {
+        **case,
+        "frame": 1025,
+        "screen_deg": 30.0,
+        "native_sha256": native_sha,
+        "preview_sha256": preview_sha,
+        "matrix_delta_mm": 0.00004,
+        "curve_delta_mm": 0.0,
+    }
+    images = {"wrist.png": preview_sha}
+
+    def check(observed: dict[str, object]) -> list[str]:
+        rendered = {"native_sha256": native_sha, "cases": {"wrist": observed}}
+        return check_review_replay(tested, rendered, native_sha, images)
+
+    assert check(rendered_case) == []
+    for field, stale in (
+        ("angle_deg", 0.0),
+        ("release_mm", 0.0),
+        ("frame", 1376),
+        ("screen_deg", 60.0),
+        ("native_sha256", "c" * 64),
+        ("preview_sha256", "d" * 64),
+        ("matrix_delta_mm", 2.0),
+        ("curve_delta_mm", float("nan")),
+    ):
+        assert any(field in error for error in check({**rendered_case, field: stale}))
