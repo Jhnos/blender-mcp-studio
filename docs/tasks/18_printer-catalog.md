@@ -65,6 +65,17 @@
     - 臨時 API 乾跑：目前選版 v92（P2S）PASS、K1 Max PASS，兩個負向對照照預期失敗。
     - 4 個 run 裡含 `/Users/`、`/private/`、`/var/folders`、`/Applications/` 的檔案數為 0。
 
+- 2026-11-10 上線：
+  - 使用者選 B：Codex 留在 main 工作區的 `00_INDEX.md` 修改原樣 commit 成 `9b0250f`，在 commit 訊息中註明作者。合併後 main 快轉到 `cf08098`。
+  - 執行 `install.sh all`，三個服務都換了新 PID。經動態 FQDN `bearmacminimac-mini.tail56c751.ts.net/blender/api/health` 回 `{"status":"ok","blender":"connected"}`。
+  - 整輪 `scripts/ci.sh --real`：exit 0，57 PASS、0 FAIL，包括：
+    - design pipeline on the current selected deliverable（P2S）
+    - Creality K1 Max via OrcaSlicer
+    - public native revision
+  - 正式 `data/runs` 中今天新產生的 5 個 run 掃描結果是 0 個檔案含主機路徑。
+  - push：`a1981d6..cf08098`，共 43 個 commit，包含 Codex 先前沒 push 的 7 個。
+  - 版號從 V01.0U.000 改成 V01.0W.000，原因是 V01.0U.000 到 V01.0V.001 已經是 `codex/universal-room` 分支的 tag。
+
 ### Open failures
 
 - 已評估、刻意延後：
@@ -73,9 +84,10 @@
 - PETG 負向對照只走「不在目錄」路徑；bundle `compatible_printers` 拒絕只有單元測試，沒有真機閘門。
 - `src/core/use_cases/design_pipeline.py` 379/380 行，下次加功能前先拆檔。
 - OrcaSlicer 沒有刀路檢查：要支援，得另寫一個讀 `;TYPE:`／`;WIDTH:`／`;HEIGHT:` 的解析器。
-- 線上正式服務（main V01.0T.00O）仍有 log 含主機路徑的問題，部署本分支後才會修掉。
+- 部署前產生的舊 run（例如 2026-11-09 的 `eefae8bb…`、`4fa397e7…`）各有 1 個 log 含主機路徑，而且可以下載。要不要清掉，等使用者決定。
+- 同一個 repo 有兩條產品線共用版號空間（本專案和 `codex/universal-room`）。之後 bump 版號前，先跑 `git tag -l` 確認沒有撞號。
 
 ### Next step
 
-- 使用者已同意（2026-11-09，選項 A）：等另一個 session 把它在 main 上的修改 commit、push 後，把 main 快轉到本分支 → `bash deploy/launchd/install.sh all` → 經動態 FQDN 跑整輪 `scripts/ci.sh --real` → push → checkpoint 腳本 → 清 worktree。
-- 之後等使用者驗收，再移到 `archive/`。
+- 等使用者驗收任務 17 與 18，再移到 `archive/`。
+- 下一個工作是階段 1b 幾何引擎：使用者選 A（solidcraft 0.30.1＋build123d，共用同一個 GeometryPort）。先用 brainstorming 寫設計文件給使用者審，小試報告的根據在 `scratchpad/spike/spike-report.md`。

@@ -22,6 +22,7 @@ Blender MCP Studio 的文件樹。**一檔一主題，互相 `[[wikilink]]` 指�
 | [[hand-framework]] | 靈巧手框架:連桿參數化,V3 與人手尺寸是兩個實例 | 改任何手的產生器、契約或包之前 |
 | [[superpowers/specs/2026-10-21-mcp-complete-pipeline-design]] | 讓 MCP 完整：概念進、合規模型出的管線設計（草稿） | 規劃或實作任何新的 MCP 工具、port、驗證管線之前 |
 | [[superpowers/specs/2026-10-22-printer-catalog-design]] | 印表機目錄：廠商解耦、不預設機器、可選印表機（Bambu／Creality） | 新增印表機、切片器或修改切片之前 |
+| [[superpowers/specs/2026-11-10-geometry-engine-spike]] | 幾何引擎小試：solidcraft 與 build123d 各做 3 個零件，比較成功率、錯誤訊息與決定性 | 設計階段 1b 的 GeometryPort 或選幾何引擎之前 |
 
 ## 子目錄
 

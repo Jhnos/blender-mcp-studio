@@ -1,5 +1,12 @@
 # LESSONS_LEARNED
 
+### 版號只看目前分支會撞號：同一個 repo 的其他產品線早就用掉了
+
+- **觸發情境**：任務 18 收尾時 bump 成 V01.0U.000（2026-11-09），但 `codex/universal-room` 分支在 2026-10-02 已經打了 V01.0U.000 到 V01.0V.001 的 tag。main 上一路 bump 都沒察覺，直到 push 後跑 `git tag` 才看到。
+- **該主動檢查**：bump 前先跑 `git tag -l` 和 `git ls-remote --tags origin`，確認新版號在整個 repo（所有分支、遠端）都沒用過，而不是只比 main 上的 VERSION 或 CHANGELOG。
+- **為什麼沒抓到**：`version.py bump` 只讀 VERSION 檔、不查 tag；兩條產品線共用一個 repo 和同一套版號格式，彼此看不到對方。
+- **如何預防**：bump 後、commit 前，用 `git tag -l <新版號>` 必須為空來把關。本次改用 V01.0W.000，CHANGELOG 註明原因。
+
 ## 合併沒有文字衝突，不等於另一邊的新程式還成立在這邊移除的預設上
 
 - **失效類別**：一邊移除了隱含預設（這次是預設印表機：`PrintTarget()`、`SliceRequest.from_target` 不帶 `printer_id`），另一邊同期新增的測試與程式照舊依賴它。這些檔案沒有衝突、自動合併成功，問題只在跑測試時以 TypeError 出現（2026-11-09 併 main 進 `claude/printer-catalog`：main 新增的 native／toolpath 測試有五處）。同類：一邊拆檔讓函式改名或改成 async（`describe_spec`），另一邊的呼叫點也是乾淨合併。
