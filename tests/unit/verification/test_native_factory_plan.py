@@ -1,6 +1,10 @@
 """Factory lifecycle validation has one fixed, portable, non-server command plan."""
 
+import hashlib
+import json
 import plistlib
+import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -115,6 +119,54 @@ def test_cup_extraction_rejects_an_old_source_and_an_incomplete_display_sweep():
         assess({"native_sha256": "old"}, "current")
     with pytest.raises(ValueError, match="display sweep is incomplete"):
         assess({"native_sha256": "current", "parked": {}, "screen_frames": [{}]}, "current")
+
+
+@pytest.mark.parametrize("stale", [False, True])
+def test_cup_gate_uses_the_manifest_of_an_explicit_candidate(tmp_path, monkeypatch, stale):
+    from scripts.verify import workstation_cup_verify_factory as cup
+    from src.core.domain.native_revision import NativeSourceError
+
+    bundle = tmp_path / "candidate"
+    bundle.mkdir()
+    assets = {"review.blend": b"candidate", "part.stl": b"part", "plate.3mf": b"plate"}
+    for name, data in assets.items():
+        (bundle / name).write_bytes(data)
+    (bundle / "SHA256.json").write_text(
+        json.dumps({name: hashlib.sha256(data).hexdigest() for name, data in assets.items()})
+    )
+    spec = tmp_path / "candidate.json"
+    spec.write_text(
+        json.dumps(
+            {
+                "spec_version": "1",
+                "name": "candidate",
+                "source": {
+                    "root_dir": bundle.name,
+                    "stl_glob": "*.stl",
+                    "project_3mf": "plate.3mf",
+                },
+            }
+        )
+    )
+    work = tmp_path / "capture"
+    monkeypatch.setenv("ARTIFACT_ROOTS", str(tmp_path))
+    monkeypatch.setattr(
+        sys, "argv", ["cup", "--spec", str(spec), "--work", str(work), "--blender", "/fake"]
+    )
+    monkeypatch.setattr(
+        cup.subprocess, "run", lambda *args, **kwargs: subprocess.CompletedProcess(args, 1)
+    )
+    if stale:
+        (bundle / "review.blend").write_bytes(b"older scene")
+        with pytest.raises(NativeSourceError, match="checksum"):
+            cup.main()
+        assert not work.exists()
+        return
+
+    with pytest.raises(RuntimeError, match="Blender cup capture failed"):
+        cup.main()
+    assert (work / "source.blend").read_bytes() == assets["review.blend"]
+    assert (work / "spec.json").read_bytes() == spec.read_bytes()
 
 
 def test_native_recipe_covers_every_indexed_target_and_rejects_before_staging(tmp_path):

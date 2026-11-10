@@ -15,6 +15,7 @@ import shutil
 import subprocess
 import sys
 import uuid
+from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -114,7 +115,10 @@ def installed_blender(service: Path) -> Path:
     return executable
 
 
-async def current_source() -> tuple[Path, str, str]:
+async def current_source(
+    selection: Mapping[str, object] | None = None,
+) -> tuple[Path, str, str]:
+    """Resolve a captured declaration or the formal default through the same catalog."""
     from src.adapters.artifacts.native_source import FilesystemNativeSource
     from src.core.use_cases.artifact_catalog import ArtifactCatalog
     from src.infrastructure.config_loader import load_selected_model_spec
@@ -127,7 +131,9 @@ async def current_source() -> tuple[Path, str, str]:
         load_selected_model_spec,
         native_sources=FilesystemNativeSource(tools.artifact_roots, tools.import_limits),
     )
-    spec, source = await catalog.native_source_for(catalog.current())
+    spec, source = await catalog.native_source_for(
+        catalog.current() if selection is None else selection
+    )
     return Path(spec.source.root_dir) / source.native.path, source.native.sha256, source.model_name
 
 

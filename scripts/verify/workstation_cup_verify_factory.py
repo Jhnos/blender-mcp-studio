@@ -1,4 +1,4 @@
-"""Verify a nominal cup's extraction against the currently selected native assembly."""
+"""Verify a nominal cup's extraction against a catalog-resolved native assembly."""
 
 from __future__ import annotations
 
@@ -235,7 +235,9 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--blender", type=Path)
     parser.add_argument("--work", type=Path)
-    parser.add_argument("--capture", nargs=2, type=Path, help=argparse.SUPPRESS)
+    source = parser.add_mutually_exclusive_group()
+    source.add_argument("--spec", type=Path, help="candidate ModelSpec JSON")
+    source.add_argument("--capture", nargs=2, type=Path, help=argparse.SUPPRESS)
     argv = sys.argv[sys.argv.index("--") + 1 :] if "--" in sys.argv else sys.argv[1:]
     args = parser.parse_args(argv)
     if args.capture:
@@ -259,9 +261,13 @@ def main() -> int:
         Path.home() / "Library/LaunchAgents/com.blender-mcp.blender.plist"
     )
     work = (args.work or ROOT / "tmp" / f"workstation-cup-{uuid.uuid4().hex}").resolve()
-    native, expected, model = asyncio.run(current_source())
+    spec_bytes = args.spec.read_bytes() if args.spec is not None else None
+    selection = document(json.loads(spec_bytes)) if spec_bytes is not None else None
+    native, expected, model = asyncio.run(current_source(selection))
     native = ROOT / native
     work.mkdir(parents=True, exist_ok=False)
+    if spec_bytes is not None:
+        (work / "spec.json").write_bytes(spec_bytes)
     snapshot = work / "source.blend"
     shutil.copyfile(native, snapshot)
     if sha256(snapshot) != expected:
