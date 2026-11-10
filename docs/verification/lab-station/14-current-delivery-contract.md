@@ -10,11 +10,11 @@ Population: 每次由共用 ArtifactCatalog 擷取的目前 ModelSpec、完整�
 |---|---|---|---|---|---|
 | C01 | REST、MCP、schema 範例與本機唯一宣告取得同一目前交付件；缺失來源拒絕，不要求客戶端另選版本 | voc | yes | behavior | artifact:scripts/verify/native_pipeline_verify_real.py::verify |
 | C02 | 原件不覆寫；修訂後原件身份完整、未修改件保持原 bytes、公開下載逐件吻合來源／輸出收據 | voc | yes | behavior | artifact:scripts/verify/native_pipeline_checks.py::check_product; artifact:scripts/verify/native_pipeline_checks.py::check_downloads |
-| C03 | 兩頭獨立；上臂及下臂均為雙桿，上下臂以四點梯形板連接；上下與前後提供獨立可鎖定調整，探頭角度另調 | voc | yes | behavior | — |
+| C03 | 兩頭獨立；上下臂均為雙桿且八支連桿為同一可互換列印件，以四點梯形板連接；主上臂兩端可換齒盤與固定側對齒配合，提供獨立可鎖定調整，探頭角度另調 | voc | yes | behavior | — |
 | C04 | 全機可用姿態及退齒、轉動、就座、收折與維修路徑無非預期交叉、內含或斷接；碰撞反例會被拒絕 | product | yes | behavior | — |
 | C05 | 三探頭共用250 mL容器、約200 mm可調伸距；抬出與換杯路徑保持另一頭固定，符合真實杯口及探頭尺寸 | voc | yes | behavior | — |
 | C06 | 原件螢幕修訂的五階段控制保持剛體身份與原 local surfaces，螺栓隨動、退齒及目標角控制可保存重開 | engineering | yes | behavior | artifact:scripts/verify/native_revision_verify_factory.py::host; artifact:scripts/verify/native_revision_fixture.py::callback_reopen |
-| C07 | 可調螢幕能收起；後蓋可開、頂部通風；實際開關、卡扣、鉸鍊、加強結構與手指／工具操作空間可用 | voc | yes | behavior | — |
+| C07 | 可調螢幕能收起；後蓋可開、頂部通風；三探頭三角配置的同介面積木及毛細管／三探頭共用腕端可按壓徒手快換，保留調角；實際開關、卡扣、鉸鍊、加強結構與手指／工具操作空間可用 | voc | yes | behavior | — |
 | C08 | LCD與電路空間依實際板件／接頭／線材尺寸裝配，探頭夾持及幫浦／微壓／pH前端／供電接口可固定；佔位包絡不當成真實硬體 | product | yes | behavior | — |
 | C09 | 全部同身份STL完成並通過幾何檢查後，才用同一組零件衍生3MF；保存全件擺位與有向表面，不跳過或替換零件 | voc | yes | behavior | artifact:scripts/verify/native_pipeline_verify_real.py::positive; artifact:scripts/verify/native_pipeline_checks.py::check_slice_inventory |
 | C10 | 單盤新切片包含全部具名原件沉積及接床路徑、支撐與brim；含線寬及指向圓弧的完整沉積包絡不越界 | product | yes | behavior | artifact:scripts/verify/native_pipeline_checks.py::check_extrusion_receipt |
