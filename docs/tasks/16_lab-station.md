@@ -66,6 +66,8 @@
 
 名目候選杯的停臂後取出沿用[共用驗證規則](../30-verification.md#t3-裡的產出物閘門2026-09-08-起)。候選杯壁干涉與空間包絡使用相同封閉實體判定；實際杯尺寸與操作驗收仍依上列 Acceptance checks。
 
+候選若已存放名目杯和接液盤，請在同一原生檔保存停臂影格，並將取杯收據、碰撞掃掠和預覽綁定該檔。取杯收據的 `cup_source` 須為 `saved_mesh`，以免把夾具的取杯結果當作畫面中的杯位資格。
+
 ## Screen clamp control contract (2026-10-27)
 
 - Shared immutable clamp values own pitch, axial seating, target tooth angle and passive-pin float. Reuse the existing five-phase motion; do not duplicate its ramps in Blender bindings.

@@ -13,6 +13,7 @@ import uuid
 from collections.abc import Mapping
 from itertools import product
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
@@ -24,6 +25,10 @@ from scripts.verify.native_session_verify_factory import (  # noqa: E402
     sha256,
 )
 from src.infrastructure.narrowing import as_mapping, as_nonempty_sequence, required  # noqa: E402
+
+if TYPE_CHECKING:
+    from numpy import float64
+    from numpy.typing import NDArray
 
 DISH = "LS_FIT_spill_dish"
 TRAY = "LS_FIT_sample_tray"
@@ -49,6 +54,37 @@ def array(value: object) -> list[object]:
     return list(
         required(value, as_nonempty_sequence, message="missing evidence rows", error=ValueError)
     )
+
+
+def dish_adjustment(
+    saved_nominal: bool, wall: NDArray[float64], dish_center: NDArray[float64], floor: float
+) -> tuple[float, float]:
+    """Use a saved nominal setup only when its cup agrees with the actual dish."""
+    import numpy as np
+
+    if not saved_nominal:
+        return DISH_SHIFT_MM
+    if not np.allclose(
+        (wall.min(axis=0)[:2] + wall.max(axis=0)[:2]) / 2, dish_center, rtol=0, atol=0.001
+    ):
+        raise ValueError("saved nominal cup is not centered on the spill dish")
+    radius = np.linalg.norm(wall[:, :2] - dish_center, axis=1)
+    allowed = np.array(
+        (
+            (0, floor),
+            (0, floor + CUP_FLOOR_MM),
+            (CUP_OUTER_RADIUS_MM, floor),
+            (CUP_OUTER_RADIUS_MM, floor + CUP_HEIGHT_MM),
+            (CUP_INNER_RADIUS_MM, floor + CUP_HEIGHT_MM),
+            (CUP_INNER_RADIUS_MM, floor + CUP_FLOOR_MM),
+        )
+    )
+    matches = np.isclose(
+        np.column_stack((radius, wall[:, 2]))[:, None], allowed, atol=0.001, rtol=0
+    ).all(axis=2)
+    if not matches.any(axis=0).all() or not matches.any(axis=1).all():
+        raise ValueError("saved nominal cup does not match the qualified wall dimensions")
+    return (0.0, 0.0)
 
 
 def assess(evidence: Mapping[str, object], expected_sha: str) -> dict[str, object]:
@@ -99,12 +135,17 @@ def assess(evidence: Mapping[str, object], expected_sha: str) -> dict[str, objec
     floor = float(dish[np.isclose(dish[:, 2], heights[1], atol=0.0001), 2].max())
     rim = float(dish_hi[2])
     lip = floor + CUP_HEIGHT_MM
-    center = (dish_lo[:2] + dish_hi[:2]) / 2 + DISH_SHIFT_MM
-    shifted_dish = soup(dish + (*DISH_SHIFT_MM, 0), dish_faces)
+    dish_center = (dish_lo[:2] + dish_hi[:2]) / 2
+    saved_nominal = evidence.get("saved_nominal_cup", False)
+    if not isinstance(saved_nominal, bool):
+        raise ValueError("invalid saved nominal cup marker")
+    adjustment = dish_adjustment(saved_nominal, parked[REFERENCE_CUP][0], dish_center, floor)
+    center = dish_center + adjustment
+    shifted_dish = soup(dish + (*adjustment, 0), dish_faces)
     tray_margin = float(
         np.min(
             np.minimum(
-                dish_lo[:2] + DISH_SHIFT_MM - tray_lo[:2], tray_hi[:2] - dish_hi[:2] - DISH_SHIFT_MM
+                dish_lo[:2] + adjustment - tray_lo[:2], tray_hi[:2] - dish_hi[:2] - adjustment
             )
         )
     )
@@ -207,10 +248,23 @@ def assess(evidence: Mapping[str, object], expected_sha: str) -> dict[str, objec
             sweep(center, end, floor + NOMINAL_LIFT_MM, lip + NOMINAL_LIFT_MM)
         ),
     }
+    wall, wall_faces = parked[REFERENCE_CUP]
+    if saved_nominal:
+        seated_cup = soup(wall, wall_faces)
+        slid_cup = soup(wall + (0, -16, 0), wall_faces)
+        lifted_cup = soup(wall + (0, 0, 12), wall_faces)
+        wrong_dish = soup(dish - (*DISH_SHIFT_MM, 0), dish_faces)
+        wrong_placement = "original_dish_position"
+    else:
+        seated_cup = cup_wall(center, 0)
+        slid_cup = cup_wall(center + (0, -16), 0)
+        lifted_cup = cup_wall(center, 12)
+        wrong_dish = soup(dish, dish_faces)
+        wrong_placement = "saved_dish"
     controls = {
-        "saved_dish": (cup_wall(center, 0), soup(dish, dish_faces)),
-        "slide_16_mm_without_lift": (cup_wall(center + (0, -16), 0), shifted_dish),
-        "lift_12_mm": (cup_wall(center, 12), soup(*parked[CAPILLARY])),
+        wrong_placement: (seated_cup, wrong_dish),
+        "slide_16_mm_without_lift": (slid_cup, shifted_dish),
+        "lift_12_mm": (lifted_cup, soup(*parked[CAPILLARY])),
     }
     volumes = {name: solid_overlap_volume(cup, target) for name, (cup, target) in controls.items()}
     if not all(value > 0 for value in volumes.values()):
@@ -221,7 +275,8 @@ def assess(evidence: Mapping[str, object], expected_sha: str) -> dict[str, objec
         "cup_outer_diameter_mm": 2 * CUP_OUTER_RADIUS_MM,
         "cup_inner_diameter_mm": 2 * CUP_INNER_RADIUS_MM,
         "cup_height_mm": CUP_HEIGHT_MM,
-        "dish_shift_xy_mm": DISH_SHIFT_MM,
+        "dish_shift_xy_mm": adjustment,
+        "cup_source": "saved_mesh" if saved_nominal else "nominal_fixture",
         "dish_tray_edge_margin_mm": tray_margin,
         "lift_range_mm": LIFT_RANGE_MM,
         "forward_mm": float(center[1] - end[1]),
@@ -247,6 +302,7 @@ def main() -> int:
             *args.capture,
             screen_steps=SCREEN_STEPS,
             parked_arms=PARKED_ARMS_DEG,
+            cup_name=REFERENCE_CUP,
             required_meshes={
                 DISH,
                 TRAY,

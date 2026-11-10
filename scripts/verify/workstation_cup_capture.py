@@ -9,6 +9,8 @@ from scripts.verify.native_session_verify_factory import sha256
 
 FOLD = "整機_螢幕收折"
 FOLD_PROPERTY = "fold_angle_deg"
+CUP_WALL_REFERENCE = "wall_is_non_printed_reference"
+CUP_SERVICE_FRAME = "nominal_cup_parked_frame"
 
 
 def capture(
@@ -18,6 +20,7 @@ def capture(
     screen_steps: int,
     parked_arms: tuple[tuple[float, float], ...],
     required_meshes: set[str],
+    cup_name: str,
 ) -> None:
     """Blender-only adapter. Capture original meshes and actual display transforms."""
     import bpy
@@ -50,6 +53,23 @@ def capture(
     meshes = {obj.name: obj for obj in scene.objects if obj.type == "MESH"}
     if not required_meshes <= meshes.keys():
         raise ValueError("selected assembly lacks required cup or display geometry")
+    cup = meshes[cup_name]
+    saved_nominal = cup.get(CUP_WALL_REFERENCE, False)
+    if not isinstance(saved_nominal, bool):
+        raise ValueError("invalid saved nominal cup marker")
+    if saved_nominal:
+        service_frame = cup.get(CUP_SERVICE_FRAME)
+        if (
+            type(service_frame) is not int
+            or not scene.frame_start <= service_frame <= scene.frame_end
+        ):
+            raise ValueError("saved nominal cup is missing its parked service frame")
+        scene.frame_set(service_frame)
+        if (
+            tuple((obj["upper_lift_deg"], obj["lower_adjust_deg"]) for obj in controls)
+            != parked_arms
+        ):
+            raise ValueError("saved nominal cup service frame does not have both arms parked")
     display = {name for name, obj in meshes.items() if obj.parent == fold}
     if not {"LS_FIT_lcd_front", "LS_FIT_lcd_back"} <= display:
         raise ValueError("display panels are not bound to the certified hinge")
@@ -89,6 +109,7 @@ def capture(
         json.dumps(
             {
                 "native_sha256": original_sha,
+                "saved_nominal_cup": saved_nominal,
                 "pivot_mm": [value * 1000 for value in fold.location],
                 "parked": parked,
                 "screen_frames": frames,

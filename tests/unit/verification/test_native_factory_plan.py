@@ -121,6 +121,39 @@ def test_cup_extraction_rejects_an_old_source_and_an_incomplete_display_sweep():
         assess({"native_sha256": "current", "parked": {}, "screen_frames": [{}]}, "current")
 
 
+def test_cup_extraction_uses_the_saved_nominal_cup_placement_once():
+    import numpy as np
+
+    from scripts.verify import workstation_cup_verify_factory as cup
+
+    center = np.array((8.0, -165.0))
+    floor = 9.0
+    rings = (
+        (cup.CUP_OUTER_RADIUS_MM, floor),
+        (cup.CUP_OUTER_RADIUS_MM, floor + cup.CUP_HEIGHT_MM),
+        (cup.CUP_INNER_RADIUS_MM, floor + cup.CUP_HEIGHT_MM),
+        (cup.CUP_INNER_RADIUS_MM, floor + cup.CUP_FLOOR_MM),
+    )
+    directions = ((1, 0), (0, 1), (-1, 0), (0, -1))
+    wall = np.array(
+        [
+            (*center + radius * np.array(direction), z)
+            for radius, z in rings
+            for direction in directions
+        ]
+        + [(*center, floor), (*center, floor + cup.CUP_FLOOR_MM)]
+    )
+
+    assert cup.dish_adjustment(False, wall, center, floor) == cup.DISH_SHIFT_MM
+    assert cup.dish_adjustment(True, wall, center, floor) == (0.0, 0.0)
+    with pytest.raises(ValueError, match="nominal cup"):
+        cup.dish_adjustment(True, wall + (0, 1, 0), center, floor)
+    tall_wall = wall.copy()
+    tall_wall[tall_wall[:, 2] == floor + cup.CUP_HEIGHT_MM, 2] += 14.0
+    with pytest.raises(ValueError, match="qualified wall dimensions"):
+        cup.dish_adjustment(True, tall_wall, center, floor)
+
+
 @pytest.mark.parametrize("stale", [False, True])
 def test_cup_gate_uses_the_manifest_of_an_explicit_candidate(tmp_path, monkeypatch, stale):
     from scripts.verify import workstation_cup_verify_factory as cup
