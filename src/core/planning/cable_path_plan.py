@@ -1,6 +1,6 @@
 """Deterministic two-cubic route candidates; geometry and material qualification are separate."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from math import dist, isfinite
 from random import Random
 
@@ -29,16 +29,24 @@ class RouteBoundary:
     length_mm: float
     cable_radius_mm: float = 3.0
     lead_mm: float = 6.0
+    start_lead_mm: float | None = field(default=None, kw_only=True)
+
+    @property
+    def start_straight_mm(self) -> float:
+        return self.lead_mm if self.start_lead_mm is None else self.start_lead_mm
 
     def __post_init__(self) -> None:
         vectors = (self.start_mm, self.end_mm, self.start_direction, self.end_direction)
         if not self.name or any(len(p) != 3 or not all(isfinite(v) for v in p) for p in vectors):
             raise ValueError("Route requires a name and finite 3D endpoints/directions")
         if not all(
-            isfinite(v) and v > 0 for v in (self.length_mm, self.cable_radius_mm, self.lead_mm)
+            isfinite(v) and v > 0
+            for v in (self.length_mm, self.cable_radius_mm, self.lead_mm, self.start_straight_mm)
         ):
             raise ValueError("Route dimensions must be finite and positive")
-        if self.length_mm <= max(dist(self.start_mm, self.end_mm), 2 * self.lead_mm):
+        if self.length_mm <= max(
+            dist(self.start_mm, self.end_mm), self.start_straight_mm + self.lead_mm
+        ):
             raise ValueError("Route length leaves no bend allowance")
         unit(self.start_direction)
         unit(self.end_direction)
@@ -79,13 +87,24 @@ class RouteFamily:
     lead_mm: float
     handles_mm: tuple[float, float, float, float]
     side: int
+    start_lead_mm: float | None = field(default=None, kw_only=True)
+
+    @property
+    def start_straight_mm(self) -> float:
+        return self.lead_mm if self.start_lead_mm is None else self.start_lead_mm
 
     def __post_init__(self) -> None:
         if not self.name or self.side not in (-1, 1) or len(self.handles_mm) != 4:
             raise ValueError("Family requires identity, four handles and a signed side")
         if not all(
             isfinite(v) and v > 0
-            for v in (self.length_mm, self.cable_radius_mm, self.lead_mm, *self.handles_mm)
+            for v in (
+                self.length_mm,
+                self.cable_radius_mm,
+                self.lead_mm,
+                self.start_straight_mm,
+                *self.handles_mm,
+            )
         ):
             raise ValueError("Family dimensions must be finite and positive")
 
@@ -100,6 +119,7 @@ class RouteFamily:
             b.lead_mm,
             (first, last, middle, offset),
             -1 if bulge < 0 else 1,
+            start_lead_mm=b.start_lead_mm,
         )
 
 
@@ -121,7 +141,7 @@ def loop_curves(
     request: RouteBoundary, handles: tuple[float, float, float, float], bulge: float
 ) -> tuple[CubicPath, CubicPath]:
     u, v = unit(request.start_direction), unit(request.end_direction)
-    a = add(request.start_mm, scale(u, request.lead_mm))
+    a = add(request.start_mm, scale(u, request.start_straight_mm))
     b = subtract(request.end_mm, scale(v, request.lead_mm))
     w = unit(subtract(b, a))
     normal = cross(u, v)
@@ -158,7 +178,8 @@ def _fit_route(
     sign: int,
     minimum_radius_mm: float = 0,
 ) -> RouteCandidate | None:
-    target = request.length_mm - 2 * request.lead_mm
+    straight_length = request.start_straight_mm + request.lead_mm
+    target = request.length_mm - straight_length
     lo, hi = 0.0, request.length_mm
     if estimated_length(loop_curves(request, handles, 0), 32) > target:
         return None
@@ -177,7 +198,7 @@ def _fit_route(
             hi = mid
     bulge = sign * (lo + hi) / 2
     curves = loop_curves(request, handles, bulge)
-    length = estimated_length(curves, 256) + 2 * request.lead_mm
+    length = estimated_length(curves, 256) + straight_length
     if abs(length - request.length_mm) > 0.05:
         return None
     try:
@@ -213,11 +234,18 @@ def fit_family(
     """Reconstruct a saved recipe at live anchors; all collisions still require verification."""
     if not isfinite(minimum_sampled_radius_mm) or minimum_sampled_radius_mm < 0:
         raise ValueError("Minimum sampled radius must be finite and nonnegative")
-    if (family.name, family.length_mm, family.cable_radius_mm, family.lead_mm) != (
+    if (
+        family.name,
+        family.length_mm,
+        family.cable_radius_mm,
+        family.lead_mm,
+        family.start_straight_mm,
+    ) != (
         request.name,
         request.length_mm,
         request.cable_radius_mm,
         request.lead_mm,
+        request.start_straight_mm,
     ):
         raise ValueError("Continuation requires the same cable identity, length, radius and lead")
     return _fit_route(request, family.handles_mm, family.side, minimum_sampled_radius_mm)

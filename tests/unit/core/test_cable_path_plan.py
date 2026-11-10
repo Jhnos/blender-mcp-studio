@@ -30,6 +30,23 @@ def test_parallel_terminal_directions_do_not_produce_nan_normal() -> None:
     assert candidates(request, RouteSearchSpec(candidate_count=8))
 
 
+def test_different_straight_leads_preserve_route_length_and_family() -> None:
+    from src.core.planning.cable_path_plan import RouteFamily, fit_family
+
+    request = replace(boundary(), length_mm=180, start_lead_mm=30)
+    route = candidates(request, RouteSearchSpec(candidate_count=8))[0]
+    assert route.curves[0].controls_mm[-1] == (0, 0, 30)
+    assert route.curves[-1].controls_mm[0] == (60, 0, 6)
+    measured = sample_path(route.curves)
+    assert measured.length_lower_mm == pytest.approx(180, abs=0.05)
+    assert measured.length_upper_mm == pytest.approx(180, abs=0.05)
+
+    family = RouteFamily.from_candidate(route)
+    assert fit_family(family, request) == route
+    with pytest.raises(ValueError, match="same cable"):
+        fit_family(family, replace(request, start_lead_mm=None))
+
+
 @pytest.mark.parametrize(
     "change",
     [
@@ -37,6 +54,9 @@ def test_parallel_terminal_directions_do_not_produce_nan_normal() -> None:
         dict(cable_radius_mm=0),
         dict(start_direction=(0, 0, 0)),
         dict(length_mm=float("nan")),
+        dict(start_lead_mm=0),
+        dict(start_lead_mm=float("nan")),
+        dict(start_lead_mm=145),
     ],
 )
 def test_invalid_boundaries_are_rejected_before_search(change: dict[str, object]) -> None:
