@@ -1,10 +1,42 @@
 """Verify the selected workstation's published render, motion and slice lineage."""
 
 import json
+import math
 from collections.abc import Mapping
 from pathlib import Path
 
 from scripts.verify.native_pipeline_checks import object_value, rows
+
+
+def check_bulkhead_bore(
+    bore: Mapping[str, object],
+    extrusion: Mapping[str, object],
+    native_sha: object,
+    project_sha: object,
+) -> list[str]:
+    """Check the EC78 nominal Ø15 mm bore against the selected one-plate toolpath."""
+    (plate,) = rows(extrusion["plates"])
+    failures = [
+        f"selected delivery evidence disagrees with bulkhead-bore {label}"
+        for label, field, expected in (
+            ("native source", "native_sha256", native_sha),
+            ("sliced project", "source_sha256", project_sha),
+            ("G-code", "gcode_sha256", plate["gcode_sha256"]),
+        )
+        if bore[field] != expected
+    ]
+    radius = bore["clear_radius_lower_mm"]
+    checked = bore["checked_early_depositions"]
+    if (
+        type(checked) is not int
+        or checked <= 0
+        or isinstance(radius, bool)
+        or not isinstance(radius, (int, float))
+        or (isinstance(radius, float) and not math.isfinite(radius))
+        or radius < 7.45
+    ):
+        failures.append("bulkhead-bore clearance does not establish a free Ø14.9 mm cylinder")
+    return failures
 
 
 def _stl_comparisons(
@@ -97,6 +129,10 @@ def check_delivery(root: Path, receipt: object) -> list[str]:
             for field, observed, expected in comparisons
             if observed != expected
         ]
+        if "驗證/bulkhead-bore.json" in manifest:
+            failures.extend(
+                check_bulkhead_bore(document("bulkhead-bore"), extrusion, native_sha, project_sha)
+            )
         if not rendered_files:
             failures.append("selected delivery has no verified renders")
         return failures

@@ -70,6 +70,8 @@
 
 審查候選時，取杯與 MCP 切片使用同一份明確的候選 ModelSpec。出圖來源和共用 Blender 除了影格與姿態，還須比對檔案雜湊及本次修改的網格指紋。舊場景須被這項比對拒絕；切換後獨立讀回再記錄。維持候選同步與孔位實際刀路為兩項驗收，切片工作完成時仍須檢查孔內的支撐。
 
+含穿壁孔的修訂在提交交付前，提供 `驗證/bulkhead-bore.json`，用共用驗證器比對實際單盤刀路與 Ø14.9 mm 數位量規。取消局部支撐時，對側懸空面另存支撐介面和第一層橋接跨距；實印尺寸、橋接品質和接頭試配仍是工程驗收。
+
 ## Screen clamp control contract (2026-10-27)
 
 - Shared immutable clamp values own pitch, axial seating, target tooth angle and passive-pin float. Reuse the existing five-phase motion; do not duplicate its ramps in Blender bindings.

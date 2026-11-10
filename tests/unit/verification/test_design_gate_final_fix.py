@@ -368,14 +368,12 @@ def test_workstation_inventory_evidence_requires_every_part_at_each_step(tmp_pat
             "bed_model_paths_by_part": dict.fromkeys(parts, 1),
         },
     }
-    (selected / "SHA256.json").write_text(
-        json.dumps(
-            {
-                **dict.fromkeys((f"驗證/{name}.json" for name in files), "0" * 64),
-                "assembly.png": render_sha,
-            }
-        )
-    )
+    manifest = {
+        **dict.fromkeys((f"驗證/{name}.json" for name in files), "0" * 64),
+        "assembly.png": render_sha,
+    }
+    manifest_path = selected / "SHA256.json"
+    manifest_path.write_text(json.dumps(manifest))
     for name, payload in files.items():
         (directory / f"{name}.json").write_text(json.dumps(payload))
     receipt = {
@@ -403,5 +401,33 @@ def test_workstation_inventory_evidence_requires_every_part_at_each_step(tmp_pat
     path.write_text(json.dumps({**evidence, "format_version": 3}))
     assert any("unsupported" in error for error in check_delivery(tmp_path, receipt))
     path.write_text(json.dumps(evidence))
+
+    gcode_sha = "1" * 64
+    (directory / "extrusion.json").write_text(
+        json.dumps({**files["extrusion"], "plates": [{"gcode_sha256": gcode_sha}]})
+    )
+    bore = {
+        "native_sha256": native_sha,
+        "source_sha256": plate_sha,
+        "gcode_sha256": gcode_sha,
+        "checked_early_depositions": 20,
+        "clear_radius_lower_mm": 7.48,
+    }
+    bore_path = directory / "bulkhead-bore.json"
+    bore_path.write_text(json.dumps(bore))
+    manifest_path.write_text(json.dumps({**manifest, "驗證/bulkhead-bore.json": "0" * 64}))
+    assert check_delivery(tmp_path, receipt) == []
+    for field, stale, message in (
+        ("native_sha256", "2" * 64, "bulkhead-bore native source"),
+        ("source_sha256", "2" * 64, "bulkhead-bore sliced project"),
+        ("gcode_sha256", "2" * 64, "bulkhead-bore G-code"),
+        ("clear_radius_lower_mm", -0.145, "bulkhead-bore clearance"),
+        ("clear_radius_lower_mm", float("inf"), "bulkhead-bore clearance"),
+        ("checked_early_depositions", 0, "bulkhead-bore clearance"),
+    ):
+        bore_path.write_text(json.dumps({**bore, field: stale}))
+        assert any(message in error for error in check_delivery(tmp_path, receipt))
+    bore_path.write_text(json.dumps(bore))
+
     receipt["parts"].append({"path": "elsewhere/lid.stl", "sha256": parts["lid"]})
     assert any("duplicate" in error for error in check_delivery(tmp_path, receipt))
