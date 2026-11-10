@@ -1,0 +1,168 @@
+{
+  "native_sha256": "fb8d9c2ae5750bdf7940620e5a38c2c6bc8f7382ece7eb5c30d5556f5bcd9159",
+  "motion_reference_sha256": "628ebeec63b49bb6056bc220133acdf654b049efcc600cdd6b765b93e22816bb",
+  "unchanged_pose_samples": 8167,
+  "all_four_curves_unchanged": true,
+  "images": {
+    "同杯整機-2372.png": {
+      "sha256": "bd1aaa9291e118edcffa822a79272cc5403417b06a2b0f428459ed0efde25507",
+      "frame": 2372,
+      "screen_deg": 60
+    },
+    "毛細管腕端-3716-退齒轉角.png": {
+      "sha256": "fc166a3a95e245fd3e8e3f244c1f06636003c8117e59cccadc15a48e99fcdc61",
+      "frame": 3716,
+      "screen_deg": 60,
+      "wrist_angle_deg": 15,
+      "release_mm": 2
+    }
+  },
+  "wrist_tests": {
+    "triad": {
+      "native_sha256": "fb8d9c2ae5750bdf7940620e5a38c2c6bc8f7382ece7eb5c30d5556f5bcd9159",
+      "source_sha256": "12bc36d49f448f8ebfab9cd10aa0a4d3943c5ca1ceab49abd92a097d311aff19",
+      "frame": 2372,
+      "stats": {
+        "2372:0": {
+          "min_clearance_lower_mm": 0.02464390086699867,
+          "intervals": 248,
+          "subdivisions": 124,
+          "witness": [
+            "V87_tri_fixed_socket",
+            "TE_pH_temp_three_point_wrist",
+            0.05492064421244208,
+            0.030276743345443412,
+            -3.875,
+            2.0
+          ]
+        },
+        "2372:15": {
+          "min_clearance_lower_mm": 0.02464390086699867,
+          "intervals": 248,
+          "subdivisions": 124,
+          "witness": [
+            "V87_tri_fixed_socket",
+            "TE_pH_temp_three_point_wrist",
+            0.05492064421244208,
+            0.030276743345443412,
+            -3.875,
+            2.0
+          ]
+        },
+        "2372:30": {
+          "min_clearance_lower_mm": 0.02464390086699867,
+          "intervals": 248,
+          "subdivisions": 124,
+          "witness": [
+            "V87_tri_fixed_socket",
+            "TE_pH_temp_three_point_wrist",
+            0.05492064421244208,
+            0.030276743345443412,
+            -3.875,
+            2.0
+          ]
+        },
+        "2372:45": {
+          "min_clearance_lower_mm": 0.02464390086699867,
+          "intervals": 248,
+          "subdivisions": 124,
+          "witness": [
+            "V87_tri_fixed_socket",
+            "TE_pH_temp_three_point_wrist",
+            0.05492064421244208,
+            0.030276743345443412,
+            -3.875,
+            2.0
+          ]
+        },
+        "2372:60": {
+          "min_clearance_lower_mm": 0.02464390086699867,
+          "intervals": 248,
+          "subdivisions": 124,
+          "witness": [
+            "V87_tri_fixed_socket",
+            "TE_pH_temp_three_point_wrist",
+            0.05492064421244208,
+            0.030276743345443412,
+            -3.875,
+            2.0
+          ]
+        }
+      },
+      "scope": "One wrist at a time, with cup and five fixed screen positions; lead routing not included."
+    },
+    "capillary": {
+      "native_sha256": "fb8d9c2ae5750bdf7940620e5a38c2c6bc8f7382ece7eb5c30d5556f5bcd9159",
+      "source_sha256": "12bc36d49f448f8ebfab9cd10aa0a4d3943c5ca1ceab49abd92a097d311aff19",
+      "frame": 3716,
+      "stats": {
+        "3716:0": {
+          "min_clearance_lower_mm": 0.0318318926816258,
+          "intervals": 124,
+          "subdivisions": 0,
+          "witness": [
+            "S_capillary_tip_bolt",
+            "S_capillary_tip_nut",
+            0.0944318926816258,
+            0.0626,
+            0.0,
+            0.6875
+          ]
+        },
+        "3716:15": {
+          "min_clearance_lower_mm": 0.0318318926816258,
+          "intervals": 124,
+          "subdivisions": 0,
+          "witness": [
+            "S_capillary_tip_bolt",
+            "S_capillary_tip_nut",
+            0.0944318926816258,
+            0.0626,
+            0.0,
+            0.6875
+          ]
+        },
+        "3716:30": {
+          "min_clearance_lower_mm": 0.0318318926816258,
+          "intervals": 124,
+          "subdivisions": 0,
+          "witness": [
+            "S_capillary_tip_bolt",
+            "S_capillary_tip_nut",
+            0.0944318926816258,
+            0.0626,
+            0.0,
+            0.6875
+          ]
+        },
+        "3716:45": {
+          "min_clearance_lower_mm": 0.0318318926816258,
+          "intervals": 124,
+          "subdivisions": 0,
+          "witness": [
+            "S_capillary_tip_bolt",
+            "S_capillary_tip_nut",
+            0.0944318926816258,
+            0.0626,
+            0.0,
+            0.6875
+          ]
+        },
+        "3716:60": {
+          "min_clearance_lower_mm": 0.0318318926816258,
+          "intervals": 124,
+          "subdivisions": 0,
+          "witness": [
+            "S_capillary_tip_bolt",
+            "S_capillary_tip_nut",
+            0.0944318926816258,
+            0.0626,
+            0.0,
+            0.6875
+          ]
+        }
+      },
+      "scope": "One wrist at a time, with cup and five fixed screen positions; lead routing not included."
+    }
+  }
+}

@@ -16,6 +16,13 @@ CONTRACT = json.loads(
 EXPECT = CONTRACT["expect"]
 
 
+def _select(root: Path, spec: dict) -> Path:
+    declaration = root / "models/lab-station/model-spec.json"
+    declaration.parent.mkdir(parents=True, exist_ok=True)
+    declaration.write_text(json.dumps(spec))
+    return declaration
+
+
 def _import_doc(stls: int, project: bool = True) -> dict:
     row = {"path": "x", "sha256": "0" * 64, "bytes": 1}
     return {"stls": [row] * stls, "project_3mf": row if project else None, "skipped": []}
@@ -117,6 +124,7 @@ async def test_real_session_rejects_native_provenance_before_submitting(monkeypa
         "spec": {"source": {"root_dir": "models/selected"}},
         "native": {"available": False},
     }
+    _select(tmp_path, selected["spec"])
     monkeypatch.setattr(real, "Client", lambda _: Context())
     monkeypatch.setattr(real, "_selected_contract", AsyncMock(return_value=selected))
     monkeypatch.setattr(gate, "check_deliverable", lambda *_: [])
@@ -192,6 +200,7 @@ async def test_current_gate_counts_verified_parts_after_a_catalog_change(tmp_pat
         },
     }
     contract = {"selection": "current", "expect": {"plates": 1}}
+    declaration = _select(tmp_path, selected)
 
     async def read():
         return {
@@ -203,6 +212,14 @@ async def test_current_gate_counts_verified_parts_after_a_catalog_change(tmp_pat
     initial = await read()
     resolved = real._verified_delivery(tmp_path, {**contract, "spec": selected, "native": initial})
     assert resolved["expect"] == {"plates": 1, "stl_count": 2, "geometry_checked": 2}
+
+    _select(tmp_path, {**selected, "name": "new-local-selection"})
+    with pytest.raises(gate.GateError, match="local current model"):
+        real._verified_delivery(tmp_path, {**contract, "spec": selected, "native": initial})
+    declaration.unlink()
+    with pytest.raises(gate.GateError, match="local current model"):
+        real._verified_delivery(tmp_path, {**contract, "spec": selected, "native": initial})
+    _select(tmp_path, selected)
 
     part = "STL/列印零件/c.stl"
     (root / part).write_bytes(b"new real part")
@@ -258,6 +275,7 @@ async def test_current_workstation_gate_rejects_stale_evidence_even_with_updated
         (ROOT / "scripts/verify/contracts/design_pipeline_current.json").read_text()
     )
     selected = json.loads((ROOT / "models/lab-station/model-spec.json").read_text())
+    _select(tmp_path, selected)
     relative = Path(selected["source"]["root_dir"])
     delivery = tmp_path / relative
     shutil.copytree(ROOT / relative, delivery)

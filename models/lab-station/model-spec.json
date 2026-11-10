@@ -1,10 +1,10 @@
 {
   "spec_version": "1",
-  "name": "lab-station-v92",
+  "name": "lab-station-ec78-capillary-wrist-relief",
   "source": {
-    "root_dir": "models/lab-station-v92",
-    "stl_glob": "STL-整機76件/*.stl",
-    "project_3mf": "P2S-PLA-76件單盤-已切片-v92.3mf"
+    "root_dir": "models/lab-station-ec78-wrist-relief",
+    "stl_glob": "STL-78件/*.stl",
+    "project_3mf": "EC78-P2S-PLA-78件-毛細管腕叉斜面.3mf"
   },
   "print_target": {
     "printer": "bambu-p2s",

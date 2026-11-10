@@ -1,0 +1,613 @@
+{
+  "build_volume": {
+    "maximum_mm": [
+      256.0,
+      256.0,
+      256.0
+    ],
+    "minimum_mm": [
+      0.0,
+      0.0,
+      0.0
+    ]
+  },
+  "passed": true,
+  "plates": [
+    {
+      "bed_brim_paths": 28657,
+      "bed_contact_paths": 47242,
+      "bed_support_paths": 4741,
+      "brim_paths": 28657,
+      "gcode": "Metadata/plate_1.gcode",
+      "gcode_sha256": "a5a6800ce473c5b68879de49c0963d71eb91099dda96a2683f0a324a122e9bf6",
+      "maximum_arc_radius_disagreement_mm": 0.0,
+      "maximum_mm": [
+        253.558,
+        254.0,
+        230.0
+      ],
+      "minimum_mm": [
+        1.9420000000000002,
+        1.936,
+        0.0
+      ],
+      "objects": [
+        {
+          "bed_contact_paths": 1611,
+          "name": "LS_FIT_chassis",
+          "object_id": 8,
+          "paths": 822232
+        },
+        {
+          "bed_contact_paths": 2700,
+          "name": "LS_FIT_lcd_back",
+          "object_id": 12,
+          "paths": 304311
+        },
+        {
+          "bed_contact_paths": 564,
+          "name": "LS_FIT_lcd_front",
+          "object_id": 16,
+          "paths": 109575
+        },
+        {
+          "bed_contact_paths": 1203,
+          "name": "LS_FIT_lid",
+          "object_id": 20,
+          "paths": 413324
+        },
+        {
+          "bed_contact_paths": 875,
+          "name": "LS_FIT_sample_tray",
+          "object_id": 24,
+          "paths": 375307
+        },
+        {
+          "bed_contact_paths": 385,
+          "name": "LS_FIT_spill_dish",
+          "object_id": 28,
+          "paths": 60798
+        },
+        {
+          "bed_contact_paths": 404,
+          "name": "LS_ROUTE_capillary_lower",
+          "object_id": 32,
+          "paths": 2459
+        },
+        {
+          "bed_contact_paths": 403,
+          "name": "LS_ROUTE_capillary_upper",
+          "object_id": 36,
+          "paths": 2501
+        },
+        {
+          "bed_contact_paths": 370,
+          "name": "LS_ROUTE_pH_temp_lower",
+          "object_id": 40,
+          "paths": 2351
+        },
+        {
+          "bed_contact_paths": 678,
+          "name": "LS_ROUTE_pH_temp_upper",
+          "object_id": 44,
+          "paths": 4250
+        },
+        {
+          "bed_contact_paths": 201,
+          "name": "RH_-101_thumb_knob",
+          "object_id": 48,
+          "paths": 4163
+        },
+        {
+          "bed_contact_paths": 673,
+          "name": "RH_-75_clip",
+          "object_id": 52,
+          "paths": 2076
+        },
+        {
+          "bed_contact_paths": 468,
+          "name": "RH_-75_pin",
+          "object_id": 56,
+          "paths": 18531
+        },
+        {
+          "bed_contact_paths": 203,
+          "name": "RH_101_thumb_knob",
+          "object_id": 60,
+          "paths": 4188
+        },
+        {
+          "bed_contact_paths": 635,
+          "name": "RH_75_clip",
+          "object_id": 64,
+          "paths": 2038
+        },
+        {
+          "bed_contact_paths": 425,
+          "name": "RH_75_pin",
+          "object_id": 68,
+          "paths": 18485
+        },
+        {
+          "bed_contact_paths": 310,
+          "name": "RH_rear_cover",
+          "object_id": 72,
+          "paths": 78962
+        },
+        {
+          "bed_contact_paths": 685,
+          "name": "S_capillary_base",
+          "object_id": 76,
+          "paths": 115207
+        },
+        {
+          "bed_contact_paths": 235,
+          "name": "S_capillary_clamp_cap",
+          "object_id": 80,
+          "paths": 23141
+        },
+        {
+          "bed_contact_paths": 498,
+          "name": "S_capillary_clamp_liner_0",
+          "object_id": 84,
+          "paths": 8368
+        },
+        {
+          "bed_contact_paths": 577,
+          "name": "S_capillary_clamp_liner_1",
+          "object_id": 88,
+          "paths": 8460
+        },
+        {
+          "bed_contact_paths": 683,
+          "name": "S_capillary_follower_shoulder_clip",
+          "object_id": 92,
+          "paths": 2088
+        },
+        {
+          "bed_contact_paths": 407,
+          "name": "S_capillary_follower_shoulder_pin",
+          "object_id": 96,
+          "paths": 26912
+        },
+        {
+          "bed_contact_paths": 425,
+          "name": "S_capillary_shoulder_knob",
+          "object_id": 100,
+          "paths": 13347
+        },
+        {
+          "bed_contact_paths": 1381,
+          "name": "S_capillary_tip_knob",
+          "object_id": 104,
+          "paths": 20485
+        },
+        {
+          "bed_contact_paths": 689,
+          "name": "S_pH_temp_base",
+          "object_id": 108,
+          "paths": 117267
+        },
+        {
+          "bed_contact_paths": 680,
+          "name": "S_pH_temp_follower_shoulder_clip",
+          "object_id": 112,
+          "paths": 2085
+        },
+        {
+          "bed_contact_paths": 457,
+          "name": "S_pH_temp_follower_shoulder_pin",
+          "object_id": 116,
+          "paths": 26765
+        },
+        {
+          "bed_contact_paths": 296,
+          "name": "S_pH_temp_shoulder_knob",
+          "object_id": 120,
+          "paths": 13300
+        },
+        {
+          "bed_contact_paths": 1288,
+          "name": "S_pH_temp_tip_knob",
+          "object_id": 124,
+          "paths": 20247
+        },
+        {
+          "bed_contact_paths": 271,
+          "name": "TE_capillary_A_knob",
+          "object_id": 128,
+          "paths": 10080
+        },
+        {
+          "bed_contact_paths": 716,
+          "name": "TE_capillary_B_clip",
+          "object_id": 132,
+          "paths": 2121
+        },
+        {
+          "bed_contact_paths": 481,
+          "name": "TE_capillary_B_pin",
+          "object_id": 136,
+          "paths": 16386
+        },
+        {
+          "bed_contact_paths": 714,
+          "name": "TE_capillary_C_clip",
+          "object_id": 140,
+          "paths": 2109
+        },
+        {
+          "bed_contact_paths": 472,
+          "name": "TE_capillary_C_pin",
+          "object_id": 144,
+          "paths": 18481
+        },
+        {
+          "bed_contact_paths": 669,
+          "name": "TE_capillary_D_clip",
+          "object_id": 148,
+          "paths": 2069
+        },
+        {
+          "bed_contact_paths": 185,
+          "name": "TE_capillary_D_pin",
+          "object_id": 152,
+          "paths": 15819
+        },
+        {
+          "bed_contact_paths": 342,
+          "name": "TE_capillary_P_knob",
+          "object_id": 156,
+          "paths": 10661
+        },
+        {
+          "bed_contact_paths": 712,
+          "name": "TE_capillary_R_clip",
+          "object_id": 160,
+          "paths": 2108
+        },
+        {
+          "bed_contact_paths": 457,
+          "name": "TE_capillary_R_pin",
+          "object_id": 164,
+          "paths": 26962
+        },
+        {
+          "bed_contact_paths": 2809,
+          "name": "TE_capillary_three_point_elbow",
+          "object_id": 168,
+          "paths": 99539
+        },
+        {
+          "bed_contact_paths": 169,
+          "name": "TE_capillary_three_point_wrist",
+          "object_id": 172,
+          "paths": 43191
+        },
+        {
+          "bed_contact_paths": 310,
+          "name": "TE_pH_temp_A_knob",
+          "object_id": 176,
+          "paths": 10434
+        },
+        {
+          "bed_contact_paths": 698,
+          "name": "TE_pH_temp_B_clip",
+          "object_id": 180,
+          "paths": 2103
+        },
+        {
+          "bed_contact_paths": 546,
+          "name": "TE_pH_temp_B_pin",
+          "object_id": 184,
+          "paths": 16338
+        },
+        {
+          "bed_contact_paths": 684,
+          "name": "TE_pH_temp_C_clip",
+          "object_id": 188,
+          "paths": 2089
+        },
+        {
+          "bed_contact_paths": 547,
+          "name": "TE_pH_temp_C_pin",
+          "object_id": 192,
+          "paths": 18427
+        },
+        {
+          "bed_contact_paths": 632,
+          "name": "TE_pH_temp_D_clip",
+          "object_id": 196,
+          "paths": 2037
+        },
+        {
+          "bed_contact_paths": 190,
+          "name": "TE_pH_temp_D_pin",
+          "object_id": 200,
+          "paths": 15794
+        },
+        {
+          "bed_contact_paths": 280,
+          "name": "TE_pH_temp_P_knob",
+          "object_id": 204,
+          "paths": 10445
+        },
+        {
+          "bed_contact_paths": 695,
+          "name": "TE_pH_temp_R_clip",
+          "object_id": 208,
+          "paths": 2089
+        },
+        {
+          "bed_contact_paths": 584,
+          "name": "TE_pH_temp_R_pin",
+          "object_id": 212,
+          "paths": 26896
+        },
+        {
+          "bed_contact_paths": 2810,
+          "name": "TE_pH_temp_three_point_elbow",
+          "object_id": 216,
+          "paths": 99132
+        },
+        {
+          "bed_contact_paths": 746,
+          "name": "TE_pH_temp_three_point_wrist",
+          "object_id": 220,
+          "paths": 64886
+        },
+        {
+          "bed_contact_paths": 843,
+          "name": "V84_soft_liner_12_01",
+          "object_id": 224,
+          "paths": 12930
+        },
+        {
+          "bed_contact_paths": 848,
+          "name": "V84_soft_liner_12_02",
+          "object_id": 228,
+          "paths": 12935
+        },
+        {
+          "bed_contact_paths": 711,
+          "name": "V84_soft_liner_6",
+          "object_id": 232,
+          "paths": 12078
+        },
+        {
+          "bed_contact_paths": 838,
+          "name": "V85_snap_module_12_01",
+          "object_id": 236,
+          "paths": 27316
+        },
+        {
+          "bed_contact_paths": 492,
+          "name": "V85_EC_module",
+          "object_id": 240,
+          "paths": 24330
+        },
+        {
+          "bed_contact_paths": 989,
+          "name": "V85_snap_module_6",
+          "object_id": 244,
+          "paths": 35543
+        },
+        {
+          "bed_contact_paths": 255,
+          "name": "V87_cap_cartridge",
+          "object_id": 248,
+          "paths": 28243
+        },
+        {
+          "bed_contact_paths": 204,
+          "name": "V87_cap_fixed_socket",
+          "object_id": 252,
+          "paths": 19892
+        },
+        {
+          "bed_contact_paths": 258,
+          "name": "V87_tri_cartridge",
+          "object_id": 256,
+          "paths": 21906
+        },
+        {
+          "bed_contact_paths": 169,
+          "name": "V87_tri_fixed_socket",
+          "object_id": 260,
+          "paths": 22630
+        },
+        {
+          "bed_contact_paths": 167,
+          "name": "V89_KEYED_DISK__01",
+          "object_id": 264,
+          "paths": 6017
+        },
+        {
+          "bed_contact_paths": 167,
+          "name": "V89_KEYED_DISK__02",
+          "object_id": 268,
+          "paths": 6028
+        },
+        {
+          "bed_contact_paths": 167,
+          "name": "V89_KEYED_DISK__03",
+          "object_id": 272,
+          "paths": 6017
+        },
+        {
+          "bed_contact_paths": 167,
+          "name": "V89_KEYED_DISK__04",
+          "object_id": 276,
+          "paths": 6028
+        },
+        {
+          "bed_contact_paths": 147,
+          "name": "V89_LINK150__01",
+          "object_id": 280,
+          "paths": 47125
+        },
+        {
+          "bed_contact_paths": 217,
+          "name": "V89_LINK150__02",
+          "object_id": 284,
+          "paths": 50220
+        },
+        {
+          "bed_contact_paths": 164,
+          "name": "V89_LINK150__03",
+          "object_id": 288,
+          "paths": 50167
+        },
+        {
+          "bed_contact_paths": 215,
+          "name": "V89_LINK150__04",
+          "object_id": 292,
+          "paths": 47193
+        },
+        {
+          "bed_contact_paths": 208,
+          "name": "V89_LINK150__05",
+          "object_id": 296,
+          "paths": 47186
+        },
+        {
+          "bed_contact_paths": 147,
+          "name": "V89_LINK150__06",
+          "object_id": 300,
+          "paths": 47125
+        },
+        {
+          "bed_contact_paths": 188,
+          "name": "V89_LINK150__07",
+          "object_id": 304,
+          "paths": 50191
+        },
+        {
+          "bed_contact_paths": 187,
+          "name": "V89_LINK150__08",
+          "object_id": 308,
+          "paths": 47165
+        },
+        {
+          "bed_contact_paths": 1123,
+          "name": "CANDIDATE_EC_upper_clip",
+          "object_id": 309,
+          "paths": 8179
+        },
+        {
+          "bed_contact_paths": 1243,
+          "name": "CANDIDATE_EC_lower_clip",
+          "object_id": 310,
+          "paths": 11021
+        }
+      ],
+      "outside_paths": 0,
+      "passed": true,
+      "path_count": 3790884,
+      "print_profile": {
+        "brim_mm": 3.0,
+        "layer_height_mm": 0.2,
+        "material": "PLA",
+        "nozzle_diameter_mm": 0.4,
+        "printer_model": "Bambu Lab P2S",
+        "support": true
+      },
+      "roles": [
+        {
+          "bed_contact_paths": 3961,
+          "paths": 3961,
+          "role": "Bottom surface",
+          "xy_length_mm": 32150.76689240295
+        },
+        {
+          "bed_contact_paths": 0,
+          "paths": 26486,
+          "role": "Bridge",
+          "xy_length_mm": 185453.16335512957
+        },
+        {
+          "bed_contact_paths": 28657,
+          "paths": 28657,
+          "role": "Brim",
+          "xy_length_mm": 25399.63729450465
+        },
+        {
+          "bed_contact_paths": 0,
+          "paths": 43885,
+          "role": "Floating vertical shell",
+          "xy_length_mm": 113764.56757102236
+        },
+        {
+          "bed_contact_paths": 856,
+          "paths": 83132,
+          "role": "Gap infill",
+          "xy_length_mm": 302630.91131485126
+        },
+        {
+          "bed_contact_paths": 4655,
+          "paths": 645900,
+          "role": "Inner wall",
+          "xy_length_mm": 4716864.907374824
+        },
+        {
+          "bed_contact_paths": 0,
+          "paths": 175042,
+          "role": "Internal solid infill",
+          "xy_length_mm": 638978.1764182751
+        },
+        {
+          "bed_contact_paths": 4372,
+          "paths": 500334,
+          "role": "Outer wall",
+          "xy_length_mm": 2552813.058118659
+        },
+        {
+          "bed_contact_paths": 0,
+          "paths": 12061,
+          "role": "Overhang wall",
+          "xy_length_mm": 20142.170604538147
+        },
+        {
+          "bed_contact_paths": 0,
+          "paths": 1790542,
+          "role": "Sparse infill",
+          "xy_length_mm": 1466368.2727979138
+        },
+        {
+          "bed_contact_paths": 3648,
+          "paths": 399665,
+          "role": "Support",
+          "xy_length_mm": 4541811.046843009
+        },
+        {
+          "bed_contact_paths": 655,
+          "paths": 51900,
+          "role": "Support interface",
+          "xy_length_mm": 177112.18507534266
+        },
+        {
+          "bed_contact_paths": 438,
+          "paths": 12118,
+          "role": "Support transition",
+          "xy_length_mm": 37676.17476027128
+        },
+        {
+          "bed_contact_paths": 0,
+          "paths": 17201,
+          "role": "Top surface",
+          "xy_length_mm": 144855.76544740814
+        }
+      ],
+      "support_paths": 463683,
+      "unassigned_paths": 0,
+      "unknown_object_ids": [],
+      "violations": []
+    }
+  ],
+  "scope": "commanded bead envelopes and named bed-contact paths; not measured adhesion, assembly or load acceptance",
+  "source": {
+    "path": "P2S-PLA-78件-毛細管腕叉斜面-送切片-P2S-PLA.3mf",
+    "sha256": "e886de7bc369b2988955b0b809b8c259d71972178d19c52806c9395b9e6cd75d",
+    "size_bytes": 32699551
+  }
+}

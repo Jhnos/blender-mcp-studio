@@ -1,0 +1,35 @@
+{
+  "native_sha256": "fb8d9c2ae5750bdf7940620e5a38c2c6bc8f7382ece7eb5c30d5556f5bcd9159",
+  "pose_recipe_sha256": "44269aa1fdb796df4896a636ea4ddcad8261394e6942388cd7a020182032b10b",
+  "cases": {
+    "腕端-退齒前": {
+      "native_sha256": "fb8d9c2ae5750bdf7940620e5a38c2c6bc8f7382ece7eb5c30d5556f5bcd9159",
+      "frame": 3716.0,
+      "screen_deg": 60.0,
+      "angle_deg": 0.0,
+      "release_mm": 0.0,
+      "preview_sha256": "645683b420f23ba97ce4fa28401f12beed9ac95f2c80649b5ed796c7c3a34af1",
+      "matrix_delta_mm": 1.7970800392674846e-05,
+      "curve_delta_mm": 1.501804212011848e-05,
+      "overlap_mm3": 0.0,
+      "tested_hose_surface_visible": true
+    },
+    "腕端-退齒2mm": {
+      "native_sha256": "fb8d9c2ae5750bdf7940620e5a38c2c6bc8f7382ece7eb5c30d5556f5bcd9159",
+      "frame": 3716.0,
+      "screen_deg": 60.0,
+      "angle_deg": 0.0,
+      "release_mm": 2.0,
+      "preview_sha256": "49e45e4a553450d58d868ec9d5fb0757f4e00d2add3c55da039ba068ee527b91",
+      "matrix_delta_mm": 2.0831823341893596e-05,
+      "curve_delta_mm": 1.4888307021010405e-05,
+      "overlap_mm3": 5.713534753387565,
+      "tested_hose_surface_visible": true
+    }
+  },
+  "overall": {
+    "frame": 2372,
+    "screen_deg": 60.0,
+    "preview_sha256": "3ea2d757d787e79c18c3c41a5cd7e71d1200ca9aadb4d46c8689f35a0e57657f"
+  }
+}

@@ -43,6 +43,8 @@ from scripts.verify import design_gate_checks as checks  # noqa: E402
 from scripts.verify import design_gate_negatives as negatives  # noqa: E402
 from scripts.verify.lab_station_delivery_checks import check_delivery  # noqa: E402
 from scripts.verify.mcp_verify_real import TRANSPORT_ERRORS, default_mcp_url  # noqa: E402
+from src.core.domain.model_spec import ModelSpecError  # noqa: E402
+from src.infrastructure.config_loader import load_selected_model_spec  # noqa: E402
 from src.infrastructure.narrowing import as_mapping, as_sequence  # noqa: E402
 from src.infrastructure.tools_config import load_tools_config  # noqa: E402
 
@@ -226,9 +228,16 @@ async def _selected_contract(client: Client[Any], contract: Mapping[str, Any]) -
 def _verified_delivery(root: Path, contract: Mapping[str, Any]) -> Mapping[str, Any]:
     """Use one independently verified source for both current design gates."""
     spec = _as_object(contract["spec"], "spec")
+    current = contract.get("selection") == "current"
+    if current:
+        try:
+            declared = load_selected_model_spec(root)
+        except ModelSpecError as exc:
+            raise checks.GateError(f"cannot read the local current model: {exc}") from exc
+        if declared != spec:
+            raise checks.GateError("public selection disagrees with the local current model")
     source = _as_object(spec.get("source"), "source")
     failures = checks.check_deliverable(root, str(source["root_dir"]))
-    current = contract.get("selection") == "current"
     native = contract.get("native")
     if current:
         failures += checks.check_native_source(root, spec, native)
