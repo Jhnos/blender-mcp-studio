@@ -84,7 +84,10 @@
 - PETG 負向對照只走「不在目錄」路徑；bundle `compatible_printers` 拒絕只有單元測試，沒有真機閘門。
 - `src/core/use_cases/design_pipeline.py` 379/380 行，下次加功能前先拆檔。
 - OrcaSlicer 沒有刀路檢查：要支援，得另寫一個讀 `;TYPE:`／`;WIDTH:`／`;HEIGHT:` 的解析器。
-- 部署前產生的舊 run（例如 2026-11-09 的 `eefae8bb…`、`4fa397e7…`）各有 1 個 log 含主機路徑，而且可以下載。要不要清掉，等使用者決定。
+- 2026-11-10 已處理（使用者裁決：移到垃圾桶）：部署前的 56 個舊 run 共 4.5 GB，其中 31 個的 log 含主機路徑。全部從 `data/runs` 移到 `~/.Trash/blender-mcp-runs-before-V01.0W-20261110/`，服務已下載不到。
+  - 其中 32 個 run id 被 `docs/tasks/00_INDEX.md` 與 `docs/archive/2026-10-26-resume-history.md` 引用為驗證證據；原始檔在清空垃圾桶前都還在那個資料夾。
+  - 復原：`mv ~/.Trash/blender-mcp-runs-before-V01.0W-20261110/* data/runs/`。
+  - 處理後 `data/runs` 剩 5 個 run，含主機路徑的檔案數為 0。
 - 同一個 repo 有兩條產品線共用版號空間（本專案和 `codex/universal-room`）。之後 bump 版號前，先跑 `git tag -l` 確認沒有撞號。
 
 ### Next step
