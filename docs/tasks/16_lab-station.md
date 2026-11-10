@@ -68,6 +68,8 @@
 
 候選若已存放名目杯和接液盤，請在同一原生檔保存停臂影格，並將取杯收據、碰撞掃掠和預覽綁定該檔。取杯收據的 `cup_source` 須為 `saved_mesh`，以免把夾具的取杯結果當作畫面中的杯位資格。
 
+審查候選時，取杯與 MCP 切片使用同一份明確的候選 ModelSpec。出圖來源和共用 Blender 除了影格與姿態，還須比對檔案雜湊及本次修改的網格指紋。舊場景須被這項比對拒絕；切換後獨立讀回再記錄。維持候選同步與孔位實際刀路為兩項驗收，切片工作完成時仍須檢查孔內的支撐。
+
 ## Screen clamp control contract (2026-10-27)
 
 - Shared immutable clamp values own pitch, axial seating, target tooth angle and passive-pin float. Reuse the existing five-phase motion; do not duplicate its ramps in Blender bindings.

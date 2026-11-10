@@ -1,7 +1,7 @@
 """Revise verified original meshes in their existing 3MF placement; no slicing.
 
 Each named object has one printable mesh and may have named support blockers.
-All meshes use millimetres. Only blockers may have a component translation.
+All meshes use millimetres. Component transforms may translate either part type.
 """
 
 from __future__ import annotations
@@ -83,15 +83,15 @@ class _Part:
 
 def _component_offset(component: ET.Element, subtype: str) -> tuple[float, ...]:
     raw = component.get("transform")
-    if subtype == "normal_part" and raw != _IDENTITY:
-        raise ValueError("plate requires identity component transforms")
+    if subtype == "normal_part" and not raw:
+        raise ValueError("plate requires an explicit normal part component transform")
     transform = tuple(float(v) for v in (raw or _IDENTITY).split())
     if (
         len(transform) != 12
         or transform[:9] != (1, 0, 0, 0, 1, 0, 0, 0, 1)
         or not all(math.isfinite(v) for v in transform)
     ):
-        raise ValueError("plate blocker transform must be a finite translation")
+        raise ValueError("plate component transform must be a finite translation")
     return transform[9:]
 
 

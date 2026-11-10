@@ -148,7 +148,7 @@ def test_invalid_archive_cannot_become_a_revision(fault):
             entries["3D/3dmodel.model"] = b"<model"
         elif fault == "component-transform":
             entries["3D/3dmodel.model"] = entries["3D/3dmodel.model"].replace(
-                b"1 0 0 0 1 0 0 0 1 0 0 0", b"1 0 0 0 1 0 0 0 1 1 0 0"
+                b"1 0 0 0 1 0 0 0 1 0 0 0", b"1 0 0 0.1 1 0 0 0 1 0 0 0"
             )
         elif fault == "dangling-relationship":
             entries["_rels/.rels"] = entries["_rels/.rels"].replace(
@@ -170,6 +170,36 @@ def test_same_layout_compares_all_oriented_surfaces_in_existing_build_frames():
     source = template()
     plate = PlateProject(source, ("lid",), max_bytes=100000)
     assert plate.require_same_layout(source) == {"lid": 0.0}
+
+
+def test_normal_part_translation_is_preserved_by_revision_and_layout_verification():
+    source = template()
+    output = io.BytesIO()
+    with zipfile.ZipFile(io.BytesIO(source)) as old, zipfile.ZipFile(output, "w") as new:
+        for name in old.namelist():
+            data = old.read(name)
+            if name == "3D/3dmodel.model":
+                data = data.replace(
+                    b"1 0 0 0 1 0 0 0 1 0 0 0", b"1 0 0 0 1 0 0 0 1 1.25 -2.5 3.75"
+                ).replace(b"90 80 0", b"88.75 82.5 -3.75")
+            new.writestr(name, data)
+    translated = output.getvalue()
+    plate = PlateProject(translated, ("lid",), max_bytes=100000)
+    assert plate.require_same_layout(source) == {"lid": 0.0}
+    revised = deepcopy(original())
+    revised["vertices"] = [(x, y, z * 1.1) for x, y, z in POINTS]
+    updated, _ = plate.revise({"lid": (original(), revised)})
+    canonical, _ = PlateProject(source, ("lid",), max_bytes=100000).revise(
+        {"lid": (original(), revised)}
+    )
+    assert PlateProject(updated, ("lid",), max_bytes=100000).require_same_layout(canonical) == {
+        "lid": 0.0
+    }
+    with (
+        zipfile.ZipFile(io.BytesIO(translated)) as old,
+        zipfile.ZipFile(io.BytesIO(updated)) as new,
+    ):
+        assert new.read("3D/3dmodel.model") == old.read("3D/3dmodel.model")
 
 
 @pytest.mark.parametrize("fault", ["moved", "disabled", "reversed", "nan-transform"])
