@@ -74,6 +74,8 @@
 
 穿壁管路以所選接頭的管口為起點，使用該接頭和管材要求的直段、外徑上限、彎曲半徑及拆管行程。若原廠圖面只給總長，分別驗內外口最遠位置的包絡，並將管口精確位置和實體試配留為獨立驗收。不同端的直段由共用定長規劃器指定，重擬一段後須與其他兩段及全機動作重新核對。
 
+玻璃若沿原夾持軸滑移，分別核對原襯套的軸向包覆、玻璃與其他零件的干涉、杯口與液面深度、平端管的貼合，以及整條管路的半格掃掠和連續曲率。以朝固定螺栓轉彎及過度滑移作拒絕對照。襯套包覆量和名目杯口淨空各自保留，實際保持力與浸入深度需另驗。
+
 ## Screen clamp control contract (2026-10-27)
 
 - Shared immutable clamp values own pitch, axial seating, target tooth angle and passive-pin float. Reuse the existing five-phase motion; do not duplicate its ramps in Blender bindings.

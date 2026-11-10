@@ -113,7 +113,7 @@ def test_real_ci_checks_cup_extraction_from_the_current_factory_source():
 
 
 def test_cup_extraction_rejects_an_old_source_and_an_incomplete_display_sweep():
-    from scripts.verify.workstation_cup_verify_factory import assess
+    from scripts.verify.workstation_cup_checks import assess
 
     with pytest.raises(ValueError, match="different native model"):
         assess({"native_sha256": "old"}, "current")
@@ -121,10 +121,17 @@ def test_cup_extraction_rejects_an_old_source_and_an_incomplete_display_sweep():
         assess({"native_sha256": "current", "parked": {}, "screen_frames": [{}]}, "current")
 
 
+def test_cup_overlift_control_follows_a_raised_probe_tip():
+    from scripts.verify.workstation_cup_checks import probe_contact_lift_mm
+
+    assert probe_contact_lift_mm(90.0, 99.0) == 12.0
+    assert probe_contact_lift_mm(90.0, 107.0) == 19.0
+
+
 def test_cup_extraction_uses_the_saved_nominal_cup_placement_once():
     import numpy as np
 
-    from scripts.verify import workstation_cup_verify_factory as cup
+    from scripts.verify import workstation_cup_checks as cup
 
     center = np.array((8.0, -165.0))
     floor = 9.0

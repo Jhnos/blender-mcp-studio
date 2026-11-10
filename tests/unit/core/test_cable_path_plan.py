@@ -162,3 +162,15 @@ def test_saved_family_refits_live_anchors_without_searching() -> None:
     ):
         with pytest.raises(ValueError):
             replace(family, **changes)
+
+
+def test_saved_route_family_remains_hashable_after_json_roundtrip() -> None:
+    import json
+    from dataclasses import asdict
+
+    from src.core.planning.cable_path_plan import RouteFamily
+
+    route = candidates(boundary(), RouteSearchSpec(candidate_count=8))[0]
+    family = RouteFamily.from_candidate(route)
+    recovered = RouteFamily(**json.loads(json.dumps(asdict(family))))
+    assert {recovered: route}[family] == route

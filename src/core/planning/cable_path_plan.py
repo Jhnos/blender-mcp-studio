@@ -107,6 +107,8 @@ class RouteFamily:
             )
         ):
             raise ValueError("Family dimensions must be finite and positive")
+        # JSON restores the handle array as a list. Keep saved recipes immutable.
+        object.__setattr__(self, "handles_mm", tuple(self.handles_mm))
 
     @classmethod
     def from_candidate(cls, candidate: RouteCandidate) -> "RouteFamily":
