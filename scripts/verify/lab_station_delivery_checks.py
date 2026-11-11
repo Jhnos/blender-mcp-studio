@@ -5,6 +5,7 @@ import math
 from collections.abc import Mapping
 from pathlib import Path
 
+from scripts.verify.lab_station_render_preflight import review_source_differences
 from scripts.verify.native_pipeline_checks import object_value, rows
 from src.infrastructure.narrowing import as_finite_number
 
@@ -32,9 +33,13 @@ def check_review_replay(
         if frame is None or frame < 1:
             failures.append(f"review replay {name} has an invalid tested frame")
             continue
+        failures.extend(
+            f"review replay {name} differs in {field}"
+            for field in review_source_differences(
+                readback["native_sha256"], readback["frame"], native_sha, frame
+            )
+        )
         comparisons = {
-            "native_sha256": native_sha,
-            "frame": frame,
             "screen_deg": tested["screen_deg"],
             "angle_deg": case["angle_deg"],
             "release_mm": case["release_mm"],

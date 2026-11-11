@@ -68,6 +68,7 @@
 
 - 正式交付來源由 [ModelSpec](../../models/lab-station/model-spec.json) 選定，操作與列印方式見[本檔操作索引](#ec78-r4-操作與列印)。
 - HMI 與 USB 工程候選的具名產物、切片與正反例集中在主專案 `tmp/EC78-維修姿態行程-6CDcEn99/README.md`。同源量測與重跑方式見[工程驗證手冊](../verification/lab-station/15-engineering-playbook.md)。
+- V01.0X.013 將來源檢查接到 [EC78 出圖入口](../../scripts/ec78_review_render.py)。以工程原件確認 r2 混入正式 r4、r4 第 2497 格誤用於第 2025 格連桿圖、625／542 mm 同名 PNG 互換皆在寫檔前被拒。乾淨 checkout 的回歸使用正式 r4 原生檔與 r2／USB 測試替身，重跑指令見[工程驗證手冊](../verification/lab-station/15-engineering-playbook.md)。工程 README 的圖稿來源註記保留在主專案本機。
 
 ### Open failures
 

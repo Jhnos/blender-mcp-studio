@@ -78,6 +78,21 @@ HMI 支柱定位以 Waveshare STEP 的四個 M2.5 金屬座接觸面及 111 × 6
 
 將雙腕操作插入原取杯時間軸後，重新綁定取杯停臂影格。原五段及兩支腕端的整格／半格與各來源逐姿態比對。多案例出圖以各自實際影格驗證，保留舊收據的共用影格讀法。
 
+工作站出圖腳本在呼叫 Blender render 前，用 `lab_station_render_preflight.require_review_source` 比對載入檔的 SHA-256 與 Blender 實際讀回的影格（含子影格）。正式圖的預期原生指紋從目前 ModelSpec 與交付清單取得，預期影格取自對應操作收據。歷史與工程候選使用該候選的具名收據。USB 路線使用 `read_review_input` 核對並讀入同一份控制點資料；625／542 mm 拼圖的兩欄先各對指定路線的出圖收據核對 PNG，再用已核對的位元合成。原生指紋相同、影格相同或 PNG 同名都不足以替代欄位各自的來源核對。
+
+Git 追蹤的出圖入口是 `scripts/ec78_review_render.py`。`links` 從背景 Blender 的實際載入檔與影格讀回，對照正式 r4 連桿圖的第 2025 格動作收據。`usb` 先核對 625／542 mm 各自的原始俯視 PNG 指紋，再交給 Pillow 合成。兩個子命令的 `--check-only` 會執行相同來源檢查並停在寫檔前。
+
+```bash
+blender --background --factory-startup --disable-autoexec "$r4_blend" \
+  --python-exit-code 1 --python scripts/ec78_review_render.py -- \
+  links --frame 2025 --output "$new_output_dir" --check-only
+python -m scripts.ec78_review_render usb --original "$usb_625_png" \
+  --shortened "$usb_542_png" --output "$new_output_png" --check-only
+python -m pytest tests/unit/verification/test_lab_station_render_preflight.py -q --no-cov
+```
+
+最後一條可在乾淨 checkout 重跑三個反例，測試經過同一個出圖入口，並確認錯置時未呼叫渲染或合成。測試使用交付 r4 原生檔、r2 檔案替身，以及兩張 Git 內的 PNG 作為同名圖替身。若本機有工程原件，可將第一條換入 r2 原生檔或改用第 2497 格，並將第二條的兩張同名 PNG 互換，重跑原件反例。
+
 用已動畫的模型出指定姿態圖時，在隔離程序暫停姿態控制的動畫，核對出圖前後的世界座標，保存原生檔的動畫。
 
 約 200 mm 伸距以原底座轉軸到探頭最低點的機身前向投影量測。等高伸縮與等伸距升降以同一原生檔讀回原關節端點及外部剛體干涉，連續路徑須另驗線路、原鬆鎖／退齒及回座。 等高行程須由原關節的實際退齒和回座通道建立，按探頭原網格最低點求另一關節補角；原長軟管隨行時另驗固定端、導夾、格間半徑與淨空。多線沿原導夾隨行時，同時限制總長與導夾分段長，並驗原接點、相鄰切向、自距及全部線對。 等伸距升降追蹤同一組端面頂點，並以原落座公差包絡驗兩臂各自升降與同杯淨空。抗傾覆數位基線採同一 3MF 刀路材料與機箱實際支承面，不把分離托盤當機箱支撐。

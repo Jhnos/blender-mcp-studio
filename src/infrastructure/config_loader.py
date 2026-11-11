@@ -5,14 +5,14 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-import yaml
-
 from src.core.domain.model_spec import ModelSpecError
 from src.infrastructure.narrowing import as_str_keyed_exact
 
 
 def load_yaml(path: str | Path) -> dict[str, object]:
     """Load a YAML file and return as a dict."""
+    import yaml
+
     with open(path, encoding="utf-8") as f:
         return yaml.safe_load(f) or {}
 
