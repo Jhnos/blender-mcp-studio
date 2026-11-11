@@ -11,6 +11,17 @@ import json
 import bpy
 
 
+def mesh_surface_mm(obj: bpy.types.Object) -> dict[str, object]:
+    """Observe the raw local surface without rounding a scaled mathutils Vector."""
+    if obj.type != "MESH":
+        raise ValueError("Surface capture requires a MESH object")
+    obj.data.calc_loop_triangles()
+    return {
+        "vertices": [[float(component) * 1000.0 for component in v.co] for v in obj.data.vertices],
+        "faces": [list(triangle.vertices) for triangle in obj.data.loop_triangles],
+    }
+
+
 def mesh_geometry(obj: bpy.types.Object) -> str | None:
     if obj.type != "MESH":
         return None
