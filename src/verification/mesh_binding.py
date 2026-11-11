@@ -132,24 +132,33 @@ def bind_axis_frame(
     points, faces = parse_closed_surface(original)
     target, target_faces = parse_closed_surface(placed)
     expected = _oriented(target_faces)
+    target_min, target_max = (
+        tuple(bound(axis) for axis in zip(*target, strict=True)) for bound in (min, max)
+    )
     matches = []
     for rotation in _rotations():
         unshifted = MeshFrameBinding(rotation, (0, 0, 0), 0).transform(points)
-        shift = tuple(min(p[i] for p in target) - min(p[i] for p in unshifted) for i in range(3))
-        binding = MeshFrameBinding(rotation, (shift[0], shift[1], shift[2]), 0)
-        mapped = binding.transform(points)
-        if any(
-            abs(max(p[i] for p in mapped) - max(p[i] for p in target)) > _TOLERANCE_MM
-            for i in range(3)
-        ):
-            continue
-        result = _match(mapped, target, faces, target_faces)
-        if result is None:
-            continue
-        indices, maximum = result
-        actual = [(indices[a], indices[b], indices[c]) for a, b, c in faces]
-        if _oriented(actual) == expected:
-            matches.append(MeshFrameBinding(rotation, binding.translation_mm, maximum))
+        axes = tuple(zip(*unshifted, strict=True))
+        lower = tuple(bound - min(axis) for bound, axis in zip(target_min, axes, strict=True))
+        upper = tuple(bound - max(axis) for bound, axis in zip(target_max, axes, strict=True))
+        # Center rounding residuals when anchoring at the minimum uses too much of the budget.
+        centered = tuple((lo + hi) / 2 for lo, hi in zip(lower, upper, strict=True))
+        for shift in dict.fromkeys((lower, centered)):
+            if any(
+                max(abs(value - lo), abs(value - hi)) > _TOLERANCE_MM
+                for value, lo, hi in zip(shift, lower, upper, strict=True)
+            ):
+                continue
+            translation = (shift[0], shift[1], shift[2])
+            mapped = MeshFrameBinding(rotation, translation, 0).transform(points)
+            result = _match(mapped, target, faces, target_faces)
+            if result is None:
+                continue
+            indices, maximum = result
+            actual = [(indices[a], indices[b], indices[c]) for a, b, c in faces]
+            if _oriented(actual) == expected:
+                matches.append(MeshFrameBinding(rotation, translation, maximum))
+                break
     if len(matches) != 1:
         raise ValueError("mesh requires one unique oriented axis frame binding")
     return matches[0]

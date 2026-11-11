@@ -78,6 +78,15 @@ def test_rounding_tolerance_is_bounded_and_geometry_is_unchanged():
         bind_axis_frame(first, other)
 
 
+def test_binding_can_center_rounding_error_between_both_extent_faces():
+    other = target()
+    other["vertices"][3] = (4.999994, 20, 30)
+    other["vertices"][1] = (10.000006, 20, 32)
+    result = bind_axis_frame(source(), other)
+    assert result.translation_mm == (10, 20, 30)
+    assert result.maximum_error_mm == pytest.approx(0.000006)
+
+
 def test_same_frame_surface_guard_rejects_repositioning_and_preserves_rounding_budget():
     from src.verification.mesh_binding import require_same_oriented_surface
 
