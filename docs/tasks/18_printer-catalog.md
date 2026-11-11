@@ -84,10 +84,11 @@
 - PETG 負向對照只走「不在目錄」路徑；bundle `compatible_printers` 拒絕只有單元測試，沒有真機閘門。
 - `src/core/use_cases/design_pipeline.py` 379/380 行，下次加功能前先拆檔。
 - OrcaSlicer 沒有刀路檢查：要支援，得另寫一個讀 `;TYPE:`／`;WIDTH:`／`;HEIGHT:` 的解析器。
-- 2026-11-10 已處理（使用者裁決：移到垃圾桶）：部署前的 56 個舊 run 共 4.5 GB，其中 31 個的 log 含主機路徑。全部從 `data/runs` 移到 `~/.Trash/blender-mcp-runs-before-V01.0W-20261110/`，服務已下載不到。
-  - 其中 32 個 run id 被 `docs/tasks/00_INDEX.md` 與 `docs/archive/2026-10-26-resume-history.md` 引用為驗證證據；原始檔在清空垃圾桶前都還在那個資料夾。
-  - 復原：`mv ~/.Trash/blender-mcp-runs-before-V01.0W-20261110/* data/runs/`。
-  - 處理後 `data/runs` 剩 5 個 run，含主機路徑的檔案數為 0。
+- 部署前的 56 個舊 run（4.5 GB）：
+  - 2026-11-10 依使用者裁決移到垃圾桶。
+  - 2026-11-11 使用者自己把它們搬回 `data/runs`，保留給文件引用的驗證證據；其中 32 個 run id 被 `docs/tasks/00_INDEX.md` 與 `docs/archive/` 的交接歷史引用。
+  - 結果：其中 31 個 run 的 `slicer.log` 等檔案含主機路徑，而且仍可下載。下載需要 Tailscale 身分（`REQUIRE_TAILNET_IDENTITY=1`），所以只有 tailnet 裝置拿得到。
+  - 2026-11-11 復查：部署後新增的 run 中，有 3 個含路徑的是原生 run 的 `native-source/驗證/review-test-poses.json`。`resolve_run_file` 拒絕下載這個檔案（outside the public run files），所以沒有新的外洩。
 - 同一個 repo 有兩條產品線共用版號空間（本專案和 `codex/universal-room`）。之後 bump 版號前，先跑 `git tag -l` 確認沒有撞號。
 
 ### Next step
