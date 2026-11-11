@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -218,14 +219,11 @@ async def test_search_uses_cache_on_second_call(adapter, respx_mock):
 
 
 @pytest.fixture
-def api_client_with_polyhaven():
-    from unittest.mock import AsyncMock, MagicMock
-
+def api_client_with_polyhaven(tmp_path):
     from fastapi.testclient import TestClient
 
     from api.main import create_app
-
-    app = create_app()
+    from tests.e2e.test_mcp_streamable_http import make_fake_runtime
 
     mock_ph = MagicMock()
     mock_ph.search = AsyncMock(
@@ -248,9 +246,21 @@ def api_client_with_polyhaven():
         )
     )
 
-    with TestClient(app) as client:
-        app.state.polyhaven = mock_ph
+    runtime = replace(make_fake_runtime(tmp_path), polyhaven=mock_ph)
+    with TestClient(create_app(runtime=runtime, require_identity=False)) as client:
         yield client, mock_ph
+
+
+@pytest.fixture
+def api_client_without_polyhaven(tmp_path):
+    from fastapi.testclient import TestClient
+
+    from api.main import create_app
+    from tests.e2e.test_mcp_streamable_http import make_fake_runtime
+
+    runtime = replace(make_fake_runtime(tmp_path), polyhaven=None)
+    with TestClient(create_app(runtime=runtime, require_identity=False)) as client:
+        yield client
 
 
 class TestMaterialsEndpoints:
@@ -263,26 +273,14 @@ class TestMaterialsEndpoints:
         assert len(data["results"]) == 1
         assert data["results"][0]["id"] == "forest_slope"
 
-    def test_search_no_polyhaven_returns_503(self):
-        from fastapi.testclient import TestClient
-
-        from api.main import create_app
-
-        app = create_app()
-        with TestClient(app) as client:
-            app.state.polyhaven = None
-            resp = client.get("/api/materials/search")
+    def test_search_no_polyhaven_returns_503(self, api_client_without_polyhaven):
+        resp = api_client_without_polyhaven.get("/api/materials/search")
         assert resp.status_code == 503
 
-    def test_apply_no_polyhaven_returns_503(self):
-        from fastapi.testclient import TestClient
-
-        from api.main import create_app
-
-        app = create_app()
-        with TestClient(app) as client:
-            app.state.polyhaven = None
-            resp = client.post("/api/materials/apply", json={"asset_id": "forest_slope"})
+    def test_apply_no_polyhaven_returns_503(self, api_client_without_polyhaven):
+        resp = api_client_without_polyhaven.post(
+            "/api/materials/apply", json={"asset_id": "forest_slope"}
+        )
         assert resp.status_code == 503
 
     def test_apply_unknown_apply_as_returns_400(self, api_client_with_polyhaven):

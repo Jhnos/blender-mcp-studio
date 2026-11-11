@@ -2,6 +2,10 @@
 
 from __future__ import annotations
 
+import asyncio
+from dataclasses import replace
+from pathlib import Path
+
 import pytest
 
 from src.core.ports.snapshot_store_port import SceneSnapshot, SnapshotList, SnapshotStorePort
@@ -155,21 +159,21 @@ def client_with_mock_store(tmp_path):
 
     from api.main import create_app
     from src.adapters.snapshot.sqlite_snapshot_store import SQLiteSnapshotStore
+    from tests.e2e.test_mcp_streamable_http import make_fake_runtime
 
-    app = create_app()
     snapshot_store = SQLiteSnapshotStore(db_path=tmp_path / "api_test.db")
 
-    # Override lifespan app state directly
     mock_blender = MagicMock()
     mock_blender.connect = AsyncMock()
     mock_blender.disconnect = AsyncMock()
     mock_blender.execute = AsyncMock()
     mock_blender.call_tool = AsyncMock()
 
+    runtime = replace(
+        make_fake_runtime(tmp_path), blender=mock_blender, snapshot_store=snapshot_store
+    )
+    app = create_app(runtime=runtime, require_identity=False)
     with TestClient(app, raise_server_exceptions=True) as client:
-        # Inject snapshot store after startup
-        app.state.snapshot_store = snapshot_store
-        app.state.blender = mock_blender
         yield client, snapshot_store, mock_blender
 
 
@@ -179,6 +183,31 @@ class TestSnapshotEndpoints:
         resp = client.get("/api/snapshots")
         assert resp.status_code == 200
         assert resp.json()["snapshots"] == []
+
+    def test_snapshot_client_leaves_other_runtime_jobs_running(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, request: pytest.FixtureRequest
+    ) -> None:
+        """An HTTP smoke-test startup must not recover jobs owned by another runtime."""
+        from src.adapters.jobs.sqlite_job_store import SQLiteJobStore
+        from src.core.domain.design_run import JobRecord, JobStatus, StageName
+        from tests.e2e.test_mcp_streamable_http import CountingBlender
+
+        job_db = tmp_path / "other-runtime.db"
+        monkeypatch.setenv("DESIGN_JOBS_DB", str(job_db))
+        monkeypatch.setenv("DESIGN_RUNS_DIR", str(tmp_path / "other-runtime-runs"))
+        monkeypatch.setattr(
+            "src.adapters.mcp.factory.build_blender_adapter", lambda **_: CountingBlender()
+        )
+        store = SQLiteJobStore(job_db)
+
+        async def seed() -> JobRecord:
+            job = await store.create("other-runtime-print")
+            return await store.update(job.job_id, status=JobStatus.RUNNING, stage=StageName.PRINT)
+
+        running = asyncio.run(seed())
+        client, _, _ = request.getfixturevalue("client_with_mock_store")
+        assert client.get("/api/snapshots").status_code == 200
+        assert asyncio.run(store.get(running.job_id)) == running
 
     @pytest.mark.asyncio
     async def test_list_snapshots_after_insert(self, client_with_mock_store):
