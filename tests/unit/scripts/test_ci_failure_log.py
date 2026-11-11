@@ -49,7 +49,7 @@ def test_a_failing_gate_leaves_its_whole_output_on_disk(tmp_path: Path) -> None:
     assert str(logs[0].name) in result.stdout, "the FAIL line must say where the log is"
 
 
-def test_a_passing_gate_leaves_nothing_behind(tmp_path: Path) -> None:
+def test_a_passing_static_gate_leaves_nothing_behind(tmp_path: Path) -> None:
     """Without this half, a helper that logs unconditionally would look correct."""
     result = _drive("_run hard 'quiet gate' bash -c 'echo fine'", tmp_path)
 
@@ -63,7 +63,7 @@ def test_real_failure_stops_before_next_scene_mutation(tmp_path: Path) -> None:
     )
     assert result.returncode != 0
     assert "NEXT_SCENE_MUTATION" not in result.stdout
-    assert list(tmp_path.glob("*.log"))
+    assert list(tmp_path.rglob("*.log"))
 
 
 def test_static_failures_still_aggregate(tmp_path: Path) -> None:

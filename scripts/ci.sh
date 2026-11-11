@@ -44,25 +44,36 @@ esac
 
 RED=$'\033[31m'; GRN=$'\033[32m'; YEL=$'\033[33m'; DIM=$'\033[2m'; BLD=$'\033[1m'; RST=$'\033[0m'
 FAILED=()
-# A failure that leaves nothing on disk cannot be diagnosed later. The terminal
-# tail is for whoever is watching; this is for the flake nobody saw.
+# Keep real gate output as it arrives, including successful gate evidence.
 CI_LOG_DIR="${CI_LOG_DIR:-$ROOT/tmp/ci-logs}"
 
 _run() {  # _run <hard|warn> <label> <cmd...>
   local kind="$1" label="$2"; shift 2
-  local out
-  if out="$("$@" 2>&1)"; then
+  local out log="" log_directory slug status=0
+  slug="$(printf '%s' "$label" | tr -cs 'A-Za-z0-9' '-' | tr 'A-Z' 'a-z' | sed 's/-*$//')"
+  if (( REAL_FAIL_FAST )); then
+    if ! mkdir -p "$CI_LOG_DIR" || ! log_directory="$(mktemp -d "$CI_LOG_DIR/$slug.XXXXXXXX")"; then
+      printf '  FAIL %s (could not create a log in %s)\n' "$label" "$CI_LOG_DIR" >&2
+      exit 1
+    fi
+    log="$log_directory/output.log"
+    printf '  START %s (output: %s)\n' "$label" "$log"
+    "$@" > "$log" 2>&1 || status=$?
+  else
+    out="$("$@" 2>&1)" || status=$?
+  fi
+  if (( status == 0 )); then
     printf '  %sPASS%s %s\n' "$GRN" "$RST" "$label"
   elif [[ "$kind" == warn ]]; then
     printf '  %sWARN%s %s %s(non-blocking debt)%s\n' "$YEL" "$RST" "$label" "$DIM" "$RST"
   else
-    local slug log
-    slug="$(printf '%s' "$label" | tr -cs 'A-Za-z0-9' '-' | tr 'A-Z' 'a-z' | sed 's/-*$//')"
-    mkdir -p "$CI_LOG_DIR"
-    log="$CI_LOG_DIR/$(date +%Y%m%d-%H%M%S)-$slug.log"
-    printf '%s\n' "$out" > "$log"
+    if [[ -z "$log" ]]; then
+      mkdir -p "$CI_LOG_DIR"
+      log="$CI_LOG_DIR/$(date +%Y%m%d-%H%M%S)-$slug.log"
+      printf '%s\n' "$out" > "$log"
+    fi
     printf '  %sFAIL%s %s %s(full output: %s)%s\n' "$RED" "$RST" "$label" "$DIM" "$log" "$RST"
-    printf '%s\n' "$out" | tail -15 | sed 's/^/       /'
+    tail -15 "$log" | sed 's/^/       /'
     FAILED+=("$label")
     if (( ${REAL_FAIL_FAST:-0} )); then
       printf '  Stopped: real gates share one scene. Blender work may still be running; drain it before restarting.\n'

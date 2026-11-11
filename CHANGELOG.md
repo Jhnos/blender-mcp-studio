@@ -5,6 +5,10 @@
 
 ## [Unreleased]
 
+### V01.0X.00L — 真機 CI 逐關日誌
+
+- T3／T4 各關開始時輸出日誌路徑，保留通過及失敗的 stdout 與 stderr，維持共享 Blender 的失敗即停止行為。
+
 ### V01.0X.00K — EC78 r4 操作指引
 
 - 從共用 ModelSpec 說明連到 r4 原生檔、八段操作時間軸、同影格圖與 P2S 單盤。記錄 Claude Code 從共用 MCP 讀回正式送件與切片報告的結果。

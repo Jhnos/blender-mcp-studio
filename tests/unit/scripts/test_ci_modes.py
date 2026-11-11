@@ -16,6 +16,8 @@ def drive(
     executable = tmp_path / "stub"
     executable.write_text(
         '#!/bin/bash\nprintf "%s\\n" "$*" >> "$TRACE"\n'
+        'printf "gate output: %s\\n" "$*"\n'
+        'printf "gate diagnostics\\n" >&2\n'
         'if [[ -n "$FAIL_GATE" && "$*" == *"$FAIL_GATE"* ]]; then exit 1; fi\n'
     )
     executable.chmod(0o755)
@@ -64,6 +66,27 @@ def test_all_runs_core_before_chat(tmp_path: Path) -> None:
     assert result.returncode == 0, result.stdout
     assert trace.index("design_pipeline_current.json") < trace.index("mcp_verify_chat.py")
     assert trace.count("mcp_verify_chat.py") == 1
+
+
+@pytest.mark.parametrize("fail", ["", "mcp_verify_real.py"])
+def test_real_gate_announces_and_retains_its_output(tmp_path: Path, fail: str) -> None:
+    result, _ = drive(tmp_path, "--real", fail=fail)
+    logs = list((tmp_path / "logs").rglob("*.log"))
+    logs = [log for log in logs if "mcp-protocol-nonce-independent-oracle" in log.as_posix()]
+    assert len(logs) == 1
+    log = logs[0]
+    contents = log.read_text()
+    assert "gate output: scripts/verify/mcp_verify_real.py" in contents
+    assert "gate diagnostics" in contents
+    start = next(line for line in result.stdout.splitlines() if "START MCP protocol" in line)
+    assert str(log) in start
+    outcome = "FAIL" if fail else "PASS"
+    end = next(
+        line for line in result.stdout.splitlines() if outcome in line and "MCP protocol" in line
+    )
+    assert result.stdout.index(start) < result.stdout.index(end)
+    if fail:
+        assert str(log) in end
 
 
 def test_unknown_option_fails_before_running_checks(tmp_path: Path) -> None:

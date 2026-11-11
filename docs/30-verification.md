@@ -30,6 +30,8 @@ T1/T2仍彙整全部失敗；只要已有硬失敗，核心／完整模式在接
 
 真機階段任何 hard gate 失敗後立即停止，避免後續操作污染共享場景。逾時不代表 Blender 已停止；重跑前必須確認先前工作已排空。靜態與單元階段仍彙整失敗。
 
+T3 與 T4 每關開始時會印出 `START` 及該關的輸出路徑。可在執行中查看該檔，通過或失敗後都保留。預設位置為 `tmp/ci-logs`，可用 `CI_LOG_DIR` 指定其他位置。
+
 ### T3 裡的產出物閘門（2026-09-08 起）
 
 原生場景生命週期由 `scripts/verify/native_session_verify_factory.py --all` 驗證合成輸入及同一 ArtifactCatalog 選定來源。每個案例使用獨立 factory／background／disable-autoexec 程序，禁止載入 MCP addon；執行檔讀取已安裝 Blender LaunchAgent 的 ProgramArguments，跨平台單跑可明確傳入 `--blender`。輸出使用新的 UUID 目錄，亦可傳入尚不存在的 `--work`。
