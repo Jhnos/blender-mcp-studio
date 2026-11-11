@@ -489,3 +489,38 @@ def test_review_replay_rejects_neutral_render_used_for_negative_wrist_test() -> 
         ("curve_delta_mm", float("nan")),
     ):
         assert any(field in error for error in check({**rendered_case, field: stale}))
+
+
+def test_review_replay_checks_each_case_at_its_saved_timeline_frame() -> None:
+    from scripts.verify.lab_station_delivery_checks import check_review_replay
+
+    native_sha, preview_sha = "a" * 64, "b" * 64
+    cases = {
+        "capillary": {"frame": 1500, "angle_deg": -15.0, "release_mm": 0.0},
+        "triad": {"frame": 2237, "angle_deg": 15.0, "release_mm": 0.0},
+    }
+    tested = {"native_sha256": native_sha, "screen_deg": 60, "cases": cases}
+    observations = {
+        name: {
+            **case,
+            "screen_deg": 60,
+            "native_sha256": native_sha,
+            "preview_sha256": preview_sha,
+            "matrix_delta_mm": 0,
+            "curve_delta_mm": 0,
+        }
+        for name, case in cases.items()
+    }
+    rendered = {"native_sha256": native_sha, "cases": observations}
+    images = {f"{name}.png": preview_sha for name in cases}
+    assert check_review_replay(tested, rendered, native_sha, images) == []
+
+    observations["triad"]["frame"] = 1500
+    assert check_review_replay(tested, rendered, native_sha, images) == [
+        "review replay triad differs in frame"
+    ]
+
+    cases["triad"].pop("frame")
+    assert check_review_replay(tested, rendered, native_sha, images) == [
+        "review replay triad has an invalid tested frame"
+    ]

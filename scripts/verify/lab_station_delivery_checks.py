@@ -28,9 +28,13 @@ def check_review_replay(
     for name, raw_case in tested_cases.items():
         case = object_value(raw_case)
         readback = object_value(rendered_cases[name])
+        frame = as_finite_number(case.get("frame", tested.get("frame")))
+        if frame is None or frame < 1:
+            failures.append(f"review replay {name} has an invalid tested frame")
+            continue
         comparisons = {
             "native_sha256": native_sha,
-            "frame": tested["frame"],
+            "frame": frame,
             "screen_deg": tested["screen_deg"],
             "angle_deg": case["angle_deg"],
             "release_mm": case["release_mm"],
