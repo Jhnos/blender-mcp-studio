@@ -13,3 +13,5 @@
 發布目錄內的 README、日誌與雜湊是當時的交付快照；其中「尚未整合／驗證」等敘述保留當時語境，不代表目前服務狀態。目前整合與驗證結果只讀 [任務索引](../../docs/tasks/00_INDEX.md)，不改寫原交付證據。
 
 連線見 [MCP 客戶端](../../docs/11-mcp-clients.md)，執行與判準見 [驗證 SSOT](../../docs/30-verification.md)。
+
+已發布 r4 的 Blender 時間軸、對照圖與列印入口見 [EC78 r4 操作與列印](../../docs/tasks/16_lab-station.md#ec78-r4-操作與列印)。
