@@ -1,0 +1,23 @@
+{
+  "native_sha256": "3a14d770b467f13fe221900aa04ddb9a648b47ccf1e927b10ed0b27011b4597d",
+  "observations": {
+    "base": {
+      "native_sha256": "9cf235909c2fb16186b1405095c012343dc78b726dd7c63434a4623fe6d01979",
+      "samples": 14593,
+      "world_error_mm": 0.0,
+      "wire_error_mm": 0.0
+    },
+    "capillary": {
+      "native_sha256": "61c0c5958258474d42da9ccaaddabbd647ad2b61c5080324e92dae59b84ed1dc",
+      "samples": 1225,
+      "world_error_mm": 0.00012964940223614388,
+      "wire_error_mm": 1.4901161193847656e-05
+    },
+    "triad": {
+      "native_sha256": "5bd56b69d3ff3da083e5b1b25abec679f264207bb5e75beff4b7ac9860ed4cf7",
+      "samples": 849,
+      "world_error_mm": 9.952175779418677e-05,
+      "wire_error_mm": 2.9802322387695312e-05
+    }
+  }
+}

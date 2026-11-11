@@ -1,10 +1,10 @@
 {
   "spec_version": "1",
-  "name": "lab-station-ec78-capillary-wrist-relief",
+  "name": "lab-station-ec78-integrated-wrist-operation-review",
   "source": {
-    "root_dir": "models/lab-station-ec78-wrist-relief",
+    "root_dir": "models/lab-station-ec78-r4",
     "stl_glob": "STL-78件/*.stl",
-    "project_3mf": "EC78-P2S-PLA-78件-毛細管腕叉斜面.3mf"
+    "project_3mf": "EC78-r4-P2S-PLA-78件-單盤.3mf"
   },
   "print_target": {
     "printer": "bambu-p2s",

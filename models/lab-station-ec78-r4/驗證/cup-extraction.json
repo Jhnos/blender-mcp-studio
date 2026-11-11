@@ -1,0 +1,55 @@
+{
+  "native_sha256": "3a14d770b467f13fe221900aa04ddb9a648b47ccf1e927b10ed0b27011b4597d",
+  "screen_range_deg": [
+    0,
+    60
+  ],
+  "cup_outer_diameter_mm": 74.5,
+  "cup_inner_diameter_mm": 70.5,
+  "cup_height_mm": 81.0,
+  "dish_shift_xy_mm": [
+    0.0,
+    0.0
+  ],
+  "cup_source": "saved_mesh",
+  "dish_tray_edge_margin_mm": 2.335652709007263,
+  "lift_range_mm": [
+    7.000000216066837,
+    7.000000216066837
+  ],
+  "transfer_source": "saved_animation",
+  "forward_mm": 91.5856659412384,
+  "segments": {
+    "lift": {
+      "nearest": "LS_FIT_sample_tray",
+      "gap_lower_mm": 3.306673839688301,
+      "checked_meshes": 123,
+      "line_gap_lower_mm": {
+        "CANDIDATE_capillary_hose_exposed": 98.8718422915912,
+        "CANDIDATE_wire_EC": 115.31124693446283,
+        "CANDIDATE_wire_channel_1": 133.1139494329691,
+        "CANDIDATE_wire_channel_2": 128.1139494329691
+      }
+    },
+    "forward": {
+      "nearest": "LS_FIT_sample_tray",
+      "gap_lower_mm": 10.306674055755138,
+      "checked_meshes": 123,
+      "line_gap_lower_mm": {
+        "CANDIDATE_capillary_hose_exposed": 98.8718422915912,
+        "CANDIDATE_wire_EC": 115.31124693446283,
+        "CANDIDATE_wire_channel_1": 133.1139494329691,
+        "CANDIDATE_wire_channel_2": 128.1139494329691
+      }
+    }
+  },
+  "negative_overlap_cubic_mm": {
+    "original_dish_position": 702.349021705284,
+    "slide_16_mm_without_lift": 1150.9035531563372,
+    "overlift_into_probe": 14.290630873029926
+  },
+  "negative_probe_contact_lift_mm": 20.31476991601916,
+  "scope": "Nominal outer cup envelopes after arms park, with hollow cup wall collision controls. Recorded transfers include the installed line envelopes. Physical hardware and handling remain separate.",
+  "model": "lab-station-ec78-integrated-wrist-operation-review",
+  "capture_sha256": "c56edb64d0a23ab7d300ee02417d09fa0a07f40955c11dca382a8a87825c81bb"
+}

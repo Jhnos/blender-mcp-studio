@@ -1,0 +1,137 @@
+{
+  "request": {
+    "recipe_id": "screen-clamp",
+    "target_angle_deg": 0
+  },
+  "print_target": {
+    "printer": "bambu-p2s-0.4",
+    "material": "PLA",
+    "layer_height_mm": 0.2,
+    "support": true,
+    "brim_mm": 3.0
+  },
+  "derived_plate_sha256": "e01eda83cd7ae3dbfc0596c7c1504daa87588590faaca0abaac4d23189fd5dfb",
+  "bambu_info_passed": true,
+  "plate_source_bindings": {
+    "LS_FIT_lcd_back": {
+      "member": "3D/Objects/object_2.model",
+      "wrapper_id": "5",
+      "binding": {
+        "rotation": [
+          [
+            0,
+            -1,
+            0
+          ],
+          [
+            0,
+            0,
+            -1
+          ],
+          [
+            1,
+            0,
+            0
+          ]
+        ],
+        "translation_mm": [
+          63.99999617060547,
+          26.999998085302735,
+          -82.4999924
+        ],
+        "maximum_error_mm": 4.312862613590062e-06
+      }
+    },
+    "LS_FIT_lid": {
+      "member": "3D/Objects/object_4.model",
+      "wrapper_id": "45",
+      "binding": {
+        "rotation": [
+          [
+            0,
+            -1,
+            0
+          ],
+          [
+            0,
+            0,
+            -1
+          ],
+          [
+            1,
+            0,
+            0
+          ]
+        ],
+        "translation_mm": [
+          75.0,
+          32.999988511816404,
+          -115.0
+        ],
+        "maximum_error_mm": 5.373910565988616e-06
+      }
+    }
+  },
+  "scope": "isolated current-source geometry and full STL only; not public MCP or manufacturing qualification",
+  "worker": {
+    "control_motion": {
+      "samples": 202,
+      "target_angle_deg": 0,
+      "maximum_position_error_mm": 0.00016391277313232422,
+      "maximum_rotation_error_rad": 9.466378365630135e-07,
+      "mesh_ids_preserved": true
+    },
+    "stages": [
+      "canonical-input",
+      "prepare-RH_-101_M3_screw",
+      "prepare-RH_101_M3_screw",
+      "prepare-S_capillary_yaw_bolt",
+      "bind-LS_FIT_lcd_back",
+      "bind-LS_FIT_lid",
+      "bind-TE_pH_temp_three_point_wrist",
+      "prepared-all",
+      "operation-0",
+      "operation-1",
+      "contact-LS_FIT_lcd_back",
+      "contact-LS_FIT_lid",
+      "final-all"
+    ],
+    "registration_errors_mm": {
+      "LS_FIT_lcd_back": 2.5059327057874725e-05,
+      "LS_FIT_lid": 2.1074709977142447e-05,
+      "TE_pH_temp_three_point_wrist": 7.957223324694951e-06,
+      "unrelated_frame_drift_mm": 3.3527612686157227e-05
+    },
+    "original_state_equal": true,
+    "objects": 193,
+    "meshes": 124,
+    "original_objects": 193,
+    "worker_pid": 15233,
+    "background": true,
+    "mcp_addon_loaded": false,
+    "tcp_listeners": false
+  },
+  "reopened": {
+    "control_motion": {
+      "samples": 202,
+      "target_angle_deg": 0,
+      "maximum_position_error_mm": 0.00016391277313232422,
+      "maximum_rotation_error_rad": 9.466378365630135e-07,
+      "mesh_ids_preserved": true
+    },
+    "objects": 193,
+    "meshes": 124,
+    "active_scene_complete": true,
+    "geometry_and_frames_equal": true,
+    "parents_equal": true,
+    "driver_bindings_equal": true,
+    "external_libraries": 0
+  },
+  "candidate_sha256": "ac607d6f508eb7a72e251adca5a60f1bafb0743d1548c18045dfbc7bb42ca369",
+  "complete_stl_count": 78,
+  "changed_stls": [
+    "STL-78\u4ef6/LS_FIT_lcd_back.stl",
+    "STL-78\u4ef6/LS_FIT_lid.stl"
+  ],
+  "source_sha256": "3a14d770b467f13fe221900aa04ddb9a648b47ccf1e927b10ed0b27011b4597d"
+}

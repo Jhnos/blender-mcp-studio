@@ -1,0 +1,46 @@
+{
+  "native_sha256": "3a14d770b467f13fe221900aa04ddb9a648b47ccf1e927b10ed0b27011b4597d",
+  "pose_recipe_sha256": "2c35eb6f950367dee75254a296f164d38d03bfea18b38564347a6c2de89904d5",
+  "cases": {
+    "EC78-r4-毛細管-15度回座-四線": {
+      "native_sha256": "3a14d770b467f13fe221900aa04ddb9a648b47ccf1e927b10ed0b27011b4597d",
+      "preview_sha256": "4d11c38d2389404dc5a2586cf04df72ac28c7838a4aff1e26bd2c84a378fb176",
+      "frame": 1500,
+      "screen_deg": 60,
+      "angle_deg": -15,
+      "release_mm": 0,
+      "matrix_delta_mm": 0.0,
+      "curve_delta_mm": 0.0
+    },
+    "EC78-r4-毛細管+15度回座-四線": {
+      "native_sha256": "3a14d770b467f13fe221900aa04ddb9a648b47ccf1e927b10ed0b27011b4597d",
+      "preview_sha256": "60b8a730ba09ee6567bd2e607ac52c592a25f50ed794c016abf13d9697e2c3cf",
+      "frame": 1806,
+      "screen_deg": 60,
+      "angle_deg": 15,
+      "release_mm": 0,
+      "matrix_delta_mm": 0.0,
+      "curve_delta_mm": 0.0
+    },
+    "EC78-r4-三探頭-15度回座-四線": {
+      "native_sha256": "3a14d770b467f13fe221900aa04ddb9a648b47ccf1e927b10ed0b27011b4597d",
+      "preview_sha256": "9e307b0ab62bf0f113a3448c9b698ac36a9f714e14638b219d0fc21f7b95dea5",
+      "frame": 2025,
+      "screen_deg": 60,
+      "angle_deg": -15,
+      "release_mm": 0,
+      "matrix_delta_mm": 0.0,
+      "curve_delta_mm": 0.0
+    },
+    "EC78-r4-三探頭+15度回座-四線": {
+      "native_sha256": "3a14d770b467f13fe221900aa04ddb9a648b47ccf1e927b10ed0b27011b4597d",
+      "preview_sha256": "2fd1447f938d0f68841b154c92b49c613f131a7682b0019694b669b222f1ed14",
+      "frame": 2237,
+      "screen_deg": 60,
+      "angle_deg": 15,
+      "release_mm": 0,
+      "matrix_delta_mm": 0.0,
+      "curve_delta_mm": 0.0
+    }
+  }
+}

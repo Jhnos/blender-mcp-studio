@@ -1,0 +1,71 @@
+{
+  "native_sha256": "3a14d770b467f13fe221900aa04ddb9a648b47ccf1e927b10ed0b27011b4597d",
+  "source_sha256": "bf9a8b941a3a01fc1eba9d811c419e80d4db688230b8e6564cfd4bc521d59c85",
+  "gcode_sha256": "dd253d74163ebe5f4f83b85580e8e17c65859603f9e623e2fae41b83736ec922",
+  "bore_axis_bed_xy_mm": [
+    60.8,
+    30.80000762939453
+  ],
+  "wall_bed_z_mm": [
+    0.0,
+    3.0
+  ],
+  "checked_early_depositions": 365188,
+  "clear_radius_lower_mm": 7.481473231383733,
+  "role_minima": {
+    "Brim": [
+      26.07700762939453,
+      0,
+      8
+    ],
+    "Outer wall": [
+      7.481473231383733,
+      19,
+      8
+    ],
+    "Inner wall": [
+      7.857910511199454,
+      19,
+      8
+    ],
+    "Bottom surface": [
+      8.939197074572443,
+      0,
+      8
+    ],
+    "Internal solid infill": [
+      8.549475520479122,
+      55,
+      8
+    ],
+    "Sparse infill": [
+      8.613263515246073,
+      19,
+      8
+    ],
+    "Floating vertical shell": [
+      8.658813687818586,
+      39,
+      8
+    ],
+    "Bridge": [
+      8.586463530478849,
+      46,
+      8
+    ],
+    "Top surface": [
+      7.70096913256827,
+      64,
+      8
+    ],
+    "Gap infill": [
+      7.806984028240737,
+      64,
+      8
+    ]
+  },
+  "passes_14_mm_nominal_thread": true,
+  "passes_14_9_mm_digital_gauge": true,
+  "layout_surface_max_error_mm": 1.955851323426112e-06,
+  "same_native_geometry_and_toolpath_as": "9cf235909c2fb16186b1405095c012343dc78b726dd7c63434a4623fe6d01979"
+}
