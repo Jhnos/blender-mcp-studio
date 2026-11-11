@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import math
 from collections.abc import Mapping
-from itertools import product
+from itertools import groupby, product
 from typing import TYPE_CHECKING
 
 from src.infrastructure.narrowing import as_mapping, as_nonempty_sequence, required
@@ -27,6 +27,12 @@ LIFT_RANGE_MM = (6.5, 9.5)
 NOMINAL_LIFT_MM = 7.0
 MINIMUM_ASSEMBLY_GAP_MM = 1.0
 PARKED_ARMS_DEG = ((15.0, 15.0), (0.0, 30.0))
+TRANSFER_LINES = (
+    "CANDIDATE_capillary_hose_exposed",
+    "CANDIDATE_wire_EC",
+    "CANDIDATE_wire_channel_1",
+    "CANDIDATE_wire_channel_2",
+)
 
 
 def document(value: object) -> Mapping[str, object]:
@@ -75,6 +81,26 @@ def probe_contact_lift_mm(lip_z_mm: float, probe_tip_z_mm: float) -> float:
     return max(12.0, probe_tip_z_mm - lip_z_mm + 2.0)
 
 
+def transfer_segments(positions: NDArray[float64]) -> tuple[NDArray[float64], NDArray[float64]]:
+    """Read the two outbound offsets of a saved upright, reversible cup transfer."""
+    import numpy as np
+
+    if positions.ndim != 2 or positions.shape[1] != 3 or len(positions) < 5:
+        raise ValueError("recorded cup transfer needs three-dimensional positions")
+    if not np.isfinite(positions).all():
+        raise ValueError("recorded cup transfer has nonfinite positions")
+    offsets = positions - positions[0]
+    if offsets[-1].any():
+        raise ValueError("recorded cup has not returned to its seat")
+    direction = np.sign(np.diff(positions, axis=0))
+    movements = ((i + 1, tuple(delta)) for i, delta in enumerate(direction) if delta.any())
+    legs = [(key, list(group)[-1][0]) for key, group in groupby(movements, lambda row: row[1])]
+    expected = [(0, 0, 1), (0, -1, 0), (0, 1, 0), (0, 0, -1)]
+    if [key for key, _ in legs] != expected:
+        raise ValueError("recorded cup must use a vertical lift followed by forward travel")
+    return offsets[legs[0][1]], offsets[legs[1][1]]
+
+
 def assess(evidence: Mapping[str, object], expected_sha: str) -> dict[str, object]:
     """Bound the upright cup's swept volumes and reject three incorrect operations."""
     import numpy as np
@@ -118,17 +144,59 @@ def assess(evidence: Mapping[str, object], expected_sha: str) -> dict[str, objec
     dish_lo, dish_hi = dish.min(axis=0), dish.max(axis=0)
     tray_lo, tray_hi = tray.min(axis=0), tray.max(axis=0)
     heights = np.unique(dish[:, 2].round(4))
-    if len(heights) != 3 or not math.isclose(dish_lo[2], tray_hi[2], abs_tol=0.0001):
+    recorded = evidence.get("recorded_cup_transfer_mm")
+    if not math.isclose(dish_lo[2], tray_hi[2], abs_tol=0.0001):
         raise ValueError("unsupported spill dish seating or rim")
-    floor = float(dish[np.isclose(dish[:, 2], heights[1], atol=0.0001), 2].max())
     rim = float(dish_hi[2])
-    lip = floor + CUP_HEIGHT_MM
     dish_center = (dish_lo[:2] + dish_hi[:2]) / 2
     saved_nominal = evidence.get("saved_nominal_cup", False)
     if not isinstance(saved_nominal, bool):
         raise ValueError("invalid saved nominal cup marker")
-    adjustment = dish_adjustment(saved_nominal, parked[REFERENCE_CUP][0], dish_center, floor)
-    center = dish_center + adjustment
+    wall, wall_faces = parked[REFERENCE_CUP]
+    line_bounds: dict[str, NDArray[float64]] = {}
+    if recorded is None:
+        if len(heights) != 3:
+            raise ValueError("unsupported spill dish seating or rim")
+        floor = float(dish[np.isclose(dish[:, 2], heights[1], atol=0.0001), 2].max())
+        adjustment = dish_adjustment(saved_nominal, wall, dish_center, floor)
+        center = dish_center + adjustment
+        end = np.array((center[0], tray_lo[1] - CUP_OUTER_RADIUS_MM - 1.0))
+        low_lift, high_lift = LIFT_RANGE_MM
+    else:
+        if not saved_nominal:
+            raise ValueError("recorded transfer requires the saved cup mesh")
+        floor = float(wall[:, 2].min())
+        center = (wall.min(axis=0)[:2] + wall.max(axis=0)[:2]) / 2
+        dish_adjustment(True, wall, center, floor)
+        positions = np.array(array(recorded), dtype=float)
+        lift, forward = transfer_segments(positions)
+        saved_matrix = np.array(array(document(raw_meshes[REFERENCE_CUP])["matrix_world"]))
+        if not np.array_equal(positions[0], saved_matrix[:3, 3] * 1000):
+            raise ValueError("recorded transfer starts from a different cup pose")
+        wires = document(evidence.get("transfer_line_bounds_mm"))
+        if wires.keys() != set(TRANSFER_LINES):
+            raise ValueError("recorded transfer needs all four installed lines")
+        for name, spans in wires.items():
+            boxes = np.array(array(spans), dtype=float)
+            if (
+                boxes.ndim != 3
+                or boxes.shape[1:] != (2, 3)
+                or not np.isfinite(boxes).all()
+                or np.any(boxes[:, 0] > boxes[:, 1])
+            ):
+                raise ValueError(f"invalid line envelope: {name}")
+            line_bounds[name] = boxes
+        low_lift = high_lift = float(lift[2])
+        end = center + forward[:2]
+        adjustment = (0.0, 0.0)
+        if floor <= dish_lo[2] or floor > rim or wall[:, 1].max() + forward[1] >= tray_lo[1]:
+            raise ValueError("recorded cup does not start in the dish and clear the tray")
+        if (
+            solid_overlap_volume(soup(wall + (0, 0, -0.08), wall_faces), soup(dish, dish_faces))
+            <= 0
+        ):
+            raise ValueError("recorded cup seat does not support the saved cup")
+    lip = floor + CUP_HEIGHT_MM
     shifted_dish = soup(dish + (*adjustment, 0), dish_faces)
     tray_margin = float(
         np.min(
@@ -137,8 +205,6 @@ def assess(evidence: Mapping[str, object], expected_sha: str) -> dict[str, objec
             )
         )
     )
-    end = np.array((center[0], tray_lo[1] - CUP_OUTER_RADIUS_MM - 1.0))
-    low_lift, high_lift = LIFT_RANGE_MM
     if tray_margin <= 0 or floor + low_lift <= rim:
         raise ValueError("candidate cup or shifted dish does not clear its tray")
 
@@ -222,21 +288,35 @@ def assess(evidence: Mapping[str, object], expected_sha: str) -> dict[str, objec
             if gap <= 0:
                 raise ValueError(f"cup sweep is not separated from the moving display: {name}")
             nearest[name] = gap
+        for name, boxes in line_bounds.items():
+            difference = np.maximum(np.maximum(boxes[:, 0] - hi, lo - boxes[:, 1]), 0)
+            nearest[name] = float(np.linalg.norm(difference, axis=1).min())
         if solid_overlap_volume(hull, shifted_dish) > 0:
             raise ValueError("cup sweep overlaps shifted spill dish")
         name = min(nearest, key=nearest.__getitem__)
         if nearest[name] < MINIMUM_ASSEMBLY_GAP_MM:
             raise ValueError(f"cup sweep cannot establish clearance from {name}")
-        return {"nearest": name, "gap_lower_mm": nearest[name], "checked_meshes": len(parked) - 1}
+        return {
+            "nearest": name,
+            "gap_lower_mm": nearest[name],
+            "checked_meshes": len(parked) - 1,
+            "line_gap_lower_mm": {name: nearest[name] for name in line_bounds},
+        }
 
-    segments = {
-        "lift": check(sweep(center, center, floor, lip + high_lift)),
-        "forward": check(sweep(center, end, floor + low_lift, lip + high_lift)),
-        "nominal_forward": check(
-            sweep(center, end, floor + NOMINAL_LIFT_MM, lip + NOMINAL_LIFT_MM)
-        ),
-    }
-    wall, wall_faces = parked[REFERENCE_CUP]
+    if recorded is None:
+        segments = {
+            "lift": check(sweep(center, center, floor, lip + high_lift)),
+            "forward": check(sweep(center, end, floor + low_lift, lip + high_lift)),
+            "nominal_forward": check(
+                sweep(center, end, floor + NOMINAL_LIFT_MM, lip + NOMINAL_LIFT_MM)
+            ),
+        }
+    else:
+        elevated = wall + lift
+        segments = {
+            "lift": check(np.vstack((wall, elevated))),
+            "forward": check(np.vstack((elevated, wall + forward))),
+        }
     control_lift = probe_contact_lift_mm(lip, float(parked[CAPILLARY][0][:, 2].min()))
     if saved_nominal:
         seated_cup = soup(wall, wall_faces)
@@ -270,10 +350,11 @@ def assess(evidence: Mapping[str, object], expected_sha: str) -> dict[str, objec
         "dish_shift_xy_mm": adjustment,
         "cup_source": "saved_mesh" if saved_nominal else "nominal_fixture",
         "dish_tray_edge_margin_mm": tray_margin,
-        "lift_range_mm": LIFT_RANGE_MM,
+        "lift_range_mm": (low_lift, high_lift),
+        "transfer_source": "saved_animation" if recorded is not None else "nominal_range",
         "forward_mm": float(center[1] - end[1]),
         "segments": segments,
         "negative_overlap_cubic_mm": volumes,
         "negative_probe_contact_lift_mm": control_lift,
-        "scope": "Nominal outer cup envelopes after arms park, with hollow cup wall collision controls. Actual hardware, wiring and handling are separate.",
+        "scope": "Nominal outer cup envelopes after arms park, with hollow cup wall collision controls. Recorded transfers include the installed line envelopes. Physical hardware and handling remain separate.",
     }

@@ -225,3 +225,34 @@ def test_all_native_cases_include_the_actual_durable_callback_and_reopen():
     all_cases = source.split("if args.all:", 1)[1].split("elif args.phase", 1)[0]
     assert 'verify_callback(blender, work / "callback")' in all_cases
     assert '"callback-reopen"' in source
+
+
+def test_recorded_cup_transfer_requires_a_reversible_lift_and_forward_path():
+    import numpy as np
+
+    from scripts.verify.workstation_cup_checks import transfer_segments
+
+    path = np.array(
+        [
+            (2, -160, 9.3),
+            (2, -160, 12.3),
+            (2, -160, 16.3),
+            (2, -200, 16.3),
+            (2, -251, 16.3),
+            (2, -200, 16.3),
+            (2, -160, 16.3),
+            (2, -160, 9.3),
+        ]
+    )
+    lift, forward = transfer_segments(path)
+    assert np.allclose(lift, [0, 0, 7])
+    assert np.allclose(forward, [0, -91, 7])
+
+    with pytest.raises(ValueError, match="vertical lift"):
+        transfer_segments(path[[0, 3, 4, 5, 6, 7]])
+    with pytest.raises(ValueError, match="returned"):
+        transfer_segments(path[:-1])
+    diagonal = path.copy()
+    diagonal[1, 0] += 0.01
+    with pytest.raises(ValueError, match="vertical lift"):
+        transfer_segments(diagonal)
