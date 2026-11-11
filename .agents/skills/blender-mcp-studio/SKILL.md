@@ -13,8 +13,10 @@ binding repository policy and this skill as the task-specific execution path.
 1. Read `docs/tasks/00_INDEX.md`.
 2. Read the linked `ACTIVE` or `AWAITING-ACCEPTANCE` task and its hand-off. `WAITING-ON-USER`
    is not in progress; with no open task, the index's resume block is the hand-off.
-3. Run `git log --oneline -5` and `git status --short --branch`.
-4. Before debugging, search `docs/LESSONS_LEARNED.md` for the failure class.
+3. Run `git log --oneline -5` and `git status --short --branch`. Use the index to locate
+   the current evidence, and honour its wait state and any explicit user pause.
+4. Before debugging, search `docs/LESSONS_LEARNED.md` and project memory feedback
+   for the failure class. Apply an existing prevention check first.
 5. Open only the architecture or client document named by the task.
 
 Completed implementation plans live in `docs/archive/`; never infer active work from them.
@@ -124,22 +126,16 @@ exact-count rule on a new part, run `scripts/verify/build_determinism_probe.py -
 
 ## Record what you learned
 
-Searching `docs/LESSONS_LEARNED.md` is only half the loop; this skill used to describe only
-that half. After any non-trivial debugging session, close the other half:
+Capture the reusable failure class, trigger and missing check in
+`docs/LESSONS_LEARNED.md`. Attach a discriminating positive and negative control
+at the lowest effective layer. Keep raw transcripts and job details with the
+run evidence. Apply the placement and archive rules in `docs/KNOWLEDGE.md`.
 
-1. **Abstract the root cause into a class.** "X does not imply Y" — the phrasing every entry
-   in that file uses. It must still hold in another project; if it names this repo's files,
-   it is a commit message, not a lesson.
-2. **Name the missing check**: what would have caught it, at what layer, before a human looked?
-3. **Put the prescription into a gate.** A lesson whose fix never becomes something CI runs
-   keeps growing new bugs — that failure is itself already recorded in the file.
-4. **Give the gate a should-fire and a should-pass fixture.** Without the second, a guard that
-   has degenerated into "always fails" is indistinguishable from one that works.
-5. Newest entry goes on top. Never rewrite an existing entry; correct the present instead.
-
-Knowledge that is not a failure class goes elsewhere: an architectural decision becomes an
-ADR in `docs/01-architecture.md`; a deliberate non-abstraction goes to `docs/DEFERRALS.md`
-with a firing trigger. `docs/KNOWLEDGE.md` holds the full placement map.
+For EC78 work, start with the active task's hand-off. Follow
+`docs/verification/lab-station/15-engineering-playbook.md` for same-source
+mechanical verification. Use the current ModelSpec and the artifact hashes to
+bind the scene, preview and slice. Physical assembly, load and adhesion require
+physical evidence.
 
 ## Close the milestone
 

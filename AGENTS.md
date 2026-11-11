@@ -9,10 +9,11 @@ application services.
 ## Start and resume here
 
 1. Read `docs/tasks/00_INDEX.md`. Open the linked `ACTIVE` or `AWAITING-ACCEPTANCE` task if
-   there is one; a `WAITING-ON-USER` task is not in progress. When none is open, nothing is
-   in progress: the index's resume block says what is waiting on whom. Do not invent a task.
+   there is one. Follow the index for the next action and honour any explicit pause or
+   wait. `WAITING-ON-USER` is outside active execution.
 2. Read that task's hand-off section, then run `git log --oneline -5`.
-3. Before debugging, search `docs/LESSONS_LEARNED.md` for the same failure class.
+3. Before debugging, search `docs/LESSONS_LEARNED.md` and any project memory feedback
+   for the failure class. Apply an existing prevention check first.
 4. Open `docs/README.md` and load only the topic files its "when to read" column
    names for this step. Load archived campaign material only when the task names it.
    Do not rescan the repository to reconstruct finished work.
@@ -32,11 +33,11 @@ application services.
 
 ```bash
 scripts/ci.sh          # T1 static + T2 Python/Web tests; required before commit
-scripts/ci.sh --real   # T3 core model/MCP/slicing; no live LLM; requires addon on 9876
+scripts/ci.sh --real   # T3 core model/MCP/slicing; no live LLM; requires the Blender addon
 scripts/ci.sh --chat   # Independent real conversation suite (Ollama + Blender)
 scripts/ci.sh --all    # Core then conversation, sequentially
 bash deploy/launchd/install.sh all   # render, install, and restart production services
-bash scripts/run_dev.sh              # foreground development: API 19505 + Web 5173
+bash scripts/run_dev.sh              # foreground development
 ```
 
 The local `scripts/ci.sh` is the only CI; there are no GitHub Actions. New behavior starts
@@ -44,19 +45,10 @@ with a discriminating failing test. A skipped real tier is not acceptance eviden
 
 ## Runtime SSOT
 
-- Ports: API `19505`, production Web `19504`, Blender addon socket `9876`.
-- Tailscale: `https://bearmacminimac-mini.tail56c751.ts.net/blender` with prefix retained.
-- Service registry: `~/MacHomeHub/config/services.yaml`.
-- LaunchAgent source: `deploy/launchd/*.plist`; installed plists are derived state.
-- Long-running Web uses a production build with `vite preview`; Vite HMR is manual dev only.
-
-Verify loaded state, not just source files:
-
-```bash
-launchctl print gui/$(id -u)/com.blender-mcp.web
-lsof -nP -iTCP:19504 -iTCP:19505 -iTCP:9876 -sTCP:LISTEN
-curl -fsS http://127.0.0.1:19505/api/health
-```
+Use [runtime configuration](docs/10-runtime-ssot.md) for service addresses, ports and
+the registry. Use [deployment](docs/12-deployment.md) to verify installed and loaded
+state. LaunchAgent templates are under `deploy/launchd/`. Production Web uses the
+built bundle, and Vite HMR is for foreground development.
 
 ## Knowledge and checkpoint discipline
 
@@ -65,8 +57,10 @@ curl -fsS http://127.0.0.1:19505/api/health
 - `docs/KNOWLEDGE.md` is a navigation map, not a second architecture or progress ledger.
 - Keep `AGENTS.md`/`CLAUDE.md` under 200 lines and project-authored `SKILL.md` near 150 lines;
   split or archive instead of compressing meaning.
-- Generated caches, `web/dist`, runtime databases, `.env`, and local agent settings are not
-  source. Never commit secrets or derived state.
+- Keep reusable failure classes in `docs/LESSONS_LEARNED.md`. Keep raw logs with their
+  verification run, and use the task index for current progress.
+- Keep generated caches, `web/dist`, runtime databases, `.env`, secrets and local agent
+  settings out of Git. Follow the artifact cleanup rules in `docs/KNOWLEDGE.md`.
 - At a milestone: update the task hand-off, run the 5S scan and gates, bump `VERSION`, update
   `CHANGELOG.md`, commit, then run
   `bash "$HOME/.codex/skills/milestone-checkpoint/scripts/checkpoint_check.sh" .`.

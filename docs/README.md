@@ -30,6 +30,7 @@ Blender MCP Studio 的文件樹。**一檔一主題，互相 `[[wikilink]]` 指�
 |---|---|---|
 | `tasks/` | 進行中與待驗收的任務；`archive/` 放已驗收 | 每次接手 |
 | `verification/` | 產出物 contract 流程與各版本視覺驗收 rubric | 產生或驗證機械模型時 |
+| [工作站工程驗證手冊](verification/lab-station/15-engineering-playbook.md) | 工作站的原生、刀路與機構驗證程序 | 改工作站候選或驗實體接口時 |
 | `archive/` | 已完成的 campaign 與被取代的文件 | **僅供追溯歷史，不得據以推斷現況** |
 
 ## 兩條硬規則
