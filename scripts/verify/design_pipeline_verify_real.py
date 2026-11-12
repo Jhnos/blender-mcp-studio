@@ -42,6 +42,7 @@ if str(PROJECT_ROOT) not in sys.path:
 from scripts.verify import design_gate_checks as checks  # noqa: E402
 from scripts.verify import design_gate_negatives as negatives  # noqa: E402
 from scripts.verify.lab_station_delivery_checks import check_delivery  # noqa: E402
+from scripts.verify.lab_station_render_preflight import selected_review_native  # noqa: E402
 from scripts.verify.mcp_verify_real import TRANSPORT_ERRORS, default_mcp_url  # noqa: E402
 from src.core.domain.model_spec import ModelSpecError  # noqa: E402
 from src.infrastructure.config_loader import load_selected_model_spec  # noqa: E402
@@ -248,6 +249,18 @@ def _verified_delivery(root: Path, contract: Mapping[str, Any]) -> Mapping[str, 
     if not current:
         return contract
     if contract.get("verify_delivery_evidence") is True:
+        verified = _as_object(native, "verified native provenance")
+        source_native = _as_object(verified["native"], "selected native artifact")
+        try:
+            render_path, render_digest = selected_review_native(root)
+        except (OSError, ValueError, ModelSpecError) as exc:
+            raise checks.GateError(f"cannot verify render source: {exc}") from exc
+        expected_path = root / str(verified["root_dir"]) / str(source_native["path"])
+        if (render_path.resolve(), render_digest) != (
+            expected_path.resolve(),
+            source_native["sha256"],
+        ):
+            raise checks.GateError("render source disagrees with selected native")
         failures = check_delivery(root, native)
         if failures:
             raise checks.GateError("; ".join(failures))

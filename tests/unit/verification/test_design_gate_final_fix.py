@@ -261,6 +261,7 @@ def test_import_identity_rejects_substitution_even_if_counts_match():
 
 async def test_current_workstation_gate_rejects_stale_evidence_even_with_updated_checksums(
     tmp_path,
+    monkeypatch,
 ):
     import hashlib
     import shutil
@@ -292,6 +293,16 @@ async def test_current_workstation_gate_rejects_stale_evidence_even_with_updated
         return real._verified_delivery(tmp_path, {**contract, "spec": selected, "native": native})
 
     assert (await verify())["expect"]["stl_count"] == len(list(delivery.glob(spec.source.stl_glob)))
+    native_receipt = await reader.resolve(spec)
+    historical = next((ROOT / "models/lab-station-v80").glob("*.blend"))
+    with monkeypatch.context() as changed:
+        changed.setattr(
+            real,
+            "selected_review_native",
+            lambda _root: (historical, native_receipt.native.sha256),
+        )
+        with pytest.raises(gate.GateError, match="render source disagrees with selected native"):
+            await verify()
     manifest_path = delivery / "SHA256.json"
     original_manifest = json.loads(manifest_path.read_bytes())
     synchronization = "驗證/synchronized-native-result.json"

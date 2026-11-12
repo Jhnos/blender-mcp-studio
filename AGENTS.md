@@ -26,6 +26,11 @@ application services.
 - Add capabilities through narrow ports and injected services. Do not expose arbitrary
   `execute_code` as a public MCP tool.
 - Preserve public DTO compatibility unless an approved task explicitly changes it.
+- For task 16, resolve the formal Blender source, STL set and 3MF from
+  `models/lab-station/model-spec.json` and its checksum manifest. Before using an
+  open scene, compare its source and required pose with the selected evidence.
+  Candidate work declares its own source and receipts. Promote a candidate only
+  through the shared ModelSpec after the same-source delivery gates pass.
 - Use the project skill `.agents/skills/blender-mcp-studio/SKILL.md` for recurring
   development, deployment, and real-Blender verification workflows.
 
